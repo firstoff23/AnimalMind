@@ -20,54 +20,23 @@ interface ClassifyResult {
   eventId?: number;
 }
 
-// ─── Confidence Ring ─────────────────────────────────────────────────────────
+// ─── Confidence Bar ──────────────────────────────────────────────────────────
 
-function ConfidenceRing({ confidence, emoji, state }: { confidence: number, emoji: string, state: EmotionalState }) {
+function ConfidenceBar({ confidence }: { confidence: number }) {
   const pct = Math.round(confidence * 100);
-  const color = pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444";
-  
-  const radius = 45;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (pct / 100) * circumference;
-
+  const color =
+    pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444";
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative flex items-center justify-center">
-        <svg className="w-28 h-28 transform -rotate-90 drop-shadow-sm">
-          <circle
-            className="text-secondary"
-            strokeWidth="8"
-            stroke="currentColor"
-            fill="transparent"
-            r={radius}
-            cx="56"
-            cy="56"
-          />
-          <circle
-            className="transition-all duration-1000 ease-out"
-            strokeWidth="8"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            stroke={color}
-            fill="transparent"
-            r={radius}
-            cx="56"
-            cy="56"
-          />
-        </svg>
-        <div className="absolute flex flex-col items-center justify-center animate-in zoom-in duration-500">
-          <span className="text-5xl leading-none drop-shadow-md">{emoji}</span>
-        </div>
+    <div className="w-full space-y-1">
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>Confiança</span>
+        <span style={{ color }} className="font-semibold">{pct}%</span>
       </div>
-      
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-2xl font-bold tracking-tight" style={{ color: STATE_COLORS[state] }}>
-          {STATE_LABELS[state]}
-        </span>
-        <span className="text-sm font-medium" style={{ color }}>
-          {pct}% confiança
-        </span>
+      <div className="h-2 rounded-full bg-secondary overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
       </div>
     </div>
   );
@@ -91,12 +60,19 @@ function ResultCard({
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4 page-enter">
-      {/* Confidence Ring visual */}
-      <ConfidenceRing 
-        confidence={result.confidence} 
-        emoji={result.emoji} 
-        state={result.state} 
-      />
+      {/* Emoji + state */}
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-6xl leading-none">{result.emoji}</span>
+        <span
+          className="text-xl font-bold"
+          style={{ color: STATE_COLORS[result.state] }}
+        >
+          {STATE_LABELS[result.state]}
+        </span>
+      </div>
+
+      {/* Confidence bar */}
+      <ConfidenceBar confidence={result.confidence} />
 
       {/* Model badge */}
       <div className="flex justify-center">
