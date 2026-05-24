@@ -18,14 +18,16 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
   - [x] Integração tRPC em Node.js com a rota `/classify` e mecanismo de fallback resiliente.
 
 ### 📋 Prioridade 2 — V1.0
-- [ ] **3. Página de detalhe por animal**
-  - Histórico de eventos completo e filtrado por animal de estimação.
-  - Tendências emocionais e estatísticas avançadas individuais.
-- [/] **4. Exportação de dados**
+- [x] **3. Página de detalhe por animal**
+  - [x] Rota `/animal/:id` dedicada com painel estatístico completo e histórico paginado por animal.
+  - [x] Gráficos de dispersão emocional (Radar) e evolução de confiança (Line) integrados.
+- [x] **4. Exportação de dados**
   - [x] Exportação de histórico de eventos em formato CSV.
-  - [ ] Exportação de relatórios de saúde e comportamento em formato PDF.
-- [ ] **5. Baseline por animal**
-  - Perfil individual de comportamento e calibração de limites baseados nos hábitos de cada animal.
+  - [x] Geração e exportação de relatórios clínicos estruturados em formato PDF via `jspdf`.
+- [x] **5. Baseline por animal**
+  - [x] Armazenamento de perfil de baseline individual em `server/baselines.json`.
+  - [x] Calibração dinâmica via UI (sensibilidade, limiar diário de vocalização e estados típicos).
+  - [x] Alertas e banners automáticos de fuga de baseline.
 
 ### 📋 Prioridade 3 — V2.0
 - [ ] **6. Belief state POMDP**

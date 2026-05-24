@@ -40,6 +40,19 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Mapeamento Emocional:** Classifica dinamicamente os sons nos 6 estados emocionais com base em parâmetros físicos de áudio reais.
 * **Resiliência & Fallback:** Se a variável de ambiente `FASTAPI_BACKEND_URL` não estiver definida ou o servidor FastAPI estiver offline, a API tRPC do Node.js cai de forma transparente e resiliente para o simulador heurístico sem afetar a usabilidade da aplicação.
 
+### 8. Página de Detalhe por Animal
+* **Painel Dedicado (`/animal/:id`):** Acessível a partir da página de Perfil, reúne todas as informações históricas e estatísticas de um único animal de estimação.
+* **Evolução Temporal:** Gráfico interativo com a média diária de confiança de classificação nos últimos 7 ou 30 dias para análise de progresso.
+* **Radar Emocional Individual:** Visualização tridimensional da distribuição de estados emocionais específica do animal.
+
+### 9. Exportação de Relatórios Clínicos (PDF)
+* **Geração em Client-Side:** Botão "Descarregar PDF" integrado via `jspdf` para compilar e guardar um PDF clínico e comportamental detalhado do animal.
+* **Estrutura Profissional:** Contém identificação do animal, parâmetros de baseline calibrados, sumário estatístico de atividade e tabela com o histórico das últimas 10 vocalizações com notas e metadados. Pronto para partilhar com médicos veterinários.
+
+### 10. Baseline Comportamental & Alertas de Ruído
+* **Calibração Dinâmica:** Interface intuitiva para definir o limiar diário de vocalizações normais, sensibilidade de alertas do microfone e marcar quais os estados emocionais são típicos do animal. Persistido localmente no servidor em `server/baselines.json`.
+* **Fuga de Baseline:** Alertas visuais rápidos e banners caso o animal vocalize estados não-típicos (ex: angústia/alerta) ou ultrapasse o limite diário de vocalizações estabelecido na baseline.
+
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -47,6 +60,7 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Wouter (Routing), Framer Motion, Recharts
 * **Node.js Gateway:** Node.js, Express, tRPC (v11) para comunicação tipo-segura (End-to-End Type Safety)
 * **FastAPI Backend:** Python 3, FastAPI, Uvicorn, NumPy, SciPy, Soundfile, FFmpeg para análise acústica e processamento de sinal em tempo real
+* **Bibliotecas Adicionais:** jsPDF para geração de relatórios de saúde PDF no cliente
 * **Base de Dados & Auth:** Supabase (Autenticação robusta com verificação de email, sessões, perfil de utilizador e base de dados baseada em PostgreSQL com lazy-initialization)
 * **Testes:** Vitest (Suite completa cobrindo integração do Supabase, lógica de negócios, componentes visuais e helpers de gestos)
 
@@ -110,6 +124,7 @@ pnpm run build
 
 ## 📈 Histórico de Atualizações (Progress Log)
 
+* **Commit 1db40899:** Adiciona a página de detalhe por animal (`/animal/:id`), calibração dinâmica de baseline comportamental com persistência em `baselines.json`, gráficos avançados de análise, testes automatizados e exportação de relatórios em PDF via `jspdf`.
 * **Commit 0f066285:** Integra o backend FastAPI para classificação acústica real e processamento de sinal em Python, com testes de fallback e documentação atualizada no roadmap.
 * **Commit a07e75df:** Adiciona a gravação física de áudio de 3 segundos, upload automático para o Supabase Storage no bucket `animal-audio` e botão de Play/Pause interativo na página do Histórico e Dados Brutos.
 * **Commit 5bdec92d:** Adiciona o ficheiro `roadmap.md` na raiz para o rastreamento das metas de desenvolvimento e prioridades futuras do projeto.
