@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, type PointerEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Filter, X } from "lucide-react";
+import { clampSwipeOffset, resolveSwipeFeedback, type SwipeFeedback } from "@/lib/swipeFeedback";
+import { ChevronLeft, ChevronRight, Filter, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { toast } from "sonner";
 import { STATE_LABELS, STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 
@@ -24,71 +26,132 @@ const STATE_FILTER_LABELS: Record<string, string> = {
   ...STATE_LABELS,
 };
 
+interface HistoryEvent {
+  id: number;
+  state: string;
+  confidence: number;
+  emoji: string;
+  modelUsed: string;
+  feedback: string | null;
+  createdAt: Date;
+}
+
 // ─── Event Row ────────────────────────────────────────────────────────────────
 
 function EventRow({
   event,
+  onFeedback,
+  disabled,
 }: {
-  event: {
-    id: number;
-    state: string;
-    confidence: number;
-    emoji: string;
-    modelUsed: string;
-    feedback: string | null;
-    createdAt: Date;
-  };
+  event: HistoryEvent;
+  onFeedback: (eventId: number, feedback: SwipeFeedback) => void;
+  disabled: boolean;
 }) {
+  const [startX, setStartX] = useState<number | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
   const state = event.state as EmotionalState;
   const pct = Math.round(event.confidence * 100);
   const color = STATE_COLORS[state];
+  const activeFeedback = resolveSwipeFeedback(offsetX);
+
+  const resetSwipe = () => {
+    setStartX(null);
+    setOffsetX(0);
+  };
+
+  const handlePointerDown = (pointerEvent: PointerEvent<HTMLDivElement>) => {
+    if (disabled || pointerEvent.button !== 0) return;
+    setStartX(pointerEvent.clientX);
+    pointerEvent.currentTarget.setPointerCapture(pointerEvent.pointerId);
+  };
+
+  const handlePointerMove = (pointerEvent: PointerEvent<HTMLDivElement>) => {
+    if (startX === null || disabled) return;
+    setOffsetX(clampSwipeOffset(pointerEvent.clientX - startX));
+  };
+
+  const handlePointerEnd = () => {
+    const feedback = resolveSwipeFeedback(offsetX);
+    if (feedback && feedback !== event.feedback) {
+      onFeedback(event.id, feedback);
+    }
+    resetSwipe();
+  };
 
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-border last:border-0">
-      <span className="text-2xl flex-shrink-0">{event.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold" style={{ color }}>
-            {STATE_LABELS[state]}
-          </span>
-          {event.feedback && (
-            <span className="text-xs">
-              {event.feedback === "correct" ? "👍" : "👎"}
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {event.modelUsed.toUpperCase()} ·{" "}
-          {new Date(event.createdAt).toLocaleDateString("pt-PT", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })}{" "}
-          {new Date(event.createdAt).toLocaleTimeString("pt-PT", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
+    <div
+      className="relative overflow-hidden border-b border-border last:border-0"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={resetSwipe}
+      style={{ touchAction: "pan-y" }}
+      aria-label="Classificação no histórico"
+    >
+      <div className="absolute inset-y-0 left-0 flex items-center gap-2 px-4 text-xs font-semibold text-emerald-300">
+        <ThumbsUp size={16} aria-hidden="true" />
+        Correcto
       </div>
-      <div className="text-right flex-shrink-0">
-        <div
-          className="text-sm font-bold"
-          style={{
-            color:
-              pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444",
-          }}
-        >
-          {pct}%
+      <div className="absolute inset-y-0 right-0 flex items-center gap-2 px-4 text-xs font-semibold text-red-300">
+        Incorrecto
+        <ThumbsDown size={16} aria-hidden="true" />
+      </div>
+
+      <div
+        className={cn(
+          "relative z-10 flex items-center gap-3 py-3 bg-card",
+          startX === null && "transition-transform duration-150",
+          disabled && "opacity-60",
+          activeFeedback === "correct" && "bg-emerald-950/80",
+          activeFeedback === "incorrect" && "bg-red-950/80"
+        )}
+        style={{ transform: `translateX(${offsetX}px)` }}
+      >
+        <span className="text-2xl flex-shrink-0">{event.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold" style={{ color }}>
+              {STATE_LABELS[state]}
+            </span>
+            {event.feedback && (
+              <span className="text-xs">
+                {event.feedback === "correct" ? "👍" : "👎"}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {event.modelUsed.toUpperCase()} ·{" "}
+            {new Date(event.createdAt).toLocaleDateString("pt-PT", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}{" "}
+            {new Date(event.createdAt).toLocaleTimeString("pt-PT", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
         </div>
-        <div className="w-12 h-1.5 rounded-full bg-secondary overflow-hidden mt-1">
+        <div className="text-right flex-shrink-0">
           <div
-            className="h-full rounded-full"
+            className="text-sm font-bold"
             style={{
-              width: `${pct}%`,
-              backgroundColor:
+              color:
                 pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444",
             }}
-          />
+          >
+            {pct}%
+          </div>
+          <div className="w-12 h-1.5 rounded-full bg-secondary overflow-hidden mt-1">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${pct}%`,
+                backgroundColor:
+                  pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444",
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -133,9 +196,17 @@ export default function HistoryPage() {
     dateTo: dateTo || undefined,
   });
 
-  const events = data?.events ?? [];
+  const events = (data?.events ?? []) as HistoryEvent[];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const utils = trpc.useUtils();
+  const feedbackMutation = trpc.events.feedback.useMutation({
+    onSuccess: () => {
+      utils.events.list.invalidate();
+      toast.success("Classificação actualizada");
+    },
+    onError: () => toast.error("Não foi possível guardar o feedback."),
+  });
 
   const clearFilters = () => {
     setStateFilter("all");
@@ -260,7 +331,16 @@ export default function HistoryPage() {
         ) : events.length === 0 ? (
           <EmptyState filtered={isFiltered} />
         ) : (
-          events.map((event) => <EventRow key={event.id} event={event} />)
+          events.map((event) => (
+            <EventRow
+              key={event.id}
+              event={event}
+              disabled={feedbackMutation.isPending}
+              onFeedback={(eventId, feedback) => {
+                feedbackMutation.mutate({ eventId, feedback });
+              }}
+            />
+          ))
         )}
       </div>
 
