@@ -29,6 +29,11 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Ditado por voz nativo:** Microfone ao lado do campo de texto com efeito pulsante azul-ciano para ditar notas de observação em Português de Portugal (`pt-PT`) usando a Web Speech API.
 * **Persistência e Integração:** Notas guardadas localmente em `server/notes.json` e acopladas às consultas de eventos via tRPC. Exibidas no histórico com um indicador 📝 e no detalhe do diálogo de dados brutos.
 
+### 6. Gravação de Áudio Real e Supabase Storage
+* **Gravação Física:** Captura o som real do animal de estimação em formato comprimido (ex: `audio/webm`, `audio/mp4`) durante os 3 segundos de monitorização física do microfone via `MediaRecorder`.
+* **Upload automático:** O ficheiro é enviado diretamente para o Supabase Storage público no bucket `animal-audio` (gerado de forma dinâmica) e o URL público é persistido localmente em `server/audio.json`.
+* **Reprodutor Integrado:** Se um evento do Histórico possui áudio real, é exibido um botão circular de Play/Pause para ouvir o som diretamente na linha de registo ou um reprodutor nativo completo no diálogo de Dados Brutos.
+
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -81,6 +86,9 @@ pnpm run build
 
 ## 📈 Histórico de Atualizações (Progress Log)
 
+* **Commit a07e75df:** Adiciona a gravação física de áudio de 3 segundos, upload automático para o Supabase Storage no bucket `animal-audio` e botão de Play/Pause interativo na página do Histórico e Dados Brutos.
+* **Commit 5bdec92d:** Adiciona o ficheiro `roadmap.md` na raiz para o rastreamento das metas de desenvolvimento e prioridades futuras do projeto.
+* **Commit b98868a9:** Atualiza o README.md com a documentação do Voice-to-Text.
 * **Commit ad82e941:** Adiciona a funcionalidade de *Voice-to-Text* (Ditado por voz) para Notas de Observação com persistência local em `notes.json` e integração no fluxo de gravação e histórico.
 * **Commit 832f0e79:** Migra o gesto do *Swipe to Classify* no histórico ([HistoryPage.tsx](file:///client/src/pages/HistoryPage.tsx)) para `framer-motion` com física de arrastamento e mola de alta fidelidade e aceleração por GPU. Cria o README.md personalizado.
 * **Commit 641581f9:** Adiciona o modo *Auto Classify* (Modo Automático contínuo estilo Shazam) na gravação de áudio com Long-press e banner de alternância em [RecordingPage.tsx](file:///client/src/pages/RecordingPage.tsx).

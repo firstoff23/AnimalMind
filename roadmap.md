@@ -7,11 +7,11 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
 ## ⬜ Fases do Roadmap
 
 ### 📋 Prioridade 1 — MVP+
-- [ ] **1. Gravação de áudio real para Supabase Storage**
-  - Capturar o áudio real do microfone no browser.
-  - Gravar ficheiros nos formatos `.webm` ou `.wav`.
-  - Fazer o upload para o Supabase Storage e associar o URL ao evento.
-  - Adicionar leitor de áudio no histórico para reproduzir os sons capturados.
+- [x] **1. Gravação de áudio real para Supabase Storage**
+  - [x] Capturar o áudio real do microfone no browser.
+  - [x] Gravar ficheiros nos formatos `.webm` ou `.wav`.
+  - [x] Fazer o upload para o Supabase Storage e associar o URL ao evento.
+  - [x] Adicionar leitor de áudio no histórico para reproduzir os sons capturados.
 - [ ] **2. Backend FastAPI real — YAMNet / Wav2Vec2**
   - Desenvolver/integrar um backend real com modelos de IA acústica.
   - Substituir o classificador simulado (delay de 2s com resultados aleatórios) por inferência de áudio real.
