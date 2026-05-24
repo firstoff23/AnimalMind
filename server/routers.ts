@@ -19,6 +19,8 @@ import {
   updateEventFeedback,
   upsertSettings,
   getDemoUserId,
+  getEventNotes,
+  updateEventNotes,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -217,6 +219,24 @@ export const appRouter = router({
       );
       return { csv: [header, ...rows].join("\n") };
     }),
+
+    getNotes: publicProcedure
+      .input(z.object({ eventId: z.number() }))
+      .query(async ({ input }) => {
+        return getEventNotes(input.eventId);
+      }),
+
+    updateNotes: publicProcedure
+      .input(
+        z.object({
+          eventId: z.number(),
+          notes:   z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const notes = await updateEventNotes(input.eventId, input.notes);
+        return { success: true, notes };
+      }),
   }),
 
   // ── Settings ────────────────────────────────────────────────────────────────

@@ -48,11 +48,85 @@ function ResultCard({
   onFeedback: (feedback: "correct" | "incorrect") => void;
 }) {
   const [feedbackSent, setFeedbackSent] = useState<"correct" | "incorrect" | null>(null);
+  const [notes, setNotes] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const utils = trpc.useUtils();
+  const updateNotesMutation = trpc.events.updateNotes.useMutation({
+    onSuccess: () => {
+      toast.success("Nota gravada com sucesso!");
+      utils.events.recent.invalidate();
+    },
+    onError: () => {
+      toast.error("Erro ao guardar a nota.");
+    },
+  });
 
   const handleFeedback = (f: "correct" | "incorrect") => {
     setFeedbackSent(f);
     onFeedback(f);
   };
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      toast.error("O reconhecimento de voz não é suportado neste navegador.");
+      return;
+    }
+
+    const rec = new SpeechRecognition();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = "pt-PT";
+
+    rec.onstart = () => {
+      setIsListening(true);
+      toast.info("A ouvir... fale agora.");
+    };
+
+    rec.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      setNotes((prev) => (prev ? prev + " " + transcript : transcript));
+    };
+
+    rec.onerror = (e: any) => {
+      console.error("Speech recognition error:", e);
+      setIsListening(false);
+      if (e.error !== "no-speech") {
+        toast.error("Erro ao reconhecer voz. Tente novamente.");
+      }
+    };
+
+    rec.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = rec;
+    rec.start();
+  };
+
+  const handleSaveNotes = () => {
+    if (result.eventId) {
+      updateNotesMutation.mutate({ eventId: result.eventId, notes });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4 page-enter">
@@ -92,6 +166,46 @@ function ResultCard({
           <ThumbsDown size={16} />
           Incorrecto
         </Button>
+      </div>
+
+      {/* Notes / Dictation section */}
+      <div className="space-y-2 pt-3 border-t border-border">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+          Nota de Observação
+        </label>
+        <div className="flex gap-2">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Ex: O cão ladrou para a porta..."
+            className="flex-1 min-h-[56px] max-h-24 bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none transition-colors"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={toggleListening}
+            className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300",
+              isListening 
+                ? "bg-cyan-500 hover:bg-cyan-600 border-0 text-white animate-pulse shadow-md shadow-cyan-500/20" 
+                : "hover:text-cyan-400 hover:border-cyan-500/20"
+            )}
+            title="Ditar nota"
+          >
+            <Mic size={16} className={cn(isListening && "scale-110")} />
+          </Button>
+        </div>
+        {notes.trim().length > 0 && (
+          <Button
+            size="sm"
+            onClick={handleSaveNotes}
+            disabled={updateNotesMutation.isPending}
+            className="w-full text-xs font-semibold h-8 rounded-xl transition-all"
+          >
+            {updateNotesMutation.isPending ? "A guardar..." : "Guardar Nota"}
+          </Button>
+        )}
       </div>
     </div>
   );

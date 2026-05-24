@@ -1,6 +1,8 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
 import type { InsertUser } from "../drizzle/schema";
+import fs from "fs";
+import path from "path";
 
 let _supabase: SupabaseClient<any> | null = null;
 
@@ -187,7 +189,13 @@ export async function getRecentEvents(userId: number, limit = 5) {
     .limit(limit);
 
   if (error) throw error;
-  return data || [];
+  
+  const notes = readNotesFromFile();
+  const events = (data || []).map((e: any) => ({
+    ...e,
+    notes: notes[e.id] || null,
+  }));
+  return events;
 }
 
 export async function getEventsPaginated(
@@ -214,7 +222,13 @@ export async function getEventsPaginated(
     .range(offset, offset + pageSize - 1);
 
   if (error) throw error;
-  return { events: data || [], total: count || 0 };
+  
+  const notes = readNotesFromFile();
+  const events = (data || []).map((e: any) => ({
+    ...e,
+    notes: notes[e.id] || null,
+  }));
+  return { events, total: count || 0 };
 }
 
 export async function updateEventFeedback(
@@ -318,4 +332,40 @@ export async function upsertSettings(
 
   if (error) throw error;
   return result as any;
+}
+
+// ─── Event Notes operations (Local File Persistence) ─────────────────────────
+
+const NOTES_FILE_PATH = path.resolve(import.meta.dirname, "notes.json");
+
+function readNotesFromFile(): Record<number, string> {
+  try {
+    if (fs.existsSync(NOTES_FILE_PATH)) {
+      const content = fs.readFileSync(NOTES_FILE_PATH, "utf8");
+      return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error("[Notes] Failed to read notes:", error);
+  }
+  return {};
+}
+
+function writeNotesToFile(notes: Record<number, string>) {
+  try {
+    fs.writeFileSync(NOTES_FILE_PATH, JSON.stringify(notes, null, 2), "utf8");
+  } catch (error) {
+    console.error("[Notes] Failed to write notes:", error);
+  }
+}
+
+export async function getEventNotes(eventId: number): Promise<string> {
+  const notes = readNotesFromFile();
+  return notes[eventId] || "";
+}
+
+export async function updateEventNotes(eventId: number, noteText: string): Promise<string> {
+  const notes = readNotesFromFile();
+  notes[eventId] = noteText;
+  writeNotesToFile(notes);
+  return noteText;
 }

@@ -62,6 +62,7 @@ interface HistoryEvent {
   modelUsed: string;
   feedback: string | null;
   createdAt: Date;
+  notes?: string | null;
 }
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
@@ -215,6 +216,11 @@ function EventRow({
               minute: "2-digit",
             })}
           </p>
+          {event.notes && (
+            <p className="text-[11px] text-cyan-400 italic mt-0.5 truncate max-w-[260px]">
+              📝 "{event.notes}"
+            </p>
+          )}
         </div>
         <div className="text-right flex-shrink-0">
           <div
@@ -251,6 +257,7 @@ function formatRawEvent(event: HistoryEvent): string {
       emoji: event.emoji,
       modelUsed: event.modelUsed,
       feedback: event.feedback,
+      notes: event.notes,
       createdAt: new Date(event.createdAt).toISOString(),
     },
     null,
@@ -298,6 +305,13 @@ function RawEventDialog({
               <dt className="text-xs text-muted-foreground">Feedback</dt>
               <dd className="font-semibold text-foreground">
                 {event.feedback ?? "Sem feedback"}
+              </dd>
+            </div>
+            {/* Notas section */}
+            <div className="rounded-lg bg-secondary p-3 col-span-2">
+              <dt className="text-xs text-muted-foreground">Nota de Observação</dt>
+              <dd className="font-medium text-foreground italic mt-1 whitespace-pre-wrap">
+                {event.notes || "Sem notas de observação adicionadas."}
               </dd>
             </div>
           </dl>
