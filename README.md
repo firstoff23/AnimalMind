@@ -25,6 +25,10 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Swipe to Classify (Framer Motion):** Deslize cada linha do histórico para a esquerda (Incorreto) ou para a direita (Correto) para calibrar a inteligência do sistema. Gestos de arrastamento fluidos, acelerados por hardware e com retorno automático em mola ([HistoryPage.tsx](file:///client/src/pages/HistoryPage.tsx)).
 * **Long Press para Dados Brutos:** Mantenha pressionada uma linha do histórico por 550ms para abrir um diálogo técnico exibindo o JSON dos metadados gerados pelo modelo de classificação e IA.
 
+### 5. Voice-to-Text para Notas de Observação
+* **Ditado por voz nativo:** Microfone ao lado do campo de texto com efeito pulsante azul-ciano para ditar notas de observação em Português de Portugal (`pt-PT`) usando a Web Speech API.
+* **Persistência e Integração:** Notas guardadas localmente em `server/notes.json` e acopladas às consultas de eventos via tRPC. Exibidas no histórico com um indicador 📝 e no detalhe do diálogo de dados brutos.
+
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -77,7 +81,8 @@ pnpm run build
 
 ## 📈 Histórico de Atualizações (Progress Log)
 
+* **Commit ad82e941:** Adiciona a funcionalidade de *Voice-to-Text* (Ditado por voz) para Notas de Observação com persistência local em `notes.json` e integração no fluxo de gravação e histórico.
+* **Commit 832f0e79:** Migra o gesto do *Swipe to Classify* no histórico ([HistoryPage.tsx](file:///client/src/pages/HistoryPage.tsx)) para `framer-motion` com física de arrastamento e mola de alta fidelidade e aceleração por GPU. Cria o README.md personalizado.
 * **Commit 641581f9:** Adiciona o modo *Auto Classify* (Modo Automático contínuo estilo Shazam) na gravação de áudio com Long-press e banner de alternância em [RecordingPage.tsx](file:///client/src/pages/RecordingPage.tsx).
-* **Commit 3e5e5798:** Migra o gesto do *Swipe to Classify* no histórico ([HistoryPage.tsx](file:///client/src/pages/HistoryPage.tsx)) para `framer-motion` com física de arrastamento e mola de alta fidelidade e aceleração por GPU.
 * **Commit feeb5d5d:** Corrige os tipos do cliente Supabase para impedir a inferência de `never` nas tabelas no TypeScript e resolve conflitos de tipagem de parâmetros.
 * **Commit 76298a03:** Integração e merge final das funcionalidades de Live Audio Streaming, Swipe de Feedback e Long Press no histórico.
