@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfidenceRing } from "@/components/ConfidenceRing";
 import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -18,59 +19,6 @@ interface ClassifyResult {
   model_used: string;
   cached: boolean;
   eventId?: number;
-}
-
-// ─── Confidence Ring ─────────────────────────────────────────────────────────
-
-function ConfidenceRing({ confidence, emoji, state }: { confidence: number, emoji: string, state: EmotionalState }) {
-  const pct = Math.round(confidence * 100);
-  const color = pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444";
-  
-  const radius = 45;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (pct / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative flex items-center justify-center">
-        <svg className="w-28 h-28 transform -rotate-90 drop-shadow-sm">
-          <circle
-            className="text-secondary"
-            strokeWidth="8"
-            stroke="currentColor"
-            fill="transparent"
-            r={radius}
-            cx="56"
-            cy="56"
-          />
-          <circle
-            className="transition-all duration-1000 ease-out"
-            strokeWidth="8"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            stroke={color}
-            fill="transparent"
-            r={radius}
-            cx="56"
-            cy="56"
-          />
-        </svg>
-        <div className="absolute flex flex-col items-center justify-center animate-in zoom-in duration-500">
-          <span className="text-5xl leading-none drop-shadow-md">{emoji}</span>
-        </div>
-      </div>
-      
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-2xl font-bold tracking-tight" style={{ color: STATE_COLORS[state] }}>
-          {STATE_LABELS[state]}
-        </span>
-        <span className="text-sm font-medium" style={{ color }}>
-          {pct}% confiança
-        </span>
-      </div>
-    </div>
-  );
 }
 
 // ─── Result Card ─────────────────────────────────────────────────────────────
