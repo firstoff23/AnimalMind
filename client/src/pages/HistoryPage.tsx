@@ -1,12 +1,38 @@
-import { useState, type PointerEvent } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { clampSwipeOffset, resolveSwipeFeedback, type SwipeFeedback } from "@/lib/swipeFeedback";
-import { ChevronLeft, ChevronRight, Filter, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import {
+  LONG_PRESS_DELAY_MS,
+  isLongPressMovementAllowed,
+} from "@/lib/longPress";
+import {
+  clampSwipeOffset,
+  resolveSwipeFeedback,
+  type SwipeFeedback,
+} from "@/lib/swipeFeedback";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  ThumbsDown,
+  ThumbsUp,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
-import { STATE_LABELS, STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
+import {
+  STATE_LABELS,
+  STATE_COLORS,
+  STATE_EMOJIS,
+} from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 
 const PAGE_SIZE = 10;
@@ -41,36 +67,75 @@ interface HistoryEvent {
 function EventRow({
   event,
   onFeedback,
+  onOpenRawData,
   disabled,
 }: {
   event: HistoryEvent;
   onFeedback: (eventId: number, feedback: SwipeFeedback) => void;
+  onOpenRawData: (event: HistoryEvent) => void;
   disabled: boolean;
 }) {
   const [startX, setStartX] = useState<number | null>(null);
   const [offsetX, setOffsetX] = useState(0);
+  const longPressTimerRef = useRef<number | null>(null);
+  const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const latestPointerRef = useRef<{ x: number; y: number } | null>(null);
   const state = event.state as EmotionalState;
   const pct = Math.round(event.confidence * 100);
   const color = STATE_COLORS[state];
   const activeFeedback = resolveSwipeFeedback(offsetX);
 
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   const resetSwipe = () => {
+    clearLongPressTimer();
+    pressOriginRef.current = null;
+    latestPointerRef.current = null;
     setStartX(null);
     setOffsetX(0);
   };
 
   const handlePointerDown = (pointerEvent: PointerEvent<HTMLDivElement>) => {
     if (disabled || pointerEvent.button !== 0) return;
-    setStartX(pointerEvent.clientX);
+    const point = { x: pointerEvent.clientX, y: pointerEvent.clientY };
+    pressOriginRef.current = point;
+    latestPointerRef.current = point;
+    setStartX(point.x);
+    setOffsetX(0);
+    clearLongPressTimer();
+    longPressTimerRef.current = window.setTimeout(() => {
+      const origin = pressOriginRef.current;
+      const latest = latestPointerRef.current;
+      if (!origin || !latest) return;
+      if (!isLongPressMovementAllowed(latest.x - origin.x, latest.y - origin.y))
+        return;
+      onOpenRawData(event);
+      resetSwipe();
+    }, LONG_PRESS_DELAY_MS);
     pointerEvent.currentTarget.setPointerCapture(pointerEvent.pointerId);
   };
 
   const handlePointerMove = (pointerEvent: PointerEvent<HTMLDivElement>) => {
     if (startX === null || disabled) return;
+    const point = { x: pointerEvent.clientX, y: pointerEvent.clientY };
+    latestPointerRef.current = point;
+    const origin = pressOriginRef.current;
+    if (
+      origin &&
+      !isLongPressMovementAllowed(point.x - origin.x, point.y - origin.y)
+    ) {
+      clearLongPressTimer();
+    }
     setOffsetX(clampSwipeOffset(pointerEvent.clientX - startX));
   };
 
   const handlePointerEnd = () => {
+    clearLongPressTimer();
     const feedback = resolveSwipeFeedback(offsetX);
     if (feedback && feedback !== event.feedback) {
       onFeedback(event.id, feedback);
@@ -80,11 +145,12 @@ function EventRow({
 
   return (
     <div
-      className="relative overflow-hidden border-b border-border last:border-0"
+      className="relative select-none overflow-hidden border-b border-border last:border-0"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
       onPointerCancel={resetSwipe}
+      onContextMenu={(event) => event.preventDefault()}
       style={{ touchAction: "pan-y" }}
       aria-label="Classificação no histórico"
     >
@@ -103,7 +169,7 @@ function EventRow({
           startX === null && "transition-transform duration-150",
           disabled && "opacity-60",
           activeFeedback === "correct" && "bg-emerald-950/80",
-          activeFeedback === "incorrect" && "bg-red-950/80"
+          activeFeedback === "incorrect" && "bg-red-950/80",
         )}
         style={{ transform: `translateX(${offsetX}px)` }}
       >
@@ -136,8 +202,7 @@ function EventRow({
           <div
             className="text-sm font-bold"
             style={{
-              color:
-                pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444",
+              color: pct >= 80 ? "#10b981" : pct >= 60 ? "#eab308" : "#ef4444",
             }}
           >
             {pct}%
@@ -155,6 +220,76 @@ function EventRow({
         </div>
       </div>
     </div>
+  );
+}
+
+function formatRawEvent(event: HistoryEvent): string {
+  return JSON.stringify(
+    {
+      id: event.id,
+      state: event.state,
+      confidence: event.confidence,
+      confidencePercent: `${Math.round(event.confidence * 100)}%`,
+      emoji: event.emoji,
+      modelUsed: event.modelUsed,
+      feedback: event.feedback,
+      createdAt: new Date(event.createdAt).toISOString(),
+    },
+    null,
+    2,
+  );
+}
+
+function RawEventDialog({
+  event,
+  onOpenChange,
+}: {
+  event: HistoryEvent | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const state = event?.state as EmotionalState | undefined;
+  const pct = event ? Math.round(event.confidence * 100) : 0;
+
+  return (
+    <Dialog open={event !== null} onOpenChange={onOpenChange}>
+      {event && state && (
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dados brutos</DialogTitle>
+            <DialogDescription>Registo #{event.id}</DialogDescription>
+          </DialogHeader>
+
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-lg bg-secondary p-3">
+              <dt className="text-xs text-muted-foreground">Estado</dt>
+              <dd className="font-semibold text-foreground">
+                {STATE_LABELS[state]}
+              </dd>
+            </div>
+            <div className="rounded-lg bg-secondary p-3">
+              <dt className="text-xs text-muted-foreground">Confiança</dt>
+              <dd className="font-semibold text-foreground">{pct}%</dd>
+            </div>
+            <div className="rounded-lg bg-secondary p-3">
+              <dt className="text-xs text-muted-foreground">Modelo</dt>
+              <dd className="font-semibold text-foreground">
+                {event.modelUsed.toUpperCase()}
+              </dd>
+            </div>
+            <div className="rounded-lg bg-secondary p-3">
+              <dt className="text-xs text-muted-foreground">Feedback</dt>
+              <dd className="font-semibold text-foreground">
+                {event.feedback ?? "Sem feedback"}
+              </dd>
+            </div>
+          </dl>
+
+          <pre className="max-h-72 overflow-auto rounded-lg bg-secondary p-3 text-xs leading-relaxed text-muted-foreground">
+            {formatRawEvent(event)}
+          </pre>
+        </DialogContent>
+      )}
+    </Dialog>
   );
 }
 
@@ -184,9 +319,9 @@ export default function HistoryPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [rawEvent, setRawEvent] = useState<HistoryEvent | null>(null);
 
-  const isFiltered =
-    stateFilter !== "all" || dateFrom !== "" || dateTo !== "";
+  const isFiltered = stateFilter !== "all" || dateFrom !== "" || dateTo !== "";
 
   const { data, isLoading } = trpc.events.list.useQuery({
     page,
@@ -238,7 +373,7 @@ export default function HistoryPage() {
             onClick={() => setShowFilters((v) => !v)}
             className={cn(
               "gap-1.5 h-8",
-              showFilters && "bg-primary text-primary-foreground"
+              showFilters && "bg-primary text-primary-foreground",
             )}
           >
             <Filter size={14} />
@@ -267,7 +402,7 @@ export default function HistoryPage() {
                     "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
                     stateFilter === s
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
+                      : "border-border text-muted-foreground hover:border-primary/50",
                   )}
                 >
                   {s !== "all" && STATE_EMOJIS[s as EmotionalState]}{" "}
@@ -284,7 +419,10 @@ export default function HistoryPage() {
               <input
                 type="date"
                 value={dateFrom}
-                onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground"
               />
             </div>
@@ -293,7 +431,10 @@ export default function HistoryPage() {
               <input
                 type="date"
                 value={dateTo}
-                onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground"
               />
             </div>
@@ -306,7 +447,8 @@ export default function HistoryPage() {
         <div className="flex flex-wrap gap-1.5">
           {stateFilter !== "all" && (
             <Badge variant="secondary" className="text-xs gap-1">
-              {STATE_EMOJIS[stateFilter as EmotionalState]} {STATE_LABELS[stateFilter as EmotionalState]}
+              {STATE_EMOJIS[stateFilter as EmotionalState]}{" "}
+              {STATE_LABELS[stateFilter as EmotionalState]}
             </Badge>
           )}
           {dateFrom && (
@@ -336,6 +478,7 @@ export default function HistoryPage() {
               key={event.id}
               event={event}
               disabled={feedbackMutation.isPending}
+              onOpenRawData={setRawEvent}
               onFeedback={(eventId, feedback) => {
                 feedbackMutation.mutate({ eventId, feedback });
               }}
@@ -379,6 +522,13 @@ export default function HistoryPage() {
           {total} {total === 1 ? "registo" : "registos"} no total
         </p>
       )}
+
+      <RawEventDialog
+        event={rawEvent}
+        onOpenChange={(open) => {
+          if (!open) setRawEvent(null);
+        }}
+      />
     </div>
   );
 }
