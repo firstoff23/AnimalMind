@@ -500,12 +500,16 @@ export const appRouter = router({
     get: publicProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       const s = await getSettings(userId);
-      return (
-        s ?? {
+      if (!s) {
+        return {
           notificationsEnabled: true,
           alertSensitivity: "medium" as const,
-        }
-      );
+        };
+      }
+      return {
+        notificationsEnabled: s.notifications_enabled,
+        alertSensitivity: s.alert_sensitivity as "low" | "medium" | "high",
+      };
     }),
 
     update: publicProcedure

@@ -45,7 +45,7 @@ function Section({
 // ─── Settings Page ────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { data: settingsData, isLoading } = trpc.settings.get.useQuery();
+  const { data: settingsData, isLoading, error } = trpc.settings.get.useQuery();
   const [notifications, setNotifications] = useState(true);
   const [sensitivity, setSensitivity] = useState<Sensitivity>("medium");
   const utils = trpc.useUtils();
@@ -96,6 +96,21 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full p-6 text-center space-y-4 max-w-sm mx-auto">
+        <div className="text-destructive text-4xl">⚠️</div>
+        <h2 className="text-lg font-bold text-foreground">Falha de Ligação</h2>
+        <p className="text-sm text-muted-foreground">
+          Não foi possível comunicar com a base de dados. Por favor, verifique se a variável de ambiente `SUPABASE_SERVICE_ROLE_KEY` está configurada corretamente no painel do Vercel.
+        </p>
+        <Button onClick={() => utils.settings.get.invalidate()} size="sm" className="w-full">
+          Tentar novamente
+        </Button>
       </div>
     );
   }
