@@ -53,6 +53,11 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Calibração Dinâmica:** Interface intuitiva para definir o limiar diário de vocalizações normais, sensibilidade de alertas do microfone e marcar quais os estados emocionais são típicos do animal. Persistido localmente no servidor em `server/baselines.json`.
 * **Fuga de Baseline:** Alertas visuais rápidos e banners caso o animal vocalize estados não-típicos (ex: angústia/alerta) ou ultrapasse o limite diário de vocalizações estabelecido na baseline.
 
+### 11. Multi-utilizador / Modo Família (Co-tutoria)
+* **Partilha de Animais:** Convidar outros tutores através do e-mail com permissões de Leitura (apenas visualizar estatísticas e histórico) ou Escrita (efetuar gravações e alterar a baseline).
+* **Gestão de Acessos:** O proprietário tem total controlo sobre quem tem acesso ao animal, podendo revogar partilhas a qualquer momento na tab "Co-tutores" da página de detalhe.
+* **Convites no Dashboard:** Convites pendentes são notificados com um banner de convite premium com ações de Aceitar/Recusar. Animais partilhados são marcados com o badge `Co-tutor` no dashboard.
+
 ---
 
 ## 🛠️ Stack Tecnológica
@@ -133,4 +138,6 @@ pnpm run build
 * **Commit 832f0e79:** Migra o gesto do *Swipe to Classify* no histórico ([HistoryPage.tsx](file:///client/src/pages/HistoryPage.tsx)) para `framer-motion` com física de arrastamento e mola de alta fidelidade e aceleração por GPU. Cria o README.md personalizado.
 * **Commit 641581f9:** Adiciona o modo *Auto Classify* (Modo Automático contínuo estilo Shazam) na gravação de áudio com Long-press e banner de alternância em [RecordingPage.tsx](file:///client/src/pages/RecordingPage.tsx).
 * **Commit feeb5d5d:** Corrige os tipos do cliente Supabase para impedir a inferência de `never` nas tabelas no TypeScript e resolve conflitos de tipagem de parâmetros.
+* **Commit 37e2f4eb:** Implementa o Modo Família multi-utilizador, permitindo a co-tutoria de animais através de convites de e-mail e permissões diferenciadas (Leitura/Escrita) persistidas em `family_shares.json` sem DDL.
+* **Commit fbdcddda:** Implementa a contextualização temporal POMDP (Belief State), deteção visual de postura (com overlay dinâmico simulado sobre WebRTC) e Modo Veterinário para diagnóstico clínico.
 * **Commit 76298a03:** Integração e merge final das funcionalidades de Live Audio Streaming, Swipe de Feedback e Long Press no histórico.

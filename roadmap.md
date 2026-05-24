@@ -36,7 +36,7 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
   - [x] Deteção simulada por overlay de esqueleto dinâmico sobreposto ao feed da câmara WebRTC no frontend.
 - [x] **8. Modo veterinário**
   - [x] Rota `/veterinario` com dossiê clínico, cálculo de indicadores (Distress Index, Agitação), recomendações automatizadas e partilha local/PDF.
-- [ ] **9. Multi-utilizador / Modo Família**
+- [x] **9. Multi-utilizador / Modo Família**
   - Co-tutoria para partilha de perfis de animais em tempo real.
 - [ ] **10. Submissão às lojas**
   - Empacotamento do frontend (ex: Capacitor/PWA) e publicação na Google Play Store e Apple App Store.
