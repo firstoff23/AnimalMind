@@ -18,6 +18,7 @@ import {
   clampSwipeOffset,
   resolveSwipeFeedback,
   type SwipeFeedback,
+  SWIPE_FEEDBACK_THRESHOLD,
 } from "@/lib/swipeFeedback";
 import {
   ChevronLeft,
@@ -34,6 +35,7 @@ import {
   STATE_EMOJIS,
 } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 
 const PAGE_SIZE = 10;
 
@@ -75,15 +77,20 @@ function EventRow({
   onOpenRawData: (event: HistoryEvent) => void;
   disabled: boolean;
 }) {
-  const [startX, setStartX] = useState<number | null>(null);
-  const [offsetX, setOffsetX] = useState(0);
+  const x = useMotionValue(0);
+  
+  // Transform backgrounds opacity based on x offset
+  const opacityCorrect = useTransform(x, [0, SWIPE_FEEDBACK_THRESHOLD], [0, 1]);
+  const opacityIncorrect = useTransform(x, [-SWIPE_FEEDBACK_THRESHOLD, 0], [1, 0]);
+
   const longPressTimerRef = useRef<number | null>(null);
   const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
   const latestPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+
   const state = event.state as EmotionalState;
   const pct = Math.round(event.confidence * 100);
   const color = STATE_COLORS[state];
-  const activeFeedback = resolveSwipeFeedback(offsetX);
 
   const clearLongPressTimer = () => {
     if (longPressTimerRef.current !== null) {
@@ -92,36 +99,26 @@ function EventRow({
     }
   };
 
-  const resetSwipe = () => {
-    clearLongPressTimer();
-    pressOriginRef.current = null;
-    latestPointerRef.current = null;
-    setStartX(null);
-    setOffsetX(0);
-  };
-
   const handlePointerDown = (pointerEvent: PointerEvent<HTMLDivElement>) => {
     if (disabled || pointerEvent.button !== 0) return;
     const point = { x: pointerEvent.clientX, y: pointerEvent.clientY };
     pressOriginRef.current = point;
     latestPointerRef.current = point;
-    setStartX(point.x);
-    setOffsetX(0);
+    isDraggingRef.current = false;
     clearLongPressTimer();
+    
     longPressTimerRef.current = window.setTimeout(() => {
       const origin = pressOriginRef.current;
       const latest = latestPointerRef.current;
-      if (!origin || !latest) return;
+      if (!origin || !latest || isDraggingRef.current) return;
       if (!isLongPressMovementAllowed(latest.x - origin.x, latest.y - origin.y))
         return;
       onOpenRawData(event);
-      resetSwipe();
+      x.set(0); // Centrar a linha
     }, LONG_PRESS_DELAY_MS);
-    pointerEvent.currentTarget.setPointerCapture(pointerEvent.pointerId);
   };
 
   const handlePointerMove = (pointerEvent: PointerEvent<HTMLDivElement>) => {
-    if (startX === null || disabled) return;
     const point = { x: pointerEvent.clientX, y: pointerEvent.clientY };
     latestPointerRef.current = point;
     const origin = pressOriginRef.current;
@@ -131,47 +128,68 @@ function EventRow({
     ) {
       clearLongPressTimer();
     }
-    setOffsetX(clampSwipeOffset(pointerEvent.clientX - startX));
   };
 
   const handlePointerEnd = () => {
     clearLongPressTimer();
-    const feedback = resolveSwipeFeedback(offsetX);
+  };
+
+  const handleDrag = (e: any, info: any) => {
+    isDraggingRef.current = true;
+    clearLongPressTimer();
+  };
+
+  const handleDragEnd = (e: any, info: any) => {
+    clearLongPressTimer();
+    const currentX = info.offset.x;
+    const feedback = resolveSwipeFeedback(currentX);
     if (feedback && feedback !== event.feedback) {
       onFeedback(event.id, feedback);
     }
-    resetSwipe();
+    isDraggingRef.current = false;
   };
 
   return (
     <div
-      className="relative select-none overflow-hidden border-b border-border last:border-0"
+      className="relative select-none overflow-hidden border-b border-border last:border-0 bg-secondary/15"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}
-      onPointerCancel={resetSwipe}
-      onContextMenu={(event) => event.preventDefault()}
+      onPointerCancel={handlePointerEnd}
+      onContextMenu={(e) => e.preventDefault()}
       style={{ touchAction: "pan-y" }}
       aria-label="Classificação no histórico"
     >
-      <div className="absolute inset-y-0 left-0 flex items-center gap-2 px-4 text-xs font-semibold text-emerald-300">
+      {/* Correct background (Green) - Swiping Right */}
+      <motion.div 
+        className="absolute inset-y-0 left-0 flex items-center gap-2 px-4 text-xs font-semibold text-emerald-400 bg-emerald-950/70"
+        style={{ opacity: opacityCorrect, width: "100%" }}
+      >
         <ThumbsUp size={16} aria-hidden="true" />
-        Correcto
-      </div>
-      <div className="absolute inset-y-0 right-0 flex items-center gap-2 px-4 text-xs font-semibold text-red-300">
-        Incorrecto
-        <ThumbsDown size={16} aria-hidden="true" />
-      </div>
+        <span>Correcto</span>
+      </motion.div>
 
-      <div
+      {/* Incorrect background (Red) - Swiping Left */}
+      <motion.div 
+        className="absolute inset-y-0 right-0 flex items-center justify-end gap-2 px-4 text-xs font-semibold text-red-400 bg-red-950/70"
+        style={{ opacity: opacityIncorrect, width: "100%" }}
+      >
+        <span>Incorrecto</span>
+        <ThumbsDown size={16} aria-hidden="true" />
+      </motion.div>
+
+      {/* Main card containing row content */}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={{ left: 0.6, right: 0.6 }}
+        style={{ x }}
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
         className={cn(
-          "relative z-10 flex items-center gap-3 py-3 bg-card",
-          startX === null && "transition-transform duration-150",
+          "relative z-10 flex items-center gap-3 py-3 bg-card px-4 cursor-grab active:cursor-grabbing",
           disabled && "opacity-60",
-          activeFeedback === "correct" && "bg-emerald-950/80",
-          activeFeedback === "incorrect" && "bg-red-950/80",
         )}
-        style={{ transform: `translateX(${offsetX}px)` }}
       >
         <span className="text-2xl flex-shrink-0">{event.emoji}</span>
         <div className="flex-1 min-w-0">
@@ -218,7 +236,7 @@ function EventRow({
             />
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
