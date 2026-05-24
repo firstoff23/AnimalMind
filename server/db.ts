@@ -640,4 +640,184 @@ export async function getStatsForAnimal(animalId: number, userId: number, days =
   };
 }
 
+// ─── POMDP Belief State & Posture & Vet sharing ──────────────────────────────
+
+export interface BeliefState {
+  relaxed: number;
+  excitement: number;
+  distress: number;
+  hunger: number;
+  alert: number;
+  attention: number;
+  updatedAt: string;
+}
+
+const BELIEF_STATES_FILE_PATH = path.resolve(import.meta.dirname, "belief_states.json");
+const POSTURES_FILE_PATH = path.resolve(import.meta.dirname, "postures.json");
+const VET_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "vet_shares.json");
+
+function readJsonFile<T>(filePath: string): Record<string | number, T> {
+  try {
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf8");
+      return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error(`[DB] Failed to read JSON file ${filePath}:`, error);
+  }
+  return {};
+}
+
+function writeJsonFile<T>(filePath: string, data: Record<string | number, T>) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  } catch (error) {
+    console.error(`[DB] Failed to write JSON file ${filePath}:`, error);
+  }
+}
+
+// Belief State updates
+export async function getEventBeliefState(eventId: number): Promise<BeliefState | null> {
+  const fileData = readJsonFile<BeliefState>(BELIEF_STATES_FILE_PATH);
+  return fileData[eventId] || null;
+}
+
+export async function getLatestBeliefState(animalId: number): Promise<BeliefState> {
+  const supabase = getSupabase();
+  
+  // Find most recent event for this animal
+  const { data: recentEvent, error } = await supabase
+    .from("classification_events")
+    .select("id, created_at")
+    .eq("animal_id", animalId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  const defaultBelief: BeliefState = {
+    relaxed: 0.5,
+    excitement: 0.1,
+    distress: 0.1,
+    hunger: 0.1,
+    alert: 0.1,
+    attention: 0.1,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (error || !recentEvent) {
+    return defaultBelief;
+  }
+
+  const beliefStates = readJsonFile<BeliefState>(BELIEF_STATES_FILE_PATH);
+  const state = beliefStates[recentEvent.id];
+
+  if (!state) {
+    return defaultBelief;
+  }
+
+  // Check if it was in the last 30 minutes, otherwise decay to default
+  const lastTime = new Date(state.updatedAt).getTime();
+  const now = Date.now();
+  const diffMinutes = (now - lastTime) / (1000 * 60);
+
+  if (diffMinutes > 30) {
+    // Slowly return to relaxed default (decay)
+    return defaultBelief;
+  }
+
+  return state;
+}
+
+export async function updateBeliefStateForAnimal(
+  animalId: number,
+  observedState: string,
+  confidence: number,
+  eventId: number
+): Promise<BeliefState> {
+  const lastBelief = await getLatestBeliefState(animalId);
+  const baseline = await getAnimalBaseline(animalId);
+
+  // Calibrate learning rate (alpha) based on alert sensitivity
+  let alpha = 0.3;
+  if (baseline.alertSensitivity === "high") {
+    // Sensitive alerts (fast update to distress/alert)
+    alpha = (observedState === "distress" || observedState === "alert") ? 0.6 : 0.4;
+  } else if (baseline.alertSensitivity === "low") {
+    // Resilient alerts (filter transient vocalizations)
+    alpha = (observedState === "distress" || observedState === "alert") ? 0.15 : 0.3;
+  }
+
+  const updated: Record<string, number> = {
+    relaxed: lastBelief.relaxed,
+    excitement: lastBelief.excitement,
+    distress: lastBelief.distress,
+    hunger: lastBelief.hunger,
+    alert: lastBelief.alert,
+    attention: lastBelief.attention
+  };
+
+  // Bayesian update rule
+  STATES_LIST.forEach((s) => {
+    const isObserved = s === observedState;
+    const observationWeight = isObserved ? confidence : 0;
+    updated[s] = (1 - alpha) * (updated[s] ?? 0.1) + alpha * observationWeight;
+  });
+
+  // Normalize probabilities to sum up to 1.0
+  const sum = Object.values(updated).reduce((a, b) => a + b, 0);
+  STATES_LIST.forEach((s) => {
+    updated[s] = Math.round(((updated[s] ?? 0.1) / (sum || 1)) * 100) / 100;
+  });
+
+  const finalBelief: BeliefState = {
+    relaxed: updated.relaxed ?? 0,
+    excitement: updated.excitement ?? 0,
+    distress: updated.distress ?? 0,
+    hunger: updated.hunger ?? 0,
+    alert: updated.alert ?? 0,
+    attention: updated.attention ?? 0,
+    updatedAt: new Date().toISOString()
+  };
+
+  const beliefStates = readJsonFile<BeliefState>(BELIEF_STATES_FILE_PATH);
+  beliefStates[eventId] = finalBelief;
+  writeJsonFile<BeliefState>(BELIEF_STATES_FILE_PATH, beliefStates);
+
+  return finalBelief;
+}
+
+const STATES_LIST = ["relaxed", "excitement", "distress", "hunger", "alert", "attention"];
+
+// Postures
+export async function getEventPosture(eventId: number): Promise<string | null> {
+  const postures = readJsonFile<string>(POSTURES_FILE_PATH);
+  return postures[eventId] || null;
+}
+
+export async function savePostureForEvent(eventId: number, posture: string): Promise<string> {
+  const postures = readJsonFile<string>(POSTURES_FILE_PATH);
+  postures[eventId] = posture;
+  writeJsonFile<string>(POSTURES_FILE_PATH, postures);
+  return posture;
+}
+
+// Vet Shares
+export async function shareReportWithVet(
+  animalId: number,
+  data: { name: string; email: string; note: string }
+): Promise<boolean> {
+  const shares = readJsonFile<any>(VET_SHARES_FILE_PATH);
+  const animalShares = shares[animalId] || [];
+  
+  animalShares.push({
+    ...data,
+    sharedAt: new Date().toISOString()
+  });
+
+  shares[animalId] = animalShares;
+  writeJsonFile<any>(VET_SHARES_FILE_PATH, shares);
+  return true;
+}
+
+
 

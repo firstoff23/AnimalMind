@@ -21,6 +21,8 @@ interface ClassifyResult {
   model_used: string;
   cached: boolean;
   eventId?: number;
+  posture?: string | null;
+  beliefState?: any;
 }
 
 interface ActiveAnimal {
@@ -238,6 +240,75 @@ function HistoryItem({ event }: { event: { state: string; confidence: number; em
   );
 }
 
+// ─── Skeleton Templates and Types for YOLOv8 Simulation ──────────────────────
+interface Point {
+  x: number;
+  y: number;
+}
+
+const SKELETON_TEMPLATES: Record<string, Record<string, Point>> = {
+  sitting: {
+    nose: { x: 160, y: 55 },
+    leftEye: { x: 153, y: 48 },
+    rightEye: { x: 167, y: 48 },
+    leftEar: { x: 135, y: 40 },
+    rightEar: { x: 185, y: 40 },
+    neck: { x: 160, y: 85 },
+    shoulder: { x: 160, y: 120 },
+    elbow: { x: 140, y: 165 },
+    frontPaw: { x: 140, y: 215 },
+    backHip: { x: 110, y: 180 },
+    backPaw: { x: 110, y: 215 },
+    tailBase: { x: 90, y: 190 },
+    tailTip: { x: 60, y: 200 }
+  },
+  lying: {
+    nose: { x: 220, y: 160 },
+    leftEye: { x: 213, y: 153 },
+    rightEye: { x: 227, y: 153 },
+    leftEar: { x: 195, y: 145 },
+    rightEar: { x: 245, y: 145 },
+    neck: { x: 180, y: 175 },
+    shoulder: { x: 150, y: 185 },
+    elbow: { x: 140, y: 200 },
+    frontPaw: { x: 160, y: 215 },
+    backHip: { x: 90, y: 195 },
+    backPaw: { x: 100, y: 215 },
+    tailBase: { x: 70, y: 200 },
+    tailTip: { x: 45, y: 205 }
+  },
+  standing: {
+    nose: { x: 220, y: 80 },
+    leftEye: { x: 213, y: 73 },
+    rightEye: { x: 227, y: 73 },
+    leftEar: { x: 195, y: 65 },
+    rightEar: { x: 245, y: 65 },
+    neck: { x: 185, y: 100 },
+    shoulder: { x: 165, y: 130 },
+    elbow: { x: 165, y: 170 },
+    frontPaw: { x: 165, y: 215 },
+    backHip: { x: 95, y: 130 },
+    backPaw: { x: 95, y: 215 },
+    tailBase: { x: 75, y: 130 },
+    tailTip: { x: 50, y: 155 }
+  },
+  alert: {
+    nose: { x: 225, y: 70 },
+    leftEye: { x: 218, y: 63 },
+    rightEye: { x: 232, y: 63 },
+    leftEar: { x: 200, y: 55 },
+    rightEar: { x: 250, y: 55 },
+    neck: { x: 190, y: 90 },
+    shoulder: { x: 170, y: 120 },
+    elbow: { x: 170, y: 165 },
+    frontPaw: { x: 170, y: 215 },
+    backHip: { x: 105, y: 120 },
+    backPaw: { x: 105, y: 215 },
+    tailBase: { x: 85, y: 120 },
+    tailTip: { x: 85, y: 45 } // tail straight up!
+  }
+};
+
 // ─── Recording Page ───────────────────────────────────────────────────────────
 
 export default function RecordingPage() {
@@ -261,12 +332,149 @@ export default function RecordingPage() {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressActiveRef = useRef(false);
 
+  // Vision state hooks
+  const [showCamera, setShowCamera] = useState(false);
+  const [detectedPosture, setDetectedPosture] = useState<string>("sitting");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const utils = trpc.useUtils();
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
   const { data: recentEventsData = [] } = trpc.events.recent.useQuery({ limit: 5 });
   const { data: settingsData } = trpc.settings.get.useQuery();
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
+
+  // Manage WebRTC stream
+  useEffect(() => {
+    if (showCamera) {
+      navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+        .then((stream) => {
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(err => console.error(err));
+          }
+        })
+        .catch((err) => {
+          console.error("Camera access error:", err);
+          toast.error("Não foi possível aceder à câmara.");
+          setShowCamera(false);
+        });
+    } else {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+    }
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [showCamera]);
+
+  // YOLOv8 simulated skeleton canvas loop
+  useEffect(() => {
+    if (!showCamera) return;
+    let animId: number;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const template = SKELETON_TEMPLATES[detectedPosture] || SKELETON_TEMPLATES.sitting;
+      const points: Record<string, Point> = {};
+      const time = Date.now() * 0.005;
+      
+      Object.entries(template).forEach(([name, pt]) => {
+        const amp = (detectedPosture === "alert" && name === "tailTip") ? 8 : 2;
+        const speed = (detectedPosture === "alert" && name === "tailTip") ? 3 : 1;
+        const dx = Math.sin(time * speed + pt.x) * amp;
+        const dy = Math.cos(time * speed + pt.y) * amp;
+        points[name] = { x: pt.x + dx, y: pt.y + dy };
+      });
+
+      // Draw skeleton lines
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.85)"; // emerald
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      const drawLine = (p1?: Point, p2?: Point) => {
+        if (!p1 || !p2) return;
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+      };
+
+      // Connect head
+      drawLine(points.leftEar, points.leftEye);
+      drawLine(points.leftEye, points.nose);
+      drawLine(points.nose, points.rightEye);
+      drawLine(points.rightEye, points.rightEar);
+      drawLine(points.nose, points.neck);
+
+      // Spine & Leg
+      drawLine(points.neck, points.shoulder);
+      drawLine(points.shoulder, points.elbow);
+      drawLine(points.elbow, points.frontPaw);
+      drawLine(points.shoulder, points.backHip);
+      drawLine(points.backHip, points.backPaw);
+
+      // Tail
+      drawLine(points.backHip, points.tailBase);
+      drawLine(points.tailBase, points.tailTip);
+
+      // Draw joints (Keypoints)
+      Object.entries(points).forEach(([name, pt]) => {
+        ctx.beginPath();
+        if (name === "nose") {
+          ctx.fillStyle = "#ec4899"; // Pink nose
+          ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+        } else {
+          ctx.fillStyle = "#10b981"; // Emerald joints
+          ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+        }
+        ctx.fill();
+        
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      // Calculate Bounding Box
+      const xs = Object.values(points).map(p => p.x);
+      const ys = Object.values(points).map(p => p.y);
+      const minX = Math.min(...xs) - 15;
+      const maxX = Math.max(...xs) + 15;
+      const minY = Math.min(...ys) - 15;
+      const maxY = Math.max(...ys) + 15;
+
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+      ctx.setLineDash([]);
+
+      // Label
+      ctx.fillStyle = "#10b981";
+      ctx.font = "bold 10px Inter, sans-serif";
+      ctx.fillText(`YOLOv8: ${detectedPosture.toUpperCase()}`, minX + 5, minY - 5);
+
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [showCamera, detectedPosture]);
 
   const startRecordingCycle = async () => {
     setRecordState("requesting");
@@ -390,6 +598,7 @@ export default function RecordingPage() {
               animalId: activeAnimal?.id,
               audio: audioBase64,
               audioMimeType,
+              posture: showCamera ? detectedPosture : undefined,
             });
           })();
           
@@ -399,7 +608,7 @@ export default function RecordingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation]);
+  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation, showCamera, detectedPosture]);
 
   useEffect(() => {
     return () => {
@@ -521,6 +730,66 @@ export default function RecordingPage() {
         )}
       </div>
 
+      {/* Módulo de Visão Computacional */}
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 text-lg">📷</span>
+            <div>
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                Visão Computacional (YOLOv8)
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Estimar postura para contexto temporal
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={showCamera ? "destructive" : "outline"}
+            size="sm"
+            onClick={() => setShowCamera(prev => !prev)}
+            className="text-xs font-semibold"
+          >
+            {showCamera ? "DESATIVAR" : "ATIVAR"}
+          </Button>
+        </div>
+
+        {showCamera && (
+          <div className="space-y-3 pt-2 border-t border-border/50 page-enter">
+            <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-black border border-border">
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
+              <canvas
+                ref={canvasRef}
+                width={320}
+                height={240}
+                className="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"
+              />
+            </div>
+            
+            <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
+              <span className="text-xs font-medium text-muted-foreground">
+                Simular Postura:
+              </span>
+              <select
+                value={detectedPosture}
+                onChange={(e) => setDetectedPosture(e.target.value)}
+                className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
+              >
+                <option value="sitting">Sentado (Relaxado/Atenção)</option>
+                <option value="lying">Deitado (Repouso/Submisso)</option>
+                <option value="standing">De Pé (Alerta/Neutro)</option>
+                <option value="alert">Alerta (Cauda Ereta - Excitação/Perigo)</option>
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Recording button */}
       <div className="flex flex-col items-center gap-4">
         {/* Instruction text above button */}
@@ -581,14 +850,23 @@ export default function RecordingPage() {
 
       {/* Result card */}
       {result && (
-        <ResultCard
-          result={result}
-          onFeedback={(feedback) => {
-            if (result.eventId) {
-              feedbackMutation.mutate({ eventId: result.eventId, feedback });
-            }
-          }}
-        />
+        <div className="space-y-4">
+          {result.posture && (
+            <div className="flex justify-center">
+              <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 bg-emerald-950/20">
+                Postura Estimada: {result.posture.toUpperCase()}
+              </Badge>
+            </div>
+          )}
+          <ResultCard
+            result={result}
+            onFeedback={(feedback) => {
+              if (result.eventId) {
+                feedbackMutation.mutate({ eventId: result.eventId, feedback });
+              }
+            }}
+          />
+        </div>
       )}
 
       {/* Banner de Modo Contínuo (Shazam Style) */}

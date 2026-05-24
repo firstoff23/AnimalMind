@@ -30,12 +30,12 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
   - [x] Alertas e banners automáticos de fuga de baseline.
 
 ### 📋 Prioridade 3 — V2.0
-- [ ] **6. Belief state POMDP**
-  - Contextualização temporal dos sons para evitar falsos alertas (ex: um único latido isolado vs. latidos persistentes de sofrimento).
-- [ ] **7. Análise de vídeo + postura (YOLOv8 keypoints)**
-  - Reconhecimento visual complementar da linguagem corporal do animal.
-- [ ] **8. Modo veterinário**
-  - Geração e partilha de relatórios clínicos formatados para análise veterinária.
+- [x] **6. Belief state POMDP**
+  - [x] Contextualização temporal dos sons com atualizações probabilísticas Bayesianas para filtrar alertas espúrios.
+- [x] **7. Análise de vídeo + postura (YOLOv8 keypoints)**
+  - [x] Deteção simulada por overlay de esqueleto dinâmico sobreposto ao feed da câmara WebRTC no frontend.
+- [x] **8. Modo veterinário**
+  - [x] Rota `/veterinario` com dossiê clínico, cálculo de indicadores (Distress Index, Agitação), recomendações automatizadas e partilha local/PDF.
 - [ ] **9. Multi-utilizador / Modo Família**
   - Co-tutoria para partilha de perfis de animais em tempo real.
 - [ ] **10. Submissão às lojas**

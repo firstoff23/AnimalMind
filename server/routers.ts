@@ -29,6 +29,12 @@ import {
   verifyAnimalOwner,
   getEventsForAnimalPaginated,
   getStatsForAnimal,
+  updateBeliefStateForAnimal,
+  getLatestBeliefState,
+  getEventBeliefState,
+  getEventPosture,
+  savePostureForEvent,
+  shareReportWithVet,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -102,6 +108,7 @@ export const appRouter = router({
           animalId: z.number().optional(),
           audio: z.string().optional(),
           audioMimeType: z.string().optional(),
+          posture: z.string().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -200,7 +207,16 @@ export const appRouter = router({
           }
         }
 
-        return { ...result, eventId, audioUrl };
+        let beliefState = null;
+        if (eventId) {
+          const animalId = input.animalId || 1;
+          beliefState = await updateBeliefStateForAnimal(animalId, result.state, result.confidence, eventId);
+          if (input.posture) {
+            await savePostureForEvent(eventId, input.posture);
+          }
+        }
+
+        return { ...result, eventId, audioUrl, beliefState, posture: input.posture || null };
       }),
   }),
 
@@ -280,6 +296,14 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         await verifyAnimalOwner(input.animalId, userId);
         return updateAnimalBaseline(input.animalId, input);
+      }),
+
+    getBeliefState: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getLatestBeliefState(input.animalId);
       }),
   }),
 
@@ -393,6 +417,14 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         return getStatsForAnimal(input.animalId, userId, input.days);
       }),
+
+    getVisualMetadata: publicProcedure
+      .input(z.object({ eventId: z.number() }))
+      .query(async ({ input }) => {
+        const posture = await getEventPosture(input.eventId);
+        const beliefState = await getEventBeliefState(input.eventId);
+        return { posture, beliefState };
+      }),
   }),
 
   // ── Settings ────────────────────────────────────────────────────────────────
@@ -418,6 +450,29 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         return upsertSettings(userId, input);
+      }),
+  }),
+
+  // ── Vet ─────────────────────────────────────────────────────────────────────
+  vet: router({
+    shareReport: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          name: z.string().min(1),
+          email: z.string().email(),
+          note: z.string().optional().default(""),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        await shareReportWithVet(input.animalId, {
+          name: input.name,
+          email: input.email,
+          note: input.note,
+        });
+        return { success: true };
       }),
   }),
 });

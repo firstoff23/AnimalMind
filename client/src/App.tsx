@@ -20,6 +20,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AnimalDetailPage from "./pages/AnimalDetailPage";
+import VetPage from "./pages/VetPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/dashboard" component={(props) => <ProtectedRoute component={DashboardPage} {...props} />} />
           <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />
           <Route path="/user-profile" component={(props) => <ProtectedRoute component={UserProfilePage} {...props} />} />
+          <Route path="/veterinario" component={(props) => <ProtectedRoute component={VetPage} {...props} />} />
 
           {/* Not found */}
           <Route path="/404" component={NotFound} />

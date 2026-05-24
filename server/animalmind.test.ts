@@ -40,6 +40,44 @@ vi.mock("./db", () => ({
   upsertSettings: vi.fn().mockResolvedValue({ notificationsEnabled: true, alertSensitivity: "medium" }),
   upsertUser: vi.fn().mockResolvedValue(undefined),
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
+  updateBeliefStateForAnimal: vi.fn().mockResolvedValue({
+    relaxed: 0.5,
+    excitement: 0.1,
+    distress: 0.1,
+    hunger: 0.1,
+    alert: 0.1,
+    attention: 0.1,
+    updatedAt: new Date().toISOString()
+  }),
+  getLatestBeliefState: vi.fn().mockResolvedValue({
+    relaxed: 0.5,
+    excitement: 0.1,
+    distress: 0.1,
+    hunger: 0.1,
+    alert: 0.1,
+    attention: 0.1,
+    updatedAt: new Date().toISOString()
+  }),
+  getEventBeliefState: vi.fn().mockResolvedValue(null),
+  getEventPosture: vi.fn().mockResolvedValue(null),
+  savePostureForEvent: vi.fn().mockResolvedValue("sitting"),
+  shareReportWithVet: vi.fn().mockResolvedValue(true),
+  verifyAnimalOwner: vi.fn().mockResolvedValue(undefined),
+  getAnimalBaseline: vi.fn().mockResolvedValue({
+    vocalizationThreshold: 10,
+    normalStates: ["relaxed", "excitement"],
+    alertSensitivity: "medium",
+    updatedAt: new Date().toISOString()
+  }),
+  updateAnimalBaseline: vi.fn().mockResolvedValue({
+    vocalizationThreshold: 10,
+    normalStates: ["relaxed", "excitement"],
+    alertSensitivity: "medium",
+    updatedAt: new Date().toISOString()
+  }),
+  getAnimalById: vi.fn().mockResolvedValue({ id: 1, userId: 1, name: "Bobi", species: "dog", breed: "Labrador", age: 3 }),
+  getEventsForAnimalPaginated: vi.fn().mockResolvedValue({ events: [], total: 0 }),
+  getStatsForAnimal: vi.fn().mockResolvedValue({ dailyActivity: [], stateDistribution: {}, totalCount: 0 })
 }));
 
 // ─── Context factory ──────────────────────────────────────────────────────────

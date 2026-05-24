@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
   BarChart,
@@ -58,6 +60,25 @@ export default function DashboardPage() {
     { animalId: activeAnimal?.id },
     { enabled: !!activeAnimal }
   );
+
+  const { data: beliefState } = trpc.animals.getBeliefState.useQuery(
+    { animalId: activeAnimal?.id },
+    { enabled: !!activeAnimal }
+  );
+
+  const dominantBelief = useMemo(() => {
+    if (!beliefState) return null;
+    const { relaxed, excitement, distress, hunger, alert, attention } = beliefState;
+    const statesList = [
+      { state: "relaxed", val: relaxed },
+      { state: "excitement", val: excitement },
+      { state: "distress", val: distress },
+      { state: "hunger", val: hunger },
+      { state: "alert", val: alert },
+      { state: "attention", val: attention },
+    ];
+    return statesList.sort((a, b) => b.val - a.val)[0];
+  }, [beliefState]);
 
   // ── Bar chart: state distribution ─────────────────────────────────────────
   const barData = useMemo(() => {
@@ -182,6 +203,72 @@ export default function DashboardPage() {
           Sem classificações hoje
         </div>
       )}
+
+      {/* POMDP Belief State - Humor Consolidado */}
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Humor Consolidado (POMDP)
+          </h2>
+          <span className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
+            Filtro Ativo
+          </span>
+        </div>
+
+        {beliefState ? (
+          <div className="space-y-3">
+            {dominantBelief && (
+              <div className="bg-secondary/20 p-3 rounded-xl border border-border/30 flex items-center gap-3">
+                <span className="text-3xl">{STATE_EMOJIS[dominantBelief.state as EmotionalState]}</span>
+                <div>
+                  <p className="text-xs text-muted-foreground">Humor Estável Estimado</p>
+                  <p className="text-sm font-bold" style={{ color: STATE_COLORS[dominantBelief.state as EmotionalState] }}>
+                    {STATE_LABELS[dominantBelief.state as EmotionalState]} ({Math.round(dominantBelief.val * 100)}%)
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1">
+              {STATES.map((s) => {
+                const val = (beliefState as any)[s] || 0;
+                return (
+                  <div key={s} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <span>{STATE_EMOJIS[s]}</span>
+                        <span className="truncate">{STATE_LABELS[s]}</span>
+                      </span>
+                      <span className="font-semibold text-foreground">{Math.round(val * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${val * 100}%`,
+                          backgroundColor: STATE_COLORS[s],
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-xs text-muted-foreground py-2">
+            A calcular crença probabilística...
+          </div>
+        )}
+
+        <div className="pt-2 border-t border-border/50">
+          <Link href="/veterinario">
+            <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 font-semibold text-white shadow-md rounded-xl text-xs h-9">
+              💼 Aceder ao Modo Veterinário
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       {/* Bar chart: state distribution */}
       <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
