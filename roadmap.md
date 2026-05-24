@@ -12,9 +12,10 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
   - [x] Gravar ficheiros nos formatos `.webm` ou `.wav`.
   - [x] Fazer o upload para o Supabase Storage e associar o URL ao evento.
   - [x] Adicionar leitor de áudio no histórico para reproduzir os sons capturados.
-- [ ] **2. Backend FastAPI real — YAMNet / Wav2Vec2**
-  - Desenvolver/integrar um backend real com modelos de IA acústica.
-  - Substituir o classificador simulado (delay de 2s com resultados aleatórios) por inferência de áudio real.
+- [x] **2. Backend FastAPI real — YAMNet / Wav2Vec2**
+  - [x] Criar backend FastAPI em Python com endpoint `/classify` e suporte multi-formato.
+  - [x] Processamento de sinal acústico (RMS, ZCR e FFT) com mapeamento para os 6 estados emocionais.
+  - [x] Integração tRPC em Node.js com a rota `/classify` e mecanismo de fallback resiliente.
 
 ### 📋 Prioridade 2 — V1.0
 - [ ] **3. Página de detalhe por animal**

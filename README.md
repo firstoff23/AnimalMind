@@ -34,12 +34,19 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Upload automático:** O ficheiro é enviado diretamente para o Supabase Storage público no bucket `animal-audio` (gerado de forma dinâmica) e o URL público é persistido localmente em `server/audio.json`.
 * **Reprodutor Integrado:** Se um evento do Histórico possui áudio real, é exibido um botão circular de Play/Pause para ouvir o som diretamente na linha de registo ou um reprodutor nativo completo no diálogo de Dados Brutos.
 
+### 7. Backend de Classificação Acústica Real (FastAPI)
+* **API Dedicada:** Servidor Python FastAPI autónomo localizado na pasta `ml_backend/` que disponibiliza a rota `/classify`.
+* **Análise de Sinal Físico:** Realiza conversão de áudio multi-formato (usando FFmpeg global) para WAV 16kHz mono, normaliza a amplitude e executa processamento de sinal via `numpy`/`scipy` para extrair RMS (volume), Zero Crossing Rate (timbre/ruído) e FFT (frequência dominante/pitch).
+* **Mapeamento Emocional:** Classifica dinamicamente os sons nos 6 estados emocionais com base em parâmetros físicos de áudio reais.
+* **Resiliência & Fallback:** Se a variável de ambiente `FASTAPI_BACKEND_URL` não estiver definida ou o servidor FastAPI estiver offline, a API tRPC do Node.js cai de forma transparente e resiliente para o simulador heurístico sem afetar a usabilidade da aplicação.
+
 ---
 
 ## 🛠️ Stack Tecnológica
 
 * **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Wouter (Routing), Framer Motion, Recharts
-* **Backend:** Node.js, Express, tRPC (v11) para comunicação tipo-segura (End-to-End Type Safety)
+* **Node.js Gateway:** Node.js, Express, tRPC (v11) para comunicação tipo-segura (End-to-End Type Safety)
+* **FastAPI Backend:** Python 3, FastAPI, Uvicorn, NumPy, SciPy, Soundfile, FFmpeg para análise acústica e processamento de sinal em tempo real
 * **Base de Dados & Auth:** Supabase (Autenticação robusta com verificação de email, sessões, perfil de utilizador e base de dados baseada em PostgreSQL com lazy-initialization)
 * **Testes:** Vitest (Suite completa cobrindo integração do Supabase, lógica de negócios, componentes visuais e helpers de gestos)
 
@@ -47,37 +54,54 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 
 ## 🚀 Como Executar Localmente
 
-### 1. Instalar Dependências
+### 1. Instalar Dependências do Gateway Node.js
 ```bash
 pnpm install
 ```
 
-### 2. Variáveis de Ambiente
-Crie um ficheiro `.env.local` e `.env.production.local` na pasta raiz com as chaves do Supabase:
+### 2. Configurar o Backend FastAPI (Python)
+Recomenda-se o uso de um ambiente virtual para instalar os requisitos de processamento de áudio:
+```bash
+cd ml_backend
+python -m venv .venv
+.venv\Scripts\activate  # No Windows
+# source .venv/bin/activate  # No macOS/Linux
+pip install -r requirements.txt
+```
+
+Executar o servidor FastAPI localmente na porta 8000:
+```bash
+uvicorn app:app --reload --port 8000
+```
+
+### 3. Variáveis de Ambiente
+Crie um ficheiro `.env.local` e `.env.production.local` na pasta raiz do projeto. Adicione as chaves do Supabase e o URL do FastAPI:
 ```env
 VITE_SUPABASE_URL="https://seu-projeto.supabase.co"
 VITE_SUPABASE_ANON_KEY="sua-anon-key"
 SUPABASE_URL="https://seu-projeto.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
+FASTAPI_BACKEND_URL="http://localhost:8000"
 ```
 
-### 3. Executar o Servidor de Desenvolvimento
+### 4. Executar o Servidor de Desenvolvimento Node.js
+Retorne à raiz do projeto e execute:
 ```bash
 pnpm run dev
 ```
 O frontend estará acessível em `http://localhost:5173`.
 
-### 4. Correr Testes Unitários e de Integração
+### 5. Correr Testes Unitários e de Integração
 ```bash
 pnpm run test
 ```
 
-### 5. Validar Tipagem do TypeScript
+### 6. Validar Tipagem do TypeScript
 ```bash
 pnpm run check
 ```
 
-### 6. Compilar para Produção (Build)
+### 7. Compilar para Produção (Build)
 ```bash
 pnpm run build
 ```
@@ -86,6 +110,7 @@ pnpm run build
 
 ## 📈 Histórico de Atualizações (Progress Log)
 
+* **Commit 0f066285:** Integra o backend FastAPI para classificação acústica real e processamento de sinal em Python, com testes de fallback e documentação atualizada no roadmap.
 * **Commit a07e75df:** Adiciona a gravação física de áudio de 3 segundos, upload automático para o Supabase Storage no bucket `animal-audio` e botão de Play/Pause interativo na página do Histórico e Dados Brutos.
 * **Commit 5bdec92d:** Adiciona o ficheiro `roadmap.md` na raiz para o rastreamento das metas de desenvolvimento e prioridades futuras do projeto.
 * **Commit b98868a9:** Atualiza o README.md com a documentação do Voice-to-Text.
