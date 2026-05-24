@@ -445,3 +445,199 @@ export async function uploadAudioToSupabase(
 
   return publicUrlData.publicUrl;
 }
+
+// ─── Animal Baseline operations (Local File Persistence) ─────────────────────
+
+export interface AnimalBaseline {
+  vocalizationThreshold: number;
+  normalStates: string[];
+  alertSensitivity: "low" | "medium" | "high";
+  updatedAt: string;
+}
+
+const BASELINES_FILE_PATH = path.resolve(import.meta.dirname, "baselines.json");
+
+function readBaselinesFromFile(): Record<number, AnimalBaseline> {
+  try {
+    if (fs.existsSync(BASELINES_FILE_PATH)) {
+      const content = fs.readFileSync(BASELINES_FILE_PATH, "utf8");
+      return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error("[Baselines] Failed to read baselines:", error);
+  }
+  return {};
+}
+
+function writeBaselinesToFile(baselines: Record<number, AnimalBaseline>) {
+  try {
+    fs.writeFileSync(BASELINES_FILE_PATH, JSON.stringify(baselines, null, 2), "utf8");
+  } catch (error) {
+    console.error("[Baselines] Failed to write baselines:", error);
+  }
+}
+
+export async function getAnimalBaseline(animalId: number): Promise<AnimalBaseline> {
+  const baselines = readBaselinesFromFile();
+  const baseline = baselines[animalId];
+  if (baseline) {
+    return baseline;
+  }
+  
+  // Return default baseline if not set yet
+  return {
+    vocalizationThreshold: 10,
+    normalStates: ["relaxed", "excitement"],
+    alertSensitivity: "medium",
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function updateAnimalBaseline(
+  animalId: number,
+  data: {
+    vocalizationThreshold?: number;
+    normalStates?: string[];
+    alertSensitivity?: "low" | "medium" | "high";
+  }
+): Promise<AnimalBaseline> {
+  const baselines = readBaselinesFromFile();
+  const current = baselines[animalId] || {
+    vocalizationThreshold: 10,
+    normalStates: ["relaxed", "excitement"],
+    alertSensitivity: "medium",
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updated: AnimalBaseline = {
+    vocalizationThreshold: data.vocalizationThreshold ?? current.vocalizationThreshold,
+    normalStates: data.normalStates ?? current.normalStates,
+    alertSensitivity: data.alertSensitivity ?? current.alertSensitivity,
+    updatedAt: new Date().toISOString(),
+  };
+
+  baselines[animalId] = updated;
+  writeBaselinesToFile(baselines);
+  return updated;
+}
+
+export async function verifyAnimalOwner(animalId: number, userId: number): Promise<void> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("animals")
+    .select("user_id")
+    .eq("id", animalId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      throw new Error("Animal não encontrado");
+    }
+    throw error;
+  }
+
+  if (Number(data.user_id) !== userId) {
+    throw new Error("Não autorizado");
+  }
+}
+
+export async function getAnimalById(animalId: number, userId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("animals")
+    .select("*")
+    .eq("id", animalId)
+    .eq("user_id", userId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw error;
+  }
+  return data;
+}
+
+export async function getEventsForAnimalPaginated(
+  animalId: number,
+  userId: number,
+  page: number,
+  pageSize: number
+) {
+  const supabase = getSupabase();
+  const offset = (page - 1) * pageSize;
+
+  const { data, error, count } = await supabase
+    .from("classification_events")
+    .select("*", { count: "exact" })
+    .eq("animal_id", animalId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (error) throw error;
+
+  const notes = readNotesFromFile();
+  const audio = readAudioFromFile();
+  const events = (data || []).map((e: any) => ({
+    ...e,
+    notes: notes[e.id] || null,
+    audioUrl: audio[e.id] || null,
+  }));
+
+  return { events, total: count || 0 };
+}
+
+export async function getStatsForAnimal(animalId: number, userId: number, days = 7) {
+  const supabase = getSupabase();
+  const sinceDate = new Date();
+  sinceDate.setDate(sinceDate.getDate() - days);
+
+  const { data: events, error } = await supabase
+    .from("classification_events")
+    .select("*")
+    .eq("animal_id", animalId)
+    .eq("user_id", userId)
+    .gte("created_at", sinceDate.toISOString())
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  const dayStats: Record<string, { count: number; sumConfidence: number }> = {};
+  const stateCounts: Record<string, number> = {};
+
+  // Pre-fill days to avoid gaps in chart
+  for (let i = 0; i < days; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    dayStats[dateStr] = { count: 0, sumConfidence: 0 };
+  }
+
+  const list = events || [];
+  for (const event of list) {
+    const dateStr = new Date(event.created_at).toISOString().split("T")[0];
+    if (!dayStats[dateStr]) {
+      dayStats[dateStr] = { count: 0, sumConfidence: 0 };
+    }
+    dayStats[dateStr].count++;
+    dayStats[dateStr].sumConfidence += Number(event.confidence);
+
+    stateCounts[event.state] = (stateCounts[event.state] || 0) + 1;
+  }
+
+  const dailyActivity = Object.entries(dayStats)
+    .map(([date, val]) => ({
+      date,
+      count: val.count,
+      avgConfidence: val.count > 0 ? Math.round((val.sumConfidence / val.count) * 100) / 100 : 0,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    dailyActivity,
+    stateDistribution: stateCounts,
+    totalCount: list.length,
+  };
+}
+
+

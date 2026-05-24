@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -236,6 +237,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
 export default function ProfilePage() {
   const [showForm, setShowForm] = useState(false);
+  const [, setLocation] = useLocation();
   const { data: animals = [] } = trpc.animals.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -314,17 +316,27 @@ export default function ProfilePage() {
       {/* Active animal details */}
       {activeAnimal && (
         <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">
-              {activeAnimal.species === "dog" ? "🐕" : "🐈"}
-            </span>
-            <div>
-              <p className="font-bold text-foreground">{activeAnimal.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {activeAnimal.breed ?? "Raça desconhecida"}
-                {activeAnimal.age !== null && ` · ${activeAnimal.age} anos`}
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">
+                {activeAnimal.species === "dog" ? "🐕" : "🐈"}
+              </span>
+              <div>
+                <p className="font-bold text-foreground">{activeAnimal.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {activeAnimal.breed ?? "Raça desconhecida"}
+                  {activeAnimal.age !== null && ` · ${activeAnimal.age} anos`}
+                </p>
+              </div>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLocation(`/animal/${activeAnimal.id}`)}
+              className="gap-1 bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary text-xs"
+            >
+              Ver Detalhes
+            </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-secondary rounded-xl p-3 text-center">

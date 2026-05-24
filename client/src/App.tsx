@@ -19,6 +19,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import UserProfilePage from "./pages/UserProfilePage";
+import AnimalDetailPage from "./pages/AnimalDetailPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -41,6 +42,7 @@ function Router() {
           {/* Protected routes */}
           <Route path="/" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
           <Route path="/perfil" component={(props) => <ProtectedRoute component={ProfilePage} {...props} />} />
+          <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />
           <Route path="/historico" component={(props) => <ProtectedRoute component={HistoryPage} {...props} />} />
           <Route path="/dashboard" component={(props) => <ProtectedRoute component={DashboardPage} {...props} />} />
           <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />

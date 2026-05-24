@@ -23,6 +23,12 @@ import {
   updateEventNotes,
   uploadAudioToSupabase,
   updateEventAudio,
+  getAnimalById,
+  getAnimalBaseline,
+  updateAnimalBaseline,
+  verifyAnimalOwner,
+  getEventsForAnimalPaginated,
+  getStatsForAnimal,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -238,6 +244,43 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         return getWeeklyStats(userId, input.animalId);
       }),
+
+    get: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const animal = await getAnimalById(input.animalId, userId);
+        if (!animal) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Animal não encontrado ou não pertence a este utilizador.",
+          });
+        }
+        return animal;
+      }),
+
+    getBaseline: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getAnimalBaseline(input.animalId);
+      }),
+
+    updateBaseline: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          vocalizationThreshold: z.number().int().min(1).max(100).optional(),
+          normalStates: z.array(z.string()).optional(),
+          alertSensitivity: z.enum(["low", "medium", "high"]).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return updateAnimalBaseline(input.animalId, input);
+      }),
   }),
 
   // ── Events ──────────────────────────────────────────────────────────────────
@@ -319,6 +362,36 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const notes = await updateEventNotes(input.eventId, input.notes);
         return { success: true, notes };
+      }),
+
+    listForAnimal: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          page: z.number().default(1),
+          pageSize: z.number().default(10),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        return getEventsForAnimalPaginated(
+          input.animalId,
+          userId,
+          input.page,
+          input.pageSize
+        );
+      }),
+
+    statsForAnimal: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          days: z.number().default(7),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        return getStatsForAnimal(input.animalId, userId, input.days);
       }),
   }),
 
