@@ -1,8 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
 import type { InsertUser } from "../drizzle/schema";
 
-let _supabase: ReturnType<typeof createClient> | null = null;
+let _supabase: SupabaseClient<any> | null = null;
 
 // Lazy init Supabase client
 // Use Service Role Key for backend operations (has full permissions)
@@ -13,7 +13,7 @@ function getSupabase() {
     if (!url || !key) {
       throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY");
     }
-    _supabase = createClient(url, key);
+    _supabase = createClient<any>(url, key);
   }
   return _supabase;
 }
@@ -154,6 +154,7 @@ export async function insertEvent(data: {
   confidence: number;
   emoji: string;
   modelUsed: string;
+  cached?: boolean;
 }) {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
@@ -166,7 +167,7 @@ export async function insertEvent(data: {
         confidence: data.confidence,
         emoji: data.emoji,
         model_used: data.modelUsed,
-        cached: false,
+        cached: data.cached ?? false,
       },
     ])
     .select()
