@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from "react";
+import { useRef, useState, useEffect, type PointerEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,8 @@ import {
   ThumbsDown,
   ThumbsUp,
   X,
+  Play,
+  Pause,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -63,6 +65,7 @@ interface HistoryEvent {
   feedback: string | null;
   createdAt: Date;
   notes?: string | null;
+  audioUrl?: string | null;
 }
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
@@ -72,11 +75,15 @@ function EventRow({
   onFeedback,
   onOpenRawData,
   disabled,
+  isPlaying,
+  onPlayToggle,
 }: {
   event: HistoryEvent;
   onFeedback: (eventId: number, feedback: SwipeFeedback) => void;
   onOpenRawData: (event: HistoryEvent) => void;
   disabled: boolean;
+  isPlaying: boolean;
+  onPlayToggle: (eventId: number, audioUrl: string) => void;
 }) {
   const x = useMotionValue(0);
   
@@ -222,6 +229,27 @@ function EventRow({
             </p>
           )}
         </div>
+
+        {event.audioUrl && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPlayToggle(event.id, event.audioUrl!);
+            }}
+            className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center hover:bg-secondary/40 text-cyan-400 hover:text-cyan-300"
+            aria-label={isPlaying ? "Pausar som" : "Ouvir som"}
+          >
+            {isPlaying ? (
+              <Pause size={14} fill="currentColor" />
+            ) : (
+              <Play size={14} fill="currentColor" className="ml-0.5" />
+            )}
+          </Button>
+        )}
+
         <div className="text-right flex-shrink-0">
           <div
             className="text-sm font-bold"
@@ -314,6 +342,19 @@ function RawEventDialog({
                 {event.notes || "Sem notas de observação adicionadas."}
               </dd>
             </div>
+            {/* Audio section */}
+            {event.audioUrl && (
+              <div className="rounded-lg bg-secondary p-3 col-span-2 flex flex-col gap-1.5">
+                <dt className="text-xs text-muted-foreground">Gravação do Animal</dt>
+                <dd className="mt-1">
+                  <audio
+                    src={event.audioUrl}
+                    controls
+                    className="w-full h-9 rounded-lg"
+                  />
+                </dd>
+              </div>
+            )}
           </dl>
 
           <pre className="max-h-72 overflow-auto rounded-lg bg-secondary p-3 text-xs leading-relaxed text-muted-foreground">
@@ -352,6 +393,38 @@ export default function HistoryPage() {
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [rawEvent, setRawEvent] = useState<HistoryEvent | null>(null);
+  const [playingEventId, setPlayingEventId] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handlePlayToggle = (eventId: number, audioUrl: string) => {
+    if (playingEventId === eventId) {
+      audioRef.current?.pause();
+      setPlayingEventId(null);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      const audioObj = new Audio(audioUrl);
+      audioRef.current = audioObj;
+      setPlayingEventId(eventId);
+      audioObj.play().catch((err) => {
+        console.error("Audio playback failed:", err);
+        setPlayingEventId(null);
+      });
+      audioObj.onended = () => {
+        setPlayingEventId(null);
+      };
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const isFiltered = stateFilter !== "all" || dateFrom !== "" || dateTo !== "";
 
@@ -510,6 +583,8 @@ export default function HistoryPage() {
               key={event.id}
               event={event}
               disabled={feedbackMutation.isPending}
+              isPlaying={playingEventId === event.id}
+              onPlayToggle={handlePlayToggle}
               onOpenRawData={setRawEvent}
               onFeedback={(eventId, feedback) => {
                 feedbackMutation.mutate({ eventId, feedback });

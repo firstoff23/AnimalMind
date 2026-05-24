@@ -21,6 +21,8 @@ import {
   getDemoUserId,
   getEventNotes,
   updateEventNotes,
+  uploadAudioToSupabase,
+  updateEventAudio,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -92,6 +94,8 @@ export const appRouter = router({
       .input(
         z.object({
           animalId: z.number().optional(),
+          audio: z.string().optional(),
+          audioMimeType: z.string().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -111,7 +115,30 @@ export const appRouter = router({
           cached: result.cached,
         });
 
-        return { ...result, eventId: (event as any)?.id };
+        const eventId = (event as any)?.id;
+
+        // If audio data is provided, upload it to Supabase Storage and map it
+        let audioUrl = null;
+        if (eventId && input.audio) {
+          try {
+            const buffer = Buffer.from(input.audio, "base64");
+            const mime = input.audioMimeType || "audio/webm";
+            // Get file extension from mime
+            let ext = "webm";
+            if (mime.includes("wav")) ext = "wav";
+            else if (mime.includes("mp4")) ext = "mp4";
+            else if (mime.includes("ogg")) ext = "ogg";
+            else if (mime.includes("mpeg")) ext = "mp3";
+
+            const fileName = `audio_${eventId}_${Date.now()}.${ext}`;
+            audioUrl = await uploadAudioToSupabase(fileName, buffer, mime);
+            await updateEventAudio(eventId, audioUrl);
+          } catch (err) {
+            console.error("[Classify] Failed to upload audio:", err);
+          }
+        }
+
+        return { ...result, eventId, audioUrl };
       }),
   }),
 

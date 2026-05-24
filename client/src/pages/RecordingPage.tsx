@@ -251,6 +251,7 @@ export default function RecordingPage() {
     isStreaming: isLiveAudioStreaming,
     start: startLiveAudio,
     stop: stopLiveAudio,
+    stopAndGetBlob: stopAndGetBlobLiveAudio,
   } = useLiveAudioStream();
 
   const [isAutoMode, setIsAutoMode] = useState(false);
@@ -360,16 +361,45 @@ export default function RecordingPage() {
       setCountdown((c) => {
         if (c <= 1) {
           clearInterval(interval);
-          stopLiveAudio();
           setRecordState("processing");
-          classifyMutation.mutate({ animalId: activeAnimal?.id });
+          
+          void (async () => {
+            let audioBase64: string | undefined = undefined;
+            let audioMimeType: string | undefined = undefined;
+            
+            try {
+              const res = await stopAndGetBlobLiveAudio();
+              if (res) {
+                audioMimeType = res.mimeType;
+                const base64Promise = new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    const dataUrl = reader.result as string;
+                    resolve(dataUrl.split(",")[1]);
+                  };
+                  reader.onerror = reject;
+                  reader.readAsDataURL(res.blob);
+                });
+                audioBase64 = await base64Promise;
+              }
+            } catch (err) {
+              console.error("Failed to capture recorded audio:", err);
+            }
+            
+            classifyMutation.mutate({ 
+              animalId: activeAnimal?.id,
+              audio: audioBase64,
+              audioMimeType,
+            });
+          })();
+          
           return 0;
         }
         return c - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeAnimal?.id, recordState, stopLiveAudio]);
+  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation]);
 
   useEffect(() => {
     return () => {

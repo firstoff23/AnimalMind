@@ -191,9 +191,11 @@ export async function getRecentEvents(userId: number, limit = 5) {
   if (error) throw error;
   
   const notes = readNotesFromFile();
+  const audio = readAudioFromFile();
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: notes[e.id] || null,
+    audioUrl: audio[e.id] || null,
   }));
   return events;
 }
@@ -224,9 +226,11 @@ export async function getEventsPaginated(
   if (error) throw error;
   
   const notes = readNotesFromFile();
+  const audio = readAudioFromFile();
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: notes[e.id] || null,
+    audioUrl: audio[e.id] || null,
   }));
   return { events, total: count || 0 };
 }
@@ -368,4 +372,76 @@ export async function updateEventNotes(eventId: number, noteText: string): Promi
   notes[eventId] = noteText;
   writeNotesToFile(notes);
   return noteText;
+}
+
+// ─── Event Audio operations (Local File Persistence & Supabase Storage) ──────
+
+const AUDIO_FILE_PATH = path.resolve(import.meta.dirname, "audio.json");
+
+function readAudioFromFile(): Record<number, string> {
+  try {
+    if (fs.existsSync(AUDIO_FILE_PATH)) {
+      const content = fs.readFileSync(AUDIO_FILE_PATH, "utf8");
+      return JSON.parse(content);
+    }
+  } catch (error) {
+    console.error("[Audio] Failed to read audio mapping:", error);
+  }
+  return {};
+}
+
+function writeAudioToFile(audio: Record<number, string>) {
+  try {
+    fs.writeFileSync(AUDIO_FILE_PATH, JSON.stringify(audio, null, 2), "utf8");
+  } catch (error) {
+    console.error("[Audio] Failed to write audio mapping:", error);
+  }
+}
+
+export async function getEventAudio(eventId: number): Promise<string> {
+  const audio = readAudioFromFile();
+  return audio[eventId] || "";
+}
+
+export async function updateEventAudio(eventId: number, audioUrl: string): Promise<string> {
+  const audio = readAudioFromFile();
+  audio[eventId] = audioUrl;
+  writeAudioToFile(audio);
+  return audioUrl;
+}
+
+export async function uploadAudioToSupabase(
+  fileName: string,
+  buffer: Buffer,
+  mimeType: string
+): Promise<string> {
+  const supabase = getSupabase();
+  const bucketName = "animal-audio";
+
+  try {
+    await supabase.storage.createBucket(bucketName, {
+      public: true,
+      allowedMimeTypes: ["audio/webm", "audio/wav", "audio/ogg", "audio/mpeg", "audio/mp4", "audio/x-m4a"],
+    });
+  } catch (err) {
+    // Ignore bucket creation if already exists
+  }
+
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .upload(fileName, buffer, {
+      contentType: mimeType,
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("[Storage] Supabase upload failed:", error);
+    throw error;
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(fileName);
+
+  return publicUrlData.publicUrl;
 }

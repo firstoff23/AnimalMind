@@ -24,6 +24,8 @@ export function useLiveAudioStream() {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const resetMeter = useCallback(() => {
     setLevel(0);
@@ -35,6 +37,14 @@ export function useLiveAudioStream() {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+    }
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
 
     sourceRef.current?.disconnect();
     analyserRef.current?.disconnect();
@@ -56,6 +66,36 @@ export function useLiveAudioStream() {
   const stop = useCallback(() => {
     cleanupStream(true);
     setStatus("idle");
+  }, [cleanupStream]);
+
+  const stopAndGetBlob = useCallback((): Promise<{ blob: Blob; mimeType: string } | null> => {
+    return new Promise((resolve) => {
+      const mr = mediaRecorderRef.current;
+      if (!mr || mr.state === "inactive") {
+        resolve(null);
+        cleanupStream(true);
+        setStatus("idle");
+        return;
+      }
+
+      mr.onstop = () => {
+        const mimeType = mr.mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        chunksRef.current = [];
+        mediaRecorderRef.current = null;
+        resolve({ blob, mimeType });
+      };
+
+      try {
+        mr.stop();
+      } catch (err) {
+        console.error("[useLiveAudioStream] Failed to stop MediaRecorder:", err);
+        resolve(null);
+      }
+
+      cleanupStream(false);
+      setStatus("idle");
+    });
   }, [cleanupStream]);
 
   const start = useCallback(async () => {
@@ -95,6 +135,28 @@ export function useLiveAudioStream() {
       sourceRef.current = source;
       analyserRef.current = analyser;
 
+      chunksRef.current = [];
+      let mediaRecorder: MediaRecorder | null = null;
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      } catch (e) {
+        try {
+          mediaRecorder = new MediaRecorder(stream);
+        } catch (err) {
+          console.error("[useLiveAudioStream] MediaRecorder is not supported:", err);
+        }
+      }
+
+      if (mediaRecorder) {
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data);
+          }
+        };
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.start(250);
+      }
+
       if (audioContext.state === "suspended") {
         await audioContext.resume();
       }
@@ -125,5 +187,6 @@ export function useLiveAudioStream() {
     isStreaming: status === "streaming",
     start,
     stop,
+    stopAndGetBlob,
   };
 }
