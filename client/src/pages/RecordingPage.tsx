@@ -4,13 +4,15 @@ import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
+import { LiveAudioMeter } from "@/components/LiveAudioMeter";
 import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
 import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 
-type RecordingState = "idle" | "recording" | "processing";
+type RecordingState = "idle" | "requesting" | "recording" | "processing";
 
 interface ClassifyResult {
   state: EmotionalState;
@@ -19,6 +21,21 @@ interface ClassifyResult {
   model_used: string;
   cached: boolean;
   eventId?: number;
+}
+
+interface ActiveAnimal {
+  id: number;
+  name: string;
+  species: "dog" | "cat";
+}
+
+interface RecentEvent {
+  id: number;
+  state: string;
+  confidence: number;
+  emoji: string;
+  modelUsed: string;
+  createdAt: Date;
 }
 
 // ─── Result Card ─────────────────────────────────────────────────────────────
@@ -114,11 +131,20 @@ export default function RecordingPage() {
   const [result, setResult] = useState<ClassifyResult | null>(null);
   const [countdown, setCountdown] = useState(3);
   const { sendNotification } = useNotifications();
+  const {
+    level: liveAudioLevel,
+    waveform: liveWaveform,
+    isStreaming: isLiveAudioStreaming,
+    start: startLiveAudio,
+    stop: stopLiveAudio,
+  } = useLiveAudioStream();
 
   const utils = trpc.useUtils();
-  const { data: activeAnimal } = trpc.animals.getActive.useQuery();
-  const { data: recentEvents = [] } = trpc.events.recent.useQuery({ limit: 5 });
+  const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
+  const { data: recentEventsData = [] } = trpc.events.recent.useQuery({ limit: 5 });
   const { data: settingsData } = trpc.settings.get.useQuery();
+  const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
+  const recentEvents = recentEventsData as RecentEvent[];
 
   const classifyMutation = trpc.classify.run.useMutation({
     onSuccess: (data) => {
@@ -140,6 +166,7 @@ export default function RecordingPage() {
       }
     },
     onError: () => {
+      stopLiveAudio();
       setRecordState("idle");
       toast.error("Erro ao classificar o áudio. Tente novamente.");
     },
@@ -157,6 +184,7 @@ export default function RecordingPage() {
       setCountdown((c) => {
         if (c <= 1) {
           clearInterval(interval);
+          stopLiveAudio();
           setRecordState("processing");
           classifyMutation.mutate({ animalId: activeAnimal?.id });
           return 0;
@@ -165,11 +193,20 @@ export default function RecordingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [recordState]);
+  }, [activeAnimal?.id, recordState, stopLiveAudio]);
 
-  const handleRecord = () => {
+  const handleRecord = async () => {
     if (recordState !== "idle") return;
     setResult(null);
+    setRecordState("requesting");
+
+    const started = await startLiveAudio();
+    if (!started) {
+      setRecordState("idle");
+      toast.error("Não foi possível aceder ao microfone.");
+      return;
+    }
+
     setRecordState("recording");
   };
 
@@ -178,6 +215,8 @@ export default function RecordingPage() {
       ? "bg-primary hover:bg-emerald-600"
       : recordState === "recording"
       ? "bg-red-500 record-pulse"
+      : recordState === "requesting"
+      ? "bg-slate-600"
       : "bg-yellow-500";
 
   return (
@@ -219,6 +258,12 @@ export default function RecordingPage() {
               <span className="text-3xl font-bold">{countdown}</span>
             </>
           )}
+          {recordState === "requesting" && (
+            <>
+              <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs">A ligar…</span>
+            </>
+          )}
           {recordState === "processing" && (
             <>
               <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
@@ -228,10 +273,19 @@ export default function RecordingPage() {
         </button>
 
         <p className="text-xs text-muted-foreground text-center">
-          {recordState === "idle" && "Toque para iniciar a gravação de 3 segundos"}
-          {recordState === "recording" && "A gravar…"}
+          {recordState === "idle" && "Toque para iniciar streaming de áudio de 3 segundos"}
+          {recordState === "requesting" && "A pedir acesso ao microfone…"}
+          {recordState === "recording" && "A gravar e analisar o sinal em tempo real…"}
           {recordState === "processing" && "A processar com IA…"}
         </p>
+
+        {(recordState === "recording" || isLiveAudioStreaming) && (
+          <LiveAudioMeter
+            level={liveAudioLevel}
+            waveform={liveWaveform}
+            isActive={isLiveAudioStreaming}
+          />
+        )}
       </div>
 
       {/* Result card */}
