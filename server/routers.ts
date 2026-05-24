@@ -99,9 +99,74 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        // Simulate 2-second processing
-        await sleep(2000);
-        const result = randomClassify();
+        let result: {
+          state: EmotionalState;
+          confidence: number;
+          emoji: string;
+          model_used: ModelUsed;
+          cached: boolean;
+        } | null = null;
+
+        const buffer = input.audio ? Buffer.from(input.audio, "base64") : null;
+        const mime = input.audioMimeType || "audio/webm";
+        // Get file extension from mime
+        let ext = "webm";
+        if (mime.includes("wav")) ext = "wav";
+        else if (mime.includes("mp4")) ext = "mp4";
+        else if (mime.includes("ogg")) ext = "ogg";
+        else if (mime.includes("mpeg")) ext = "mp3";
+
+        if (process.env.FASTAPI_BACKEND_URL && buffer) {
+          try {
+            const file = new File([buffer], `audio.${ext}`, { type: mime });
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch(`${process.env.FASTAPI_BACKEND_URL}/classify`, {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!response.ok) {
+              throw new Error(`FastAPI responded with status: ${response.status}`);
+            }
+
+            const data = await response.json() as {
+              state: string;
+              confidence: number;
+              emoji: string;
+              model_used: string;
+            };
+
+            // Map returned model_used to our ModelUsed type
+            let modelUsedMapped: ModelUsed = "yamnet";
+            if (data.model_used === "wav2vec2") modelUsedMapped = "wav2vec2";
+            else if (data.model_used === "gemini") modelUsedMapped = "gemini";
+            else if (data.model_used.includes("yamnet")) modelUsedMapped = "yamnet";
+
+            if (STATES.includes(data.state as EmotionalState)) {
+              result = {
+                state: data.state as EmotionalState,
+                confidence: data.confidence,
+                emoji: data.emoji || STATE_EMOJIS[data.state as EmotionalState],
+                model_used: modelUsedMapped,
+                cached: false,
+              };
+              console.log("[Classify] Classification from FastAPI successful:", result);
+            } else {
+              console.warn(`[Classify] FastAPI returned invalid state "${data.state}", using fallback.`);
+            }
+          } catch (err) {
+            console.error("[Classify] FastAPI call failed, falling back to random classification:", err);
+          }
+        }
+
+        if (!result) {
+          // Simulate 2-second processing
+          await sleep(2000);
+          result = randomClassify();
+        }
+
         const userId = await effectiveUserId(ctx.user);
 
         // Persist event
@@ -119,17 +184,8 @@ export const appRouter = router({
 
         // If audio data is provided, upload it to Supabase Storage and map it
         let audioUrl = null;
-        if (eventId && input.audio) {
+        if (eventId && buffer) {
           try {
-            const buffer = Buffer.from(input.audio, "base64");
-            const mime = input.audioMimeType || "audio/webm";
-            // Get file extension from mime
-            let ext = "webm";
-            if (mime.includes("wav")) ext = "wav";
-            else if (mime.includes("mp4")) ext = "mp4";
-            else if (mime.includes("ogg")) ext = "ogg";
-            else if (mime.includes("mpeg")) ext = "mp3";
-
             const fileName = `audio_${eventId}_${Date.now()}.${ext}`;
             audioUrl = await uploadAudioToSupabase(fileName, buffer, mime);
             await updateEventAudio(eventId, audioUrl);
