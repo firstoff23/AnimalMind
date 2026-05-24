@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -55,6 +56,25 @@ function ConfidenceTooltip({ active, payload, label }: { active?: boolean; paylo
 export default function DashboardPage() {
   const { data: animals = [] } = trpc.animals.list.useQuery();
   const activeAnimal = animals.find((a) => a.isActive) ?? animals[0];
+
+  const utils = trpc.useUtils();
+  const { data: invitations = [], refetch: refetchInvitations } = trpc.animals.getPendingInvitations.useQuery();
+
+  const respondMutation = trpc.animals.respondToInvitation.useMutation({
+    onSuccess: () => {
+      toast.success("Resposta enviada com sucesso!");
+      refetchInvitations();
+      utils.animals.list.invalidate();
+      utils.animals.getActive.invalidate();
+    },
+    onError: (err) => {
+      toast.error(`Erro ao responder: ${err.message}`);
+    },
+  });
+
+  const handleRespond = (invitationId: number, action: "accept" | "reject") => {
+    respondMutation.mutate({ invitationId, action });
+  };
 
   const { data: events = [] } = trpc.animals.weeklyStats.useQuery(
     { animalId: activeAnimal?.id },
@@ -153,19 +173,70 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Pending Invitations Banner */}
+      {invitations.length > 0 && (
+        <div className="space-y-2">
+          {invitations.map((inv) => (
+            <div
+              key={inv.id}
+              className="bg-gradient-to-r from-cyan-950/40 to-secondary/40 border border-cyan-500/20 rounded-2xl p-4 flex flex-col gap-3 page-enter"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">📩</span>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-semibold text-cyan-400 uppercase tracking-wide">
+                    Convite de Co-tutoria
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    <strong>{inv.ownerName}</strong> quer partilhar o perfil de{" "}
+                    <strong>{inv.animalName}</strong> ({inv.animalSpecies === "dog" ? "cão" : "gato"}) contigo
+                    como co-tutor (<strong>{inv.permission === "write" ? "leitura/escrita" : "apenas leitura"}</strong>).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleRespond(inv.id, "accept")}
+                  disabled={respondMutation.isPending}
+                  className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-xs h-8 font-semibold"
+                >
+                  Aceitar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleRespond(inv.id, "reject")}
+                  disabled={respondMutation.isPending}
+                  className="flex-1 border-border hover:bg-secondary rounded-xl text-xs h-8 font-semibold"
+                >
+                  Recusar
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Animal selector */}
       {animals.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
           {animals.map((a) => (
             <span
               key={a.id}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 ${
                 a.isActive
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border text-muted-foreground"
               }`}
             >
-              {a.species === "dog" ? "🐕" : "🐈"} {a.name}
+              <span>{a.species === "dog" ? "🐕" : "🐈"} {a.name}</span>
+              {a.isShared && (
+                <span className="text-[8px] bg-cyan-950 text-cyan-400 border border-cyan-500/20 px-1 py-0.5 rounded-full uppercase font-semibold">
+                  Co-tutor
+                </span>
+              )}
             </span>
           ))}
         </div>

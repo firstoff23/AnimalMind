@@ -85,7 +85,16 @@ export async function getAnimalsByUser(userId: number) {
     .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return data || [];
+
+  const owned = (data || []).map((a: any) => ({
+    ...a,
+    isShared: false,
+    permission: "write" as const,
+  }));
+
+  const shared = await getSharedAnimalsForUser(userId);
+
+  return [...owned, ...shared];
 }
 
 export async function addAnimal(data: {
@@ -116,9 +125,10 @@ export async function addAnimal(data: {
 }
 
 export async function setActiveAnimal(animalId: number, userId: number) {
+  await verifyAnimalOwner(animalId, userId);
   const supabase = getSupabase();
 
-  // Deactivate all
+  // Deactivate all owned by this user
   await supabase
     .from("animals")
     .update({ is_active: false })
@@ -128,14 +138,15 @@ export async function setActiveAnimal(animalId: number, userId: number) {
   const { error } = await supabase
     .from("animals")
     .update({ is_active: true })
-    .eq("id", animalId)
-    .eq("user_id", userId);
+    .eq("id", animalId);
 
   if (error) throw error;
 }
 
 export async function getActiveAnimal(userId: number) {
   const supabase = getSupabase();
+  
+  // First check if there is an active owned animal
   const { data, error } = await supabase
     .from("animals")
     .select("*")
@@ -143,8 +154,20 @@ export async function getActiveAnimal(userId: number) {
     .eq("is_active", true)
     .single();
 
-  if (error && error.code !== "PGRST116") throw error;
-  return data || null;
+  if (!error && data) {
+    return { ...data, isShared: false, permission: "write" };
+  }
+
+  // Otherwise check shared animals
+  const shared = await getSharedAnimalsForUser(userId);
+  const activeShared = shared.find((a) => a.is_active);
+  if (activeShared) {
+    return activeShared;
+  }
+
+  // Fallback to first available animal
+  const all = await getAnimalsByUser(userId);
+  return all[0] || null;
 }
 
 // ─── Event operations ────────────────────────────────────────────────────────
@@ -521,7 +544,11 @@ export async function updateAnimalBaseline(
   return updated;
 }
 
-export async function verifyAnimalOwner(animalId: number, userId: number): Promise<void> {
+export async function verifyAnimalOwner(
+  animalId: number,
+  userId: number,
+  requireWrite = false
+): Promise<void> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("animals")
@@ -536,13 +563,45 @@ export async function verifyAnimalOwner(animalId: number, userId: number): Promi
     throw error;
   }
 
-  if (Number(data.user_id) !== userId) {
+  if (Number(data.user_id) === userId) {
+    return; // Owner has full access
+  }
+
+  // Check if there is an active share
+  const { data: user } = await supabase
+    .from("users")
+    .select("email")
+    .eq("id", userId)
+    .single();
+
+  if (!user || !user.email) {
     throw new Error("Não autorizado");
+  }
+
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const share = shares.find(
+    (s: FamilyShare) =>
+      s.animalId === animalId &&
+      s.sharedWithEmail.toLowerCase() === user.email.toLowerCase() &&
+      s.status === "accepted"
+  );
+
+  if (!share) {
+    throw new Error("Não autorizado");
+  }
+
+  if (requireWrite && share.permission !== "write") {
+    throw new Error("Acesso de leitura apenas. Não autorizado a escrever.");
   }
 }
 
 export async function getAnimalById(animalId: number, userId: number) {
   const supabase = getSupabase();
+  
+  // Try owned first
   const { data, error } = await supabase
     .from("animals")
     .select("*")
@@ -550,11 +609,14 @@ export async function getAnimalById(animalId: number, userId: number) {
     .eq("user_id", userId)
     .single();
 
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw error;
+  if (!error && data) {
+    return { ...data, isShared: false, permission: "write" };
   }
-  return data;
+
+  // Check if shared
+  const shared = await getSharedAnimalsForUser(userId);
+  const matched = shared.find((a) => a.id === animalId);
+  return matched || null;
 }
 
 export async function getEventsForAnimalPaginated(
@@ -816,6 +878,220 @@ export async function shareReportWithVet(
 
   shares[animalId] = animalShares;
   writeJsonFile<any>(VET_SHARES_FILE_PATH, shares);
+  return true;
+}
+
+// ─── Family sharing persistence ──────────────────────────────────────────────
+
+export interface FamilyShare {
+  id: number;
+  ownerId: number;
+  animalId: number;
+  sharedWithEmail: string;
+  sharedWithUserId: number | null;
+  permission: "read" | "write";
+  status: "pending" | "accepted" | "rejected";
+  createdAt: string;
+}
+
+const FAMILY_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "family_shares.json");
+
+export async function getUserByEmail(email: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data || null;
+}
+
+export async function createShareInvitation(
+  ownerId: number,
+  animalId: number,
+  targetEmail: string,
+  permission: "read" | "write"
+): Promise<FamilyShare> {
+  const targetUser = await getUserByEmail(targetEmail);
+  
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const existing = shares.find(
+    (s: FamilyShare) => s.animalId === animalId && s.sharedWithEmail.toLowerCase() === targetEmail.toLowerCase()
+  );
+
+  if (existing) {
+    if (existing.status === "rejected") {
+      existing.status = "pending";
+      existing.permission = permission;
+      existing.sharedWithUserId = targetUser ? targetUser.id : null;
+      existing.createdAt = new Date().toISOString();
+      writeJsonFile<any>(filePath, { shares });
+      return existing;
+    }
+    throw new Error("Ja existe uma partilha ou convite para este email");
+  }
+
+  const newShare: FamilyShare = {
+    id: shares.length > 0 ? Math.max(...shares.map((s: FamilyShare) => s.id)) + 1 : 1,
+    ownerId,
+    animalId,
+    sharedWithEmail: targetEmail.toLowerCase(),
+    sharedWithUserId: targetUser ? targetUser.id : null,
+    permission,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+
+  shares.push(newShare);
+  writeJsonFile<any>(filePath, { shares });
+  return newShare;
+}
+
+export async function getPendingInvitations(userId: number): Promise<any[]> {
+  const supabase = getSupabase();
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("email")
+    .eq("id", userId)
+    .single();
+
+  if (error || !user || !user.email) return [];
+
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const pending = shares.filter(
+    (s: FamilyShare) =>
+      s.sharedWithEmail.toLowerCase() === user.email.toLowerCase() &&
+      s.status === "pending"
+  );
+
+  const result: any[] = [];
+  for (const s of pending) {
+    if (!s.sharedWithUserId) {
+      s.sharedWithUserId = userId;
+      writeJsonFile<any>(filePath, { shares });
+    }
+
+    const { data: animal } = await supabase
+      .from("animals")
+      .select("name, species")
+      .eq("id", s.animalId)
+      .single();
+
+    const { data: owner } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", s.ownerId)
+      .single();
+
+    result.push({
+      ...s,
+      animalName: animal?.name || "Animal",
+      animalSpecies: animal?.species || "dog",
+      ownerName: owner?.name || "Outro tutor",
+    });
+  }
+
+  return result;
+}
+
+export async function respondToInvitation(
+  userId: number,
+  invitationId: number,
+  action: "accept" | "reject"
+): Promise<boolean> {
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const share = shares.find((s: FamilyShare) => s.id === invitationId);
+  if (!share) throw new Error("Convite nao encontrado");
+
+  const supabase = getSupabase();
+  const { data: user } = await supabase
+    .from("users")
+    .select("email")
+    .eq("id", userId)
+    .single();
+
+  if (!user || share.sharedWithEmail.toLowerCase() !== user.email.toLowerCase()) {
+    throw new Error("Nao autorizado");
+  }
+
+  share.status = action === "accept" ? "accepted" : "rejected";
+  share.sharedWithUserId = userId;
+  writeJsonFile<any>(filePath, { shares });
+  return true;
+}
+
+export async function getSharedAnimalsForUser(userId: number): Promise<any[]> {
+  const supabase = getSupabase();
+  const { data: user } = await supabase
+    .from("users")
+    .select("email")
+    .eq("id", userId)
+    .single();
+
+  if (!user || !user.email) return [];
+
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const activeShares = shares.filter(
+    (s: FamilyShare) =>
+      s.sharedWithEmail.toLowerCase() === user.email.toLowerCase() &&
+      s.status === "accepted"
+  );
+
+  const result: any[] = [];
+  for (const s of activeShares) {
+    const { data: animal } = await supabase
+      .from("animals")
+      .select("*")
+      .eq("id", s.animalId)
+      .single();
+
+    if (animal) {
+      result.push({
+        ...animal,
+        isShared: true,
+        permission: s.permission,
+      });
+    }
+  }
+
+  return result;
+}
+
+export async function getAnimalShares(animalId: number): Promise<any[]> {
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const animalShares = shares.filter((s: FamilyShare) => s.animalId === animalId);
+  return animalShares;
+}
+
+export async function removeAnimalShare(ownerId: number, shareId: number): Promise<boolean> {
+  const filePath = FAMILY_SHARES_FILE_PATH;
+  const fileData: any = readJsonFile<any>(filePath);
+  const shares: FamilyShare[] = fileData.shares || [];
+
+  const idx = shares.findIndex((s: FamilyShare) => s.id === shareId && s.ownerId === ownerId);
+  if (idx === -1) {
+    throw new Error("Partilha nao encontrada ou nao autorizada");
+  }
+
+  shares.splice(idx, 1);
+  writeJsonFile<any>(filePath, { shares });
   return true;
 }
 

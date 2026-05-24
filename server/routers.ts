@@ -35,6 +35,11 @@ import {
   getEventPosture,
   savePostureForEvent,
   shareReportWithVet,
+  createShareInvitation,
+  getPendingInvitations,
+  respondToInvitation,
+  getAnimalShares,
+  removeAnimalShare,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -181,11 +186,13 @@ export const appRouter = router({
         }
 
         const userId = await effectiveUserId(ctx.user);
+        const targetAnimalId = input.animalId || 1;
+        await verifyAnimalOwner(targetAnimalId, userId, true);
 
         // Persist event
         const event = await insertEvent({
           userId,
-          animalId: input.animalId || 1,
+          animalId: targetAnimalId,
           state: result.state,
           confidence: result.confidence,
           emoji: result.emoji,
@@ -294,7 +301,7 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
-        await verifyAnimalOwner(input.animalId, userId);
+        await verifyAnimalOwner(input.animalId, userId, true);
         return updateAnimalBaseline(input.animalId, input);
       }),
 
@@ -304,6 +311,67 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         await verifyAnimalOwner(input.animalId, userId);
         return getLatestBeliefState(input.animalId);
+      }),
+
+    inviteShare: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          email: z.string().email(),
+          permission: z.enum(["read", "write"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const animal = await getAnimalById(input.animalId, userId);
+        if (!animal) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Apenas o proprietario pode convidar co-tutores.",
+          });
+        }
+        return createShareInvitation(userId, input.animalId, input.email, input.permission);
+      }),
+
+    listShares: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getAnimalShares(input.animalId);
+      }),
+
+    removeShare: publicProcedure
+      .input(z.object({ shareId: z.number(), animalId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const animal = await getAnimalById(input.animalId, userId);
+        if (!animal) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Apenas o proprietario pode revogar partilhas.",
+          });
+        }
+        await removeAnimalShare(userId, input.shareId);
+        return { success: true };
+      }),
+
+    getPendingInvitations: publicProcedure.query(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      return getPendingInvitations(userId);
+    }),
+
+    respondToInvitation: publicProcedure
+      .input(
+        z.object({
+          invitationId: z.number(),
+          action: z.enum(["accept", "reject"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await respondToInvitation(userId, input.invitationId, input.action);
+        return { success: true };
       }),
   }),
 

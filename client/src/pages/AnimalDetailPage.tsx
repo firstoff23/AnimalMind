@@ -28,9 +28,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
+import FamilyShareTab from "@/components/FamilyShareTab";
 import {
   RadarChart,
   PolarGrid,
@@ -67,7 +69,7 @@ const STATES: EmotionalState[] = [
 export default function AnimalDetailPage({ params }: { params: { id: string } }) {
   const animalId = parseInt(params.id);
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"stats" | "baseline" | "history">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "baseline" | "history" | "share">("stats");
   const [statsDays, setStatsDays] = useState<7 | 30>(7);
   const [historyPage, setHistoryPage] = useState(1);
   const [editingNotesEventId, setEditingNotesEventId] = useState<number | null>(null);
@@ -405,25 +407,29 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
       {/* Glassmorphic Tab switcher */}
       <div className="flex bg-secondary/60 p-1 rounded-xl border border-border/80">
-        {(["stats", "baseline", "history"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "flex-1 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
-              activeTab === tab
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab === "stats" && <Activity size={13} />}
-            {tab === "baseline" && <Settings size={13} />}
-            {tab === "history" && <History size={13} />}
-            {tab === "stats" && "Estatísticas"}
-            {tab === "baseline" && "Calibrar"}
-            {tab === "history" && "Histórico"}
-          </button>
-        ))}
+        {(["stats", "baseline", "history", "share"] as const)
+          .filter((tab) => tab !== "share" || !animal.isShared)
+          .map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "flex-1 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
+                activeTab === tab
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab === "stats" && <Activity size={13} />}
+              {tab === "baseline" && <Settings size={13} />}
+              {tab === "history" && <History size={13} />}
+              {tab === "share" && <Users size={13} />}
+              {tab === "stats" && "Estatísticas"}
+              {tab === "baseline" && "Calibrar"}
+              {tab === "history" && "Histórico"}
+              {tab === "share" && "Co-tutores"}
+            </button>
+          ))}
       </div>
 
       {/* Tab Contents */}
@@ -597,13 +603,29 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
         {activeTab === "baseline" && (
           <form onSubmit={handleBaselineSubmit} className="bg-card border border-border rounded-2xl p-5 space-y-5 page-enter">
             <div>
-              <h3 className="font-bold text-foreground flex items-center gap-1.5">
-                <Sparkles size={16} className="text-primary animate-pulse" /> Calibração Comportamental
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                Ajuste os parâmetros padrão para calibrar o tradutor com a personalidade individual do seu animal de estimação.
-              </p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold text-foreground flex items-center gap-1.5">
+                    <Sparkles size={16} className="text-primary animate-pulse" /> Calibração Comportamental
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ajuste os parâmetros padrão para calibrar o tradutor com a personalidade individual do seu animal de estimação.
+                  </p>
+                </div>
+                {animal.isShared && (
+                  <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 bg-cyan-950/20 uppercase font-semibold">
+                    Co-tutor ({animal.permission})
+                  </Badge>
+                )}
+              </div>
             </div>
+
+            {animal.permission === "read" && (
+              <div className="bg-cyan-950/30 border border-cyan-500/20 text-cyan-400 text-xs rounded-xl p-3 flex gap-2 items-center">
+                <AlertTriangle size={14} className="shrink-0" />
+                <span>Modo de Apenas Leitura: Apenas utilizadores com permissão de escrita ou proprietários podem alterar a baseline.</span>
+              </div>
+            )}
 
             <div className="space-y-4">
               {/* Vocalization Threshold */}
@@ -617,6 +639,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                     id="vocalizationThreshold"
                     name="vocalizationThreshold"
                     defaultValue={baseline.vocalizationThreshold}
+                    disabled={animal.permission === "read"}
                     min={1}
                     max={100}
                     className="bg-secondary border-border w-24 text-center font-bold"
@@ -636,6 +659,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                   id="alertSensitivity"
                   name="alertSensitivity"
                   defaultValue={baseline.alertSensitivity}
+                  disabled={animal.permission === "read"}
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
                 >
                   <option value="low">Baixa (Apenas alertas críticos de angústia)</option>
@@ -659,6 +683,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                       <Checkbox
                         id={`normalState_${s}`}
                         name={`normalState_${s}`}
+                        disabled={animal.permission === "read"}
                         defaultChecked={baseline.normalStates.includes(s)}
                       />
                       <label
@@ -674,14 +699,16 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground gap-2 mt-2"
-              disabled={updateBaselineMutation.isPending}
-            >
-              <Save size={16} />
-              {updateBaselineMutation.isPending ? "A guardar calibração..." : "Guardar Calibração"}
-            </Button>
+            {animal.permission !== "read" && (
+              <Button
+                type="submit"
+                className="w-full bg-primary text-primary-foreground gap-2 mt-2"
+                disabled={updateBaselineMutation.isPending}
+              >
+                <Save size={16} />
+                {updateBaselineMutation.isPending ? "A guardar calibração..." : "Guardar Calibração"}
+              </Button>
+            )}
           </form>
         )}
 
@@ -832,6 +859,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* SHARE TAB */}
+        {activeTab === "share" && !animal.isShared && (
+          <div className="page-enter">
+            <FamilyShareTab animalId={animalId} />
           </div>
         )}
       </div>

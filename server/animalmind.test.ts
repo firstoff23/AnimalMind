@@ -77,7 +77,14 @@ vi.mock("./db", () => ({
   }),
   getAnimalById: vi.fn().mockResolvedValue({ id: 1, userId: 1, name: "Bobi", species: "dog", breed: "Labrador", age: 3 }),
   getEventsForAnimalPaginated: vi.fn().mockResolvedValue({ events: [], total: 0 }),
-  getStatsForAnimal: vi.fn().mockResolvedValue({ dailyActivity: [], stateDistribution: {}, totalCount: 0 })
+  getStatsForAnimal: vi.fn().mockResolvedValue({ dailyActivity: [], stateDistribution: {}, totalCount: 0 }),
+  getUserByEmail: vi.fn().mockResolvedValue(undefined),
+  createShareInvitation: vi.fn().mockResolvedValue({ id: 1, status: "pending" }),
+  getPendingInvitations: vi.fn().mockResolvedValue([]),
+  respondToInvitation: vi.fn().mockResolvedValue(true),
+  getSharedAnimalsForUser: vi.fn().mockResolvedValue([]),
+  getAnimalShares: vi.fn().mockResolvedValue([]),
+  removeAnimalShare: vi.fn().mockResolvedValue(true)
 }));
 
 // ─── Context factory ──────────────────────────────────────────────────────────
