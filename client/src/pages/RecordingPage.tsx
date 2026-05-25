@@ -326,10 +326,12 @@ export default function RecordingPage() {
   } = useLiveAudioStream();
 
   const [isAutoMode, setIsAutoMode] = useState(false);
-  const [autoRecordingTimer, setAutoRecordingTimer] = useState<NodeJS.Timeout | null>(null);
+  const [autoClassificationCount, setAutoClassificationCount] = useState(0);
+  const [lastAutoResult, setLastAutoResult] = useState<ClassifyResult | null>(null);
 
   const isAutoModeRef = useRef(false);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRecordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressActiveRef = useRef(false);
 
   // Vision state hooks
@@ -489,13 +491,27 @@ export default function RecordingPage() {
     setRecordState("recording");
   };
 
+  const clearAutoRecordingTimer = () => {
+    if (autoRecordingTimerRef.current) {
+      clearTimeout(autoRecordingTimerRef.current);
+      autoRecordingTimerRef.current = null;
+    }
+  };
+
+  const scheduleAutoRecording = (delayMs: number) => {
+    clearAutoRecordingTimer();
+    autoRecordingTimerRef.current = setTimeout(() => {
+      autoRecordingTimerRef.current = null;
+      if (isAutoModeRef.current) {
+        startRecordingCycle();
+      }
+    }, delayMs);
+  };
+
   const disableAutoMode = () => {
     setIsAutoMode(false);
     isAutoModeRef.current = false;
-    if (autoRecordingTimer) {
-      clearTimeout(autoRecordingTimer);
-      setAutoRecordingTimer(null);
-    }
+    clearAutoRecordingTimer();
     stopLiveAudio();
     setRecordState("idle");
     toast.info("Modo Automático desligado.");
@@ -504,7 +520,10 @@ export default function RecordingPage() {
   const enableAutoMode = () => {
     setIsAutoMode(true);
     isAutoModeRef.current = true;
+    setAutoClassificationCount(0);
+    setLastAutoResult(null);
     setResult(null);
+    clearAutoRecordingTimer();
     startRecordingCycle();
     toast.success("Modo Automático ativado!");
   };
@@ -528,13 +547,10 @@ export default function RecordingPage() {
       }
 
       if (isAutoModeRef.current) {
+        setAutoClassificationCount((count) => count + 1);
+        setLastAutoResult(res);
         setRecordState("idle");
-        const timer = setTimeout(() => {
-          if (isAutoModeRef.current) {
-            startRecordingCycle();
-          }
-        }, 1500);
-        setAutoRecordingTimer(timer);
+        scheduleAutoRecording(1500);
       } else {
         setRecordState("idle");
       }
@@ -544,12 +560,7 @@ export default function RecordingPage() {
       if (isAutoModeRef.current) {
         setRecordState("idle");
         toast.error("Erro na classificação automática. A tentar novamente em 2 segundos...");
-        const timer = setTimeout(() => {
-          if (isAutoModeRef.current) {
-            startRecordingCycle();
-          }
-        }, 2000);
-        setAutoRecordingTimer(timer);
+        scheduleAutoRecording(2000);
       } else {
         setRecordState("idle");
         toast.error("Erro ao classificar o áudio. Tente novamente.");
@@ -613,9 +624,10 @@ export default function RecordingPage() {
   useEffect(() => {
     return () => {
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-      if (autoRecordingTimer) clearTimeout(autoRecordingTimer);
+      clearAutoRecordingTimer();
+      stopLiveAudio();
     };
-  }, [autoRecordingTimer]);
+  }, [stopLiveAudio]);
 
   const handleButtonClick = () => {
     if (isAutoModeRef.current) {
@@ -878,7 +890,7 @@ export default function RecordingPage() {
             : "bg-card border-border"
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div 
             className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300",
@@ -892,8 +904,17 @@ export default function RecordingPage() {
               Modo contínuo
             </p>
             <p className="text-xs text-muted-foreground">
-              {isAutoMode ? "A escutar e classificar continuamente" : "Permite classificar sem interrupções"}
+              {isAutoMode
+                ? `${autoClassificationCount} classificações nesta sessão`
+                : "Permite classificar sem interrupções"}
             </p>
+            {isAutoMode && lastAutoResult && (
+              <p className="text-[11px] text-cyan-300 mt-1 truncate max-w-[220px]">
+                Última: {lastAutoResult.emoji}{" "}
+                {STATE_LABELS[lastAutoResult.state]} ·{" "}
+                {Math.round(lastAutoResult.confidence * 100)}%
+              </p>
+            )}
           </div>
         </div>
         <Button
@@ -907,7 +928,7 @@ export default function RecordingPage() {
           )}
           onClick={isAutoMode ? disableAutoMode : enableAutoMode}
         >
-          {isAutoMode ? "DESATIVAR" : "ATIVAR"}
+          {isAutoMode ? "PARAR" : "ATIVAR"}
         </Button>
       </div>
 
