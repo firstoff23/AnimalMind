@@ -4,6 +4,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { familyRouter } from "./routers/family";
+import { vetRouter } from "./routers/vet";
 import {
   addAnimal,
   getAllEventsForExport,
@@ -35,7 +37,6 @@ import {
   getEventBeliefState,
   getEventPosture,
   savePostureForEvent,
-  shareReportWithVet,
   createShareInvitation,
   getPendingInvitations,
   respondToInvitation,
@@ -114,6 +115,7 @@ function mapEventForExport(e: any) {
 
 export const appRouter = router({
   system: systemRouter,
+  family: familyRouter,
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
@@ -581,28 +583,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ── Vet ─────────────────────────────────────────────────────────────────────
-  vet: router({
-    shareReport: publicProcedure
-      .input(
-        z.object({
-          animalId: z.number(),
-          name: z.string().min(1),
-          email: z.string().email(),
-          note: z.string().optional().default(""),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const userId = await effectiveUserId(ctx.user);
-        await verifyAnimalOwner(input.animalId, userId);
-        await shareReportWithVet(input.animalId, {
-          name: input.name,
-          email: input.email,
-          note: input.note,
-        });
-        return { success: true };
-      }),
-  }),
+  vet: vetRouter,
 });
 
 export type AppRouter = typeof appRouter;

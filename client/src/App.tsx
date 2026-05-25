@@ -21,6 +21,8 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AnimalDetailPage from "./pages/AnimalDetailPage";
 import VetPage from "./pages/VetPage";
+import VetDashboard from "./pages/VetDashboard";
+import FamilyDashboard from "./pages/FamilyDashboard";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -49,6 +51,9 @@ function Router() {
           <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />
           <Route path="/user-profile" component={(props) => <ProtectedRoute component={UserProfilePage} {...props} />} />
           <Route path="/veterinario" component={(props) => <ProtectedRoute component={VetPage} {...props} />} />
+          <Route path="/vet" component={(props) => <ProtectedRoute component={VetDashboard} {...props} />} />
+          <Route path="/family" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
+          <Route path="/join/:code" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
 
           {/* Not found */}
           <Route path="/404" component={NotFound} />

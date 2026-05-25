@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT,
   email VARCHAR(320),
   login_method VARCHAR(64),
-  role VARCHAR(20) DEFAULT 'user' NOT NULL,
+  role VARCHAR(20) DEFAULT 'owner' NOT NULL CHECK (role IN ('owner', 'vet', 'admin')),
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
   last_signed_in TIMESTAMP DEFAULT NOW() NOT NULL

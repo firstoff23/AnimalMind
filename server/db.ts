@@ -747,7 +747,11 @@ export async function verifyAnimalOwner(
   );
 
   if (!share) {
-    throw new Error("Não autorizado");
+    const hasFamilyAccess = await userHasFamilyAnimalAccess(userId, animalId);
+    if (!hasFamilyAccess) {
+      throw new Error("Não autorizado");
+    }
+    return;
   }
 
   if (requireWrite && share.permission !== "write") {
@@ -885,6 +889,8 @@ export interface BeliefState {
 const BELIEF_STATES_FILE_PATH = path.resolve(import.meta.dirname, "belief_states.json");
 const POSTURES_FILE_PATH = path.resolve(import.meta.dirname, "postures.json");
 const VET_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "vet_shares.json");
+const VET_CLINICAL_NOTES_FILE_PATH = path.resolve(import.meta.dirname, "vet_clinical_notes.json");
+const FAMILIES_FILE_PATH = path.resolve(import.meta.dirname, "families.json");
 
 function readJsonFile<T>(filePath: string): Record<string | number, T> {
   try {
@@ -1040,19 +1046,347 @@ export async function savePostureForEvent(eventId: number, posture: string): Pro
 // Vet Shares
 export async function shareReportWithVet(
   animalId: number,
-  data: { name: string; email: string; note: string }
+  data: { name: string; email: string; note: string; ownerId?: number }
 ): Promise<boolean> {
+  try {
+    if (data.ownerId) {
+      const supabase = getSupabase();
+      await supabase
+        .from("vet_shares")
+        .upsert(
+          [
+            {
+              animal_id: animalId,
+              owner_id: data.ownerId,
+              vet_email: data.email.toLowerCase(),
+              vet_name: data.name,
+              owner_note: data.note,
+              shared_at: new Date().toISOString(),
+            },
+          ],
+          { onConflict: "animal_id,vet_email" }
+        );
+    }
+  } catch (error) {
+    console.warn("[Vet] Falling back to local vet share persistence:", error);
+  }
+
   const shares = readJsonFile<any>(VET_SHARES_FILE_PATH);
   const animalShares = shares[animalId] || [];
   
   animalShares.push({
     ...data,
+    email: data.email.toLowerCase(),
     sharedAt: new Date().toISOString()
   });
 
   shares[animalId] = animalShares;
   writeJsonFile<any>(VET_SHARES_FILE_PATH, shares);
   return true;
+}
+
+export interface VetAnimalFilters {
+  species?: string;
+  state?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface VetSharedAnimal {
+  id: number;
+  name: string;
+  species: string;
+  breed: string | null;
+  age: number | null;
+  ownerId: number | null;
+  ownerName: string;
+  ownerEmail: string | null;
+  sharedAt: string;
+  ownerNote: string;
+  lastState: string | null;
+  lastConfidence: number | null;
+  lastEventAt: string | null;
+}
+
+function getVetClinicalNotesKey(vetUserId: number, animalId: number) {
+  return `${vetUserId}:${animalId}`;
+}
+
+async function getUserEmail(userId: number): Promise<string | null> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("users")
+      .select("email")
+      .eq("id", userId)
+      .single();
+    if (error) return null;
+    return data?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function getAnimalOwnerSummary(ownerId: number | null) {
+  if (!ownerId) return { ownerName: "Tutor", ownerEmail: null };
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("users")
+      .select("name, email")
+      .eq("id", ownerId)
+      .single();
+    return {
+      ownerName: data?.name || "Tutor",
+      ownerEmail: data?.email ?? null,
+    };
+  } catch {
+    return { ownerName: "Tutor", ownerEmail: null };
+  }
+}
+
+async function getLatestEventSummaryForAnimal(animalId: number) {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("classification_events")
+      .select("state, confidence, created_at")
+      .eq("animal_id", animalId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return {
+      lastState: data?.state ?? null,
+      lastConfidence: data?.confidence !== undefined ? Number(data.confidence) : null,
+      lastEventAt: data?.created_at ?? null,
+    };
+  } catch {
+    return { lastState: null, lastConfidence: null, lastEventAt: null };
+  }
+}
+
+function filterVetAnimals(animals: VetSharedAnimal[], filters: VetAnimalFilters = {}) {
+  return animals.filter((animal) => {
+    if (filters.species && filters.species !== "all" && animal.species !== filters.species) {
+      return false;
+    }
+    if (filters.state && filters.state !== "all" && animal.lastState !== filters.state) {
+      return false;
+    }
+    if (filters.dateFrom && animal.lastEventAt && animal.lastEventAt < filters.dateFrom) {
+      return false;
+    }
+    if (filters.dateTo && animal.lastEventAt && animal.lastEventAt > filters.dateTo) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export async function getVetSharedAnimals(
+  vetUserId: number,
+  vetEmail: string | null,
+  filters: VetAnimalFilters = {}
+): Promise<VetSharedAnimal[]> {
+  const normalizedEmail = vetEmail?.toLowerCase() ?? null;
+  const supabase = getSupabase();
+
+  try {
+    let query = supabase
+      .from("vet_shares")
+      .select("*")
+      .order("shared_at", { ascending: false });
+
+    if (normalizedEmail) {
+      query = query.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`);
+    } else {
+      query = query.eq("vet_user_id", vetUserId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const result: VetSharedAnimal[] = [];
+    for (const share of data || []) {
+      const { data: animal } = await supabase
+        .from("animals")
+        .select("*")
+        .eq("id", share.animal_id)
+        .single();
+      if (!animal) continue;
+
+      const owner = await getAnimalOwnerSummary(Number(share.owner_id));
+      const latest = await getLatestEventSummaryForAnimal(Number(share.animal_id));
+      result.push({
+        id: Number(animal.id),
+        name: animal.name,
+        species: animal.species,
+        breed: animal.breed ?? null,
+        age: animal.age ?? null,
+        ownerId: Number(share.owner_id),
+        ownerName: owner.ownerName,
+        ownerEmail: owner.ownerEmail,
+        sharedAt: share.shared_at,
+        ownerNote: share.owner_note ?? "",
+        ...latest,
+      });
+    }
+
+    return filterVetAnimals(result, filters);
+  } catch (error) {
+    console.warn("[Vet] Falling back to local vet shares:", error);
+  }
+
+  const shares = readJsonFile<any>(VET_SHARES_FILE_PATH);
+  const result: VetSharedAnimal[] = [];
+
+  for (const [animalIdText, animalShares] of Object.entries(shares)) {
+    const matchingShares = Array.isArray(animalShares)
+      ? animalShares.filter((share) => {
+          if (!normalizedEmail) return share.ownerId === vetUserId || share.vetUserId === vetUserId;
+          return String(share.email || "").toLowerCase() === normalizedEmail;
+        })
+      : [];
+
+    for (const share of matchingShares) {
+      const animalId = Number(animalIdText);
+      const { data: animal } = await supabase
+        .from("animals")
+        .select("*")
+        .eq("id", animalId)
+        .single();
+      if (!animal) continue;
+
+      const ownerId = share.ownerId ? Number(share.ownerId) : Number(animal.user_id ?? 0) || null;
+      const owner = await getAnimalOwnerSummary(ownerId);
+      const latest = await getLatestEventSummaryForAnimal(animalId);
+      result.push({
+        id: animalId,
+        name: animal.name,
+        species: animal.species,
+        breed: animal.breed ?? null,
+        age: animal.age ?? null,
+        ownerId,
+        ownerName: owner.ownerName,
+        ownerEmail: owner.ownerEmail,
+        sharedAt: share.sharedAt ?? new Date().toISOString(),
+        ownerNote: share.note ?? "",
+        ...latest,
+      });
+    }
+  }
+
+  return filterVetAnimals(result, filters);
+}
+
+export async function getVetReportData(
+  vetUserId: number,
+  vetEmail: string | null,
+  animalId: number,
+  days: number
+) {
+  const sharedAnimals = await getVetSharedAnimals(vetUserId, vetEmail);
+  const animal = sharedAnimals.find((item) => item.id === animalId);
+  if (!animal) {
+    throw new Error("Animal não partilhado com este veterinário");
+  }
+
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const supabase = getSupabase();
+
+  let events: any[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("classification_events")
+      .select("*")
+      .eq("animal_id", animalId)
+      .gte("created_at", since.toISOString())
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    events = data || [];
+  } catch (error) {
+    console.warn("[Vet] Could not load report events:", error);
+  }
+
+  const ownerNotes = readNotesFromFile();
+  const clinicalNotes = await getVetClinicalNotes(vetUserId, animalId);
+  const trend = [...events]
+    .reverse()
+    .map((event) => ({
+      date: new Date(event.created_at).toLocaleDateString("pt-PT", {
+        day: "2-digit",
+        month: "2-digit",
+      }),
+      confidence: Number(event.confidence),
+      state: event.state,
+    }));
+
+  return {
+    animal,
+    periodDays: days,
+    events: events.map((event) => ({
+      id: Number(event.id),
+      createdAt: event.created_at,
+      state: event.state,
+      confidence: Number(event.confidence),
+      emoji: event.emoji ?? "",
+      modelUsed: event.model_used ?? "",
+      durationSeconds: 3,
+      notes: ownerNotes[event.id] || "",
+    })),
+    trend,
+    clinicalNotes,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+export async function getVetClinicalNotes(vetUserId: number, animalId: number): Promise<string> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("vet_clinical_notes")
+      .select("notes")
+      .eq("vet_user_id", vetUserId)
+      .eq("animal_id", animalId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.notes ?? "";
+  } catch {
+    const notes = readJsonFile<string>(VET_CLINICAL_NOTES_FILE_PATH);
+    return notes[getVetClinicalNotesKey(vetUserId, animalId)] || "";
+  }
+}
+
+export async function saveVetClinicalNotes(
+  vetUserId: number,
+  animalId: number,
+  notes: string
+): Promise<string> {
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("vet_clinical_notes")
+      .upsert(
+        [
+          {
+            vet_user_id: vetUserId,
+            animal_id: animalId,
+            notes,
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        { onConflict: "animal_id,vet_user_id" }
+      );
+    if (error) throw error;
+  } catch (error) {
+    console.warn("[Vet] Falling back to local clinical notes:", error);
+    const localNotes = readJsonFile<string>(VET_CLINICAL_NOTES_FILE_PATH);
+    localNotes[getVetClinicalNotesKey(vetUserId, animalId)] = notes;
+    writeJsonFile<string>(VET_CLINICAL_NOTES_FILE_PATH, localNotes);
+  }
+
+  return notes;
 }
 
 // ─── Family sharing persistence ──────────────────────────────────────────────
@@ -1267,6 +1601,441 @@ export async function removeAnimalShare(ownerId: number, shareId: number): Promi
   shares.splice(idx, 1);
   writeJsonFile<any>(filePath, { shares });
   return true;
+}
+
+export interface FamilyRecord {
+  id: number;
+  name: string;
+  ownerId: number;
+  createdAt: string;
+}
+
+export interface FamilyMemberRecord {
+  familyId: number;
+  userId: number;
+  role: "admin" | "member";
+  joinedAt: string;
+  name?: string | null;
+  email?: string | null;
+}
+
+export interface FamilyInviteRecord {
+  code: string;
+  familyId: number;
+  expiresAt: string;
+  used: boolean;
+  createdAt: string;
+}
+
+interface FamilyStore {
+  families: FamilyRecord[];
+  members: FamilyMemberRecord[];
+  animals: { familyId: number; animalId: number; sharedAt: string }[];
+  invites: FamilyInviteRecord[];
+}
+
+function readFamilyStore(): FamilyStore {
+  const data = readJsonFile<any>(FAMILIES_FILE_PATH) as any;
+  return {
+    families: Array.isArray(data.families) ? data.families : [],
+    members: Array.isArray(data.members) ? data.members : [],
+    animals: Array.isArray(data.animals) ? data.animals : [],
+    invites: Array.isArray(data.invites) ? data.invites : [],
+  };
+}
+
+function writeFamilyStore(store: FamilyStore) {
+  writeJsonFile<any>(FAMILIES_FILE_PATH, store as any);
+}
+
+function nextLocalId(items: { id: number }[]) {
+  return items.length > 0 ? Math.max(...items.map((item) => item.id)) + 1 : 1;
+}
+
+function generateInviteCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return code;
+}
+
+async function getUserSummary(userId: number) {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("users")
+      .select("name, email")
+      .eq("id", userId)
+      .single();
+    return {
+      name: data?.name ?? "Membro",
+      email: data?.email ?? null,
+    };
+  } catch {
+    return { name: "Membro", email: null };
+  }
+}
+
+async function getUserFamilyIds(userId: number): Promise<number[]> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("family_members")
+      .select("family_id")
+      .eq("user_id", userId);
+    if (error) throw error;
+    return (data || []).map((row: any) => Number(row.family_id));
+  } catch {
+    const store = readFamilyStore();
+    return store.members
+      .filter((member) => member.userId === userId)
+      .map((member) => member.familyId);
+  }
+}
+
+export async function createFamilyGroup(userId: number, name: string): Promise<FamilyRecord> {
+  try {
+    const supabase = getSupabase();
+    const { data: family, error } = await supabase
+      .from("families")
+      .insert([{ name, owner_id: userId }])
+      .select()
+      .single();
+    if (error) throw error;
+
+    await supabase.from("family_members").insert([
+      {
+        family_id: family.id,
+        user_id: userId,
+        role: "admin",
+      },
+    ]);
+
+    return {
+      id: Number(family.id),
+      name: family.name,
+      ownerId: Number(family.owner_id),
+      createdAt: family.created_at,
+    };
+  } catch (error) {
+    console.warn("[Family] Falling back to local family creation:", error);
+  }
+
+  const store = readFamilyStore();
+  const family: FamilyRecord = {
+    id: nextLocalId(store.families),
+    name,
+    ownerId: userId,
+    createdAt: new Date().toISOString(),
+  };
+  store.families.push(family);
+  store.members.push({
+    familyId: family.id,
+    userId,
+    role: "admin",
+    joinedAt: family.createdAt,
+  });
+  writeFamilyStore(store);
+  return family;
+}
+
+export async function getFamilyMembersForUser(userId: number): Promise<FamilyMemberRecord[]> {
+  try {
+    const familyIds = await getUserFamilyIds(userId);
+    if (familyIds.length === 0) return [];
+
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("family_members")
+      .select("family_id, user_id, role, joined_at")
+      .in("family_id", familyIds);
+    if (error) throw error;
+
+    const members: FamilyMemberRecord[] = [];
+    for (const row of data || []) {
+      const summary = await getUserSummary(Number(row.user_id));
+      members.push({
+        familyId: Number(row.family_id),
+        userId: Number(row.user_id),
+        role: row.role,
+        joinedAt: row.joined_at,
+        ...summary,
+      });
+    }
+    return members;
+  } catch {
+    const store = readFamilyStore();
+    const familyIds = store.members
+      .filter((member) => member.userId === userId)
+      .map((member) => member.familyId);
+
+    const members = store.members.filter((member) => familyIds.includes(member.familyId));
+    return Promise.all(
+      members.map(async (member) => ({
+        ...member,
+        ...(await getUserSummary(member.userId)),
+      }))
+    );
+  }
+}
+
+export async function createFamilyInviteForUser(
+  userId: number,
+  familyId?: number
+): Promise<FamilyInviteRecord & { inviteUrl: string }> {
+  const familyIds = await getUserFamilyIds(userId);
+  const targetFamilyId = familyId ?? familyIds[0];
+  if (!targetFamilyId || !familyIds.includes(targetFamilyId)) {
+    throw new Error("Família não encontrada ou não autorizada");
+  }
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+  let code = generateInviteCode();
+
+  try {
+    const supabase = getSupabase();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data, error } = await supabase
+        .from("invites")
+        .insert([
+          {
+            code,
+            family_id: targetFamilyId,
+            expires_at: expiresAt.toISOString(),
+            used: false,
+          },
+        ])
+        .select()
+        .single();
+      if (!error && data) {
+        return {
+          code: data.code,
+          familyId: Number(data.family_id),
+          expiresAt: data.expires_at,
+          used: Boolean(data.used),
+          createdAt: data.created_at,
+          inviteUrl: `https://animalmind.vercel.app/join/${data.code}`,
+        };
+      }
+      code = generateInviteCode();
+    }
+  } catch (error) {
+    console.warn("[Family] Falling back to local invite creation:", error);
+  }
+
+  const store = readFamilyStore();
+  while (store.invites.some((invite) => invite.code === code)) {
+    code = generateInviteCode();
+  }
+  const invite: FamilyInviteRecord = {
+    code,
+    familyId: targetFamilyId,
+    expiresAt: expiresAt.toISOString(),
+    used: false,
+    createdAt: new Date().toISOString(),
+  };
+  store.invites.push(invite);
+  writeFamilyStore(store);
+  return {
+    ...invite,
+    inviteUrl: `https://animalmind.vercel.app/join/${invite.code}`,
+  };
+}
+
+export async function joinFamilyByInviteCode(userId: number, code: string): Promise<{ success: true; familyId: number }> {
+  const normalizedCode = code.trim().toUpperCase();
+
+  try {
+    const supabase = getSupabase();
+    const { data: invite, error } = await supabase
+      .from("invites")
+      .select("*")
+      .eq("code", normalizedCode)
+      .eq("used", false)
+      .single();
+    if (error) throw error;
+    if (!invite || new Date(invite.expires_at).getTime() < Date.now()) {
+      throw new Error("Convite expirado");
+    }
+
+    await supabase.from("family_members").upsert(
+      [
+        {
+          family_id: invite.family_id,
+          user_id: userId,
+          role: "member",
+        },
+      ],
+      { onConflict: "family_id,user_id" }
+    );
+    await supabase.from("invites").update({ used: true }).eq("code", normalizedCode);
+    return { success: true, familyId: Number(invite.family_id) };
+  } catch (error) {
+    console.warn("[Family] Falling back to local invite join:", error);
+  }
+
+  const store = readFamilyStore();
+  const invite = store.invites.find((item) => item.code === normalizedCode && !item.used);
+  if (!invite) throw new Error("Convite não encontrado");
+  if (new Date(invite.expiresAt).getTime() < Date.now()) throw new Error("Convite expirado");
+
+  const existing = store.members.find(
+    (member) => member.familyId === invite.familyId && member.userId === userId
+  );
+  if (!existing) {
+    store.members.push({
+      familyId: invite.familyId,
+      userId,
+      role: "member",
+      joinedAt: new Date().toISOString(),
+    });
+  }
+  invite.used = true;
+  writeFamilyStore(store);
+  return { success: true, familyId: invite.familyId };
+}
+
+export async function shareAnimalWithFamily(
+  userId: number,
+  animalId: number,
+  familyId?: number
+): Promise<{ success: true; familyId: number; animalId: number }> {
+  await verifyAnimalOwner(animalId, userId, true);
+  const familyIds = await getUserFamilyIds(userId);
+  const targetFamilyId = familyId ?? familyIds[0];
+  if (!targetFamilyId || !familyIds.includes(targetFamilyId)) {
+    throw new Error("Família não encontrada ou não autorizada");
+  }
+
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("family_animals")
+      .upsert(
+        [
+          {
+            family_id: targetFamilyId,
+            animal_id: animalId,
+          },
+        ],
+        { onConflict: "family_id,animal_id" }
+      );
+    if (error) throw error;
+  } catch (error) {
+    console.warn("[Family] Falling back to local family animal sharing:", error);
+    const store = readFamilyStore();
+    const exists = store.animals.some(
+      (item) => item.familyId === targetFamilyId && item.animalId === animalId
+    );
+    if (!exists) {
+      store.animals.push({
+        familyId: targetFamilyId,
+        animalId,
+        sharedAt: new Date().toISOString(),
+      });
+      writeFamilyStore(store);
+    }
+  }
+
+  return { success: true, familyId: targetFamilyId, animalId };
+}
+
+export async function getFamilyAnimalsForUser(userId: number): Promise<any[]> {
+  const familyIds = await getUserFamilyIds(userId);
+  if (familyIds.length === 0) return [];
+
+  try {
+    const supabase = getSupabase();
+    const { data: rows, error } = await supabase
+      .from("family_animals")
+      .select("family_id, animal_id, shared_at")
+      .in("family_id", familyIds);
+    if (error) throw error;
+
+    const result: any[] = [];
+    for (const row of rows || []) {
+      const { data: animal } = await supabase
+        .from("animals")
+        .select("*")
+        .eq("id", row.animal_id)
+        .single();
+      if (animal) {
+        result.push({
+          ...animal,
+          familyId: Number(row.family_id),
+          sharedAt: row.shared_at,
+        });
+      }
+    }
+    return result;
+  } catch (error) {
+    console.warn("[Family] Falling back to local family animals:", error);
+  }
+
+  const store = readFamilyStore();
+  const localRows = store.animals.filter((row) => familyIds.includes(row.familyId));
+  const supabase = getSupabase();
+  const result: any[] = [];
+  for (const row of localRows) {
+    const { data: animal } = await supabase
+      .from("animals")
+      .select("*")
+      .eq("id", row.animalId)
+      .single();
+    if (animal) {
+      result.push({
+        ...animal,
+        familyId: row.familyId,
+        sharedAt: row.sharedAt,
+      });
+    }
+  }
+  return result;
+}
+
+export async function getFamilyActivityForUser(userId: number): Promise<any[]> {
+  const animals = await getFamilyAnimalsForUser(userId);
+  const animalIds = Array.from(new Set(animals.map((animal) => Number(animal.id))));
+  if (animalIds.length === 0) return [];
+
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("classification_events")
+      .select("id, user_id, animal_id, state, confidence, created_at")
+      .in("animal_id", animalIds)
+      .neq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(8);
+    if (error) throw error;
+
+    const result = [];
+    for (const event of data || []) {
+      const animal = animals.find((item) => Number(item.id) === Number(event.animal_id));
+      const user = await getUserSummary(Number(event.user_id));
+      result.push({
+        id: Number(event.id),
+        userName: user.name,
+        animalName: animal?.name || "Animal",
+        state: event.state,
+        confidence: Number(event.confidence),
+        createdAt: event.created_at,
+        message: `${user.name} classificou ${animal?.name || "Animal"} como ${event.state}`,
+      });
+    }
+    return result;
+  } catch (error) {
+    console.warn("[Family] Could not load family activity:", error);
+    return [];
+  }
+}
+
+async function userHasFamilyAnimalAccess(userId: number, animalId: number): Promise<boolean> {
+  const animals = await getFamilyAnimalsForUser(userId);
+  return animals.some((animal) => Number(animal.id) === animalId);
 }
 
 

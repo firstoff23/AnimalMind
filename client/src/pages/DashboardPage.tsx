@@ -59,6 +59,7 @@ export default function DashboardPage() {
 
   const utils = trpc.useUtils();
   const { data: invitations = [], refetch: refetchInvitations } = trpc.animals.getPendingInvitations.useQuery();
+  const { data: familyActivity = [] } = trpc.family.getActivity.useQuery();
 
   const respondMutation = trpc.animals.respondToInvitation.useMutation({
     onSuccess: () => {
@@ -219,6 +220,27 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {familyActivity.length > 0 && (
+        <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-2xl p-4 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
+              Atividade da família
+            </h2>
+            <Link href="/family">
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-emerald-400">
+                Ver
+              </Button>
+            </Link>
+          </div>
+          {familyActivity.slice(0, 3).map((item) => (
+            <p key={item.id} className="text-xs text-muted-foreground">
+              {item.message} há{" "}
+              {Math.max(1, Math.round((Date.now() - new Date(item.createdAt).getTime()) / 60000))} minutos
+            </p>
+          ))}
+        </div>
+      )}
+
       {/* Animal selector */}
       {animals.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
@@ -333,11 +355,18 @@ export default function DashboardPage() {
         )}
 
         <div className="pt-2 border-t border-border/50">
+          <div className="grid grid-cols-2 gap-2">
           <Link href="/veterinario">
             <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 font-semibold text-white shadow-md rounded-xl text-xs h-9">
               💼 Aceder ao Modo Veterinário
             </Button>
           </Link>
+          <Link href="/family">
+            <Button className="w-full bg-secondary text-foreground hover:bg-secondary/80 border border-border rounded-xl text-xs h-9">
+              Família
+            </Button>
+          </Link>
+          </div>
         </div>
       </div>
 

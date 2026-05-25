@@ -52,4 +52,6 @@ server/baselines.json
 server/belief_states.json
 server/postures.json
 server/vet_shares.json
+server/vet_clinical_notes.json
+server/families.json
 

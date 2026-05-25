@@ -3,7 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Users, UserPlus, Trash2, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Users, UserPlus, Trash2, Clock, CheckCircle2, AlertCircle, Home } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface FamilyShareTabProps {
   animalId: number;
@@ -12,11 +13,13 @@ interface FamilyShareTabProps {
 export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<"read" | "write">("read");
+  const [, setLocation] = useLocation();
 
   const utils = trpc.useUtils();
 
   // Query shares list
   const { data: shares = [], isLoading } = trpc.animals.listShares.useQuery({ animalId });
+  const { data: familyMembers = [] } = trpc.family.getMembers.useQuery();
 
   // Mutation to invite co-tutor
   const inviteMutation = trpc.animals.inviteShare.useMutation({
@@ -41,6 +44,16 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
     },
   });
 
+  const shareWithFamilyMutation = trpc.family.shareAnimal.useMutation({
+    onSuccess: () => {
+      toast.success("Animal adicionado à família.");
+      utils.family.getAnimals.invalidate();
+    },
+    onError: (err) => {
+      toast.error(`Erro ao adicionar à família: ${err.message}`);
+    },
+  });
+
   const handleInviteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -60,6 +73,33 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
 
   return (
     <div className="space-y-6 pt-4">
+      <div className="bg-secondary/20 border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-2 text-foreground">
+          <Home size={18} className="text-emerald-400" />
+          <h3 className="text-xs font-semibold uppercase tracking-wider">Família</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Partilhe este animal com todos os membros da sua família ativa.
+        </p>
+        {familyMembers.length > 0 ? (
+          <Button
+            onClick={() => shareWithFamilyMutation.mutate({ animalId })}
+            disabled={shareWithFamilyMutation.isPending}
+            className="w-full bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl text-xs"
+          >
+            {shareWithFamilyMutation.isPending ? "A adicionar..." : "Adicionar à família"}
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setLocation("/family")}
+            variant="outline"
+            className="w-full border-border text-xs rounded-xl"
+          >
+            Criar ou juntar família
+          </Button>
+        )}
+      </div>
+
       {/* Invite form */}
       <div className="bg-secondary/20 border border-border rounded-xl p-4 space-y-4">
         <div className="flex items-center gap-2 text-foreground">
