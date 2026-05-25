@@ -4,7 +4,6 @@
   "outputDirectory": "dist/public",
   "framework": null,
   "public": true,
-  "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
     {
