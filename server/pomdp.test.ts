@@ -40,13 +40,16 @@ describe("tRPC POMDP, Posture and Vet Mode", () => {
 
     try {
       const supabase = createClient(url, key);
-      const { error } = await supabase.from("users").select("id").limit(1);
-      credentialsValid = !error;
+      const { data: userData } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      if (userData) {
+        ctx.user.id = Number(userData.id);
+        credentialsValid = true;
+      }
       
       if (credentialsValid) {
-        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", 1).limit(1);
+        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ctx.user.id).limit(1);
         if (animals && animals.length > 0) {
-          testAnimalId = animals[0].id;
+          testAnimalId = Number(animals[0].id);
         }
       }
     } catch {

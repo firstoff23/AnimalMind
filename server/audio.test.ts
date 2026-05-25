@@ -25,6 +25,7 @@ describe("tRPC classify.run with audio", () => {
   const ctx = createMockContext();
   const caller = appRouter.createCaller(ctx);
   let credentialsValid = false;
+  let testAnimalId = 1;
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
@@ -33,8 +34,18 @@ describe("tRPC classify.run with audio", () => {
 
     try {
       const supabase = createClient(url, key);
-      const { error } = await supabase.from("users").select("id").limit(1);
-      credentialsValid = !error;
+      const { data: userData } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      if (userData) {
+        ctx.user.id = Number(userData.id);
+        credentialsValid = true;
+      }
+      
+      if (credentialsValid) {
+        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ctx.user.id).limit(1);
+        if (animals && animals.length > 0) {
+          testAnimalId = Number(animals[0].id);
+        }
+      }
     } catch {
       credentialsValid = false;
     }
@@ -46,7 +57,7 @@ describe("tRPC classify.run with audio", () => {
     const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
     
     const result = await caller.classify.run({
-      animalId: 1,
+      animalId: testAnimalId,
       audio: mockBase64Audio,
       audioMimeType: "audio/wav",
     });

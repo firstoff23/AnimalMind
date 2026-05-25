@@ -420,6 +420,7 @@ export const appRouter = router({
           state:    z.string().optional(),
           dateFrom: z.string().optional(),
           dateTo:   z.string().optional(),
+          animalId: z.number().optional(),
         })
       )
       .query(async ({ ctx, input }) => {
@@ -430,7 +431,8 @@ export const appRouter = router({
           input.pageSize,
           input.state,
           input.dateFrom,
-          input.dateTo
+          input.dateTo,
+          input.animalId
         );
       }),
 
@@ -453,6 +455,7 @@ export const appRouter = router({
           state: z.string().optional(),
           dateFrom: z.string().optional(),
           dateTo: z.string().optional(),
+          animalId: z.number().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -461,6 +464,7 @@ export const appRouter = router({
           state: input.state,
           dateFrom: input.dateFrom,
           dateTo: input.dateTo,
+          animalId: input.animalId,
         };
         const events = await getAllEventsForExport(userId, filters);
         return {

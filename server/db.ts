@@ -234,7 +234,8 @@ export async function getEventsPaginated(
   pageSize: number,
   state?: string,
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  animalId?: number
 ) {
   const supabase = getSupabase();
   let query = supabase
@@ -242,6 +243,7 @@ export async function getEventsPaginated(
     .select("*", { count: "exact" })
     .eq("user_id", userId);
 
+  if (animalId) query = query.eq("animal_id", animalId);
   if (state && state !== "all") query = query.eq("state", state);
   if (dateFrom) query = query.gte("created_at", dateFrom);
   if (dateTo) query = query.lte("created_at", dateTo);
@@ -283,6 +285,7 @@ export async function getAllEventsForExport(
     state?: string;
     dateFrom?: string;
     dateTo?: string;
+    animalId?: number;
   } = {}
 ) {
   const supabase = getSupabase();
@@ -291,6 +294,7 @@ export async function getAllEventsForExport(
     .select("*, animals(name, species)")
     .eq("user_id", userId);
 
+  if (filters.animalId) query = query.eq("animal_id", filters.animalId);
   if (filters.state && filters.state !== "all") query = query.eq("state", filters.state);
   if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
   if (filters.dateTo) query = query.lte("created_at", filters.dateTo);
@@ -816,7 +820,7 @@ export async function getStatsForAnimal(animalId: number, userId: number, days =
 
   if (error) throw error;
 
-  const dayStats: Record<string, { count: number; sumConfidence: number }> = {};
+  const dayStats: Record<string, { count: number; sumConfidence: number; [key: string]: any }> = {};
   const stateCounts: Record<string, number> = {};
 
   // Pre-fill days to avoid gaps in chart
@@ -835,17 +839,29 @@ export async function getStatsForAnimal(animalId: number, userId: number, days =
     }
     dayStats[dateStr].count++;
     dayStats[dateStr].sumConfidence += Number(event.confidence);
+    dayStats[dateStr][event.state] = (dayStats[dateStr][event.state] || 0) + 1;
 
     stateCounts[event.state] = (stateCounts[event.state] || 0) + 1;
   }
 
-  const dailyActivity = Object.entries(dayStats)
-    .map(([date, val]) => ({
-      date,
-      count: val.count,
-      avgConfidence: val.count > 0 ? Math.round((val.sumConfidence / val.count) * 100) / 100 : 0,
-    }))
+  const sortedActivity = Object.entries(dayStats)
+    .map(([date, val]) => {
+      const stateBreakdown: Record<string, number> = {};
+      Object.entries(val).forEach(([k, v]) => {
+        if (k !== "count" && k !== "sumConfidence") {
+          stateBreakdown[k] = v;
+        }
+      });
+      return {
+        date,
+        count: val.count,
+        avgConfidence: val.count > 0 ? Math.round((val.sumConfidence / val.count) * 100) / 100 : 0,
+        ...stateBreakdown,
+      };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  const dailyActivity = sortedActivity.slice(-days);
 
   return {
     dailyActivity,

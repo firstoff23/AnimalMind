@@ -44,28 +44,40 @@ describe("tRPC Family Sharing / Multi-utilizador", () => {
 
     try {
       const supabase = createClient(url, key);
-      const { error } = await supabase.from("users").select("id").limit(1);
-      credentialsValid = !error;
-      
-      if (credentialsValid) {
-        // Ensure user 2 exists in Supabase (with email partner@family.local)
-        await supabase.from("users").upsert([
+      const { data: selectOwner } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      if (!selectOwner) {
+        credentialsValid = false;
+        return;
+      }
+      const ownerId = Number(selectOwner.id);
+      ownerCtx.user.id = ownerId;
+
+      // Upsert target user without explicit ID
+      let { data: selectTarget } = await supabase.from("users").select("id").eq("open_id", "demo-user-002").single();
+      if (!selectTarget) {
+        const { data: insertData, error: insertErr } = await supabase.from("users").insert([
           {
-            id: 2,
             open_id: "demo-user-002",
             name: "Partner User",
             email: "partner@family.local",
             login_method: "demo",
             last_signed_in: new Date().toISOString(),
           }
-        ]);
-
-        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", 1).limit(1);
-        if (animals && animals.length > 0) {
-          ownerAnimalId = animals[0].id;
-        }
+        ]).select().single();
+        if (insertErr) throw insertErr;
+        selectTarget = insertData;
       }
-    } catch {
+      const targetId = Number(selectTarget.id);
+      targetCtx.user.id = targetId;
+
+      // Fetch animal owned by ownerId
+      const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ownerId).limit(1);
+      if (animals && animals.length > 0) {
+        ownerAnimalId = Number(animals[0].id);
+        credentialsValid = true;
+      }
+    } catch (e) {
+      console.error("beforeAll error in family.test.ts:", e);
       credentialsValid = false;
     }
   });

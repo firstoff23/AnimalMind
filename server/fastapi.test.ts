@@ -25,6 +25,7 @@ describe("tRPC classify.run with FastAPI backend", () => {
   const ctx = createMockContext();
   const caller = appRouter.createCaller(ctx);
   let credentialsValid = false;
+  let testAnimalId = 1;
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
@@ -33,8 +34,18 @@ describe("tRPC classify.run with FastAPI backend", () => {
 
     try {
       const supabase = createClient(url, key);
-      const { error } = await supabase.from("users").select("id").limit(1);
-      credentialsValid = !error;
+      const { data: userData } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      if (userData) {
+        ctx.user.id = Number(userData.id);
+        credentialsValid = true;
+      }
+      
+      if (credentialsValid) {
+        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ctx.user.id).limit(1);
+        if (animals && animals.length > 0) {
+          testAnimalId = Number(animals[0].id);
+        }
+      }
     } catch {
       credentialsValid = false;
     }
@@ -50,7 +61,7 @@ describe("tRPC classify.run with FastAPI backend", () => {
 
     // Should not throw, should fall back to random classification
     const result = await caller.classify.run({
-      animalId: 1,
+      animalId: testAnimalId,
       audio: mockBase64Audio,
       audioMimeType: "audio/wav",
     });
@@ -66,22 +77,29 @@ describe("tRPC classify.run with FastAPI backend", () => {
 
     process.env.FASTAPI_BACKEND_URL = "http://localhost:8000";
 
-    // Mock global fetch
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        state: "distress",
-        confidence: 0.88,
-        emoji: "🔴",
-        model_used: "yamnet-acoustic-classifier"
-      })
+    // Mock global fetch conditionally to not break Supabase queries
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.includes("localhost:8000") || url.includes("classify")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            state: "distress",
+            confidence: 0.88,
+            emoji: "🔴",
+            model_used: "yamnet-acoustic-classifier"
+          })
+        });
+      }
+      return originalFetch(input, init);
     });
     vi.stubGlobal("fetch", mockFetch);
 
     const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
 
     const result = await caller.classify.run({
-      animalId: 1,
+      animalId: testAnimalId,
       audio: mockBase64Audio,
       audioMimeType: "audio/wav",
     });
@@ -93,5 +111,5 @@ describe("tRPC classify.run with FastAPI backend", () => {
     expect(result.model_used).toBe("yamnet"); // Mapped to yamnet
 
     vi.unstubAllGlobals();
-  });
+  }, 15000);
 });

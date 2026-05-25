@@ -38,14 +38,17 @@ describe("tRPC animals and baselines", () => {
 
     try {
       const supabase = createClient(url, key);
-      const { error } = await supabase.from("users").select("id").limit(1);
-      credentialsValid = !error;
+      const { data: userData } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      if (userData) {
+        ctx.user.id = Number(userData.id);
+        credentialsValid = true;
+      }
       
       if (credentialsValid) {
-        // Fetch an animal ID that belongs to user 1 (the demo user) to run our integration tests
-        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", 1).limit(1);
+        // Fetch an animal ID that belongs to the demo user to run our integration tests
+        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ctx.user.id).limit(1);
         if (animals && animals.length > 0) {
-          testAnimalId = animals[0].id;
+          testAnimalId = Number(animals[0].id);
         }
       }
     } catch {
