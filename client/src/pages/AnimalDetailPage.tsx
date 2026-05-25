@@ -340,7 +340,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   // Anomaly is defined as a distress/alert state vocalization, OR a state that is NOT in the animal's typical states list
   const recentEvents = historyRes?.events || [];
   const anomalyAlerts = recentEvents.filter((ev) => {
-    const isNormal = baseline.normalStates.includes(ev.state);
+    const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
+    const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
+    const isNormal = baseline.normalStates.includes(ev.state) && !isRareForAnimal;
     const isThreatState = ev.state === "distress" || ev.state === "alert";
     return !isNormal || isThreatState;
   });
@@ -734,7 +736,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               <div className="space-y-2">
                 {historyRes.events.map((ev) => {
                   const state = ev.state as EmotionalState;
-                  const isNormal = baseline.normalStates.includes(ev.state);
+                  const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
+                  const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
+                  const isNormal = baseline.normalStates.includes(ev.state) && !isRareForAnimal;
                   const isThreat = ev.state === "distress" || ev.state === "alert";
                   const isAlert = !isNormal || isThreat;
 

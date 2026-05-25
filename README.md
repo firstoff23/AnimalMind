@@ -51,8 +51,9 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Estrutura Profissional:** Contém identificação do animal, parâmetros de baseline calibrados, sumário estatístico de atividade e tabela com o histórico das últimas 10 vocalizações com notas e metadados. Pronto para partilhar com médicos veterinários.
 
 ### 10. Baseline Comportamental & Alertas de Ruído
-* **Calibração Dinâmica:** Interface intuitiva para definir o limiar diário de vocalizações normais, sensibilidade de alertas do microfone e marcar quais os estados emocionais são típicos do animal. Persistido localmente no servidor em `server/baselines.json`.
-* **Fuga de Baseline:** Alertas visuais rápidos e banners caso o animal vocalize estados não-típicos (ex: angústia/alerta) ou ultrapasse o limite diário de vocalizações estabelecido na baseline.
+* **Calibração Dinâmica:** Interface intuitiva para definir o limiar diário de vocalizações normais, sensibilidade de alertas do microfone e marcar quais os estados emocionais são típicos do animal. A configuração mantém fallback local em `server/baselines.json`.
+* **Perfil Médio por Animal:** Calcula a distribuição dos estados emocionais das últimas 4 semanas e persiste em `animals.baseline_data` (`JSONB`) para formar um perfil comportamental individual.
+* **Fuga de Baseline:** Alertas visuais rápidos e banners caso o animal vocalize estados não-típicos, estados raros face ao seu perfil histórico, ou ultrapasse o limite diário de vocalizações estabelecido na baseline.
 
 ### 11. Multi-utilizador / Modo Família (Co-tutoria)
 * **Partilha de Animais:** Convidar outros tutores através do e-mail com permissões de Leitura (apenas visualizar estatísticas e histórico) ou Escrita (efetuar gravações e alterar a baseline).

@@ -34,6 +34,7 @@ export const animals = mysqlTable("animals", {
   breed: varchar("breed", { length: 100 }),
   age: int("age"),
   isActive: boolean("isActive").default(false).notNull(),
+  baselineData: text("baseline_data"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

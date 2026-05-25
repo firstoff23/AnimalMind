@@ -68,12 +68,33 @@ vi.mock("./db", () => ({
     vocalizationThreshold: 10,
     normalStates: ["relaxed", "excitement"],
     alertSensitivity: "medium",
+    stateDistribution: { relaxed: 0.5, excitement: 0.5 },
+    typicalStates: ["relaxed", "excitement"],
+    sampleSize: 2,
+    calculatedFrom: "2026-05-01T00:00:00.000Z",
+    calculatedTo: "2026-05-25T00:00:00.000Z",
+    updatedAt: new Date().toISOString()
+  }),
+  recalculateAnimalBehaviorBaseline: vi.fn().mockResolvedValue({
+    vocalizationThreshold: 10,
+    normalStates: ["relaxed", "excitement"],
+    alertSensitivity: "medium",
+    stateDistribution: { relaxed: 0.5, excitement: 0.5 },
+    typicalStates: ["relaxed", "excitement"],
+    sampleSize: 2,
+    calculatedFrom: "2026-05-01T00:00:00.000Z",
+    calculatedTo: "2026-05-25T00:00:00.000Z",
     updatedAt: new Date().toISOString()
   }),
   updateAnimalBaseline: vi.fn().mockResolvedValue({
     vocalizationThreshold: 10,
     normalStates: ["relaxed", "excitement"],
     alertSensitivity: "medium",
+    stateDistribution: { relaxed: 0.5, excitement: 0.5 },
+    typicalStates: ["relaxed", "excitement"],
+    sampleSize: 2,
+    calculatedFrom: "2026-05-01T00:00:00.000Z",
+    calculatedTo: "2026-05-25T00:00:00.000Z",
     updatedAt: new Date().toISOString()
   }),
   getAnimalById: vi.fn().mockResolvedValue({ id: 1, userId: 1, name: "Bobi", species: "dog", breed: "Labrador", age: 3 }),

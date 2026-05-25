@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS animals
+ADD COLUMN IF NOT EXISTS baseline_data JSONB;

@@ -25,6 +25,7 @@ import {
   updateEventAudio,
   getAnimalById,
   getAnimalBaseline,
+  recalculateAnimalBehaviorBaseline,
   updateAnimalBaseline,
   verifyAnimalOwner,
   getEventsForAnimalPaginated,
@@ -236,6 +237,11 @@ export const appRouter = router({
         if (eventId) {
           const animalId = input.animalId || 1;
           beliefState = await updateBeliefStateForAnimal(animalId, result.state, result.confidence, eventId);
+          try {
+            await recalculateAnimalBehaviorBaseline(animalId, userId);
+          } catch (err) {
+            console.error("[Baseline] Failed to recalculate behavior baseline:", err);
+          }
           if (input.posture) {
             await savePostureForEvent(eventId, input.posture);
           }
@@ -305,7 +311,11 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         await verifyAnimalOwner(input.animalId, userId);
-        return getAnimalBaseline(input.animalId);
+        try {
+          return await recalculateAnimalBehaviorBaseline(input.animalId, userId);
+        } catch {
+          return getAnimalBaseline(input.animalId);
+        }
       }),
 
     updateBaseline: publicProcedure

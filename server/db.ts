@@ -470,16 +470,61 @@ export async function uploadAudioToSupabase(
   return publicUrlData.publicUrl;
 }
 
-// ─── Animal Baseline operations (Local File Persistence) ─────────────────────
+// ─── Animal Baseline operations (Supabase JSONB + local fallback) ────────────
 
 export interface AnimalBaseline {
   vocalizationThreshold: number;
   normalStates: string[];
   alertSensitivity: "low" | "medium" | "high";
+  stateDistribution: Record<string, number>;
+  typicalStates: string[];
+  sampleSize: number;
+  calculatedFrom: string | null;
+  calculatedTo: string | null;
   updatedAt: string;
 }
 
 const BASELINES_FILE_PATH = path.resolve(import.meta.dirname, "baselines.json");
+
+const DEFAULT_STATE_DISTRIBUTION: Record<string, number> = {
+  relaxed: 0.5,
+  excitement: 0.2,
+  distress: 0,
+  hunger: 0.1,
+  alert: 0,
+  attention: 0.2,
+};
+
+const DEFAULT_BASELINE: AnimalBaseline = {
+  vocalizationThreshold: 10,
+  normalStates: ["relaxed", "excitement"],
+  alertSensitivity: "medium",
+  stateDistribution: DEFAULT_STATE_DISTRIBUTION,
+  typicalStates: ["relaxed", "excitement"],
+  sampleSize: 0,
+  calculatedFrom: null,
+  calculatedTo: null,
+  updatedAt: new Date(0).toISOString(),
+};
+
+function normalizeAnimalBaseline(data: Partial<AnimalBaseline> | null | undefined): AnimalBaseline {
+  return {
+    ...DEFAULT_BASELINE,
+    ...data,
+    vocalizationThreshold: data?.vocalizationThreshold ?? DEFAULT_BASELINE.vocalizationThreshold,
+    normalStates: data?.normalStates ?? DEFAULT_BASELINE.normalStates,
+    alertSensitivity: data?.alertSensitivity ?? DEFAULT_BASELINE.alertSensitivity,
+    stateDistribution: {
+      ...DEFAULT_STATE_DISTRIBUTION,
+      ...(data?.stateDistribution ?? {}),
+    },
+    typicalStates: data?.typicalStates ?? data?.normalStates ?? DEFAULT_BASELINE.typicalStates,
+    sampleSize: data?.sampleSize ?? 0,
+    calculatedFrom: data?.calculatedFrom ?? null,
+    calculatedTo: data?.calculatedTo ?? null,
+    updatedAt: data?.updatedAt ?? new Date().toISOString(),
+  };
+}
 
 function readBaselinesFromFile(): Record<number, AnimalBaseline> {
   try {
@@ -501,20 +546,53 @@ function writeBaselinesToFile(baselines: Record<number, AnimalBaseline>) {
   }
 }
 
+async function readBaselineFromDatabase(animalId: number): Promise<AnimalBaseline | null> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("animals")
+      .select("baseline_data")
+      .eq("id", animalId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      throw error;
+    }
+
+    return data?.baseline_data ? normalizeAnimalBaseline(data.baseline_data) : null;
+  } catch (error) {
+    console.warn("[Baselines] Falling back to local baseline read:", error);
+    return null;
+  }
+}
+
+async function persistBaselineToDatabase(animalId: number, baseline: AnimalBaseline): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("animals")
+      .update({ baseline_data: baseline })
+      .eq("id", animalId);
+    if (error) throw error;
+  } catch (error) {
+    console.warn("[Baselines] Could not persist baseline_data in Supabase:", error);
+  }
+}
+
 export async function getAnimalBaseline(animalId: number): Promise<AnimalBaseline> {
+  const databaseBaseline = await readBaselineFromDatabase(animalId);
+  if (databaseBaseline) {
+    return databaseBaseline;
+  }
+
   const baselines = readBaselinesFromFile();
   const baseline = baselines[animalId];
   if (baseline) {
-    return baseline;
+    return normalizeAnimalBaseline(baseline);
   }
   
-  // Return default baseline if not set yet
-  return {
-    vocalizationThreshold: 10,
-    normalStates: ["relaxed", "excitement"],
-    alertSensitivity: "medium",
-    updatedAt: new Date().toISOString(),
-  };
+  return normalizeAnimalBaseline({ updatedAt: new Date().toISOString() });
 }
 
 export async function updateAnimalBaseline(
@@ -526,14 +604,10 @@ export async function updateAnimalBaseline(
   }
 ): Promise<AnimalBaseline> {
   const baselines = readBaselinesFromFile();
-  const current = baselines[animalId] || {
-    vocalizationThreshold: 10,
-    normalStates: ["relaxed", "excitement"],
-    alertSensitivity: "medium",
-    updatedAt: new Date().toISOString(),
-  };
+  const current = await getAnimalBaseline(animalId);
 
   const updated: AnimalBaseline = {
+    ...current,
     vocalizationThreshold: data.vocalizationThreshold ?? current.vocalizationThreshold,
     normalStates: data.normalStates ?? current.normalStates,
     alertSensitivity: data.alertSensitivity ?? current.alertSensitivity,
@@ -542,6 +616,81 @@ export async function updateAnimalBaseline(
 
   baselines[animalId] = updated;
   writeBaselinesToFile(baselines);
+  await persistBaselineToDatabase(animalId, updated);
+  return updated;
+}
+
+export function buildBehaviorBaselineFromEvents(
+  events: Array<{ state: string; created_at?: string | Date | null }>,
+  current: Partial<AnimalBaseline> = {},
+  calculatedFrom: string | null = null,
+  calculatedTo: string | null = new Date().toISOString()
+): AnimalBaseline {
+  const base = normalizeAnimalBaseline(current);
+  const counts = STATES_LIST.reduce<Record<string, number>>((acc, state) => {
+    acc[state] = 0;
+    return acc;
+  }, {});
+
+  events.forEach((event) => {
+    if (event.state in counts) counts[event.state] += 1;
+  });
+
+  const sampleSize = events.length;
+  const stateDistribution = STATES_LIST.reduce<Record<string, number>>((acc, state) => {
+    acc[state] = sampleSize > 0 ? Math.round((counts[state] / sampleSize) * 100) / 100 : 0;
+    return acc;
+  }, {});
+
+  const typicalStates =
+    sampleSize > 0
+      ? STATES_LIST.filter((state) => stateDistribution[state] >= 0.15)
+      : base.typicalStates;
+
+  return {
+    ...base,
+    stateDistribution,
+    typicalStates: typicalStates.length > 0 ? typicalStates : base.typicalStates,
+    sampleSize,
+    calculatedFrom,
+    calculatedTo,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function recalculateAnimalBehaviorBaseline(
+  animalId: number,
+  userId?: number
+): Promise<AnimalBaseline> {
+  const supabase = getSupabase();
+  const calculatedTo = new Date().toISOString();
+  const since = new Date();
+  since.setDate(since.getDate() - 28);
+  const calculatedFrom = since.toISOString();
+
+  let query = supabase
+    .from("classification_events")
+    .select("state, created_at")
+    .eq("animal_id", animalId)
+    .gte("created_at", calculatedFrom);
+
+  if (userId) query = query.eq("user_id", userId);
+
+  const { data, error } = await query.order("created_at", { ascending: true });
+  if (error) throw error;
+
+  const current = await getAnimalBaseline(animalId);
+  const updated = buildBehaviorBaselineFromEvents(
+    data || [],
+    current,
+    calculatedFrom,
+    calculatedTo
+  );
+
+  const baselines = readBaselinesFromFile();
+  baselines[animalId] = updated;
+  writeBaselinesToFile(baselines);
+  await persistBaselineToDatabase(animalId, updated);
   return updated;
 }
 
@@ -807,6 +956,12 @@ export async function updateBeliefStateForAnimal(
   } else if (baseline.alertSensitivity === "low") {
     // Resilient alerts (filter transient vocalizations)
     alpha = (observedState === "distress" || observedState === "alert") ? 0.15 : 0.3;
+  }
+
+  const baselineFrequency = baseline.stateDistribution?.[observedState] ?? 0;
+  const isRareForAnimal = baseline.sampleSize >= 5 && baselineFrequency < 0.1;
+  if (isRareForAnimal) {
+    alpha = Math.min(alpha + 0.15, 0.75);
   }
 
   const updated: Record<string, number> = {

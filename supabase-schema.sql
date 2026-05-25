@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS animals (
   breed VARCHAR(255),
   age INT,
   is_active BOOLEAN DEFAULT FALSE,
+  baseline_data JSONB,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
