@@ -63,6 +63,7 @@ export default function LoginPage() {
                 required
                 disabled={loading}
                 className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                autoComplete="current-password"
               />
             </div>
 
