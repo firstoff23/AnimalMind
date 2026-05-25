@@ -422,7 +422,7 @@ export const appRouter = router({
     exportCsv: publicProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       const events = await getAllEventsForExport(userId);
-      const header = "id,state,confidence,emoji,model_used,cached,feedback,created_at";
+      const header = "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
       const rows = events.map((e: any) =>
         [
           e.id,
@@ -432,6 +432,7 @@ export const appRouter = router({
           e.model_used,
           e.cached,
           e.feedback ?? "",
+          e.audio_url ?? "",
           new Date(e.created_at).toISOString(),
         ].join(",")
       );

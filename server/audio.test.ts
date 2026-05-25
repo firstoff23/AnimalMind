@@ -1,12 +1,7 @@
-import { describe, expect, it, afterAll, beforeAll } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
-import { getEventAudio, updateEventAudio } from "./db";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
-
-const AUDIO_FILE_PATH = path.resolve(import.meta.dirname, "audio.json");
 
 function createMockContext(): TrpcContext {
   return {
@@ -25,39 +20,6 @@ function createMockContext(): TrpcContext {
     res: {} as any,
   };
 }
-
-describe("audio.local-persistence", () => {
-  const testEventId = 99999;
-  const testAudioUrl = "https://supabase.co/storage/v1/object/public/animal-audio/test.webm";
-
-  it("can write an audio mapping and retrieve it", async () => {
-    // 1. Update audio
-    await updateEventAudio(testEventId, testAudioUrl);
-
-    // 2. Read audio
-    const getResult = await getEventAudio(testEventId);
-    expect(getResult).toBe(testAudioUrl);
-  });
-
-  it("returns empty string for non-existent event audio", async () => {
-    const getResult = await getEventAudio(888888);
-    expect(getResult).toBe("");
-  });
-
-  afterAll(() => {
-    // Clean up test audio from audio.json
-    try {
-      if (fs.existsSync(AUDIO_FILE_PATH)) {
-        const content = fs.readFileSync(AUDIO_FILE_PATH, "utf8");
-        const audio = JSON.parse(content);
-        delete audio[testEventId];
-        fs.writeFileSync(AUDIO_FILE_PATH, JSON.stringify(audio, null, 2), "utf8");
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  });
-});
 
 describe("tRPC classify.run with audio", () => {
   const ctx = createMockContext();

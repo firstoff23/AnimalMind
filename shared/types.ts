@@ -37,6 +37,7 @@ export interface EventData {
   modelUsed: string;
   cached: boolean;
   feedback: "correct" | "incorrect" | null;
+  audioUrl: string | null;
   createdAt: Date;
 }
 

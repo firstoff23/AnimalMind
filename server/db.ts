@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 
 let _supabase: SupabaseClient<any> | null = null;
+export const AUDIO_RECORDINGS_BUCKET = "audio-recordings";
 
 // Lazy init Supabase client
 // Use Service Role Key for backend operations (has full permissions)
@@ -180,6 +181,7 @@ export async function insertEvent(data: {
   emoji: string;
   modelUsed: string;
   cached?: boolean;
+  audioUrl?: string | null;
 }) {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
@@ -193,6 +195,7 @@ export async function insertEvent(data: {
         emoji: data.emoji,
         model_used: data.modelUsed,
         cached: data.cached ?? false,
+        audio_url: data.audioUrl ?? null,
       },
     ])
     .select()
@@ -214,11 +217,10 @@ export async function getRecentEvents(userId: number, limit = 5) {
   if (error) throw error;
   
   const notes = readNotesFromFile();
-  const audio = readAudioFromFile();
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: notes[e.id] || null,
-    audioUrl: audio[e.id] || null,
+    audioUrl: e.audio_url ?? null,
   }));
   return events;
 }
@@ -249,11 +251,10 @@ export async function getEventsPaginated(
   if (error) throw error;
   
   const notes = readNotesFromFile();
-  const audio = readAudioFromFile();
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: notes[e.id] || null,
-    audioUrl: audio[e.id] || null,
+    audioUrl: e.audio_url ?? null,
   }));
   return { events, total: count || 0 };
 }
@@ -397,39 +398,28 @@ export async function updateEventNotes(eventId: number, noteText: string): Promi
   return noteText;
 }
 
-// ─── Event Audio operations (Local File Persistence & Supabase Storage) ──────
-
-const AUDIO_FILE_PATH = path.resolve(import.meta.dirname, "audio.json");
-
-function readAudioFromFile(): Record<number, string> {
-  try {
-    if (fs.existsSync(AUDIO_FILE_PATH)) {
-      const content = fs.readFileSync(AUDIO_FILE_PATH, "utf8");
-      return JSON.parse(content);
-    }
-  } catch (error) {
-    console.error("[Audio] Failed to read audio mapping:", error);
-  }
-  return {};
-}
-
-function writeAudioToFile(audio: Record<number, string>) {
-  try {
-    fs.writeFileSync(AUDIO_FILE_PATH, JSON.stringify(audio, null, 2), "utf8");
-  } catch (error) {
-    console.error("[Audio] Failed to write audio mapping:", error);
-  }
-}
+// ─── Event Audio operations (Supabase Storage + classification_events.audio_url) ──────
 
 export async function getEventAudio(eventId: number): Promise<string> {
-  const audio = readAudioFromFile();
-  return audio[eventId] || "";
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("classification_events")
+    .select("audio_url")
+    .eq("id", eventId)
+    .single();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data?.audio_url ?? "";
 }
 
 export async function updateEventAudio(eventId: number, audioUrl: string): Promise<string> {
-  const audio = readAudioFromFile();
-  audio[eventId] = audioUrl;
-  writeAudioToFile(audio);
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("classification_events")
+    .update({ audio_url: audioUrl })
+    .eq("id", eventId);
+
+  if (error) throw error;
   return audioUrl;
 }
 
@@ -439,10 +429,9 @@ export async function uploadAudioToSupabase(
   mimeType: string
 ): Promise<string> {
   const supabase = getSupabase();
-  const bucketName = "animal-audio";
 
   try {
-    await supabase.storage.createBucket(bucketName, {
+    await supabase.storage.createBucket(AUDIO_RECORDINGS_BUCKET, {
       public: true,
       allowedMimeTypes: ["audio/webm", "audio/wav", "audio/ogg", "audio/mpeg", "audio/mp4", "audio/x-m4a"],
     });
@@ -451,10 +440,10 @@ export async function uploadAudioToSupabase(
   }
 
   const { data, error } = await supabase.storage
-    .from(bucketName)
+    .from(AUDIO_RECORDINGS_BUCKET)
     .upload(fileName, buffer, {
       contentType: mimeType,
-      upsert: true,
+      upsert: false,
     });
 
   if (error) {
@@ -463,7 +452,7 @@ export async function uploadAudioToSupabase(
   }
 
   const { data: publicUrlData } = supabase.storage
-    .from(bucketName)
+    .from(AUDIO_RECORDINGS_BUCKET)
     .getPublicUrl(fileName);
 
   return publicUrlData.publicUrl;
@@ -639,11 +628,10 @@ export async function getEventsForAnimalPaginated(
   if (error) throw error;
 
   const notes = readNotesFromFile();
-  const audio = readAudioFromFile();
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: notes[e.id] || null,
-    audioUrl: audio[e.id] || null,
+    audioUrl: e.audio_url ?? null,
   }));
 
   return { events, total: count || 0 };

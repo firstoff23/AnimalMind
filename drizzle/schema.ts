@@ -60,6 +60,7 @@ export const classificationEvents = mysqlTable("classification_events", {
   modelUsed: varchar("modelUsed", { length: 50 }).notNull(),
   cached: boolean("cached").default(false).notNull(),
   feedback: mysqlEnum("feedback", ["correct", "incorrect"]),
+  audioUrl: text("audio_url"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

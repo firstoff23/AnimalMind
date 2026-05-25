@@ -31,7 +31,7 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 
 ### 6. Gravação de Áudio Real e Supabase Storage
 * **Gravação Física:** Captura o som real do animal de estimação em formato comprimido (ex: `audio/webm`, `audio/mp4`) durante os 3 segundos de monitorização física do microfone via `MediaRecorder`.
-* **Upload automático:** O ficheiro é enviado diretamente para o Supabase Storage público no bucket `animal-audio` (gerado de forma dinâmica) e o URL público é persistido localmente em `server/audio.json`.
+* **Upload automático:** O ficheiro é enviado diretamente para o Supabase Storage público no bucket `audio-recordings` e o URL público é persistido em `classification_events.audio_url`.
 * **Reprodutor Integrado:** Se um evento do Histórico possui áudio real, é exibido um botão circular de Play/Pause para ouvir o som diretamente na linha de registo ou um reprodutor nativo completo no diálogo de Dados Brutos.
 
 ### 7. Backend de Classificação Acústica Real (FastAPI)
@@ -131,7 +131,7 @@ pnpm run build
 
 * **Commit 1db40899:** Adiciona a página de detalhe por animal (`/animal/:id`), calibração dinâmica de baseline comportamental com persistência em `baselines.json`, gráficos avançados de análise, testes automatizados e exportação de relatórios em PDF via `jspdf`.
 * **Commit 0f066285:** Integra o backend FastAPI para classificação acústica real e processamento de sinal em Python, com testes de fallback e documentação atualizada no roadmap.
-* **Commit a07e75df:** Adiciona a gravação física de áudio de 3 segundos, upload automático para o Supabase Storage no bucket `animal-audio` e botão de Play/Pause interativo na página do Histórico e Dados Brutos.
+* **Commit a07e75df:** Adiciona a gravação física de áudio de 3 segundos, upload automático para o Supabase Storage e botão de Play/Pause interativo na página do Histórico e Dados Brutos.
 * **Commit 5bdec92d:** Adiciona o ficheiro `roadmap.md` na raiz para o rastreamento das metas de desenvolvimento e prioridades futuras do projeto.
 * **Commit b98868a9:** Atualiza o README.md com a documentação do Voice-to-Text.
 * **Commit ad82e941:** Adiciona a funcionalidade de *Voice-to-Text* (Ditado por voz) para Notas de Observação com persistência local em `notes.json` e integração no fluxo de gravação e histórico.

@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS classification_events (
   model_used VARCHAR(50),
   cached BOOLEAN DEFAULT FALSE,
   feedback VARCHAR(50),
+  audio_url TEXT,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
