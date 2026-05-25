@@ -121,7 +121,10 @@ export async function addAnimal(data: {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("[addAnimal] Database insert error:", error);
+    throw error;
+  }
   return result;
 }
 
@@ -1205,6 +1208,10 @@ export async function getVetSharedAnimals(
 
     const { data, error } = await query;
     if (error) throw error;
+
+    if ((!data || data.length === 0) && fs.existsSync(VET_SHARES_FILE_PATH)) {
+      throw new Error("No database shares, falling back to local files");
+    }
 
     const result: VetSharedAnimal[] = [];
     for (const share of data || []) {
