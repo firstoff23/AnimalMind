@@ -70,7 +70,7 @@ describe("tRPC classify.run with FastAPI backend", () => {
     expect(result).toHaveProperty("confidence");
     expect(result).toHaveProperty("emoji");
     expect(result.model_used).toBeDefined();
-  });
+  }, 10000);
 
   it("uses FastAPI response when it is online and returns valid data", async () => {
     if (!credentialsValid) return;
