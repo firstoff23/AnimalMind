@@ -36,8 +36,9 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 
 ### 7. Backend de Classificação Acústica Real (FastAPI)
 * **API Dedicada:** Servidor Python FastAPI autónomo localizado na pasta `ml_backend/` que disponibiliza a rota `/classify`.
-* **Análise de Sinal Físico:** Realiza conversão de áudio multi-formato (usando FFmpeg global) para WAV 16kHz mono, normaliza a amplitude e executa processamento de sinal via `numpy`/`scipy` para extrair RMS (volume), Zero Crossing Rate (timbre/ruído) e FFT (frequência dominante/pitch).
-* **Mapeamento Emocional:** Classifica dinamicamente os sons nos 6 estados emocionais com base em parâmetros físicos de áudio reais.
+* **Modelo YAMNet Real:** Realiza conversão de áudio multi-formato (usando FFmpeg global) para WAV 16kHz mono, carrega o modelo oficial `https://tfhub.dev/google/yamnet/1` via TensorFlow Hub e usa as classes AudioSet inferidas para orientar a classificação.
+* **Mapeamento Emocional:** Mapeia as classes acústicas do YAMNet e sinais físicos auxiliares para os 6 estados emocionais da aplicação.
+* **Fallback Interno:** Se TensorFlow/YAMNet não estiver disponível no servidor Python, o backend cai para análise `numpy`/`scipy` com RMS, Zero Crossing Rate e frequência dominante.
 * **Resiliência & Fallback:** Se a variável de ambiente `FASTAPI_BACKEND_URL` não estiver definida ou o servidor FastAPI estiver offline, a API tRPC do Node.js cai de forma transparente e resiliente para o simulador heurístico sem afetar a usabilidade da aplicação.
 
 ### 8. Página de Detalhe por Animal
@@ -64,7 +65,7 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 
 * **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Wouter (Routing), Framer Motion, Recharts
 * **Node.js Gateway:** Node.js, Express, tRPC (v11) para comunicação tipo-segura (End-to-End Type Safety)
-* **FastAPI Backend:** Python 3, FastAPI, Uvicorn, NumPy, SciPy, Soundfile, FFmpeg para análise acústica e processamento de sinal em tempo real
+* **FastAPI Backend:** Python 3, FastAPI, Uvicorn, TensorFlow Hub/YAMNet, NumPy, SciPy, Soundfile, FFmpeg para análise acústica e processamento de sinal em tempo real
 * **Bibliotecas Adicionais:** jsPDF para geração de relatórios de saúde PDF no cliente
 * **Base de Dados & Auth:** Supabase (Autenticação robusta com verificação de email, sessões, perfil de utilizador e base de dados baseada em PostgreSQL com lazy-initialization)
 * **Testes:** Vitest (Suite completa cobrindo integração do Supabase, lógica de negócios, componentes visuais e helpers de gestos)

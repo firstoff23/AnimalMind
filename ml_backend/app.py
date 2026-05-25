@@ -1,19 +1,22 @@
+import csv
 import os
-import tempfile
 import subprocess
+import tempfile
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
-from scipy.io import wavfile
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from scipy import signal
+from scipy.io import wavfile
 
 app = FastAPI(
     title="AnimalMind Acoustic Classifier Backend",
-    description="FastAPI machine learning backend using acoustic analysis (YAMNet/Wav2Vec2 style) to classify pet emotions.",
-    version="1.0.0"
+    description="FastAPI backend using TensorFlow Hub YAMNet for pet audio classification.",
+    version="1.1.0",
 )
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,11 +25,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class ClassificationResponse(BaseModel):
     state: str
     confidence: float
     emoji: str
     model_used: str
+
 
 STATE_EMOJIS = {
     "distress": "🔴",
@@ -34,115 +39,255 @@ STATE_EMOJIS = {
     "excitement": "🟢",
     "hunger": "🟠",
     "alert": "🔵",
-    "relaxed": "⚪"
+    "relaxed": "⚪",
 }
 
+YAMNET_MODEL_HANDLE = "https://tfhub.dev/google/yamnet/1"
+
+YAMNET_STATE_HINTS: Dict[str, List[Tuple[str, float]]] = {
+    "distress": [
+        ("whimper", 1.35),
+        ("yelp", 1.35),
+        ("cry", 1.2),
+        ("scream", 1.1),
+        ("howl", 0.9),
+    ],
+    "attention": [
+        ("meow", 1.35),
+        ("cat", 0.65),
+        ("purr", 0.45),
+        ("animal", 0.25),
+    ],
+    "excitement": [
+        ("pant", 1.0),
+        ("dog", 0.55),
+        ("bark", 0.45),
+        ("snort", 0.35),
+    ],
+    "hunger": [
+        ("chew", 1.2),
+        ("crunch", 1.0),
+        ("slurp", 1.0),
+        ("eat", 0.9),
+        ("gulp", 0.8),
+    ],
+    "alert": [
+        ("bark", 1.3),
+        ("bow-wow", 1.3),
+        ("growl", 1.2),
+        ("howl", 0.9),
+        ("dog", 0.35),
+    ],
+    "relaxed": [
+        ("silence", 1.25),
+        ("purr", 1.0),
+        ("breathing", 0.85),
+        ("snore", 0.8),
+    ],
+}
+
+_yamnet_model = None
+_yamnet_class_names: Optional[List[str]] = None
+
+
 def convert_to_wav(input_path: str, output_path: str):
-    """
-    Converts any input audio file to standard 16kHz mono WAV using ffmpeg.
-    """
     cmd = [
-        "ffmpeg", "-y",
-        "-i", input_path,
-        "-ar", "16000",
-        "-ac", "1",
-        output_path
+        "ffmpeg",
+        "-y",
+        "-i",
+        input_path,
+        "-ar",
+        "16000",
+        "-ac",
+        "1",
+        output_path,
     ]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         error_msg = result.stderr.decode("utf-8", errors="ignore")
         raise Exception(f"FFmpeg conversion failed: {error_msg}")
 
-def analyze_audio_signal(wav_path: str) -> dict:
-    """
-    Extracts real physical features from the audio signal:
-    1. RMS (Root Mean Square) -> Volume/Loudness
-    2. ZCR (Zero Crossing Rate) -> Timbre/Noisiness
-    3. Dominant Frequency -> Pitch
-    Maps these features to one of the 6 animal emotional states.
-    """
+
+def _normalize_waveform(data: np.ndarray) -> np.ndarray:
+    if data.ndim > 1:
+        data = np.mean(data, axis=1)
+
+    if data.dtype == np.int16:
+        waveform = data.astype(np.float32) / 32768.0
+    elif data.dtype == np.int32:
+        waveform = data.astype(np.float32) / 2147483648.0
+    elif data.dtype == np.uint8:
+        waveform = (data.astype(np.float32) - 128.0) / 128.0
+    elif np.issubdtype(data.dtype, np.integer):
+        limit = max(abs(np.iinfo(data.dtype).min), np.iinfo(data.dtype).max)
+        waveform = data.astype(np.float32) / float(limit)
+    else:
+        waveform = data.astype(np.float32)
+
+    return np.clip(waveform, -1.0, 1.0)
+
+
+def _read_waveform(wav_path: str) -> Tuple[int, np.ndarray]:
     try:
         sample_rate, data = wavfile.read(wav_path)
-    except Exception as e:
-        raise Exception(f"Failed to read WAV file: {str(e)}")
+    except Exception as exc:
+        raise Exception(f"Failed to read WAV file: {str(exc)}") from exc
 
-    # Normalize audio data to float in range [-1.0, 1.0]
-    if data.dtype == np.int16:
-        data = data.astype(np.float32) / 32768.0
-    elif data.dtype == np.int32:
-        data = data.astype(np.float32) / 2147483648.0
-    elif data.dtype == np.uint8:
-        data = (data.astype(np.float32) - 128.0) / 128.0
-    
-    # If empty audio, return relaxed
-    if len(data) == 0:
-        return {"state": "relaxed", "confidence": 0.95, "model": "scipy-heuristics"}
+    waveform = _normalize_waveform(data)
+    if len(waveform) == 0:
+        return sample_rate, waveform
 
-    # Feature 1: Volume/Loudness (RMS)
-    rms = np.sqrt(np.mean(data**2))
+    if sample_rate != 16000:
+        desired_length = int(round(float(len(waveform)) / sample_rate * 16000))
+        waveform = signal.resample(waveform, desired_length).astype(np.float32)
+        sample_rate = 16000
 
-    # Feature 2: Zero Crossing Rate (ZCR)
-    # Counts how many times the signal crosses zero
-    zero_crossings = np.nonzero(np.diff(data > 0))[0]
-    zcr = len(zero_crossings) / len(data) if len(data) > 0 else 0
+    return sample_rate, waveform
 
-    # Feature 3: Dominant Frequency (FFT)
-    # Find the frequency with the highest magnitude
-    fft_vals = np.abs(np.fft.rfft(data))
-    fft_freqs = np.fft.rfftfreq(len(data), 1.0 / sample_rate)
-    
-    if len(fft_vals) > 0:
-        dom_freq_idx = np.argmax(fft_vals)
-        dom_freq = fft_freqs[dom_freq_idx]
-    else:
-        dom_freq = 0
 
-    print(f"[Acoustic Analysis] RMS: {rms:.4f}, ZCR: {zcr:.4f}, Dominant Freq: {dom_freq:.1f}Hz")
+def _extract_signal_features(wav_path: str) -> Dict[str, float]:
+    sample_rate, waveform = _read_waveform(wav_path)
+    if len(waveform) == 0:
+        return {"rms": 0.0, "zcr": 0.0, "dom_freq": 0.0, "sample_rate": float(sample_rate)}
 
-    # Classification logic based on real audio features (simulating YAMNet classes)
-    # Low volume -> Relaxed
+    rms = float(np.sqrt(np.mean(waveform**2)))
+    zero_crossings = np.nonzero(np.diff(waveform > 0))[0]
+    zcr = float(len(zero_crossings) / len(waveform))
+
+    fft_vals = np.abs(np.fft.rfft(waveform))
+    fft_freqs = np.fft.rfftfreq(len(waveform), 1.0 / sample_rate)
+    dom_freq = float(fft_freqs[int(np.argmax(fft_vals))]) if len(fft_vals) > 0 else 0.0
+
+    print(f"[Signal] RMS={rms:.4f} ZCR={zcr:.4f} DominantFreq={dom_freq:.1f}Hz")
+    return {"rms": rms, "zcr": zcr, "dom_freq": dom_freq, "sample_rate": float(sample_rate)}
+
+
+def classify_with_signal_features(wav_path: str) -> Dict[str, object]:
+    features = _extract_signal_features(wav_path)
+    rms = features["rms"]
+    zcr = features["zcr"]
+    dom_freq = features["dom_freq"]
+
     if rms < 0.012:
         state = "relaxed"
         confidence = float(np.clip(1.0 - (rms * 10), 0.75, 0.96))
-    else:
-        # High frequency, high zero crossings -> Distress (choro/grito) or Attention (miado fino/pedido)
-        if dom_freq > 900:
-            if zcr > 0.15:
-                state = "distress"
-                confidence = float(np.clip(0.60 + rms * 3, 0.65, 0.92))
-            else:
-                state = "attention"
-                confidence = float(np.clip(0.62 + rms * 2, 0.65, 0.88))
-        # Mid-high frequency -> Hunger (miado/ladrar por comida)
-        elif 500 < dom_freq <= 900:
-            state = "hunger"
-            confidence = float(np.clip(0.65 + rms * 1.5, 0.68, 0.89))
-        # Low-mid frequency -> Alert (ladrar grosso de guarda) or Excitement (brincadeira/ufanar)
+    elif dom_freq > 900:
+        if zcr > 0.15:
+            state = "distress"
+            confidence = float(np.clip(0.60 + rms * 3, 0.65, 0.92))
         else:
-            if rms > 0.08:
-                state = "alert"
-                confidence = float(np.clip(0.70 + rms, 0.72, 0.94))
-            else:
-                state = "excitement"
-                confidence = float(np.clip(0.68 + rms * 1.8, 0.70, 0.90))
+            state = "attention"
+            confidence = float(np.clip(0.62 + rms * 2, 0.65, 0.88))
+    elif 500 < dom_freq <= 900:
+        state = "hunger"
+        confidence = float(np.clip(0.65 + rms * 1.5, 0.68, 0.89))
+    elif rms > 0.08:
+        state = "alert"
+        confidence = float(np.clip(0.70 + rms, 0.72, 0.94))
+    else:
+        state = "excitement"
+        confidence = float(np.clip(0.68 + rms * 1.8, 0.70, 0.90))
 
     return {
         "state": state,
         "confidence": round(confidence, 2),
-        "model": "yamnet-acoustic-classifier"
+        "model": "scipy-heuristics-fallback",
     }
+
+
+def _class_names_from_csv(class_map_csv_text: str) -> List[str]:
+    import tensorflow as tf
+
+    class_names: List[str] = []
+    with tf.io.gfile.GFile(class_map_csv_text) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            class_names.append(row["display_name"])
+    return class_names
+
+
+def load_yamnet_model():
+    global _yamnet_model, _yamnet_class_names
+
+    if _yamnet_model is not None and _yamnet_class_names is not None:
+        return _yamnet_model, _yamnet_class_names
+
+    import tensorflow_hub as hub
+
+    model = hub.load(YAMNET_MODEL_HANDLE)
+    class_map_path = model.class_map_path().numpy()
+    if isinstance(class_map_path, bytes):
+        class_map_path = class_map_path.decode("utf-8")
+
+    _yamnet_model = model
+    _yamnet_class_names = _class_names_from_csv(class_map_path)
+    print(f"[YAMNet] Loaded {YAMNET_MODEL_HANDLE} with {len(_yamnet_class_names)} classes")
+    return _yamnet_model, _yamnet_class_names
+
+
+def _score_state_from_yamnet(top_predictions: List[Tuple[str, float]], signal_result: Dict[str, object]):
+    state_scores = {state: 0.0 for state in STATE_EMOJIS}
+
+    for label, score in top_predictions:
+        normalized = label.lower()
+        for state, hints in YAMNET_STATE_HINTS.items():
+            for pattern, weight in hints:
+                if pattern in normalized:
+                    state_scores[state] += score * weight
+                    break
+
+    signal_state = str(signal_result["state"])
+    signal_confidence = float(signal_result["confidence"])
+    if signal_state in state_scores:
+        state_scores[signal_state] += signal_confidence * 0.18
+
+    best_state = max(state_scores, key=state_scores.get)
+    best_score = state_scores[best_state]
+    top_model_score = top_predictions[0][1] if top_predictions else 0.0
+
+    if best_score <= 0:
+        return signal_state, signal_confidence
+
+    confidence = 0.52 + (best_score * 1.6) + (top_model_score * 0.2)
+    confidence = max(confidence, signal_confidence * 0.75)
+    return best_state, float(np.clip(confidence, 0.55, 0.97))
+
+
+def classify_with_yamnet(wav_path: str) -> Dict[str, object]:
+    import tensorflow as tf
+
+    model, class_names = load_yamnet_model()
+    _, waveform = _read_waveform(wav_path)
+    if len(waveform) == 0:
+        return {"state": "relaxed", "confidence": 0.95, "model": "yamnet-tfhub"}
+
+    scores, _, _ = model(tf.convert_to_tensor(waveform, dtype=tf.float32))
+    mean_scores = np.asarray(scores.numpy()).mean(axis=0)
+    top_indices = np.argsort(mean_scores)[::-1][:10]
+    top_predictions = [
+        (class_names[int(index)], float(mean_scores[int(index)]))
+        for index in top_indices
+        if int(index) < len(class_names)
+    ]
+
+    top_debug = ", ".join(f"{label}:{score:.2f}" for label, score in top_predictions[:5])
+    print(f"[YAMNet] Top classes: {top_debug}")
+
+    signal_result = classify_with_signal_features(wav_path)
+    state, confidence = _score_state_from_yamnet(top_predictions, signal_result)
+
+    return {
+        "state": state,
+        "confidence": round(confidence, 2),
+        "model": "yamnet-tfhub",
+    }
+
 
 @app.post("/classify", response_model=ClassificationResponse)
 async def classify_audio(file: UploadFile = File(...)):
-    """
-    Receives an audio file, saves it temporarily, converts it to WAV,
-    runs feature extraction and acoustic classification, and returns the result.
-    """
-    # Verify file extension
     filename = file.filename or "recording.webm"
-    ext = os.path.splitext(filename)[1].lower()
-    
-    # Save uploaded file to a temporary location
+    ext = os.path.splitext(filename)[1].lower() or ".webm"
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_in:
         temp_in.write(await file.read())
         temp_in_path = temp_in.name
@@ -150,34 +295,32 @@ async def classify_audio(file: UploadFile = File(...)):
     temp_wav_path = temp_in_path + ".wav"
 
     try:
-        # Convert to WAV (16kHz, mono) using FFmpeg
         convert_to_wav(temp_in_path, temp_wav_path)
-        
-        # Analyze bytes and classify
-        analysis = analyze_audio_signal(temp_wav_path)
-        
-        state = analysis["state"]
-        confidence = analysis["confidence"]
-        model = analysis["model"]
-        
+
+        try:
+            analysis = classify_with_yamnet(temp_wav_path)
+        except Exception as yamnet_error:
+            print(f"[YAMNet] Falling back to scipy heuristics: {str(yamnet_error)}")
+            analysis = classify_with_signal_features(temp_wav_path)
+
+        state = str(analysis["state"])
         return ClassificationResponse(
             state=state,
-            confidence=confidence,
+            confidence=float(analysis["confidence"]),
             emoji=STATE_EMOJIS.get(state, "⚪"),
-            model_used=model
+            model_used=str(analysis["model"]),
         )
-        
-    except Exception as e:
-        print(f"[classify] Error during processing: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Audio processing error: {str(e)}")
-        
+    except Exception as exc:
+        print(f"[classify] Error during processing: {str(exc)}")
+        raise HTTPException(status_code=500, detail=f"Audio processing error: {str(exc)}")
     finally:
-        # Clean up temporary files
         if os.path.exists(temp_in_path):
             os.remove(temp_in_path)
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
