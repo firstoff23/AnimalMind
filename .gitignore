@@ -35,6 +35,7 @@ Thumbs.db
 # Misc
 *.tsbuildinfo
 
+
 # Python
 __pycache__/
 *.pyc
@@ -44,4 +45,11 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# AnimalMind local database files & tools
+fetch-api.js
+server/baselines.json
+server/belief_states.json
+server/postures.json
+server/vet_shares.json
 
