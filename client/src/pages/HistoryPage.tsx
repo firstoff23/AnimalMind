@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, type PointerEvent } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -407,6 +408,16 @@ export default function HistoryPage() {
   const [rawEvent, setRawEvent] = useState<HistoryEvent | null>(null);
   const [playingEventId, setPlayingEventId] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [, setLocation] = useLocation();
+
+  const queryParams = new URLSearchParams(window.location.search);
+  const animalIdParam = queryParams.get("animalId");
+  const animalIdFilter = animalIdParam ? parseInt(animalIdParam) : undefined;
+
+  const { data: filterAnimal } = trpc.animals.get.useQuery(
+    { animalId: animalIdFilter! },
+    { enabled: !!animalIdFilter }
+  );
 
   const handlePlayToggle = (eventId: number, audioUrl: string) => {
     if (playingEventId === eventId) {
@@ -446,6 +457,7 @@ export default function HistoryPage() {
     state: stateFilter !== "all" ? stateFilter : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    animalId: animalIdFilter,
   });
 
   const events = (data?.events ?? []) as HistoryEvent[];
@@ -472,6 +484,7 @@ export default function HistoryPage() {
     state: stateFilter !== "all" ? stateFilter : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    animalId: animalIdFilter,
   };
 
   const loadExportEvents = async () => {
@@ -726,8 +739,20 @@ export default function HistoryPage() {
       )}
 
       {/* Active filter badges */}
-      {isFiltered && (
+      {(isFiltered || animalIdFilter) && (
         <div className="flex flex-wrap gap-1.5">
+          {filterAnimal && (
+            <Badge variant="secondary" className="text-xs gap-1">
+              🐾 {filterAnimal.name}
+              <button
+                onClick={() => setLocation("/historico")}
+                className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                title="Limpar filtro de animal"
+              >
+                <X size={10} />
+              </button>
+            </Badge>
+          )}
           {stateFilter !== "all" && (
             <Badge variant="secondary" className="text-xs gap-1">
               {STATE_EMOJIS[stateFilter as EmotionalState]}{" "}

@@ -336,6 +336,7 @@ export default function RecordingPage() {
 
   // Vision state hooks
   const [showCamera, setShowCamera] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [detectedPosture, setDetectedPosture] = useState<string>("sitting");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -351,7 +352,13 @@ export default function RecordingPage() {
   // Manage WebRTC stream
   useEffect(() => {
     if (showCamera) {
-      navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } })
+      navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: 320, 
+          height: 240,
+          facingMode: { ideal: facingMode }
+        } 
+      })
         .then((stream) => {
           streamRef.current = stream;
           if (videoRef.current) {
@@ -375,7 +382,7 @@ export default function RecordingPage() {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [showCamera]);
+  }, [showCamera, facingMode]);
 
   // YOLOv8 simulated skeleton canvas loop
   useEffect(() => {
@@ -756,14 +763,26 @@ export default function RecordingPage() {
               </p>
             </div>
           </div>
-          <Button
-            variant={showCamera ? "destructive" : "outline"}
-            size="sm"
-            onClick={() => setShowCamera(prev => !prev)}
-            className="text-xs font-semibold"
-          >
-            {showCamera ? "DESATIVAR" : "ATIVAR"}
-          </Button>
+          <div className="flex gap-2">
+            {showCamera && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFacingMode(prev => prev === "environment" ? "user" : "environment")}
+                className="text-xs font-semibold"
+              >
+                {facingMode === "environment" ? "FRONTAL" : "TRASEIRA"}
+              </Button>
+            )}
+            <Button
+              variant={showCamera ? "destructive" : "outline"}
+              size="sm"
+              onClick={() => setShowCamera(prev => !prev)}
+              className="text-xs font-semibold"
+            >
+              {showCamera ? "DESATIVAR" : "ATIVAR"}
+            </Button>
+          </div>
         </div>
 
         {showCamera && (
@@ -773,13 +792,13 @@ export default function RecordingPage() {
                 ref={videoRef}
                 muted
                 playsInline
-                className="w-full h-full object-cover scale-x-[-1]"
+                className={cn("w-full h-full object-cover", facingMode === "user" && "scale-x-[-1]")}
               />
               <canvas
                 ref={canvasRef}
                 width={320}
                 height={240}
-                className="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"
+                className={cn("absolute inset-0 w-full h-full pointer-events-none", facingMode === "user" && "scale-x-[-1]")}
               />
             </div>
             

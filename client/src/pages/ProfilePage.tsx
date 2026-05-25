@@ -280,9 +280,7 @@ export default function ProfilePage() {
                 key={animal.id}
                 animal={animal}
                 active={animal.isActive}
-                onSelect={() =>
-                  setActiveMutation.mutate({ animalId: animal.id })
-                }
+                onSelect={() => setLocation(`/animal/${animal.id}`)}
               />
             ))}
           </div>
