@@ -23,6 +23,8 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
+  FileText,
   Filter,
   ThumbsDown,
   ThumbsUp,
@@ -38,6 +40,14 @@ import {
 } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 import { motion, useMotionValue, useTransform } from "framer-motion";
+import { jsPDF } from "jspdf";
+import {
+  buildHistoryCsv,
+  downloadTextFile,
+  getAnimalScopeLabel,
+  getPeriodLabel,
+  type HistoryExportEvent,
+} from "@/lib/historyExport";
 
 const PAGE_SIZE = 10;
 
@@ -392,6 +402,8 @@ export default function HistoryPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showExportActions, setShowExportActions] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | null>(null);
   const [rawEvent, setRawEvent] = useState<HistoryEvent | null>(null);
   const [playingEventId, setPlayingEventId] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -447,6 +459,7 @@ export default function HistoryPage() {
     },
     onError: () => toast.error("Não foi possível guardar o feedback."),
   });
+  const exportMutation = trpc.events.exportData.useMutation();
 
   const clearFilters = () => {
     setStateFilter("all");
@@ -455,12 +468,142 @@ export default function HistoryPage() {
     setPage(1);
   };
 
+  const exportFilters = {
+    state: stateFilter !== "all" ? stateFilter : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  };
+
+  const loadExportEvents = async () => {
+    const result = await exportMutation.mutateAsync(exportFilters);
+    return result.events as HistoryExportEvent[];
+  };
+
+  const exportFileDate = () => new Date().toISOString().slice(0, 10);
+
+  const handleExportCsv = async () => {
+    setExportFormat("csv");
+    try {
+      const exportEvents = await loadExportEvents();
+      if (exportEvents.length === 0) {
+        toast.info("Não há registos para exportar.");
+        return;
+      }
+      const csv = buildHistoryCsv(exportEvents);
+      downloadTextFile(
+        `\uFEFF${csv}`,
+        "text/csv;charset=utf-8",
+        `animalmind-historico-${exportFileDate()}.csv`,
+      );
+      toast.success("CSV exportado");
+    } catch (error) {
+      console.error("CSV export failed:", error);
+      toast.error("Não foi possível exportar CSV.");
+    } finally {
+      setExportFormat(null);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExportFormat("pdf");
+    try {
+      const exportEvents = await loadExportEvents();
+      if (exportEvents.length === 0) {
+        toast.info("Não há registos para exportar.");
+        return;
+      }
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const animalLabel = getAnimalScopeLabel(exportEvents);
+      const periodLabel = getPeriodLabel(exportFilters.dateFrom, exportFilters.dateTo);
+      const generatedAt = new Date().toLocaleString("pt-PT");
+
+      const drawHeader = () => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("AnimalMind - Histórico de classificações", 14, 16);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Animal: ${animalLabel}`, 14, 24);
+        doc.text(`Período: ${periodLabel}`, 14, 30);
+        doc.text(`Gerado em: ${generatedAt}`, 14, 36);
+      };
+
+      const columns = [
+        { label: "Data", x: 14, width: 35 },
+        { label: "Animal", x: 52, width: 42 },
+        { label: "Estado", x: 98, width: 42 },
+        { label: "Conf.", x: 144, width: 20 },
+        { label: "Modelo", x: 168, width: 42 },
+        { label: "Feedback", x: 214, width: 32 },
+        { label: "Áudio", x: 250, width: 32 },
+      ];
+
+      const truncate = (value: string, maxLength: number) =>
+        value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+
+      const drawTableHeader = (y: number) => {
+        doc.setFillColor(16, 185, 129);
+        doc.rect(12, y - 5, 272, 8, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(15, 23, 42);
+        columns.forEach((column) => doc.text(column.label, column.x, y));
+        doc.setTextColor(0, 0, 0);
+      };
+
+      drawHeader();
+      let y = 48;
+      drawTableHeader(y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+
+      exportEvents.forEach((event) => {
+        if (y > 190) {
+          doc.addPage();
+          drawHeader();
+          y = 48;
+          drawTableHeader(y);
+          y += 8;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+        }
+
+        const state = event.state as EmotionalState;
+        const row = [
+          new Date(event.createdAt).toLocaleDateString("pt-PT"),
+          event.animalName || `#${event.animalId ?? ""}`,
+          STATE_LABELS[state] ?? event.state,
+          `${Math.round(Number(event.confidence) * 100)}%`,
+          event.modelUsed,
+          event.feedback ?? "",
+          event.audioUrl ? "Sim" : "Não",
+        ];
+
+        columns.forEach((column, index) => {
+          doc.text(truncate(String(row[index] ?? ""), Math.floor(column.width / 2)), column.x, y);
+        });
+        y += 7;
+      });
+
+      doc.save(`animalmind-historico-${exportFileDate()}.pdf`);
+      toast.success("PDF exportado");
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      toast.error("Não foi possível exportar PDF.");
+    } finally {
+      setExportFormat(null);
+    }
+  };
+
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-4 max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground">Histórico</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isFiltered && (
             <Button
               variant="ghost"
@@ -484,8 +627,43 @@ export default function HistoryPage() {
             <Filter size={14} />
             Filtros
           </Button>
+          <Button
+            variant={showExportActions ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowExportActions((v) => !v)}
+            className={cn(
+              "gap-1.5 h-8",
+              showExportActions && "bg-primary text-primary-foreground",
+            )}
+          >
+            <Download size={14} />
+            Exportar
+          </Button>
         </div>
       </div>
+
+      {showExportActions && (
+        <div className="grid grid-cols-2 gap-2 page-enter">
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={exportMutation.isPending}
+            className="h-10 gap-2"
+          >
+            <Download size={15} />
+            {exportFormat === "csv" ? "A gerar..." : "CSV"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportPdf}
+            disabled={exportMutation.isPending}
+            className="h-10 gap-2"
+          >
+            <FileText size={15} />
+            {exportFormat === "pdf" ? "A gerar..." : "PDF"}
+          </Button>
+        </div>
+      )}
 
       {/* Filters panel */}
       {showFilters && (

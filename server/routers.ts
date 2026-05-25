@@ -91,6 +91,24 @@ async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> 
   return demoId;
 }
 
+function mapEventForExport(e: any) {
+  const createdAt = e.created_at ?? e.createdAt ?? null;
+  return {
+    id: e.id,
+    userId: e.user_id ?? e.userId ?? null,
+    animalId: e.animal_id ?? e.animalId ?? null,
+    animalName: e.animals?.name ?? e.animalName ?? "",
+    state: e.state,
+    confidence: Number(e.confidence),
+    emoji: e.emoji ?? "",
+    modelUsed: e.model_used ?? e.modelUsed ?? "",
+    cached: Boolean(e.cached),
+    feedback: e.feedback ?? null,
+    audioUrl: e.audio_url ?? e.audioUrl ?? "",
+    createdAt: createdAt ? new Date(createdAt).toISOString() : "",
+  };
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -417,6 +435,29 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         await updateEventFeedback(input.eventId, userId, input.feedback);
         return { success: true };
+      }),
+
+    exportData: publicProcedure
+      .input(
+        z.object({
+          state: z.string().optional(),
+          dateFrom: z.string().optional(),
+          dateTo: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const filters = {
+          state: input.state,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        };
+        const events = await getAllEventsForExport(userId, filters);
+        return {
+          events: events.map(mapEventForExport),
+          filters,
+          generatedAt: new Date().toISOString(),
+        };
       }),
 
     exportCsv: publicProcedure.query(async ({ ctx }) => {

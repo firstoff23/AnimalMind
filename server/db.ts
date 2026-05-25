@@ -274,13 +274,25 @@ export async function updateEventFeedback(
   if (error) throw error;
 }
 
-export async function getAllEventsForExport(userId: number) {
+export async function getAllEventsForExport(
+  userId: number,
+  filters: {
+    state?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  } = {}
+) {
   const supabase = getSupabase();
-  const { data, error } = await supabase
+  let query = supabase
     .from("classification_events")
     .select("*, animals(name, species)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("user_id", userId);
+
+  if (filters.state && filters.state !== "all") query = query.eq("state", filters.state);
+  if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
+  if (filters.dateTo) query = query.lte("created_at", filters.dateTo);
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) throw error;
   return data || [];

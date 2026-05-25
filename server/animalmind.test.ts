@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { getAllEventsForExport } from "./db";
 
 // ─── Mock DB ──────────────────────────────────────────────────────────────────
 
@@ -165,6 +166,50 @@ describe("events.list", () => {
     expect(result).toHaveProperty("events");
     expect(result).toHaveProperty("total");
     expect(Array.isArray(result.events)).toBe(true);
+  });
+});
+
+describe("events.exportData", () => {
+  it("devolve todos os campos necessários para exportar histórico filtrado", async () => {
+    vi.mocked(getAllEventsForExport).mockResolvedValueOnce([
+      {
+        id: 123,
+        user_id: 1,
+        animal_id: 2,
+        state: "relaxed",
+        confidence: 0.91,
+        emoji: "⚪",
+        model_used: "yamnet",
+        cached: false,
+        feedback: "correct",
+        audio_url: "https://animalmind.supabase.co/audio.wav",
+        created_at: "2026-05-20T10:00:00.000Z",
+        animals: { name: "Mimi", species: "cat" },
+      },
+    ]);
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.events.exportData({
+      state: "relaxed",
+      dateFrom: "2026-05-01",
+      dateTo: "2026-05-25",
+    });
+
+    expect(getAllEventsForExport).toHaveBeenCalledWith(1, {
+      state: "relaxed",
+      dateFrom: "2026-05-01",
+      dateTo: "2026-05-25",
+    });
+    expect(result.events[0]).toMatchObject({
+      id: 123,
+      userId: 1,
+      animalId: 2,
+      animalName: "Mimi",
+      state: "relaxed",
+      confidence: 0.91,
+      modelUsed: "yamnet",
+      audioUrl: "https://animalmind.supabase.co/audio.wav",
+    });
   });
 });
 
