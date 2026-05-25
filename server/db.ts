@@ -184,20 +184,23 @@ export async function insertEvent(data: {
   audioUrl?: string | null;
 }) {
   const supabase = getSupabase();
+  const eventPayload: Record<string, unknown> = {
+    user_id: data.userId,
+    animal_id: data.animalId,
+    state: data.state,
+    confidence: data.confidence,
+    emoji: data.emoji,
+    model_used: data.modelUsed,
+    cached: data.cached ?? false,
+  };
+
+  if (data.audioUrl !== undefined) {
+    eventPayload.audio_url = data.audioUrl;
+  }
+
   const { data: result, error } = await supabase
     .from("classification_events")
-    .insert([
-      {
-        user_id: data.userId,
-        animal_id: data.animalId,
-        state: data.state,
-        confidence: data.confidence,
-        emoji: data.emoji,
-        model_used: data.modelUsed,
-        cached: data.cached ?? false,
-        audio_url: data.audioUrl ?? null,
-      },
-    ])
+    .insert([eventPayload])
     .select()
     .single();
 

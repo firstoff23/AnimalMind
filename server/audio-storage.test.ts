@@ -90,4 +90,26 @@ describe("audio storage persistence", () => {
     expect(select).toHaveBeenCalledWith("audio_url");
     expect(eq).toHaveBeenCalledWith("id", 42);
   });
+
+  it("does not include audio_url on initial inserts without an uploaded URL", async () => {
+    const single = vi.fn().mockResolvedValue({ data: { id: 42 }, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    const from = vi.fn(() => ({ insert }));
+    const client = { from };
+
+    const { insertEvent } = await loadDbWithClient(client);
+
+    await insertEvent({
+      userId: 1,
+      animalId: 2,
+      state: "relaxed",
+      confidence: 0.91,
+      emoji: "⚪",
+      modelUsed: "yamnet",
+    });
+
+    const inserted = insert.mock.calls[0][0][0];
+    expect("audio_url" in inserted).toBe(false);
+  });
 });
