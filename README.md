@@ -40,6 +40,7 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 * **Mapeamento Emocional:** Mapeia as classes acústicas do YAMNet e sinais físicos auxiliares para os 6 estados emocionais da aplicação.
 * **Fallback Interno:** Se TensorFlow/YAMNet não estiver disponível no servidor Python, o backend cai para análise `numpy`/`scipy` com RMS, Zero Crossing Rate e frequência dominante.
 * **Resiliência & Fallback:** Se a variável de ambiente `FASTAPI_BACKEND_URL` não estiver definida ou o servidor FastAPI estiver offline, a API tRPC do Node.js cai de forma transparente e resiliente para o simulador heurístico sem afetar a usabilidade da aplicação.
+* **Deploy ML:** O backend Python foi preparado para Hugging Face Spaces via `ml_backend/Dockerfile`. Depois do Space estar live, atualizar `FASTAPI_BACKEND_URL` na Vercel para `https://<owner>-animalmind-ml-backend.hf.space`.
 
 ### 8. Página de Detalhe por Animal
 * **Painel Dedicado (`/animal/:id`):** Acessível a partir da página de Perfil, reúne todas as informações históricas e estatísticas de um único animal de estimação.
@@ -104,6 +105,8 @@ SUPABASE_URL="https://seu-projeto.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
 FASTAPI_BACKEND_URL="http://localhost:8000"
 ```
+
+Para produção, manter o valor atual até ao deploy no Hugging Face Spaces estar concluído e `/health` responder `200`. Só depois atualizar `FASTAPI_BACKEND_URL` na Vercel para a URL pública do Space.
 
 ### 4. Executar o Servidor de Desenvolvimento Node.js
 Retorne à raiz do projeto e execute:
