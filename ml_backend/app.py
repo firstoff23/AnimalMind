@@ -10,6 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
 from scipy.io import wavfile
+import asyncpg
+import hashlib
+import json
+import redis as redis_client
+from datetime import datetime, timezone
 
 app = FastAPI(
     title="AnimalMind Acoustic Classifier Backend",
@@ -24,6 +29,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Globals: DB pool e Redis client ---
+db_pool = None
+redis_conn = None
+
+
+@app.on_event("startup")
+async def startup():
+    global db_pool, redis_conn
+    database_url = os.environ.get("DATABASE_URL")
+    redis_url = os.environ.get("REDIS_URL")
+    if database_url:
+        try:
+            db_pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
+            async with db_pool.acquire() as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS classifications (
+                        id SERIAL PRIMARY KEY,
+                        filename TEXT,
+                        state TEXT,
+                        confidence FLOAT,
+                        emoji TEXT,
+                        model_used TEXT,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+            print("[DB] PostgreSQL conectado e tabela criada.")
+        except Exception as e:
+            print(f"[DB] Erro ao conectar ao PostgreSQL: {e}")
+    if redis_url:
+        try:
+            redis_conn = redis_client.from_url(redis_url, decode_responses=True)
+            redis_conn.ping()
+            print("[Redis] Conectado com sucesso.")
+        except Exception as e:
+            print(f"[Redis] Erro ao conectar: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    global db_pool
+    if db_pool:
+        await db_pool.close()
+        print("[DB] Pool fechado.")
 
 
 class ClassificationResponse(BaseModel):
@@ -287,6 +336,21 @@ def classify_with_yamnet(wav_path: str) -> Dict[str, object]:
 async def classify_audio(file: UploadFile = File(...)):
     filename = file.filename or "recording.webm"
     ext = os.path.splitext(filename)[1].lower() or ".webm"
+    # Ler bytes do ficheiro para hash de cache
+    audio_bytes = await file.read()
+    await file.seek(0)  # Reset para o tempfile poder ler de novo
+
+    # Verificar cache Redis
+    if redis_conn:
+        try:
+            cache_key = f"classify:{hashlib.md5(audio_bytes).hexdigest()}"
+            cached = redis_conn.get(cache_key)
+            if cached:
+                print(f"[Redis] Cache hit para {cache_key}")
+                return ClassificationResponse(**json.loads(cached))
+        except Exception as redis_err:
+            print(f"[Redis] Erro ao ler cache: {redis_err}")
+
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as temp_in:
         temp_in.write(await file.read())
@@ -303,14 +367,39 @@ async def classify_audio(file: UploadFile = File(...)):
             print(f"[YAMNet] Falling back to scipy heuristics: {str(yamnet_error)}")
             analysis = classify_with_signal_features(temp_wav_path)
 
-        state = str(analysis["state"])
-        return ClassificationResponse(
-            state=state,
-            confidence=float(analysis["confidence"]),
-            emoji=STATE_EMOJIS.get(state, "⚪"),
-            model_used=str(analysis["model"]),
-        )
-    except Exception as exc:
+                    state = str(analysis["state"])
+            confidence = float(analysis["confidence"])
+            emoji = STATE_EMOJIS.get(state, "⚫")
+            model_used = str(analysis["model"])
+
+            result = ClassificationResponse(
+                state=state,
+                confidence=confidence,
+                emoji=emoji,
+                model_used=model_used,
+            )
+
+            # Guardar no PostgreSQL
+            if db_pool:
+                try:
+                    async with db_pool.acquire() as conn:
+                        await conn.execute(
+                            "INSERT INTO classifications (filename, state, confidence, emoji, model_used) VALUES ($1, $2, $3, $4, $5)",
+                            file.filename, state, confidence, emoji, model_used
+                        )
+                except Exception as db_err:
+                    print(f"[DB] Erro ao guardar classificação: {db_err}")
+
+            # Guardar no cache Redis (TTL 10 min)
+            if redis_conn:
+                try:
+                    cache_key = f"classify:{hashlib.md5(audio_bytes).hexdigest()}"
+                    redis_conn.setex(cache_key, 600, json.dumps(result.dict()))
+                except Exception as redis_err:
+                    print(f"[Redis] Erro ao guardar cache: {redis_err}")
+
+            return result
+pt Exception as exc:
         print(f"[classify] Error during processing: {str(exc)}")
         raise HTTPException(status_code=500, detail=f"Audio processing error: {str(exc)}")
     finally:
