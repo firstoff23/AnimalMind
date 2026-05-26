@@ -6,7 +6,7 @@ import { registerOAuthRoutes } from "./_core/oauth";
 import { registerStorageProxy } from "./_core/storageProxy";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
-import { serveStatic, setupVite } from "./_core/vite";
+import { serveStatic } from "./_core/serveStatic";
 
 const app = express();
 
@@ -36,6 +36,8 @@ if (!process.env.VERCEL) {
   const startLocalServer = async () => {
     const server = createServer(app);
     if (process.env.NODE_ENV === "development") {
+      const viteModule = "./_core/vite";
+      const { setupVite } = await import(viteModule);
       await setupVite(app, server);
     } else {
       serveStatic(app);
