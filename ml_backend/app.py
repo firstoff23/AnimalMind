@@ -320,6 +320,15 @@ async def classify_audio(file: UploadFile = File(...)):
             os.remove(temp_wav_path)
 
 
+
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "AnimalMind API", "version": "1.1.0"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
 if __name__ == "__main__":
     import uvicorn
 
