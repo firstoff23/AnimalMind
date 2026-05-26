@@ -367,40 +367,39 @@ async def classify_audio(file: UploadFile = File(...)):
             print(f"[YAMNet] Falling back to scipy heuristics: {str(yamnet_error)}")
             analysis = classify_with_signal_features(temp_wav_path)
 
-                    state = str(analysis["state"])
-            confidence = float(analysis["confidence"])
-            emoji = STATE_EMOJIS.get(state, "⚫")
-            model_used = str(analysis["model"])
+        state = str(analysis["state"])
+        confidence = float(analysis["confidence"])
+        emoji = STATE_EMOJIS.get(state, "⚫")
+        model_used = str(analysis["model"])
 
-            result = ClassificationResponse(
-                state=state,
-                confidence=confidence,
-                emoji=emoji,
-                model_used=model_used,
-            )
+        result = ClassificationResponse(
+            state=state,
+            confidence=confidence,
+            emoji=emoji,
+            model_used=model_used,
+        )
 
-            # Guardar no PostgreSQL
-            if db_pool:
-                try:
-                    async with db_pool.acquire() as conn:
-                        await conn.execute(
-                            "INSERT INTO classifications (filename, state, confidence, emoji, model_used) VALUES ($1, $2, $3, $4, $5)",
-                            file.filename, state, confidence, emoji, model_used
-                        )
-                except Exception as db_err:
-                    print(f"[DB] Erro ao guardar classificação: {db_err}")
+        # Guardar no PostgreSQL
+        if db_pool:
+            try:
+                async with db_pool.acquire() as conn:
+                    await conn.execute(
+                        "INSERT INTO classifications (filename, state, confidence, emoji, model_used) VALUES ($1, $2, $3, $4, $5)",
+                        file.filename, state, confidence, emoji, model_used
+                    )
+            except Exception as db_err:
+                print(f"[DB] Erro ao guardar classificação: {db_err}")
 
-            # Guardar no cache Redis (TTL 10 min)
-            if redis_conn:
-                try:
-                    cache_key = f"classify:{hashlib.md5(audio_bytes).hexdigest()}"
-                    redis_conn.setex(cache_key, 600, json.dumps(result.dict()))
-                except Exception as redis_err:
-                    print(f"[Redis] Erro ao guardar cache: {redis_err}")
+        # Guardar no cache Redis (TTL 10 min)
+        if redis_conn:
+            try:
+                cache_key = f"classify:{hashlib.md5(audio_bytes).hexdigest()}"
+                redis_conn.setex(cache_key, 600, json.dumps(result.dict()))
+            except Exception as redis_err:
+                print(f"[Redis] Erro ao guardar cache: {redis_err}")
 
-            return result
-pt Exception as exc:
-        print(f"[classify] Error during processing: {str(exc)}")
+        return result
+    except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Audio processing error: {str(exc)}")
     finally:
         if os.path.exists(temp_in_path):
