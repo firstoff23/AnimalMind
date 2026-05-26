@@ -111,6 +111,21 @@ function mapEventForExport(e: any) {
   };
 }
 
+function mapDbEvent(e: any) {
+  const createdAt = e.created_at ?? e.createdAt ?? null;
+  return {
+    id: e.id,
+    state: e.state,
+    confidence: Number(e.confidence),
+    emoji: e.emoji ?? "",
+    modelUsed: e.model_used ?? e.modelUsed ?? "",
+    feedback: e.feedback ?? null,
+    audioUrl: e.audio_url ?? e.audioUrl ?? null,
+    createdAt: createdAt ? new Date(createdAt) : new Date(),
+    notes: e.notes ?? null,
+  };
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -411,7 +426,8 @@ export const appRouter = router({
       .input(z.object({ limit: z.number().default(5) }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
-        return getRecentEvents(userId, input.limit);
+        const events = await getRecentEvents(userId, input.limit);
+        return events.map(mapDbEvent);
       }),
 
     list: publicProcedure
@@ -427,7 +443,7 @@ export const appRouter = router({
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
-        return getEventsPaginated(
+        const result = await getEventsPaginated(
           userId,
           input.page,
           input.pageSize,
@@ -436,6 +452,10 @@ export const appRouter = router({
           input.dateTo,
           input.animalId
         );
+        return {
+          events: result.events.map(mapDbEvent),
+          total: result.total,
+        };
       }),
 
     feedback: publicProcedure
@@ -524,12 +544,16 @@ export const appRouter = router({
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
-        return getEventsForAnimalPaginated(
+        const result = await getEventsForAnimalPaginated(
           input.animalId,
           userId,
           input.page,
           input.pageSize
         );
+        return {
+          events: result.events.map(mapDbEvent),
+          total: result.total,
+        };
       }),
 
     statsForAnimal: publicProcedure
