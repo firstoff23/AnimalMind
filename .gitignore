@@ -34,6 +34,9 @@ Thumbs.db
 
 # Misc
 *.tsbuildinfo
+.agents/
+skills-lock.json
+query-vet-shares.js
 
 
 # Python
