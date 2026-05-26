@@ -1,0 +1,5 @@
+# nixpacks.toml — Instalar ffmpeg para processamento de áudio no /classify endpoint
+# Docs: https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+aptPkgs = ["ffmpeg", "libsndfile1-dev"]
