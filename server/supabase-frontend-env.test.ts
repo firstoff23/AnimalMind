@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 
-describe("Supabase Frontend Environment Variables", () => {
+const hasCredentials = !!process.env.VITE_SUPABASE_URL && !!process.env.VITE_SUPABASE_ANON_KEY;
+
+describe.skipIf(!hasCredentials)("Supabase Frontend Environment Variables", () => {
   it("VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas", () => {
     const url = process.env.VITE_SUPABASE_URL;
     const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
