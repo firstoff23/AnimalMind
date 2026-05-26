@@ -1,16 +1,25 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables");
-}
+const missingSupabaseConfigMessage =
+  "A autenticação Supabase não está configurada. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY na Vercel e faça novo deploy.";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+export function requireSupabase() {
+  if (!supabase) {
+    throw new Error(missingSupabaseConfigMessage);
+  }
+
+  return supabase;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check session on mount
   useEffect(() => {
+    if (!supabase) {
+      console.warn(missingSupabaseConfigMessage);
+      setLoading(false);
+      return;
+    }
+
     const initializeAuth = async () => {
       try {
         const {
@@ -63,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await requireSupabase().auth.signInWithPassword({
       email,
       password,
     });
@@ -71,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { error } = await requireSupabase().auth.signUp({
       email,
       password,
       options: {
@@ -84,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await requireSupabase().auth.signOut();
     if (error) throw error;
     setUser(null);
     setSession(null);
@@ -93,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isEmailVerified = user?.email_confirmed_at ? true : false;
 
   const resendVerificationEmail = async (email: string) => {
-    const { error } = await supabase.auth.resend({
+    const { error } = await requireSupabase().auth.resend({
       type: "signup",
       email,
     });

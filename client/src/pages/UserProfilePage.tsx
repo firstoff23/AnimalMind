@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, User, Mail } from "lucide-react";
-import { supabase } from "@/contexts/AuthContext";
+import { requireSupabase } from "@/contexts/AuthContext";
 
 export default function UserProfilePage() {
   const { user } = useAuth();
@@ -25,7 +25,7 @@ export default function UserProfilePage() {
     setSaving(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await requireSupabase().auth.updateUser({
         data: {
           full_name: name,
         },

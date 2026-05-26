@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft } from "lucide-react";
-import { supabase } from "@/contexts/AuthContext";
+import { requireSupabase } from "@/contexts/AuthContext";
 
 export default function ForgotPasswordPage() {
   const [, setLocation] = useLocation();
@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await requireSupabase().auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 

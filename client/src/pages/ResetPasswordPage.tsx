@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/contexts/AuthContext";
+import { requireSupabase } from "@/contexts/AuthContext";
 
 export default function ResetPasswordPage() {
   const [, setLocation] = useLocation();
@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error } = await requireSupabase().auth.updateUser({
         password: password,
       });
 

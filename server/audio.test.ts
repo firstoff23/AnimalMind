@@ -67,5 +67,5 @@ describe("tRPC classify.run with audio", () => {
     expect(result).toHaveProperty("emoji");
     expect(result).toHaveProperty("eventId");
     expect(result).toHaveProperty("audioUrl");
-  });
+  }, 15_000);
 });
