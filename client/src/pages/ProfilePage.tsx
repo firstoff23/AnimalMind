@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   RadarChart,
@@ -128,6 +128,10 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const [species, setSpecies] = useState<"dog" | "cat">("dog");
   const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
+  const [identifyLoading, setIdentifyLoading] = useState(false);
+  const [breedSuggestions, setBreedSuggestions] = useState<Array<{ breed: string; confidence: number }>>([]);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
 
   const addMutation = trpc.animals.add.useMutation({
@@ -148,6 +152,61 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
       breed: breed.trim() || undefined,
       age: age ? parseInt(age) : undefined,
     });
+  };
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Preview da imagem
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setIdentifyLoading(true);
+    setBreedSuggestions([]);
+
+    try {
+      const fastapiUrl =
+        (import.meta.env.VITE_FASTAPI_URL as string | undefined) ||
+        "https://animalmind-production.up.railway.app";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${fastapiUrl}/identify-breed`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail ?? "Erro ao identificar raça");
+      }
+
+      const data = await res.json() as {
+        breed: string;
+        confidence: number;
+        species: string;
+        top3: Array<{ breed: string; confidence: number }>;
+      };
+
+      // Preencher automaticamente
+      setBreed(data.breed);
+      setSpecies(data.species === "cat" ? "cat" : "dog");
+      setBreedSuggestions(data.top3 ?? []);
+
+      toast.success(
+        `📷 Raça identificada: ${data.breed} (${Math.round(data.confidence * 100)}% confiança)`
+      );
+    } catch (err: any) {
+      console.error("[identify-breed]", err);
+      toast.error(`Não foi possível identificar a raça: ${err.message ?? "erro desconhecido"}`);
+    } finally {
+      setIdentifyLoading(false);
+      // Reset input para permitir re-selecionar a mesma imagem
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -184,15 +243,96 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
           />
         </div>
 
+        {/* Breed field with photo ID button */}
         <div className="space-y-1">
           <Label htmlFor="breed" className="text-xs text-muted-foreground">Raça</Label>
-          <Input
-            id="breed"
-            value={breed}
-            onChange={(e) => setBreed(e.target.value)}
-            placeholder="Ex: Labrador"
-            className="bg-secondary border-border"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="breed"
+              value={breed}
+              onChange={(e) => {
+                setBreed(e.target.value);
+                setBreedSuggestions([]);
+              }}
+              placeholder="Ex: Labrador"
+              className="bg-secondary border-border flex-1"
+            />
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoSelect}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={identifyLoading}
+              onClick={() => fileInputRef.current?.click()}
+              className="shrink-0 gap-1.5 border-primary/40 text-primary hover:bg-primary/10 px-3"
+              title="Identificar raça por foto"
+            >
+              {identifyLoading ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Camera size={14} />
+              )}
+              <span className="hidden sm:inline text-xs">
+                {identifyLoading ? "A identificar…" : "📷 Identificar"}
+              </span>
+            </Button>
+          </div>
+
+          {/* Photo preview thumbnail */}
+          {photoPreview && (
+            <div className="flex items-center gap-2 mt-1.5">
+              <img
+                src={photoPreview}
+                alt="Pré-visualização"
+                className="w-12 h-12 rounded-lg object-cover border border-border"
+              />
+              {identifyLoading && (
+                <p className="text-xs text-muted-foreground animate-pulse">
+                  A analisar foto com IA…
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Top-3 breed suggestions */}
+          {breedSuggestions.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">
+                Sugestões (clique para selecionar)
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {breedSuggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setBreed(s.breed);
+                      setBreedSuggestions([]);
+                    }}
+                    className={cn(
+                      "text-xs px-2.5 py-1 rounded-full border transition-all",
+                      breed === s.breed
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    )}
+                  >
+                    {s.breed}
+                    <span className="ml-1 opacity-60">
+                      {Math.round(s.confidence * 100)}%
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -232,6 +372,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
 
 // ─── Profile Page ─────────────────────────────────────────────────────────────
 
