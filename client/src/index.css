@@ -32,28 +32,26 @@
 
 :root {
   --radius: 0.75rem;
-  /* Dark theme (default) — slate-950 base */
-  --background:        oklch(0.09 0.012 264);   /* slate-950 */
-  --foreground:        oklch(0.97 0.003 264);   /* slate-50  */
-  --card:              oklch(0.12 0.012 264);   /* slate-900 */
-  --card-foreground:   oklch(0.97 0.003 264);
-  --popover:           oklch(0.12 0.012 264);
-  --popover-foreground:oklch(0.97 0.003 264);
+  --background:        oklch(0.98 0.005 162);
+  --foreground:        oklch(0.16 0.015 245);
+  --card:              oklch(1 0 0);
+  --card-foreground:   oklch(0.16 0.015 245);
+  --popover:           oklch(1 0 0);
+  --popover-foreground:oklch(0.16 0.015 245);
   --primary:           oklch(0.70 0.17 162);    /* emerald-500 ≈ #10b981 */
-  --primary-foreground:oklch(0.09 0.012 264);
-  --secondary:         oklch(0.17 0.012 264);   /* slate-800 */
-  --secondary-foreground:oklch(0.97 0.003 264);
-  --muted:             oklch(0.17 0.012 264);
-  --muted-foreground:  oklch(0.55 0.012 264);   /* slate-400 */
-  --accent:            oklch(0.17 0.012 264);
-  --accent-foreground: oklch(0.97 0.003 264);
+  --primary-foreground:oklch(0.99 0.004 162);
+  --secondary:         oklch(0.94 0.006 245);
+  --secondary-foreground:oklch(0.18 0.015 245);
+  --muted:             oklch(0.94 0.006 245);
+  --muted-foreground:  oklch(0.48 0.02 245);
+  --accent:            oklch(0.92 0.025 162);
+  --accent-foreground: oklch(0.18 0.015 245);
   --destructive:       oklch(0.60 0.22 27);     /* red-500 */
-  --border:            oklch(0.22 0.012 264);   /* slate-700 */
-  --input:             oklch(0.22 0.012 264);
+  --border:            oklch(0.88 0.01 245);
+  --input:             oklch(0.88 0.01 245);
   --ring:              oklch(0.70 0.17 162);
 }
 
-/* Keep the same dark values for .dark class (ThemeProvider) */
 .dark {
   --background:        oklch(0.09 0.012 264);
   --foreground:        oklch(0.97 0.003 264);

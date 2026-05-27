@@ -73,7 +73,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ThemeProvider defaultTheme="dark">
+        <ThemeProvider defaultTheme="dark" switchable>
           <TooltipProvider>
             <Toaster
               theme="dark"
