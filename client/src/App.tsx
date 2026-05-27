@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { BottomNav } from "./components/BottomNav";
 import { Header } from "./components/Header";
+import { OnboardingDialog } from "./components/OnboardingDialog";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import RecordingPage from "./pages/RecordingPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -62,6 +63,8 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+
+      {isAuthenticated && <OnboardingDialog />}
 
       {/* Bottom nav — only shown when authenticated */}
       {isAuthenticated && <BottomNav />}
