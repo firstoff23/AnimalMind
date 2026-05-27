@@ -173,6 +173,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("animal_type", species);
 
       const res = await fetch(`${fastapiUrl}/identify-breed`, {
         method: "POST",

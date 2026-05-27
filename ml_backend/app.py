@@ -5,7 +5,7 @@ import tempfile
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
@@ -18,8 +18,8 @@ from datetime import datetime, timezone
 
 app = FastAPI(
     title="AnimalMind Acoustic Classifier Backend",
-    description="FastAPI backend using TensorFlow Hub YAMNet for pet audio classification.",
-    version="1.1.0",
+    description="FastAPI backend for pet audio classification and breed identification.",
+    version="1.3.0",
 )
 
 app.add_middleware(
@@ -75,6 +75,8 @@ async def shutdown():
         print("[DB] Pool fechado.")
 
 
+# ─── Audio Classification (YAMNet) ───────────────────────────────────────────
+
 class ClassificationResponse(BaseModel):
     state: str
     confidence: float
@@ -95,43 +97,22 @@ YAMNET_MODEL_HANDLE = "https://tfhub.dev/google/yamnet/1"
 
 YAMNET_STATE_HINTS: Dict[str, List[Tuple[str, float]]] = {
     "distress": [
-        ("whimper", 1.35),
-        ("yelp", 1.35),
-        ("cry", 1.2),
-        ("scream", 1.1),
-        ("howl", 0.9),
+        ("whimper", 1.35), ("yelp", 1.35), ("cry", 1.2), ("scream", 1.1), ("howl", 0.9),
     ],
     "attention": [
-        ("meow", 1.35),
-        ("cat", 0.65),
-        ("purr", 0.45),
-        ("animal", 0.25),
+        ("meow", 1.35), ("cat", 0.65), ("purr", 0.45), ("animal", 0.25),
     ],
     "excitement": [
-        ("pant", 1.0),
-        ("dog", 0.55),
-        ("bark", 0.45),
-        ("snort", 0.35),
+        ("pant", 1.0), ("dog", 0.55), ("bark", 0.45), ("snort", 0.35),
     ],
     "hunger": [
-        ("chew", 1.2),
-        ("crunch", 1.0),
-        ("slurp", 1.0),
-        ("eat", 0.9),
-        ("gulp", 0.8),
+        ("chew", 1.2), ("crunch", 1.0), ("slurp", 1.0), ("eat", 0.9), ("gulp", 0.8),
     ],
     "alert": [
-        ("bark", 1.3),
-        ("bow-wow", 1.3),
-        ("growl", 1.2),
-        ("howl", 0.9),
-        ("dog", 0.35),
+        ("bark", 1.3), ("bow-wow", 1.3), ("growl", 1.2), ("howl", 0.9), ("dog", 0.35),
     ],
     "relaxed": [
-        ("silence", 1.25),
-        ("purr", 1.0),
-        ("breathing", 0.85),
-        ("snore", 0.8),
+        ("silence", 1.25), ("purr", 1.0), ("breathing", 0.85), ("snore", 0.8),
     ],
 }
 
@@ -140,17 +121,7 @@ _yamnet_class_names: Optional[List[str]] = None
 
 
 def convert_to_wav(input_path: str, output_path: str):
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        input_path,
-        "-ar",
-        "16000",
-        "-ac",
-        "1",
-        output_path,
-    ]
+    cmd = ["ffmpeg", "-y", "-i", input_path, "-ar", "16000", "-ac", "1", output_path]
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         error_msg = result.stderr.decode("utf-8", errors="ignore")
@@ -160,7 +131,6 @@ def convert_to_wav(input_path: str, output_path: str):
 def _normalize_waveform(data: np.ndarray) -> np.ndarray:
     if data.ndim > 1:
         data = np.mean(data, axis=1)
-
     if data.dtype == np.int16:
         waveform = data.astype(np.float32) / 32768.0
     elif data.dtype == np.int32:
@@ -172,7 +142,6 @@ def _normalize_waveform(data: np.ndarray) -> np.ndarray:
         waveform = data.astype(np.float32) / float(limit)
     else:
         waveform = data.astype(np.float32)
-
     return np.clip(waveform, -1.0, 1.0)
 
 
@@ -181,16 +150,13 @@ def _read_waveform(wav_path: str) -> Tuple[int, np.ndarray]:
         sample_rate, data = wavfile.read(wav_path)
     except Exception as exc:
         raise Exception(f"Failed to read WAV file: {str(exc)}") from exc
-
     waveform = _normalize_waveform(data)
     if len(waveform) == 0:
         return sample_rate, waveform
-
     if sample_rate != 16000:
         desired_length = int(round(float(len(waveform)) / sample_rate * 16000))
         waveform = signal.resample(waveform, desired_length).astype(np.float32)
         sample_rate = 16000
-
     return sample_rate, waveform
 
 
@@ -198,15 +164,12 @@ def _extract_signal_features(wav_path: str) -> Dict[str, float]:
     sample_rate, waveform = _read_waveform(wav_path)
     if len(waveform) == 0:
         return {"rms": 0.0, "zcr": 0.0, "dom_freq": 0.0, "sample_rate": float(sample_rate)}
-
     rms = float(np.sqrt(np.mean(waveform**2)))
     zero_crossings = np.nonzero(np.diff(waveform > 0))[0]
     zcr = float(len(zero_crossings) / len(waveform))
-
     fft_vals = np.abs(np.fft.rfft(waveform))
     fft_freqs = np.fft.rfftfreq(len(waveform), 1.0 / sample_rate)
     dom_freq = float(fft_freqs[int(np.argmax(fft_vals))]) if len(fft_vals) > 0 else 0.0
-
     print(f"[Signal] RMS={rms:.4f} ZCR={zcr:.4f} DominantFreq={dom_freq:.1f}Hz")
     return {"rms": rms, "zcr": zcr, "dom_freq": dom_freq, "sample_rate": float(sample_rate)}
 
@@ -216,7 +179,6 @@ def classify_with_signal_features(wav_path: str) -> Dict[str, object]:
     rms = features["rms"]
     zcr = features["zcr"]
     dom_freq = features["dom_freq"]
-
     if rms < 0.012:
         state = "relaxed"
         confidence = float(np.clip(1.0 - (rms * 10), 0.75, 0.96))
@@ -236,17 +198,11 @@ def classify_with_signal_features(wav_path: str) -> Dict[str, object]:
     else:
         state = "excitement"
         confidence = float(np.clip(0.68 + rms * 1.8, 0.70, 0.90))
-
-    return {
-        "state": state,
-        "confidence": round(confidence, 2),
-        "model": "scipy-heuristics-fallback",
-    }
+    return {"state": state, "confidence": round(confidence, 2), "model": "scipy-heuristics-fallback"}
 
 
 def _class_names_from_csv(class_map_csv_text: str) -> List[str]:
     import tensorflow as tf
-
     class_names: List[str] = []
     with tf.io.gfile.GFile(class_map_csv_text) as csvfile:
         reader = csv.DictReader(csvfile)
@@ -257,17 +213,13 @@ def _class_names_from_csv(class_map_csv_text: str) -> List[str]:
 
 def load_yamnet_model():
     global _yamnet_model, _yamnet_class_names
-
     if _yamnet_model is not None and _yamnet_class_names is not None:
         return _yamnet_model, _yamnet_class_names
-
     import tensorflow_hub as hub
-
     model = hub.load(YAMNET_MODEL_HANDLE)
     class_map_path = model.class_map_path().numpy()
     if isinstance(class_map_path, bytes):
         class_map_path = class_map_path.decode("utf-8")
-
     _yamnet_model = model
     _yamnet_class_names = _class_names_from_csv(class_map_path)
     print(f"[YAMNet] Loaded {YAMNET_MODEL_HANDLE} with {len(_yamnet_class_names)} classes")
@@ -276,7 +228,6 @@ def load_yamnet_model():
 
 def _score_state_from_yamnet(top_predictions: List[Tuple[str, float]], signal_result: Dict[str, object]):
     state_scores = {state: 0.0 for state in STATE_EMOJIS}
-
     for label, score in top_predictions:
         normalized = label.lower()
         for state, hints in YAMNET_STATE_HINTS.items():
@@ -284,19 +235,15 @@ def _score_state_from_yamnet(top_predictions: List[Tuple[str, float]], signal_re
                 if pattern in normalized:
                     state_scores[state] += score * weight
                     break
-
     signal_state = str(signal_result["state"])
     signal_confidence = float(signal_result["confidence"])
     if signal_state in state_scores:
         state_scores[signal_state] += signal_confidence * 0.18
-
     best_state = max(state_scores, key=state_scores.get)
     best_score = state_scores[best_state]
     top_model_score = top_predictions[0][1] if top_predictions else 0.0
-
     if best_score <= 0:
         return signal_state, signal_confidence
-
     confidence = 0.52 + (best_score * 1.6) + (top_model_score * 0.2)
     confidence = max(confidence, signal_confidence * 0.75)
     return best_state, float(np.clip(confidence, 0.55, 0.97))
@@ -304,12 +251,10 @@ def _score_state_from_yamnet(top_predictions: List[Tuple[str, float]], signal_re
 
 def classify_with_yamnet(wav_path: str) -> Dict[str, object]:
     import tensorflow as tf
-
     model, class_names = load_yamnet_model()
     _, waveform = _read_waveform(wav_path)
     if len(waveform) == 0:
         return {"state": "relaxed", "confidence": 0.95, "model": "yamnet-tfhub"}
-
     scores, _, _ = model(tf.convert_to_tensor(waveform, dtype=tf.float32))
     mean_scores = np.asarray(scores.numpy()).mean(axis=0)
     top_indices = np.argsort(mean_scores)[::-1][:10]
@@ -318,29 +263,20 @@ def classify_with_yamnet(wav_path: str) -> Dict[str, object]:
         for index in top_indices
         if int(index) < len(class_names)
     ]
-
     top_debug = ", ".join(f"{label}:{score:.2f}" for label, score in top_predictions[:5])
     print(f"[YAMNet] Top classes: {top_debug}")
-
     signal_result = classify_with_signal_features(wav_path)
     state, confidence = _score_state_from_yamnet(top_predictions, signal_result)
-
-    return {
-        "state": state,
-        "confidence": round(confidence, 2),
-        "model": "yamnet-tfhub",
-    }
+    return {"state": state, "confidence": round(confidence, 2), "model": "yamnet-tfhub"}
 
 
 @app.post("/classify", response_model=ClassificationResponse)
 async def classify_audio(file: UploadFile = File(...)):
     filename = file.filename or "recording.webm"
     ext = os.path.splitext(filename)[1].lower() or ".webm"
-    # Ler bytes do ficheiro para hash de cache
     audio_bytes = await file.read()
-    await file.seek(0)  # Reset para o tempfile poder ler de novo
+    await file.seek(0)
 
-    # Verificar cache Redis
     if redis_conn:
         try:
             cache_key = f"classify:{hashlib.md5(audio_bytes).hexdigest()}"
@@ -359,7 +295,6 @@ async def classify_audio(file: UploadFile = File(...)):
 
     try:
         convert_to_wav(temp_in_path, temp_wav_path)
-
         try:
             analysis = classify_with_yamnet(temp_wav_path)
         except Exception as yamnet_error:
@@ -372,13 +307,9 @@ async def classify_audio(file: UploadFile = File(...)):
         model_used = str(analysis["model"])
 
         result = ClassificationResponse(
-            state=state,
-            confidence=confidence,
-            emoji=emoji,
-            model_used=model_used,
+            state=state, confidence=confidence, emoji=emoji, model_used=model_used,
         )
 
-        # Guardar no PostgreSQL
         if db_pool:
             try:
                 async with db_pool.acquire() as conn:
@@ -389,7 +320,6 @@ async def classify_audio(file: UploadFile = File(...)):
             except Exception as db_err:
                 print(f"[DB] Erro ao guardar classificação: {db_err}")
 
-        # Guardar no cache Redis (TTL 10 min)
         if redis_conn:
             try:
                 cache_key = f"classify:{hashlib.md5(audio_bytes).hexdigest()}"
@@ -407,43 +337,52 @@ async def classify_audio(file: UploadFile = File(...)):
             os.remove(temp_wav_path)
 
 
+# ─── Breed Identification via local transformers pipeline ─────────────────────
 
-# ─── Breed Identification ────────────────────────────────────────────────────
+# Modelos confirmados pelo HuggingFace Assistant:
+# Cões: wesleyacheng/dog-breeds-multiclass-image-classification-with-vit (120 raças)
+# Gatos: dima806/67_cat_breeds_image_detection (67 raças)
+DOG_MODEL_ID = "wesleyacheng/dog-breeds-multiclass-image-classification-with-vit"
+CAT_MODEL_ID = "dima806/67_cat_breeds_image_detection"
 
-# Modelos HuggingFace especializados
-HF_DOG_BREED_MODEL = "wesleyacheng/dog-breed-classifier-vit"
-HF_CAT_BREED_MODEL = "nickmuchi/cat-breed-classifier-vit"
-HF_SPECIES_MODEL = "nickmuchi/vit-finetuned-cats-vs-dogs"
-
-
-class BreedResult(BaseModel):
-    breed: str
-    confidence: float
-    species: str
-    top3: List[Dict[str, object]]
+_dog_classifier = None
+_cat_classifier = None
 
 
-def _hf_classify_sync(model: str, image_bytes: bytes, hf_token: Optional[str]) -> List[Dict]:
-    """Chama HuggingFace Inference API usando InferenceClient (síncrono)."""
-    from huggingface_hub import InferenceClient
-    client = InferenceClient(model=model, token=hf_token)
-    # image_classification devolve lista de {label, score}
-    results = client.image_classification(image_bytes)
-    return [{"label": r.label, "score": r.score} for r in results]
-
-
-async def _hf_classify(model: str, image_bytes: bytes, hf_token: Optional[str]) -> List[Dict]:
-    """Wrapper async — corre o cliente síncrono num thread executor."""
-    import asyncio
-    loop = asyncio.get_event_loop()
-    try:
-        return await loop.run_in_executor(
-            None, _hf_classify_sync, model, image_bytes, hf_token
+def _get_dog_classifier():
+    global _dog_classifier
+    if _dog_classifier is None:
+        from transformers import pipeline as hf_pipeline
+        print(f"[Breed] A carregar modelo de cão: {DOG_MODEL_ID}")
+        _dog_classifier = hf_pipeline(
+            "image-classification",
+            model=DOG_MODEL_ID,
+            top_k=3,
         )
-    except Exception as e:
-        err_str = str(e)
-        print(f"[HF] Erro no modelo {model}: {err_str}")
-        raise HTTPException(status_code=502, detail=f"HuggingFace API erro: {err_str[:300]}")
+        print("[Breed] Modelo de cão carregado.")
+    return _dog_classifier
+
+
+def _get_cat_classifier():
+    global _cat_classifier
+    if _cat_classifier is None:
+        from transformers import pipeline as hf_pipeline
+        print(f"[Breed] A carregar modelo de gato: {CAT_MODEL_ID}")
+        _cat_classifier = hf_pipeline(
+            "image-classification",
+            model=CAT_MODEL_ID,
+            top_k=3,
+        )
+        print("[Breed] Modelo de gato carregado.")
+    return _cat_classifier
+
+
+def _run_breed_pipeline(classifier, image_bytes: bytes) -> list:
+    """Corre o pipeline de classificação com a imagem em bytes."""
+    from PIL import Image
+    import io
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    return classifier(img)
 
 
 def _clean_breed_label(label: str) -> str:
@@ -451,62 +390,99 @@ def _clean_breed_label(label: str) -> str:
     return label.replace("_", " ").replace("-", " ").title()
 
 
+class BreedResult(BaseModel):
+    breed: str
+    confidence: float
+    species: str
+    top3: List[Dict[str, object]]
+    alternatives: List[Dict[str, object]]
+
+
 @app.post("/identify-breed", response_model=BreedResult)
-async def identify_breed(file: UploadFile = File(...)):
+async def identify_breed(
+    file: UploadFile = File(...),
+    animal_type: str = Form(default="dog"),
+):
     """
     Identifica a raça de um cão ou gato a partir de uma foto.
-    Usa modelos ViT fine-tuned via HuggingFace InferenceClient.
+    Usa modelos ViT fine-tuned carregados localmente via transformers.
+
+    Parâmetros:
+        file: imagem (JPEG, PNG, WEBP, etc.)
+        animal_type: "dog" ou "cat" (default: "dog")
     """
     content_type = file.content_type or ""
     if not content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Ficheiro deve ser uma imagem (JPEG, PNG, etc.)")
+        raise HTTPException(
+            status_code=400,
+            detail="Ficheiro deve ser uma imagem (JPEG, PNG, etc.)"
+        )
 
     image_bytes = await file.read()
-    if len(image_bytes) > 10 * 1024 * 1024:  # 10 MB
-        raise HTTPException(status_code=413, detail="Imagem demasiado grande (máx 10 MB)")
+    if len(image_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail="Imagem demasiado grande (máx 10 MB)"
+        )
 
-    hf_token = os.environ.get("HF_TOKEN")
+    species = "cat" if animal_type.lower() == "cat" else "dog"
 
-    # Passo 1: Detectar espécie (cão vs gato)
     try:
-        species_results = await _hf_classify(HF_SPECIES_MODEL, image_bytes, hf_token)
-        top_species = species_results[0] if species_results else {"label": "dog", "score": 0.5}
-        species_label = top_species.get("label", "dog").lower()
-        species = "cat" if "cat" in species_label else "dog"
-        print(f"[Breed] Espécie detectada: {species} (raw: {species_label})")
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if species == "dog":
+            results = await loop.run_in_executor(
+                None, _run_breed_pipeline, _get_dog_classifier(), image_bytes
+            )
+        else:
+            results = await loop.run_in_executor(
+                None, _run_breed_pipeline, _get_cat_classifier(), image_bytes
+            )
     except Exception as e:
-        print(f"[Breed] Falha na detecção de espécie, assumindo cão: {e}")
-        species = "dog"
+        print(f"[Breed] Erro no pipeline: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao classificar raça: {str(e)[:300]}"
+        )
 
-    # Passo 2: Classificar raça
-    breed_model = HF_DOG_BREED_MODEL if species == "dog" else HF_CAT_BREED_MODEL
-    breed_results = await _hf_classify(breed_model, image_bytes, hf_token)
+    if not results:
+        raise HTTPException(status_code=500, detail="Modelo não devolveu resultados")
 
-    if not breed_results:
-        raise HTTPException(status_code=500, detail="Resposta inválida do modelo de raças")
-
-    top = breed_results[0]
+    top = results[0]
     breed_name = _clean_breed_label(str(top.get("label", "Desconhecida")))
     confidence = round(float(top.get("score", 0.0)), 3)
 
     top3 = [
-        {"breed": _clean_breed_label(str(r.get("label", ""))), "confidence": round(float(r.get("score", 0.0)), 3)}
-        for r in breed_results[:3]
+        {
+            "breed": _clean_breed_label(str(r.get("label", ""))),
+            "confidence": round(float(r.get("score", 0.0)), 3),
+        }
+        for r in results[:3]
     ]
 
-    print(f"[Breed] {breed_name} ({confidence:.1%}) — espécie: {species}")
-    return BreedResult(breed=breed_name, confidence=confidence, species=species, top3=top3)
+    print(f"[Breed] {species}: {breed_name} ({confidence:.1%})")
 
+    return BreedResult(
+        breed=breed_name,
+        confidence=confidence,
+        species=species,
+        top3=top3,
+        alternatives=top3[1:],
+    )
+
+
+# ─── Root & Health ────────────────────────────────────────────────────────────
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "AnimalMind API", "version": "1.2.0"}
+    return {"status": "ok", "service": "AnimalMind API", "version": "1.3.0"}
 
 
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=7860)
