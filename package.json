@@ -10,7 +10,8 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "cleanup": "node scripts/cleanup-test-data.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1053.0",
@@ -60,6 +61,7 @@
     "express": "^4.21.2",
     "framer-motion": "^12.23.22",
     "input-otp": "^1.4.2",
+    "ioredis": "^5.11.0",
     "jose": "6.1.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.453.0",

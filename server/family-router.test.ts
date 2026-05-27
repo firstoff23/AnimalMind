@@ -1,9 +1,42 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+
+vi.mock("@supabase/supabase-js", () => {
+  return {
+    createClient: vi.fn().mockReturnValue({
+      from: vi.fn().mockImplementation((table: string) => {
+        const builder: any = {
+          select: vi.fn().mockReturnThis(),
+          insert: vi.fn().mockReturnThis(),
+          update: vi.fn().mockReturnThis(),
+          upsert: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          single: vi.fn().mockImplementation(() => {
+            if (table === "users") {
+              return Promise.resolve({ data: { id: 1 }, error: null });
+            }
+            if (table === "animals") {
+              return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
+            }
+            return Promise.resolve({ data: null, error: null });
+          }),
+          limit: vi.fn().mockImplementation(() => {
+            if (table === "animals") {
+              return Promise.resolve({ data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }] });
+            }
+            return builder;
+          }),
+        };
+        return builder;
+      }),
+    }),
+  };
+});
 
 const FAMILIES_FILE_PATH = path.resolve(import.meta.dirname, "families.json");
 

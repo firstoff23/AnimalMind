@@ -11,7 +11,8 @@ vi.mock("@supabase/supabase-js", async (importOriginal) => {
       update: vi.fn().mockImplementation(() => builder),
       insert: vi.fn().mockImplementation(() => builder),
       eq: vi.fn().mockImplementation(() => builder),
-      single: vi.fn().mockImplementation(() => {
+      order: vi.fn().mockReturnThis(),
+          single: vi.fn().mockImplementation(() => {
         if (table === "classification_events") {
           return Promise.resolve({
             data: {

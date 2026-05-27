@@ -1,5 +1,28 @@
-import { describe, expect, it, beforeAll } from "vitest";
+import { describe, expect, it, beforeAll, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+
+vi.mock("@supabase/supabase-js", () => {
+  const mockAdmin = {
+    listUsers: vi.fn().mockResolvedValue({ data: { users: [] }, error: null }),
+    createUser: vi.fn().mockImplementation(({ email, password }) => {
+      if (password === "123") {
+        return Promise.resolve({ data: { user: null }, error: new Error("Weak password") });
+      }
+      return Promise.resolve({
+        data: { user: { id: "test-user-id", email } },
+        error: null,
+      });
+    }),
+    deleteUser: vi.fn().mockResolvedValue({ error: null }),
+  };
+  return {
+    createClient: vi.fn().mockReturnValue({
+      auth: {
+        admin: mockAdmin,
+      },
+    }),
+  };
+});
 
 describe("Supabase Auth", () => {
   let supabase: ReturnType<typeof createClient>;

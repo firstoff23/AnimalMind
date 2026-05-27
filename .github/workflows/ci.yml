@@ -45,6 +45,12 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Cleanup test data
+        run: node scripts/cleanup-test-data.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
   deploy:
     name: Deploy to Vercel
     runs-on: ubuntu-latest
