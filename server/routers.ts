@@ -44,6 +44,7 @@ import {
   getAnimalShares,
   removeAnimalShare,
   saveBreedFeedback,
+  updateUser,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -141,6 +142,18 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    updateProfile: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(1).max(100).optional(),
+          email: z.string().email().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await updateUser(userId, input);
+        return { success: true };
+      }),
   }),
 
   // ── Classify ────────────────────────────────────────────────────────────────

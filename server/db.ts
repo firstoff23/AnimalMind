@@ -45,6 +45,26 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (error) throw error;
 }
 
+export async function updateUser(
+  userId: number,
+  data: {
+    name?: string | null;
+    email?: string | null;
+  }
+): Promise<void> {
+  const supabase = getSupabase();
+  const updates: Record<string, any> = {};
+  if (data.name !== undefined) updates.name = data.name;
+  if (data.email !== undefined) updates.email = data.email;
+
+  const { error } = await supabase
+    .from("users")
+    .update(updates)
+    .eq("id", userId);
+
+  if (error) throw error;
+}
+
 export async function getUserByOpenId(openId: string) {
   const supabase = getSupabase();
   const { data, error } = await supabase
