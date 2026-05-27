@@ -4,6 +4,13 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -32,6 +39,7 @@ import {
   X,
   Play,
   Pause,
+  PawPrint,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -77,6 +85,8 @@ interface HistoryEvent {
   createdAt: Date;
   notes?: string | null;
   audioUrl?: string | null;
+  animalId?: number | null;
+  animalName?: string | null;
 }
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
@@ -412,12 +422,11 @@ export default function HistoryPage() {
 
   const queryParams = new URLSearchParams(window.location.search);
   const animalIdParam = queryParams.get("animalId");
-  const animalIdFilter = animalIdParam ? parseInt(animalIdParam) : undefined;
+  const parsedAnimalId = animalIdParam ? Number.parseInt(animalIdParam, 10) : Number.NaN;
+  const animalIdFilter = Number.isFinite(parsedAnimalId) ? parsedAnimalId : undefined;
 
-  const { data: filterAnimal } = trpc.animals.get.useQuery(
-    { animalId: animalIdFilter! },
-    { enabled: !!animalIdFilter }
-  );
+  const { data: animals = [] } = trpc.animals.list.useQuery();
+  const filterAnimal = animals.find((animal) => animal.id === animalIdFilter);
 
   const handlePlayToggle = (eventId: number, audioUrl: string) => {
     if (playingEventId === eventId) {
@@ -450,15 +459,32 @@ export default function HistoryPage() {
   }, []);
 
   const isFiltered = stateFilter !== "all" || dateFrom !== "" || dateTo !== "";
+  const hasAnimalFilter = typeof animalIdFilter === "number";
+  const useAnimalEndpoint = hasAnimalFilter && !isFiltered;
 
-  const { data, isLoading } = trpc.events.list.useQuery({
-    page,
-    pageSize: PAGE_SIZE,
-    state: stateFilter !== "all" ? stateFilter : undefined,
-    dateFrom: dateFrom || undefined,
-    dateTo: dateTo || undefined,
-    animalId: animalIdFilter,
-  });
+  const allEventsQuery = trpc.events.list.useQuery(
+    {
+      page,
+      pageSize: PAGE_SIZE,
+      state: stateFilter !== "all" ? stateFilter : undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      animalId: animalIdFilter,
+    },
+    { enabled: !useAnimalEndpoint }
+  );
+
+  const animalEventsQuery = trpc.events.listForAnimal.useQuery(
+    {
+      animalId: animalIdFilter!,
+      page,
+      pageSize: PAGE_SIZE,
+    },
+    { enabled: useAnimalEndpoint }
+  );
+
+  const data = useAnimalEndpoint ? animalEventsQuery.data : allEventsQuery.data;
+  const isLoading = useAnimalEndpoint ? animalEventsQuery.isLoading : allEventsQuery.isLoading;
 
   const events = (data?.events ?? []) as HistoryEvent[];
   const total = data?.total ?? 0;
@@ -467,6 +493,7 @@ export default function HistoryPage() {
   const feedbackMutation = trpc.events.feedback.useMutation({
     onSuccess: () => {
       utils.events.list.invalidate();
+      utils.events.listForAnimal.invalidate();
       toast.success("Classificação actualizada");
     },
     onError: () => toast.error("Não foi possível guardar o feedback."),
@@ -478,6 +505,11 @@ export default function HistoryPage() {
     setDateFrom("");
     setDateTo("");
     setPage(1);
+  };
+
+  const handleAnimalFilter = (value: string) => {
+    setPage(1);
+    setLocation(value === "all" ? "/historico" : `/historico?animalId=${value}`);
   };
 
   const exportFilters = {
@@ -681,6 +713,34 @@ export default function HistoryPage() {
       {/* Filters panel */}
       {showFilters && (
         <div className="bg-card border border-border rounded-2xl p-4 space-y-4 page-enter">
+          {/* Animal filter */}
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+              Animal
+            </p>
+            <Select
+              value={animalIdFilter ? String(animalIdFilter) : "all"}
+              onValueChange={handleAnimalFilter}
+            >
+              <SelectTrigger className="w-full bg-secondary border-border">
+                <SelectValue placeholder="Todos os animais" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="inline-flex items-center gap-2">
+                    <PawPrint size={14} />
+                    Todos os animais
+                  </span>
+                </SelectItem>
+                {animals.map((animal) => (
+                  <SelectItem key={animal.id} value={String(animal.id)}>
+                    {animal.species === "dog" ? "🐕" : "🐈"} {animal.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* State filter */}
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
@@ -741,9 +801,9 @@ export default function HistoryPage() {
       {/* Active filter badges */}
       {(isFiltered || animalIdFilter) && (
         <div className="flex flex-wrap gap-1.5">
-          {filterAnimal && (
+          {animalIdFilter && (
             <Badge variant="secondary" className="text-xs gap-1">
-              🐾 {filterAnimal.name}
+              🐾 {filterAnimal?.name ?? `#${animalIdFilter}`}
               <button
                 onClick={() => setLocation("/historico")}
                 className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer"
