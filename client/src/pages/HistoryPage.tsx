@@ -558,10 +558,36 @@ export default function HistoryPage() {
         return;
       }
 
+      // Check if we can fetch base64 of the animal photo
+      let photoBase64: string | null = null;
+      if (filterAnimal && filterAnimal.photoUrl) {
+        try {
+          const res = await fetch(filterAnimal.photoUrl);
+          const blob = await res.blob();
+          photoBase64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.warn("Failed to fetch animal photo for PDF:", e);
+        }
+      }
+
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const animalLabel = getAnimalScopeLabel(exportEvents);
       const periodLabel = getPeriodLabel(exportFilters.dateFrom, exportFilters.dateTo);
       const generatedAt = new Date().toLocaleString("pt-PT");
+
+      const drawPhotoFallback = () => {
+        doc.setFillColor(226, 232, 240); // slate-200
+        doc.circle(267, 24, 12, "F");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(71, 85, 105);
+        doc.text(animalLabel.slice(0, 2).toUpperCase(), 267, 27, { align: "center" });
+      };
 
       const drawHeader = () => {
         doc.setFont("helvetica", "bold");
@@ -572,6 +598,21 @@ export default function HistoryPage() {
         doc.text(`Animal: ${animalLabel}`, 14, 24);
         doc.text(`Período: ${periodLabel}`, 14, 30);
         doc.text(`Gerado em: ${generatedAt}`, 14, 36);
+
+        // Draw photo at top right
+        if (photoBase64) {
+          try {
+            doc.addImage(photoBase64, "JPEG", 255, 12, 24, 24);
+            doc.setDrawColor(16, 185, 129); // emerald
+            doc.setLineWidth(0.5);
+            doc.rect(255, 12, 24, 24);
+          } catch (e) {
+            console.error("Failed to add image to PDF:", e);
+            drawPhotoFallback();
+          }
+        } else {
+          drawPhotoFallback();
+        }
       };
 
       const columns = [
@@ -632,6 +673,78 @@ export default function HistoryPage() {
         });
         y += 7;
       });
+
+      // Appending dynamic bar chart of emotional states on a final summary page
+      const counts: Record<string, number> = {
+        relaxed: 0,
+        excitement: 0,
+        distress: 0,
+        hunger: 0,
+        alert: 0,
+        attention: 0,
+      };
+
+      exportEvents.forEach((event) => {
+        if (event.state in counts) {
+          counts[event.state]++;
+        }
+      });
+
+      doc.addPage();
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Relatório de Evolução Emocional", 14, 16);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Resumo estatístico para: ${animalLabel}`, 14, 24);
+      doc.text(`Total de classificações: ${exportEvents.length}`, 14, 30);
+      
+      doc.setDrawColor(226, 232, 240);
+      doc.line(14, 35, 283, 35);
+      
+      // Draw Bar Chart
+      const chartX = 60;
+      const chartY = 130;
+      const chartHeight = 70;
+      const barWidth = 22;
+      const barSpacing = 16;
+      
+      const maxCount = Math.max(...Object.values(counts), 1);
+      const stateKeys = Object.keys(counts);
+      
+      stateKeys.forEach((state, i) => {
+        const count = counts[state];
+        const pctHeight = count / maxCount;
+        const barH = pctHeight * chartHeight;
+        
+        const xPos = chartX + i * (barWidth + barSpacing);
+        const yPos = chartY - barH;
+        
+        const hexColor = STATE_COLORS[state as EmotionalState] || "#94a3b8";
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+        
+        doc.setFillColor(r, g, b);
+        doc.rect(xPos, yPos, barWidth, barH, "F");
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(51, 65, 85);
+        doc.text(String(count), xPos + barWidth / 2, yPos - 3, { align: "center" });
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        const emoji = STATE_EMOJIS[state as EmotionalState] || "";
+        const label = STATE_LABELS[state as EmotionalState] || state;
+        doc.text(`${emoji} ${label}`, xPos + barWidth / 2, chartY + 5, { align: "center" });
+      });
+      
+      doc.setDrawColor(71, 85, 105);
+      doc.setLineWidth(0.5);
+      doc.line(chartX - 5, chartY, chartX + stateKeys.length * (barWidth + barSpacing) - barSpacing + 5, chartY);
+      doc.line(chartX - 5, chartY, chartX - 5, chartY - chartHeight - 10);
 
       doc.save(`animalmind-historico-${exportFileDate()}.pdf`);
       toast.success("PDF exportado");
