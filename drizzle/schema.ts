@@ -35,6 +35,12 @@ export const animals = mysqlTable("animals", {
   age: int("age"),
   isActive: boolean("isActive").default(false).notNull(),
   baselineData: text("baseline_data"),
+  dateOfBirth: varchar("date_of_birth", { length: 10 }),
+  sex: mysqlEnum("sex", ["male", "female", "unknown"]).default("unknown").notNull(),
+  color: text("color"),
+  coat: mysqlEnum("coat", ["short", "medium", "long"]),
+  photoUrl: text("photo_url"),
+  microchipNumber: varchar("microchip_number", { length: 15 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
