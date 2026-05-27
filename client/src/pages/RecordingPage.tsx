@@ -365,17 +365,55 @@ export default function RecordingPage() {
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
 
-  // Check camera permissions before requesting
-  const checkCameraPermission = async () => {
-    try {
-      if (!navigator.permissions?.query) {
-        return true; // Permissions API not supported, proceed anyway
+  const handleToggleCamera = async () => {
+    if (showCamera) {
+      setShowCamera(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: 320,
+            height: 240,
+            facingMode: { ideal: facingMode },
+          },
+        });
+        
+        // Stop stream immediately
+        stream.getTracks().forEach((track) => track.stop());
+        
+        setCameraPermissionDenied(false);
+        setCameraError(null);
+        setShowCamera(true);
+      } catch (err) {
+        console.error("Camera access error:", err);
+        let errorMessage = "Não foi possível aceder à câmara.";
+        let isDenied = false;
+        
+        if (err instanceof DOMException) {
+          switch (err.name) {
+            case "NotAllowedError":
+              errorMessage = "Permissão de câmara negada. Ative nas definições do browser.";
+              isDenied = true;
+              break;
+            case "NotFoundError":
+              errorMessage = "Nenhuma câmara disponível no dispositivo.";
+              break;
+            case "NotReadableError":
+              errorMessage = "A câmara está a ser utilizada por outra aplicação.";
+              break;
+            case "SecurityError":
+              errorMessage = "Acesso à câmara bloqueado por razões de segurança.";
+              break;
+            case "TypeError":
+              errorMessage = "Configuração de câmara inválida.";
+              break;
+          }
+        }
+        
+        setCameraPermissionDenied(isDenied);
+        setCameraError(errorMessage);
+        toast.error(errorMessage);
       }
-      const result = await navigator.permissions.query({ name: "camera" as PermissionName });
-      return result.state !== "denied";
-    } catch (err) {
-      console.warn("Permissions API not available, proceeding with getUserMedia", err);
-      return true;
     }
   };
 
@@ -383,16 +421,6 @@ export default function RecordingPage() {
   useEffect(() => {
     if (showCamera) {
       const initCamera = async () => {
-        // Check permission first
-        const hasPermission = await checkCameraPermission();
-        if (!hasPermission) {
-          setCameraPermissionDenied(true);
-          setCameraError(null);
-          toast.error("Permissão de câmara negada. Ative nas definições do browser.");
-          setShowCamera(false);
-          return;
-        }
-
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
@@ -860,7 +888,7 @@ export default function RecordingPage() {
             <Button
               variant={showCamera ? "destructive" : "outline"}
               size="sm"
-              onClick={() => setShowCamera(prev => !prev)}
+              onClick={handleToggleCamera}
               className="text-xs font-semibold"
             >
               {showCamera ? "DESATIVAR" : "ATIVAR"}
