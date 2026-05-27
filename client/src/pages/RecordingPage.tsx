@@ -638,7 +638,7 @@ export default function RecordingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation, showCamera, detectedPosture]);
+  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation.mutate, showCamera, detectedPosture]);
 
   useEffect(() => {
     return () => {
