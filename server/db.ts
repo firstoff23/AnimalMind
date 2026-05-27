@@ -77,6 +77,27 @@ export async function getOrCreateDemoUserId(userId: number): Promise<number> {
 
 // ─── Animal operations ────────────────────────────────────────────────────────
 
+export function mapDbAnimal(a: any) {
+  if (!a) return null;
+  return {
+    id: Number(a.id),
+    userId: Number(a.user_id),
+    name: a.name,
+    species: a.species,
+    breed: a.breed ?? null,
+    age: a.age ?? null,
+    isActive: a.is_active ?? false,
+    dateOfBirth: a.date_of_birth ?? null,
+    sex: a.sex ?? "unknown",
+    color: a.color ?? null,
+    coat: a.coat ?? null,
+    photoUrl: a.photo_url ?? null,
+    microchipNumber: a.microchip_number ?? null,
+    createdAt: a.created_at ? new Date(a.created_at) : null,
+    updatedAt: a.updated_at ? new Date(a.updated_at) : null,
+  };
+}
+
 export async function getAnimalsByUser(userId: number) {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -88,7 +109,7 @@ export async function getAnimalsByUser(userId: number) {
   if (error) throw error;
 
   const owned = (data || []).map((a: any) => ({
-    ...a,
+    ...mapDbAnimal(a),
     isShared: false,
     permission: "write" as const,
   }));
@@ -104,6 +125,12 @@ export async function addAnimal(data: {
   species: string;
   breed?: string;
   age?: number;
+  dateOfBirth?: string | null;
+  sex?: 'male' | 'female' | 'unknown';
+  color?: string | null;
+  coat?: 'short' | 'medium' | 'long';
+  photoUrl?: string | null;
+  microchipNumber?: string | null;
 }) {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
@@ -115,6 +142,12 @@ export async function addAnimal(data: {
         species: data.species,
         breed: data.breed,
         age: data.age,
+        date_of_birth: data.dateOfBirth,
+        sex: data.sex,
+        color: data.color,
+        coat: data.coat,
+        photo_url: data.photoUrl,
+        microchip_number: data.microchipNumber,
         is_active: false,
       },
     ])
@@ -125,7 +158,7 @@ export async function addAnimal(data: {
     console.error("[addAnimal] Database insert error:", error);
     throw error;
   }
-  return result;
+  return mapDbAnimal(result);
 }
 
 export async function setActiveAnimal(animalId: number, userId: number) {
@@ -159,12 +192,12 @@ export async function getActiveAnimal(userId: number) {
     .single();
 
   if (!error && data) {
-    return { ...data, isShared: false, permission: "write" };
+    return { ...mapDbAnimal(data), isShared: false, permission: "write" as const };
   }
 
   // Otherwise check shared animals
   const shared = await getSharedAnimalsForUser(userId);
-  const activeShared = shared.find((a) => a.is_active);
+  const activeShared = shared.find((a) => a.isActive);
   if (activeShared) {
     return activeShared;
   }
@@ -172,6 +205,48 @@ export async function getActiveAnimal(userId: number) {
   // Fallback to first available animal
   const all = await getAnimalsByUser(userId);
   return all[0] || null;
+}
+
+export async function updateAnimal(
+  animalId: number,
+  data: {
+    name?: string;
+    species?: string;
+    breed?: string;
+    age?: number;
+    dateOfBirth?: string | null;
+    sex?: 'male' | 'female' | 'unknown';
+    color?: string | null;
+    coat?: 'short' | 'medium' | 'long';
+    photoUrl?: string | null;
+    microchipNumber?: string | null;
+  }
+) {
+  const supabase = getSupabase();
+  const updatePayload: Record<string, any> = {};
+  if (data.name !== undefined) updatePayload.name = data.name;
+  if (data.species !== undefined) updatePayload.species = data.species;
+  if (data.breed !== undefined) updatePayload.breed = data.breed;
+  if (data.age !== undefined) updatePayload.age = data.age;
+  if (data.dateOfBirth !== undefined) updatePayload.date_of_birth = data.dateOfBirth;
+  if (data.sex !== undefined) updatePayload.sex = data.sex;
+  if (data.color !== undefined) updatePayload.color = data.color;
+  if (data.coat !== undefined) updatePayload.coat = data.coat;
+  if (data.photoUrl !== undefined) updatePayload.photo_url = data.photoUrl;
+  if (data.microchipNumber !== undefined) updatePayload.microchip_number = data.microchipNumber;
+
+  const { data: result, error } = await supabase
+    .from("animals")
+    .update(updatePayload)
+    .eq("id", animalId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[updateAnimal] Database update error:", error);
+    throw error;
+  }
+  return mapDbAnimal(result);
 }
 
 // ─── Event operations ────────────────────────────────────────────────────────
@@ -774,7 +849,7 @@ export async function getAnimalById(animalId: number, userId: number) {
     .single();
 
   if (!error && data) {
-    return { ...data, isShared: false, permission: "write" };
+    return { ...mapDbAnimal(data), isShared: false, permission: "write" as const };
   }
 
   // Check if shared
@@ -1576,7 +1651,7 @@ export async function getSharedAnimalsForUser(userId: number): Promise<any[]> {
 
     if (animal) {
       result.push({
-        ...animal,
+        ...mapDbAnimal(animal),
         isShared: true,
         permission: s.permission,
       });
@@ -1971,7 +2046,7 @@ export async function getFamilyAnimalsForUser(userId: number): Promise<any[]> {
         .single();
       if (animal) {
         result.push({
-          ...animal,
+          ...mapDbAnimal(animal),
           familyId: Number(row.family_id),
           sharedAt: row.shared_at,
         });

@@ -8,6 +8,7 @@ import { familyRouter } from "./routers/family";
 import { vetRouter } from "./routers/vet";
 import {
   addAnimal,
+  updateAnimal,
   getAllEventsForExport,
   getActiveAnimal,
   getAnimalsByUser,
@@ -280,13 +281,42 @@ export const appRouter = router({
         z.object({
           name: z.string().min(1).max(100),
           species: z.enum(["dog", "cat"]),
-          breed: z.string().max(100).optional(),
-          age: z.number().int().min(0).max(30).optional(),
+          breed: z.string().max(100).optional().nullable(),
+          age: z.number().int().min(0).max(30).optional().nullable(),
+          dateOfBirth: z.string().optional().nullable(),
+          sex: z.enum(["male", "female", "unknown"]).optional(),
+          color: z.string().optional().nullable(),
+          coat: z.enum(["short", "medium", "long"]).optional().nullable(),
+          photoUrl: z.string().optional().nullable(),
+          microchipNumber: z.string().max(15).optional().nullable(),
         })
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         return addAnimal({ ...input, userId });
+      }),
+
+    update: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          name: z.string().min(1).max(100).optional(),
+          species: z.enum(["dog", "cat"]).optional(),
+          breed: z.string().max(100).optional().nullable(),
+          age: z.number().int().min(0).max(30).optional().nullable(),
+          dateOfBirth: z.string().optional().nullable(),
+          sex: z.enum(["male", "female", "unknown"]).optional(),
+          color: z.string().optional().nullable(),
+          coat: z.enum(["short", "medium", "long"]).optional().nullable(),
+          photoUrl: z.string().optional().nullable(),
+          microchipNumber: z.string().max(15).optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const { animalId, ...data } = input;
+        await verifyAnimalOwner(animalId, userId, true);
+        return updateAnimal(animalId, data);
       }),
 
     setActive: publicProcedure
