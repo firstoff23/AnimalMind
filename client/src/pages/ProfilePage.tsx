@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -126,13 +126,77 @@ function WeeklyChart({ animalId }: { animalId: number }) {
 function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [species, setSpecies] = useState<"dog" | "cat">("dog");
-  const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [identifyLoading, setIdentifyLoading] = useState(false);
   const [breedSuggestions, setBreedSuggestions] = useState<Array<{ breed: string; confidence: number }>>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
+
+  // Breeds dropdown states
+  const [breeds, setBreeds] = useState<string[]>([]);
+  const [loadingBreeds, setLoadingBreeds] = useState(false);
+  const [selectedBreed, setSelectedBreed] = useState("");
+  const [customBreed, setCustomBreed] = useState("");
+
+  // New identification fields states
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [sex, setSex] = useState<"male" | "female" | "unknown">("unknown");
+  const [color, setColor] = useState("");
+  const [coat, setCoat] = useState<"short" | "medium" | "long" | "">("");
+  const [microchipNumber, setMicrochipNumber] = useState("");
+
+  // Helper to handle selecting a breed
+  const handleSelectBreedHelper = (breedName: string, breedList: string[]) => {
+    const isKnown = breedList.some((b) => b.toLowerCase() === breedName.toLowerCase());
+    if (isKnown) {
+      const matched = breedList.find((b) => b.toLowerCase() === breedName.toLowerCase());
+      setSelectedBreed(matched || breedName);
+      setCustomBreed("");
+    } else {
+      setSelectedBreed("other");
+      setCustomBreed(breedName);
+    }
+  };
+
+  // Fetch breeds on species change
+  useEffect(() => {
+    const fetchBreeds = async () => {
+      setLoadingBreeds(true);
+      const cacheKey = `animalmind_breeds_${species}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const list = JSON.parse(cached) as string[];
+          setBreeds(list);
+          setLoadingBreeds(false);
+          return;
+        } catch {}
+      }
+
+      const url = species === "dog"
+        ? "https://api.thedogapi.com/v1/breeds"
+        : "https://api.thecatapi.com/v1/breeds";
+
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json() as Array<{ name: string }>;
+          const list = data.map((b) => b.name).sort();
+          localStorage.setItem(cacheKey, JSON.stringify(list));
+          setBreeds(list);
+        } else {
+          setBreeds([]);
+        }
+      } catch (err) {
+        console.error("Error fetching breeds:", err);
+        setBreeds([]);
+      } finally {
+        setLoadingBreeds(false);
+      }
+    };
+    fetchBreeds();
+  }, [species]);
 
   const addMutation = trpc.animals.add.useMutation({
     onSuccess: () => {
@@ -146,11 +210,17 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("O nome é obrigatório.");
+    const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
     addMutation.mutate({
       name: name.trim(),
       species,
-      breed: breed.trim() || undefined,
+      breed: finalBreed.trim() || undefined,
       age: age ? parseInt(age) : undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      sex,
+      color: color.trim() || undefined,
+      coat: coat || undefined,
+      microchipNumber: microchipNumber.trim() || undefined,
     });
   };
 
@@ -193,8 +263,20 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
       };
 
       // Preencher automaticamente
-      setBreed(data.breed);
-      setSpecies(data.species === "cat" ? "cat" : "dog");
+      const targetSpecies = data.species === "cat" ? "cat" : "dog";
+      setSpecies(targetSpecies);
+
+      // Check if breed is in target species list (from cache or state)
+      const cacheKey = `animalmind_breeds_${targetSpecies}`;
+      const cached = localStorage.getItem(cacheKey);
+      let listToCheck = breeds;
+      if (cached) {
+        try {
+          listToCheck = JSON.parse(cached) as string[];
+        } catch {}
+      }
+
+      handleSelectBreedHelper(data.breed, listToCheck);
       setBreedSuggestions(data.top3 ?? []);
 
       toast.success(
@@ -244,20 +326,28 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
           />
         </div>
 
-        {/* Breed field with photo ID button */}
+        {/* Breed select with photo ID button */}
         <div className="space-y-1">
           <Label htmlFor="breed" className="text-xs text-muted-foreground">Raça</Label>
           <div className="flex gap-2">
-            <Input
+            <select
               id="breed"
-              value={breed}
+              value={selectedBreed}
               onChange={(e) => {
-                setBreed(e.target.value);
-                setBreedSuggestions([]);
+                setSelectedBreed(e.target.value);
+                if (e.target.value !== "other") {
+                  setCustomBreed("");
+                }
               }}
-              placeholder="Ex: Labrador"
-              className="bg-secondary border-border flex-1"
-            />
+              className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border flex-1"
+            >
+              <option value="">Indefinida / Desconhecida</option>
+              {breeds.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+              <option value="other">Outra (digitar...)</option>
+            </select>
+
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -287,6 +377,16 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
             </Button>
           </div>
 
+          {/* If Outra is selected, show custom breed input */}
+          {selectedBreed === "other" && (
+            <Input
+              value={customBreed}
+              onChange={(e) => setCustomBreed(e.target.value)}
+              placeholder="Digite a raça..."
+              className="bg-secondary border-border mt-1.5"
+            />
+          )}
+
           {/* Photo preview thumbnail */}
           {photoPreview && (
             <div className="flex items-center gap-2 mt-1.5">
@@ -315,12 +415,12 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
                     key={i}
                     type="button"
                     onClick={() => {
-                      setBreed(s.breed);
+                      handleSelectBreedHelper(s.breed, breeds);
                       setBreedSuggestions([]);
                     }}
                     className={cn(
                       "text-xs px-2.5 py-1 rounded-full border transition-all",
-                      breed === s.breed
+                      (selectedBreed === "other" ? customBreed : selectedBreed) === s.breed
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
                     )}
@@ -336,16 +436,102 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="age" className="text-xs text-muted-foreground">Idade (anos)</Label>
+            <Input
+              id="age"
+              type="number"
+              min={0}
+              max={30}
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="Ex: 3"
+              className="bg-secondary border-border"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="color" className="text-xs text-muted-foreground">Cor</Label>
+            <Input
+              id="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              placeholder="Ex: Castanho"
+              className="bg-secondary border-border"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="dateOfBirth" className="text-xs text-muted-foreground">Data de Nascimento</Label>
+            <Input
+              id="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="bg-secondary border-border"
+            />
+          </div>
+        </div>
+
         <div className="space-y-1">
-          <Label htmlFor="age" className="text-xs text-muted-foreground">Idade (anos)</Label>
+          <Label className="text-xs text-muted-foreground">Sexo</Label>
+          <div className="flex gap-2">
+            {([
+              { value: "male", label: "♂️ Macho" },
+              { value: "female", label: "♀️ Fêmea" },
+              { value: "unknown", label: "❓ Não definido" }
+            ] as const).map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setSex(s.value)}
+                className={cn(
+                  "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200",
+                  sex === s.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Pelagem</Label>
+          <div className="flex gap-2">
+            {([
+              { value: "short", label: "Curta" },
+              { value: "medium", label: "Média" },
+              { value: "long", label: "Comprida" }
+            ] as const).map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setCoat(coat === c.value ? "" : c.value)}
+                className={cn(
+                  "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200",
+                  coat === c.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="microchipNumber" className="text-xs text-muted-foreground">Número de Microchip</Label>
           <Input
-            id="age"
-            type="number"
-            min={0}
-            max={30}
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="Ex: 3"
+            id="microchipNumber"
+            value={microchipNumber}
+            onChange={(e) => setMicrochipNumber(e.target.value.slice(0, 15))}
+            placeholder="Ex: 900115000678234"
             className="bg-secondary border-border"
           />
         </div>
