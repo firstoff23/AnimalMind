@@ -94,3 +94,19 @@ export const settings = mysqlTable("settings", {
 
 export type Settings = typeof settings.$inferSelect;
 export type InsertSettings = typeof settings.$inferInsert;
+
+// ─── Feedback Annotations ───────────────────────────────────────────────────
+
+export const feedbackAnnotations = mysqlTable("feedback_annotations", {
+  id: int("id").autoincrement().primaryKey(),
+  animalType: mysqlEnum("animalType", ["dog", "cat"]).notNull(),
+  predictedBreed: varchar("predicted_breed", { length: 100 }),
+  confirmedBreed: varchar("confirmed_breed", { length: 100 }),
+  predictedState: varchar("predicted_state", { length: 50 }),
+  confirmedState: varchar("confirmed_state", { length: 50 }),
+  confidence: float("confidence").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FeedbackAnnotation = typeof feedbackAnnotations.$inferSelect;
+export type InsertFeedbackAnnotation = typeof feedbackAnnotations.$inferInsert;

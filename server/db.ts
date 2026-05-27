@@ -123,12 +123,12 @@ export async function addAnimal(data: {
   userId: number;
   name: string;
   species: string;
-  breed?: string;
-  age?: number;
+  breed?: string | null;
+  age?: number | null;
   dateOfBirth?: string | null;
   sex?: 'male' | 'female' | 'unknown';
   color?: string | null;
-  coat?: 'short' | 'medium' | 'long';
+  coat?: 'short' | 'medium' | 'long' | null;
   photoUrl?: string | null;
   microchipNumber?: string | null;
 }) {
@@ -212,12 +212,12 @@ export async function updateAnimal(
   data: {
     name?: string;
     species?: string;
-    breed?: string;
-    age?: number;
+    breed?: string | null;
+    age?: number | null;
     dateOfBirth?: string | null;
     sex?: 'male' | 'female' | 'unknown';
     color?: string | null;
-    coat?: 'short' | 'medium' | 'long';
+    coat?: 'short' | 'medium' | 'long' | null;
     photoUrl?: string | null;
     microchipNumber?: string | null;
   }
@@ -348,12 +348,74 @@ export async function updateEventFeedback(
   feedback: "correct" | "incorrect"
 ) {
   const supabase = getSupabase();
-  const { error } = await supabase
+  const { error: updateError } = await supabase
     .from("classification_events")
     .update({ feedback })
     .eq("id", eventId)
     .eq("user_id", userId);
 
+  if (updateError) throw updateError;
+
+  // Retrieve event information to populate feedback_annotations
+  const { data: event, error: eventError } = await supabase
+    .from("classification_events")
+    .select("state, confidence, animal_id")
+    .eq("id", eventId)
+    .eq("user_id", userId)
+    .single();
+
+  if (eventError || !event) {
+    console.error("[updateEventFeedback] Failed to fetch event details:", eventError);
+    return;
+  }
+
+  let animalType: "dog" | "cat" | null = null;
+  if (event.animal_id) {
+    const { data: animal, error: animalError } = await supabase
+      .from("animals")
+      .select("species")
+      .eq("id", event.animal_id)
+      .single();
+    if (!animalError && animal) {
+      animalType = animal.species;
+    }
+  }
+
+  if (animalType) {
+    const confirmedState = feedback === "correct" ? event.state : null;
+    const { error: insertError } = await supabase
+      .from("feedback_annotations")
+      .insert([
+        {
+          animal_type: animalType,
+          predicted_state: event.state,
+          confirmed_state: confirmedState,
+          confidence: event.confidence,
+        },
+      ]);
+    if (insertError) {
+      console.error("[updateEventFeedback] Failed to insert feedback annotation:", insertError);
+    }
+  }
+}
+
+export async function saveBreedFeedback(data: {
+  animalType: "dog" | "cat";
+  predictedBreed: string;
+  confirmedBreed: string;
+  confidence: number;
+}) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("feedback_annotations")
+    .insert([
+      {
+        animal_type: data.animalType,
+        predicted_breed: data.predictedBreed,
+        confirmed_breed: data.confirmedBreed,
+        confidence: data.confidence,
+      },
+    ]);
   if (error) throw error;
 }
 

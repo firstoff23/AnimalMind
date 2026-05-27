@@ -43,6 +43,7 @@ import {
   respondToInvitation,
   getAnimalShares,
   removeAnimalShare,
+  saveBreedFeedback,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -446,6 +447,20 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         await respondToInvitation(userId, input.invitationId, input.action);
+        return { success: true };
+      }),
+
+    saveBreedFeedback: publicProcedure
+      .input(
+        z.object({
+          animalType: z.enum(["dog", "cat"]),
+          predictedBreed: z.string(),
+          confirmedBreed: z.string(),
+          confidence: z.number(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await saveBreedFeedback(input);
         return { success: true };
       }),
   }),
