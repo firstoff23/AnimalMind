@@ -5,6 +5,7 @@ import tempfile
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import httpx
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -408,9 +409,125 @@ async def classify_audio(file: UploadFile = File(...)):
 
 
 
+# ─── Breed Identification ────────────────────────────────────────────────────
+
+# Modelos HuggingFace especializados (Inference API serverless — gratuita)
+HF_DOG_BREED_MODEL = "wesleyacheng/dog-breed-classifier-vit"
+HF_CAT_BREED_MODEL = "nickmuchi/cat-breed-classifier-vit"
+HF_SPECIES_MODEL = "nickmuchi/vit-finetuned-cats-vs-dogs"
+HF_API_BASE = "https://api-inference.huggingface.co/models"
+
+
+class BreedResult(BaseModel):
+    breed: str
+    confidence: float
+    species: str
+    top3: List[Dict[str, object]]
+
+
+async def _hf_classify(model: str, image_bytes: bytes, hf_token: Optional[str]) -> List[Dict]:
+    """Chama a HuggingFace Inference API e devolve lista de {label, score}."""
+    headers = {"Content-Type": "application/octet-stream"}
+    if hf_token:
+        headers["Authorization"] = f"Bearer {hf_token}"
+
+    url = f"{HF_API_BASE}/{model}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # Retry uma vez se modelo ainda está a carregar (503)
+        for attempt in range(3):
+            resp = await client.post(url, content=image_bytes, headers=headers)
+            if resp.status_code == 503:
+                import asyncio
+                data = resp.json()
+                wait = min(data.get("estimated_time", 20), 30)
+                print(f"[HF] Modelo a carregar, aguardar {wait}s...")
+                await asyncio.sleep(wait)
+                continue
+            if resp.status_code != 200:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"HuggingFace API erro {resp.status_code}: {resp.text[:200]}"
+                )
+            return resp.json()
+    raise HTTPException(status_code=504, detail="HuggingFace model timeout (modelo a carregar)")
+
+
+def _clean_breed_label(label: str) -> str:
+    """Formata o label do modelo para texto legível (ex: 'golden_retriever' → 'Golden Retriever')."""
+    return label.replace("_", " ").replace("-", " ").title()
+
+
+@app.post("/identify-breed", response_model=BreedResult)
+async def identify_breed(file: UploadFile = File(...)):
+    """
+    Identifica a raça de um cão ou gato a partir de uma foto.
+    Usa modelos ViT fine-tuned na HuggingFace Inference API.
+    """
+    # Validar tipo de ficheiro
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Ficheiro deve ser uma imagem (JPEG, PNG, etc.)")
+
+    image_bytes = await file.read()
+    if len(image_bytes) > 10 * 1024 * 1024:  # 10 MB
+        raise HTTPException(status_code=413, detail="Imagem demasiado grande (máx 10 MB)")
+
+    hf_token = os.environ.get("HF_TOKEN")  # Opcional mas evita rate-limit
+
+    # Passo 1: Detectar espécie (cão vs gato)
+    try:
+        species_results = await _hf_classify(HF_SPECIES_MODEL, image_bytes, hf_token)
+        # Labels esperados: ["cat", "dog"] ou similar
+        top_species = species_results[0] if species_results else {"label": "dog", "score": 0.5}
+        species_label = top_species.get("label", "dog").lower()
+        # Normalizar: pode ser "Cat", "dog", etc.
+        if "cat" in species_label:
+            species = "cat"
+        else:
+            species = "dog"
+        print(f"[Breed] Espécie detectada: {species} (raw: {species_label})")
+    except Exception as e:
+        print(f"[Breed] Falha na detecção de espécie, assumindo cão: {e}")
+        species = "dog"
+
+    # Passo 2: Classificar raça com modelo especializado
+    breed_model = HF_DOG_BREED_MODEL if species == "dog" else HF_CAT_BREED_MODEL
+    try:
+        breed_results = await _hf_classify(breed_model, image_bytes, hf_token)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na classificação de raça: {str(e)}")
+
+    if not breed_results or not isinstance(breed_results, list):
+        raise HTTPException(status_code=500, detail="Resposta inválida do modelo de raças")
+
+    # Formatar resultados
+    top = breed_results[0]
+    breed_name = _clean_breed_label(str(top.get("label", "Desconhecida")))
+    confidence = round(float(top.get("score", 0.0)), 3)
+
+    top3 = [
+        {
+            "breed": _clean_breed_label(str(r.get("label", ""))),
+            "confidence": round(float(r.get("score", 0.0)), 3),
+        }
+        for r in breed_results[:3]
+    ]
+
+    print(f"[Breed] Resultado: {breed_name} ({confidence:.1%}) — espécie: {species}")
+
+    return BreedResult(
+        breed=breed_name,
+        confidence=confidence,
+        species=species,
+        top3=top3,
+    )
+
+
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "AnimalMind API", "version": "1.1.0"}
+    return {"status": "ok", "service": "AnimalMind API", "version": "1.2.0"}
 
 
 @app.get("/health")
