@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type PointerEvent } from "react";
+import { useRef, useState, useEffect, useMemo, type PointerEvent } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,15 @@ import {
 } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 import { motion, useMotionValue, useTransform } from "framer-motion";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { jsPDF } from "jspdf";
 import {
   buildHistoryCsv,
@@ -408,6 +417,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
 // ─── History Page ─────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
+  const [viewTab, setViewTab] = useState<"list" | "evolution">("list");
   const [page, setPage] = useState(1);
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -499,6 +509,53 @@ export default function HistoryPage() {
     onError: () => toast.error("Não foi possível guardar o feedback."),
   });
   const exportMutation = trpc.events.exportData.useMutation();
+
+  const chartEventsQuery = trpc.events.list.useQuery(
+    {
+      page: 1,
+      pageSize: 100, // Fetch up to 100 events for the evolution chart
+      state: stateFilter !== "all" ? stateFilter : undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      animalId: animalIdFilter,
+    },
+    { enabled: viewTab === "evolution" }
+  );
+
+  const chartData = useMemo(() => {
+    const rawEvents = chartEventsQuery.data?.events ?? [];
+    const sorted = [...rawEvents].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    
+    const stateValues: Record<EmotionalState, number> = {
+      relaxed: 5,
+      excitement: 4,
+      attention: 3,
+      hunger: 2,
+      alert: 1,
+      distress: 0,
+    };
+    
+    return sorted.map((e) => {
+      const state = e.state as EmotionalState;
+      return {
+        date: new Date(e.createdAt).toLocaleDateString("pt-PT", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        stateValue: stateValues[state] ?? 0,
+        stateName: STATE_LABELS[state] ?? e.state,
+        emoji: STATE_EMOJIS[state] ?? "",
+        confidence: Math.round(e.confidence * 100),
+      };
+    });
+  }, [chartEventsQuery.data?.events]);
+
+  const formatYAxis = (val: number) => {
+    const statesByValue = ["🔴 Angústia", "🔵 Alerta", "🟠 Fome", "🟡 Atenção", "🟢 Excitação", "⚪ Relaxado"];
+    return statesByValue[val] || "";
+  };
 
   const clearFilters = () => {
     setStateFilter("all");
@@ -823,6 +880,32 @@ export default function HistoryPage() {
         </div>
       )}
 
+      {/* View Tabs */}
+      <div className="flex bg-secondary/50 rounded-xl p-1 border border-border/40">
+        <button
+          onClick={() => setViewTab("list")}
+          className={cn(
+            "flex-1 text-center py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
+            viewTab === "list"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Lista de Registos
+        </button>
+        <button
+          onClick={() => setViewTab("evolution")}
+          className={cn(
+            "flex-1 text-center py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
+            viewTab === "evolution"
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Evolução Emocional
+        </button>
+      </div>
+
       {/* Filters panel */}
       {showFilters && (
         <div className="bg-card border border-border rounded-2xl p-4 space-y-4 page-enter">
@@ -908,6 +991,38 @@ export default function HistoryPage() {
               />
             </div>
           </div>
+
+          {/* Quick period presets */}
+          <div className="pt-2 border-t border-border/50">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+              Período Rápido
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "7 Dias", days: 7 },
+                { label: "30 Dias", days: 30 },
+                { label: "3 Meses", days: 90 },
+              ].map((p) => (
+                <Button
+                  key={p.label}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8 border-border bg-secondary hover:bg-secondary/80 text-foreground"
+                  onClick={() => {
+                    const end = new Date();
+                    const start = new Date();
+                    start.setDate(end.getDate() - p.days);
+                    setDateFrom(start.toISOString().split("T")[0]);
+                    setDateTo(end.toISOString().split("T")[0]);
+                    setPage(1);
+                  }}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -945,65 +1060,132 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* Events list */}
-      <div className="bg-card border border-border rounded-2xl px-4">
-        {isLoading ? (
-          <div className="py-12 flex items-center justify-center">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      {viewTab === "list" ? (
+        <>
+          {/* Events list */}
+          <div className="bg-card border border-border rounded-2xl px-4">
+            {isLoading ? (
+              <div className="py-12 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : events.length === 0 ? (
+              <EmptyState filtered={isFiltered} />
+            ) : (
+              events.map((event) => (
+                <EventRow
+                  key={event.id}
+                  event={event}
+                  disabled={feedbackMutation.isPending}
+                  isPlaying={playingEventId === event.id}
+                  onPlayToggle={handlePlayToggle}
+                  onOpenRawData={setRawEvent}
+                  onFeedback={(eventId, feedback) => {
+                    feedbackMutation.mutate({ eventId, feedback });
+                  }}
+                />
+              ))
+            )}
           </div>
-        ) : events.length === 0 ? (
-          <EmptyState filtered={isFiltered} />
-        ) : (
-          events.map((event) => (
-            <EventRow
-              key={event.id}
-              event={event}
-              disabled={feedbackMutation.isPending}
-              isPlaying={playingEventId === event.id}
-              onPlayToggle={handlePlayToggle}
-              onOpenRawData={setRawEvent}
-              onFeedback={(eventId, feedback) => {
-                feedbackMutation.mutate({ eventId, feedback });
-              }}
-            />
-          ))
-        )}
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="gap-1"
-          >
-            <ChevronLeft size={16} />
-            Anterior
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {page} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="gap-1"
-          >
-            Seguinte
-            <ChevronRight size={16} />
-          </Button>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="gap-1"
+              >
+                <ChevronLeft size={16} />
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="gap-1"
+              >
+                Seguinte
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          )}
+
+          {/* Total count */}
+          {total > 0 && (
+            <p className="text-xs text-muted-foreground text-center">
+              {total} {total === 1 ? "registo" : "registos"} no total
+            </p>
+          )}
+        </>
+      ) : (
+        <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Evolução de Estados Emocionais
+          </h2>
+          
+          {chartEventsQuery.isLoading ? (
+            <div className="py-24 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="py-24 text-center text-muted-foreground text-sm">
+              Sem classificações no período selecionado
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.012 264)" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 8 }} 
+                  angle={-45}
+                  textAnchor="end"
+                  height={50}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  domain={[0, 5]} 
+                  tickCount={6} 
+                  tickFormatter={formatYAxis}
+                  tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 9 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const data = payload[0].payload;
+                    return (
+                      <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-xl space-y-1">
+                        <p className="text-muted-foreground">{data.date}</p>
+                        <p className="font-bold text-foreground">
+                          Estado: {data.emoji} {data.stateName}
+                        </p>
+                        <p className="text-primary font-semibold">
+                          Confiança: {data.confidence}%
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="stateValue" 
+                  stroke="#10b981" 
+                  strokeWidth={3}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
-      )}
-
-      {/* Total count */}
-      {total > 0 && (
-        <p className="text-xs text-muted-foreground text-center">
-          {total} {total === 1 ? "registo" : "registos"} no total
-        </p>
       )}
 
       <RawEventDialog
