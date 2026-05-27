@@ -133,6 +133,16 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
 
+  const [predictionInfo, setPredictionInfo] = useState<{
+    predictedBreed: string;
+    confidence: number;
+    animalType: "dog" | "cat";
+  } | null>(null);
+
+  const saveBreedFeedbackMutation = trpc.animals.saveBreedFeedback.useMutation({
+    onError: (err) => console.error("Error saving breed feedback:", err),
+  });
+
   // Breeds dropdown states
   const [breeds, setBreeds] = useState<string[]>([]);
   const [loadingBreeds, setLoadingBreeds] = useState(false);
@@ -201,6 +211,15 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const addMutation = trpc.animals.add.useMutation({
     onSuccess: () => {
       toast.success("Animal adicionado com sucesso!");
+      if (predictionInfo) {
+        const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
+        saveBreedFeedbackMutation.mutate({
+          animalType: predictionInfo.animalType,
+          predictedBreed: predictionInfo.predictedBreed,
+          confirmedBreed: finalBreed.trim(),
+          confidence: predictionInfo.confidence,
+        });
+      }
       utils.animals.list.invalidate();
       onClose();
     },
@@ -278,6 +297,11 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
       handleSelectBreedHelper(data.breed, listToCheck);
       setBreedSuggestions(data.top3 ?? []);
+      setPredictionInfo({
+        predictedBreed: data.breed,
+        confidence: data.confidence,
+        animalType: targetSpecies,
+      });
 
       toast.success(
         `📷 Raça identificada: ${data.breed} (${Math.round(data.confidence * 100)}% confiança)`
