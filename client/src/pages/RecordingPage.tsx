@@ -5,7 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
 import { LiveAudioMeter } from "@/components/LiveAudioMeter";
-import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -342,6 +352,8 @@ export default function RecordingPage() {
   const [showCamera, setShowCamera] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [detectedPosture, setDetectedPosture] = useState<string>("sitting");
+  const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -353,34 +365,93 @@ export default function RecordingPage() {
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
 
+  // Check camera permissions before requesting
+  const checkCameraPermission = async () => {
+    try {
+      if (!navigator.permissions?.query) {
+        return true; // Permissions API not supported, proceed anyway
+      }
+      const result = await navigator.permissions.query({ name: "camera" as PermissionName });
+      return result.state !== "denied";
+    } catch (err) {
+      console.warn("Permissions API not available, proceeding with getUserMedia", err);
+      return true;
+    }
+  };
+
   // Manage WebRTC stream
   useEffect(() => {
     if (showCamera) {
-      navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: 320, 
-          height: 240,
-          facingMode: { ideal: facingMode }
-        } 
-      })
-        .then((stream) => {
+      const initCamera = async () => {
+        // Check permission first
+        const hasPermission = await checkCameraPermission();
+        if (!hasPermission) {
+          setCameraPermissionDenied(true);
+          setCameraError(null);
+          toast.error("Permissão de câmara negada. Ative nas definições do browser.");
+          setShowCamera(false);
+          return;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: 320,
+              height: 240,
+              facingMode: { ideal: facingMode },
+            },
+          });
+          
           streamRef.current = stream;
+          setCameraPermissionDenied(false);
+          setCameraError(null);
+          
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(err => console.error(err));
+            videoRef.current.play().catch((err) => console.error("Play error:", err));
           }
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error("Camera access error:", err);
-          toast.error("Não foi possível aceder à câmara.");
+          
+          let errorMessage = "Não foi possível aceder à câmara.";
+          let isDenied = false;
+          
+          if (err instanceof DOMException) {
+            switch (err.name) {
+              case "NotAllowedError":
+                errorMessage = "Permissão de câmara negada. Ative nas definições do browser.";
+                isDenied = true;
+                break;
+              case "NotFoundError":
+                errorMessage = "Nenhuma câmara disponível no dispositivo.";
+                break;
+              case "NotReadableError":
+                errorMessage = "A câmara está a ser utilizada por outra aplicação.";
+                break;
+              case "SecurityError":
+                errorMessage = "Acesso à câmara bloqueado por razões de segurança.";
+                break;
+              case "TypeError":
+                errorMessage = "Configuração de câmara inválida.";
+                break;
+            }
+          }
+          
+          setCameraPermissionDenied(isDenied);
+          setCameraError(errorMessage);
+          toast.error(errorMessage);
           setShowCamera(false);
-        });
+        }
+      };
+      
+      initCamera();
     } else {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
     }
+    
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -977,6 +1048,43 @@ export default function RecordingPage() {
           ))}
         </div>
       )}
+
+      {/* Camera Permission Error Modal */}
+      <AlertDialog open={cameraPermissionDenied} onOpenChange={setCameraPermissionDenied}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              <AlertDialogTitle>Permissão de Câmara Negada</AlertDialogTitle>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="space-y-3">
+            <p>
+              A aplicação não consegue aceder à câmara do seu dispositivo. Isto pode acontecer se:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              <li>Negou a permissão quando o browser pediu</li>
+              <li>A câmara está desativada nas definições do browser</li>
+              <li>Outra aplicação está a usar a câmara</li>
+            </ul>
+            <p className="font-semibold text-foreground">
+              Para ativar a câmara:
+            </p>
+            <ol className="list-decimal list-inside space-y-1 text-sm">
+              <li>Abra as definições do browser</li>
+              <li>Procure por "Permissões" ou "Privacidade"</li>
+              <li>Encontre "Câmara" e ative para este site</li>
+              <li>Recarregue a página</li>
+            </ol>
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Fechar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setCameraPermissionDenied(false)}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
