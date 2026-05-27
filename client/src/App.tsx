@@ -18,6 +18,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AnimalDetailPage from "./pages/AnimalDetailPage";
 import VetPage from "./pages/VetPage";
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/forgot-password" component={ForgotPasswordPage} />
           <Route path="/reset-password" component={ResetPasswordPage} />
           <Route path="/verify-email" component={VerifyEmailPage} />
+          <Route path="/auth/callback" component={AuthCallbackPage} />
 
           {/* Protected routes */}
           <Route path="/" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />

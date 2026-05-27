@@ -9,6 +9,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const missingSupabaseConfigMessage =
   "A autenticação Supabase não está configurada. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY na Vercel e faça novo deploy.";
 
+function getAuthCallbackUrl() {
+  return `${window.location.origin}/auth/callback`;
+}
+
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
@@ -93,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: {
           full_name: name,
         },
+        emailRedirectTo: getAuthCallbackUrl(),
       },
     });
     if (error) throw error;
@@ -111,6 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await requireSupabase().auth.resend({
       type: "signup",
       email,
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(),
+      },
     });
     if (error) throw error;
   };
