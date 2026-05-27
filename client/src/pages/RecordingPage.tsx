@@ -315,7 +315,11 @@ export default function RecordingPage() {
   const [recordState, setRecordState] = useState<RecordingState>("idle");
   const [result, setResult] = useState<ClassifyResult | null>(null);
   const [countdown, setCountdown] = useState(3);
-  const { sendNotification } = useNotifications();
+  const {
+    requestNotificationPermission,
+    sendClassificationNotification,
+    sendNotification,
+  } = useNotifications();
   const {
     level: liveAudioLevel,
     waveform: liveWaveform,
@@ -487,6 +491,7 @@ export default function RecordingPage() {
 
   const startRecordingCycle = async () => {
     setRecordState("requesting");
+    await requestNotificationPermission();
     const started = await startLiveAudio();
     if (!started) {
       setRecordState("idle");
@@ -540,6 +545,12 @@ export default function RecordingPage() {
       const res = data as ClassifyResult;
       setResult(res);
       utils.events.recent.invalidate();
+      sendClassificationNotification(
+        res.state,
+        res.confidence,
+        activeAnimal?.name,
+        res.eventId
+      );
 
       // Check for critical states
       if (activeAnimal && (res.state === "distress" || res.state === "hunger")) {
@@ -549,7 +560,8 @@ export default function RecordingPage() {
           activeAnimal.name,
           String(activeAnimal.id),
           settingsData?.alertSensitivity ?? "medium",
-          settingsData?.notificationsEnabled ?? true
+          settingsData?.notificationsEnabled ?? true,
+          false
         );
       }
 
