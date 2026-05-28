@@ -26,22 +26,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/hooks/useLanguage";
 
 type Sensitivity = "low" | "medium" | "high";
 
-const SENSITIVITY_LABELS: Record<Sensitivity, string> = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-};
-
-const SENSITIVITY_DESC: Record<Sensitivity, string> = {
-  low: "Apenas alertas de alta confiança (≥85%)",
-  medium: "Alertas moderados (≥75%)",
-  high: "Alertas frequentes (≥65%)",
-};
-
 export default function SettingsPage() {
+  const { t, language, setLanguage } = useLanguage();
   const { data: dbUser, refetch: refetchUser } = trpc.auth.me.useQuery();
   const { data: settingsData, isLoading: settingsLoading } = trpc.settings.get.useQuery();
 
@@ -57,6 +47,18 @@ export default function SettingsPage() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   const utils = trpc.useUtils();
+
+  const sensitivityLabels: Record<Sensitivity, string> = {
+    low: t("settingsPage.alertsSensitivityLow"),
+    medium: t("settingsPage.alertsSensitivityMedium"),
+    high: t("settingsPage.alertsSensitivityHigh"),
+  };
+
+  const sensitivityDescs: Record<Sensitivity, string> = {
+    low: language === "pt" ? "Apenas alertas de alta confiança (≥85%)" : "Only high confidence alerts (≥85%)",
+    medium: language === "pt" ? "Alertas moderados (≥75%)" : "Moderate alerts (≥75%)",
+    high: language === "pt" ? "Alertas frequentes (≥65%)" : "Frequent alerts (≥65%)",
+  };
 
   // Load user data
   useEffect(() => {
@@ -83,7 +85,6 @@ export default function SettingsPage() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // Check display-mode
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
@@ -95,11 +96,11 @@ export default function SettingsPage() {
 
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success("Perfil atualizado com sucesso!");
+      toast.success(language === "pt" ? "Perfil atualizado com sucesso!" : "Profile updated successfully!");
       refetchUser();
     },
     onError: (err) => {
-      toast.error(err.message || "Erro ao atualizar perfil.");
+      toast.error(err.message || (language === "pt" ? "Erro ao atualizar perfil." : "Error updating profile."));
     },
   });
 
@@ -107,7 +108,7 @@ export default function SettingsPage() {
     onSuccess: () => {
       utils.settings.get.invalidate();
     },
-    onError: () => toast.error("Erro ao guardar definições."),
+    onError: () => toast.error(language === "pt" ? "Erro ao guardar definições." : "Error saving settings."),
   });
 
   const { refetch: fetchCsv, isFetching: csvLoading } = trpc.events.exportCsv.useQuery(
@@ -125,7 +126,7 @@ export default function SettingsPage() {
       a.download = `animalmind-export-${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("CSV exportado com sucesso!");
+      toast.success(language === "pt" ? "CSV exportado com sucesso!" : "CSV exported successfully!");
     }
   };
 
@@ -140,13 +141,21 @@ export default function SettingsPage() {
   const handleToggleNotifications = (val: boolean) => {
     setNotifications(val);
     updateSettingsMutation.mutate({ notificationsEnabled: val });
-    toast.success(`Notificações ${val ? "ativadas" : "desativadas"}`);
+    toast.success(
+      language === "pt"
+        ? `Notificações ${val ? "ativadas" : "desativadas"}`
+        : `Notifications ${val ? "enabled" : "disabled"}`
+    );
   };
 
   const handleSensitivity = (val: Sensitivity) => {
     setSensitivity(val);
     updateSettingsMutation.mutate({ alertSensitivity: val });
-    toast.success(`Sensibilidade definida para: ${SENSITIVITY_LABELS[val]}`);
+    toast.success(
+      language === "pt"
+        ? `Sensibilidade definida para: ${sensitivityLabels[val]}`
+        : `Sensitivity set to: ${sensitivityLabels[val]}`
+    );
   };
 
   const handleInstallClick = async () => {
@@ -156,7 +165,11 @@ export default function SettingsPage() {
       if (outcome === "accepted") {
         setDeferredPrompt(null);
         setIsInstalled(true);
-        toast.success("Obrigado por instalar o AnimalMind!");
+        toast.success(
+          language === "pt"
+            ? "Obrigado por instalar o AnimalMind!"
+            : "Thank you for installing AnimalMind!"
+        );
       }
     }
   };
@@ -200,9 +213,11 @@ export default function SettingsPage() {
       className="page-enter min-h-full px-4 pt-6 pb-6 space-y-6 max-w-lg mx-auto"
     >
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Definições</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("settingsPage.title")}</h1>
         <p className="text-xs text-muted-foreground">
-          Gerencie as suas preferências e informações pessoais do AnimalMind
+          {language === "pt"
+            ? "Gerencie as suas preferências e informações pessoais do AnimalMind"
+            : "Manage your preferences and personal information for AnimalMind"}
         </p>
       </div>
 
@@ -213,10 +228,12 @@ export default function SettingsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
                 <Smartphone className="w-4 h-4" />
-                Instalar Aplicação
+                {language === "pt" ? "Instalar Aplicação" : "Install App"}
               </CardTitle>
               <CardDescription className="text-xs text-foreground/80 mt-0.5">
-                Instale o AnimalMind no seu dispositivo móvel ou computer para acesso rápido offline e notificações nativas.
+                {language === "pt"
+                  ? "Instale o AnimalMind no seu dispositivo móvel ou computer para acesso rápido offline e notificações nativas."
+                  : "Install AnimalMind on your mobile device or computer for fast offline access and native notifications."}
               </CardDescription>
             </CardHeader>
             <CardFooter className="pt-0">
@@ -224,7 +241,7 @@ export default function SettingsPage() {
                 onClick={handleInstallClick}
                 className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs h-9"
               >
-                Instalar Agora
+                {language === "pt" ? "Instalar Agora" : "Install Now"}
               </Button>
             </CardFooter>
           </Card>
@@ -237,17 +254,17 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <User className="w-4 h-4 text-primary" />
-              Perfil do Utilizador
+              {t("profilePage.title")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Atualize o seu nome e endereço de email de contacto
+              {language === "pt" ? "Atualize o seu nome e endereço de email de contacto" : "Update your name and contact email address"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 pb-0">
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="profile-name" className="text-xs font-medium text-foreground">
-                  Nome Completo
+                  {language === "pt" ? "Nome Completo" : "Full Name"}
                 </Label>
                 <Input
                   id="profile-name"
@@ -262,7 +279,7 @@ export default function SettingsPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="profile-email" className="text-xs font-medium text-foreground">
-                  Endereço de Email
+                  {language === "pt" ? "Endereço de Email" : "Email Address"}
                 </Label>
                 <Input
                   id="profile-email"
@@ -283,14 +300,51 @@ export default function SettingsPage() {
                   {updateProfileMutation.isPending ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                      A guardar...
+                      {t("common.loading")}
                     </>
                   ) : (
-                    "Guardar Perfil"
+                    language === "pt" ? "Guardar Perfil" : "Save Profile"
                   )}
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Idioma */}
+      <motion.div variants={cardVariants}>
+        <Card className="bg-card border-border overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border bg-muted/30">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <span className="w-4 h-4 text-center text-xs flex items-center justify-center font-bold text-primary">🌐</span>
+              {t("settingsPage.language")}
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              {language === "pt" ? "Escolha o idioma preferido para a interface" : "Choose the preferred language for the interface"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4 flex gap-4">
+            <Button
+              variant={language === "pt" ? "default" : "outline"}
+              onClick={() => {
+                setLanguage("pt");
+                toast.success("Idioma alterado para Português");
+              }}
+              className="flex-1 text-xs h-9 font-semibold"
+            >
+              Português (PT)
+            </Button>
+            <Button
+              variant={language === "en" ? "default" : "outline"}
+              onClick={() => {
+                setLanguage("en");
+                toast.success("Language changed to English");
+              }}
+              className="flex-1 text-xs h-9 font-semibold"
+            >
+              English (EN)
+            </Button>
           </CardContent>
         </Card>
       </motion.div>
@@ -301,18 +355,18 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Bell className="w-4 h-4 text-primary" />
-              Notificações e Alertas
+              {language === "pt" ? "Notificações e Alertas" : "Notifications & Alerts"}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Defina como e quando quer ser alertado sobre o bem-estar do seu animal
+              {language === "pt" ? "Defina como e quando quer ser alertado sobre o bem-estar do seu animal" : "Define how and when you want to be alerted about your animal's well-being"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-xs font-medium text-foreground">Notificações Push</Label>
+                <Label className="text-xs font-medium text-foreground">{t("settingsPage.notifications")}</Label>
                 <p className="text-[10px] text-muted-foreground">
-                  Receba avisos instantâneos de comportamento
+                  {language === "pt" ? "Receba avisos instantâneos de comportamento" : "Receive instant behavior alerts"}
                 </p>
               </div>
               <Switch
@@ -324,9 +378,9 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between border-t border-border/40 pt-4">
               <div className="space-y-0.5">
-                <Label className="text-xs font-medium text-foreground">Alertas de Angústia</Label>
+                <Label className="text-xs font-medium text-foreground">{language === "pt" ? "Alertas de Angústia" : "Distress Alerts"}</Label>
                 <p className="text-[10px] text-muted-foreground">
-                  Apenas para detecções de choro ou ganido persistente
+                  {language === "pt" ? "Apenas para detecções de choro ou ganido persistente" : "Only for detections of persistent crying or whining"}
                 </p>
               </div>
               <Switch
@@ -339,9 +393,9 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between border-t border-border/40 pt-4">
               <div className="space-y-0.5">
-                <Label className="text-xs font-medium text-foreground">Alertas de Fome</Label>
+                <Label className="text-xs font-medium text-foreground">{language === "pt" ? "Alertas de Fome" : "Hunger Alerts"}</Label>
                 <p className="text-[10px] text-muted-foreground">
-                  Notifique quando há probabilidade de fome elevada
+                  {language === "pt" ? "Notifique quando há probabilidade de fome elevada" : "Notify when hunger probability is high"}
                 </p>
               </div>
               <Switch
@@ -361,10 +415,12 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Gauge className="w-4 h-4 text-primary" />
-              Sensibilidade de Alertas
+              {t("settingsPage.alertsSensitivity")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Ajuste o grau de confiança exigido pela Inteligência Artificial para emitir alertas
+              {language === "pt"
+                ? "Ajuste o grau de confiança exigido pela Inteligência Artificial para emitir alertas"
+                : "Adjust the confidence level required by Artificial Intelligence to trigger alerts"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
@@ -396,10 +452,10 @@ export default function SettingsPage() {
                       sensitivity === s ? "text-primary" : "text-foreground"
                     )}
                   >
-                    {SENSITIVITY_LABELS[s]}
+                    {sensitivityLabels[s]}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {SENSITIVITY_DESC[s]}
+                    {sensitivityDescs[s]}
                   </p>
                 </div>
               </button>
@@ -414,20 +470,22 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Shield className="w-4 h-4 text-primary" />
-              Privacidade e Dados
+              {language === "pt" ? "Privacidade e Dados" : "Privacy & Data"}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Escolha como os dados recolhidos pela IA são partilhados e armazenados
+              {language === "pt" ? "Escolha como os dados recolhidos pela IA são partilhados e armazenados" : "Choose how data collected by AI is shared and stored"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5 max-w-[80%]">
                 <Label className="text-xs font-medium text-foreground">
-                  Partilhar Dados de Diagnóstico
+                  {language === "pt" ? "Partilhar Dados de Diagnóstico" : "Share Diagnostic Data"}
                 </Label>
                 <p className="text-[10px] text-muted-foreground">
-                  Contribua para a melhoria dos nossos modelos de IA de identificação de raças e emoções enviando dados anónimos.
+                  {language === "pt"
+                    ? "Contribua para a melhoria dos nossos modelos de IA de identificação de raças e emoções enviando dados anónimos."
+                    : "Contribute to improving our breed and emotion AI models by sending anonymous data."}
                 </p>
               </div>
               <Switch
@@ -435,7 +493,9 @@ export default function SettingsPage() {
                 onCheckedChange={(val) => {
                   setShareDiagnosticData(val);
                   toast.success(
-                    `Partilha de diagnóstico ${val ? "autorizada" : "desativada"}`
+                    language === "pt"
+                      ? `Partilha de diagnóstico ${val ? "autorizada" : "desativada"}`
+                      : `Diagnostic sharing ${val ? "authorized" : "disabled"}`
                   );
                 }}
                 className="data-[state=checked]:bg-primary"
@@ -445,10 +505,12 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between border-t border-border/40 pt-4">
               <div className="space-y-0.5 max-w-[80%]">
                 <Label className="text-xs font-medium text-foreground">
-                  Histórico Local Exclusivo
+                  {language === "pt" ? "Histórico Local Exclusivo" : "Exclusive Local History"}
                 </Label>
                 <p className="text-[10px] text-muted-foreground">
-                  Quando ativo, evita o caching temporário das classificações na nuvem, dependendo apenas do dispositivo.
+                  {language === "pt"
+                    ? "Quando ativo, evita o caching temporário das classificações na nuvem, dependendo apenas do dispositivo."
+                    : "When active, prevents temporary cloud caching of classifications, relying only on the device."}
                 </p>
               </div>
               <Switch
@@ -456,7 +518,9 @@ export default function SettingsPage() {
                 onCheckedChange={(val) => {
                   setLocalHistoryOnly(val);
                   toast.success(
-                    `Modo de histórico local ${val ? "ativado" : "desativado"}`
+                    language === "pt"
+                      ? `Modo de histórico local ${val ? "ativado" : "desativado"}`
+                      : `Local history mode ${val ? "enabled" : "disabled"}`
                   );
                 }}
                 className="data-[state=checked]:bg-primary"
@@ -472,10 +536,10 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Download className="w-4 h-4 text-primary" />
-              Exportar Histórico
+              {t("settingsPage.exportData")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              Descarregue todos os registos emocionais do seu animal
+              {t("settingsPage.exportDataDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -487,12 +551,12 @@ export default function SettingsPage() {
               {csvLoading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  A preparar ficheiro…
+                  {language === "pt" ? "A preparar ficheiro…" : "Preparing file..."}
                 </>
               ) : (
                 <>
                   <Download className="w-3.5 h-3.5" />
-                  Exportar em CSV
+                  {t("settingsPage.exportDataBtn")}
                 </>
               )}
             </Button>
@@ -506,7 +570,7 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Info className="w-4 h-4 text-primary" />
-              Sobre a Aplicação
+              {t("settingsPage.about")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
@@ -515,24 +579,28 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm font-bold text-foreground">AnimalMind</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Mapeamento de inteligência emocional animal em tempo real
+                  {language === "pt"
+                    ? "Mapeamento de inteligência emocional animal em tempo real"
+                    : "Real-time emotional animal intelligence mapping"}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-[10px] mt-2">
               <div className="bg-muted/50 rounded-xl p-3 border border-border/40">
-                <p className="text-muted-foreground">Versão PWA</p>
+                <p className="text-muted-foreground">{t("settingsPage.version")}</p>
                 <p className="font-semibold text-foreground mt-0.5">v1.0.0 (offline enabled)</p>
               </div>
               <div className="bg-muted/50 rounded-xl p-3 border border-border/40">
-                <p className="text-muted-foreground">Modelos Locais</p>
+                <p className="text-muted-foreground">{language === "pt" ? "Modelos Locais" : "Local Models"}</p>
                 <p className="font-semibold text-foreground mt-0.5">YAMNet · YOLOv8 · ResNet</p>
               </div>
             </div>
 
             <p className="text-[10px] text-muted-foreground text-center pt-2 italic">
-              Desenvolvido com carinho para fortalecer a ligação com os seus animais.
+              {language === "pt"
+                ? "Desenvolvido com carinho para fortalecer a ligação com os seus animais."
+                : "Developed with love to strengthen the connection with your animals."}
             </p>
           </CardContent>
         </Card>

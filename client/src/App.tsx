@@ -72,26 +72,30 @@ function Router() {
   );
 }
 
+import { LanguageProvider } from "./hooks/useLanguage";
+
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ThemeProvider defaultTheme="dark" switchable>
-          <TooltipProvider>
-            <Toaster
-              theme="dark"
-              position="top-center"
-              toastOptions={{
-                style: {
-                  background: "oklch(0.12 0.012 264)",
-                  border: "1px solid oklch(0.22 0.012 264)",
-                  color: "oklch(0.97 0.003 264)",
-                },
-              }}
-            />
-            <Router />
-          </TooltipProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider defaultTheme="dark" switchable>
+            <TooltipProvider>
+              <Toaster
+                theme="dark"
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    background: "oklch(0.12 0.012 264)",
+                    border: "1px solid oklch(0.22 0.012 264)",
+                    color: "oklch(0.97 0.003 264)",
+                  },
+                }}
+              />
+              <Router />
+            </TooltipProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

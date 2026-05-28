@@ -21,6 +21,7 @@ import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
 import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
+import { useLanguage } from "@/hooks/useLanguage";
 
 type RecordingState = "idle" | "requesting" | "recording" | "processing";
 
@@ -59,6 +60,7 @@ function ResultCard({
   result: ClassifyResult;
   onFeedback: (feedback: "correct" | "incorrect") => void;
 }) {
+  const { t } = useLanguage();
   const [feedbackSent, setFeedbackSent] = useState<"correct" | "incorrect" | null>(null);
   const [notes, setNotes] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -67,11 +69,11 @@ function ResultCard({
   const utils = trpc.useUtils();
   const updateNotesMutation = trpc.events.updateNotes.useMutation({
     onSuccess: () => {
-      toast.success("Nota gravada com sucesso!");
+      toast.success(t("recordingPage.noteSaved"));
       utils.events.recent.invalidate();
     },
     onError: () => {
-      toast.error("Erro ao guardar a nota.");
+      toast.error(t("recordingPage.noteSaveError"));
     },
   });
 
@@ -91,7 +93,7 @@ function ResultCard({
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-      toast.error("O reconhecimento de voz não é suportado neste navegador.");
+      toast.error(t("recordingPage.speechNotSupported"));
       return;
     }
 
@@ -102,7 +104,7 @@ function ResultCard({
 
     rec.onstart = () => {
       setIsListening(true);
-      toast.info("A ouvir... fale agora.");
+      toast.info(t("recordingPage.listeningNow"));
     };
 
     rec.onresult = (e: any) => {
@@ -114,7 +116,7 @@ function ResultCard({
       console.error("Speech recognition error:", e);
       setIsListening(false);
       if (e.error !== "no-speech") {
-        toast.error("Erro ao reconhecer voz. Tente novamente.");
+        toast.error(t("recordingPage.speechError"));
       }
     };
 
@@ -166,7 +168,7 @@ function ResultCard({
           disabled={feedbackSent !== null}
         >
           <ThumbsUp size={16} />
-          Correcto
+          {t("recordingPage.correct")}
         </Button>
         <Button
           variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
@@ -176,20 +178,20 @@ function ResultCard({
           disabled={feedbackSent !== null}
         >
           <ThumbsDown size={16} />
-          Incorrecto
+          {t("recordingPage.incorrect")}
         </Button>
       </div>
 
       {/* Notes / Dictation section */}
       <div className="space-y-2 pt-3 border-t border-border">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-          Nota de Observação
+          {t("recordingPage.observationNote")}
         </label>
         <div className="flex gap-2">
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Ex: O cão ladrou para a porta..."
+            placeholder={t("recordingPage.observationPlaceholder")}
             className="flex-1 min-h-[56px] max-h-24 bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none transition-colors"
           />
           <Button
@@ -203,7 +205,7 @@ function ResultCard({
                 ? "bg-cyan-500 hover:bg-cyan-600 border-0 text-white animate-pulse shadow-md shadow-cyan-500/20" 
                 : "hover:text-cyan-400 hover:border-cyan-500/20"
             )}
-            title="Ditar nota"
+            title={t("recordingPage.dictateNote")}
           >
             <Mic size={16} className={cn(isListening && "scale-110")} />
           </Button>
@@ -215,7 +217,7 @@ function ResultCard({
             disabled={updateNotesMutation.isPending}
             className="w-full text-xs font-semibold h-8 rounded-xl transition-all"
           >
-            {updateNotesMutation.isPending ? "A guardar..." : "Guardar Nota"}
+            {updateNotesMutation.isPending ? t("recordingPage.saving") : t("recordingPage.saveNote")}
           </Button>
         )}
       </div>
@@ -226,6 +228,7 @@ function ResultCard({
 // ─── History Item ─────────────────────────────────────────────────────────────
 
 function HistoryItem({ event }: { event: { state: string; confidence: number; emoji: string; modelUsed: string; createdAt: Date } }) {
+  const { t } = useLanguage();
   const state = event.state as EmotionalState;
   const pct = Math.round(event.confidence * 100);
   return (
@@ -233,7 +236,7 @@ function HistoryItem({ event }: { event: { state: string; confidence: number; em
       <span className="text-2xl">{event.emoji}</span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium" style={{ color: STATE_COLORS[state] }}>
-          {STATE_LABELS[state]}
+          {t(`states.${state}` as any) || STATE_LABELS[state]}
         </p>
         <p className="text-xs text-muted-foreground">{event.modelUsed}</p>
       </div>
@@ -322,6 +325,7 @@ const SKELETON_TEMPLATES: Record<string, Record<string, Point>> = {
 // ─── Recording Page ───────────────────────────────────────────────────────────
 
 export default function RecordingPage() {
+  const { t, language } = useLanguage();
   const [recordState, setRecordState] = useState<RecordingState>("idle");
   const [result, setResult] = useState<ClassifyResult | null>(null);
   const [countdown, setCountdown] = useState(3);
@@ -373,14 +377,33 @@ export default function RecordingPage() {
       }
       setShowCamera(false);
     } else {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const errorMessage = language === "pt"
+          ? "O seu browser ou dispositivo não suporta acesso direto à câmara (ou não é um contexto seguro HTTPS)."
+          : "Your browser or device does not support direct camera access (or it is not a secure HTTPS context).";
+        setCameraError(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: 320,
-            height: 240,
-            facingMode: { ideal: facingMode },
-          },
-        });
+        let stream: MediaStream;
+        try {
+          // Attempt with ideal constraints
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 320 },
+              height: { ideal: 240 },
+              facingMode: { ideal: facingMode },
+            },
+          });
+        } catch (constraintErr) {
+          console.warn("Camera getUserMedia failed with ideal constraints, trying fallback...", constraintErr);
+          // Fallback to basic video request
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+        }
         
         streamRef.current = stream;
         setCameraPermissionDenied(false);
@@ -393,26 +416,29 @@ export default function RecordingPage() {
         }
       } catch (err) {
         console.error("Camera access error:", err);
-        let errorMessage = "Não foi possível aceder à câmara.";
+        let errorMessage = language === "pt" ? "Não foi possível aceder à câmara." : "Could not access camera.";
         let isDenied = false;
         
         if (err instanceof DOMException) {
           switch (err.name) {
             case "NotAllowedError":
-              errorMessage = "Permissão de câmara negada. Ative nas definições do browser.";
+            case "PermissionDeniedError":
+              errorMessage = language === "pt" ? "Permissão de câmara negada. Ative nas definições do browser." : "Camera permission denied. Enable in browser settings.";
               isDenied = true;
               break;
             case "NotFoundError":
-              errorMessage = "Nenhuma câmara disponível no dispositivo.";
+            case "DevicesNotFoundError":
+              errorMessage = language === "pt" ? "Nenhuma câmara disponível no dispositivo." : "No camera available on this device.";
               break;
             case "NotReadableError":
-              errorMessage = "A câmara está a ser utilizada por outra aplicação.";
+            case "TrackStartError":
+              errorMessage = language === "pt" ? "A câmara está a ser utilizada por outra aplicação ou pelo sistema." : "The camera is already in use by another app or system resource.";
               break;
             case "SecurityError":
-              errorMessage = "Acesso à câmara bloqueado por razões de segurança.";
+              errorMessage = language === "pt" ? "Acesso à câmara bloqueado por razões de segurança." : "Camera access blocked due to security reasons.";
               break;
             case "TypeError":
-              errorMessage = "Configuração de câmara inválida.";
+              errorMessage = language === "pt" ? "Configuração de câmara inválida." : "Invalid camera configuration.";
               break;
           }
         }
@@ -425,6 +451,7 @@ export default function RecordingPage() {
   };
 
   const handleSwitchCamera = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
     const newMode = facingMode === "environment" ? "user" : "environment";
     setFacingMode(newMode);
 
@@ -434,13 +461,21 @@ export default function RecordingPage() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: 320,
-          height: 240,
-          facingMode: { ideal: newMode },
-        },
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 320 },
+            height: { ideal: 240 },
+            facingMode: { ideal: newMode },
+          },
+        });
+      } catch (constraintErr) {
+        console.warn("Switch camera failed with constraints, trying fallback...", constraintErr);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+      }
 
       streamRef.current = stream;
       setCameraPermissionDenied(false);
@@ -452,26 +487,29 @@ export default function RecordingPage() {
       }
     } catch (err) {
       console.error("Camera access error during switch:", err);
-      let errorMessage = "Não foi possível aceder à câmara.";
+      let errorMessage = language === "pt" ? "Não foi possível aceder à câmara." : "Could not access camera.";
       let isDenied = false;
 
       if (err instanceof DOMException) {
         switch (err.name) {
           case "NotAllowedError":
-            errorMessage = "Permissão de câmara negada. Ative nas definições do browser.";
+          case "PermissionDeniedError":
+            errorMessage = language === "pt" ? "Permissão de câmara negada. Ative nas definições do browser." : "Camera permission denied. Enable in browser settings.";
             isDenied = true;
             break;
           case "NotFoundError":
-            errorMessage = "Nenhuma câmara disponível no dispositivo.";
+          case "DevicesNotFoundError":
+            errorMessage = language === "pt" ? "Nenhuma câmara disponível no dispositivo." : "No camera available on this device.";
             break;
           case "NotReadableError":
-            errorMessage = "A câmara está a ser utilizada por outra aplicação.";
+          case "TrackStartError":
+            errorMessage = language === "pt" ? "A câmara está a ser utilizada por outra aplicação ou pelo sistema." : "The camera is already in use by another app or system resource.";
             break;
           case "SecurityError":
-            errorMessage = "Acesso à câmara bloqueado por razões de segurança.";
+            errorMessage = language === "pt" ? "Acesso à câmara bloqueado por razões de segurança." : "Camera access blocked due to security reasons.";
             break;
           case "TypeError":
-            errorMessage = "Configuração de câmara inválida.";
+            errorMessage = language === "pt" ? "Configuração de câmara inválida." : "Invalid camera configuration.";
             break;
         }
       }
@@ -600,7 +638,7 @@ export default function RecordingPage() {
       setRecordState("idle");
       setIsAutoMode(false);
       isAutoModeRef.current = false;
-      toast.error("Não foi possível aceder ao microfone. Modo Automático desativado.");
+      toast.error(language === "pt" ? "Não foi possível aceder ao microfone. Modo Automático desativado." : "Could not access microphone. Continuous Mode disabled.");
       return;
     }
     setRecordState("recording");
@@ -629,7 +667,7 @@ export default function RecordingPage() {
     clearAutoRecordingTimer();
     stopLiveAudio();
     setRecordState("idle");
-    toast.info("Modo Automático desligado.");
+    toast.info(language === "pt" ? "Modo Automático desligado." : "Continuous Mode turned off.");
   };
 
   const enableAutoMode = () => {
@@ -640,7 +678,7 @@ export default function RecordingPage() {
     setResult(null);
     clearAutoRecordingTimer();
     startRecordingCycle();
-    toast.success("Modo Automático ativado!");
+    toast.success(language === "pt" ? "Modo Automático ativado!" : "Continuous Mode active!");
   };
 
   const classifyMutation = trpc.classify.run.useMutation({
@@ -670,7 +708,7 @@ export default function RecordingPage() {
 
       if (isAutoModeRef.current) {
         setAutoClassificationCount((count) => count + 1);
-        setLastAutoResult(res);
+         setLastAutoResult(res);
         setRecordState("idle");
         scheduleAutoRecording(1500);
       } else {
@@ -681,17 +719,17 @@ export default function RecordingPage() {
       stopLiveAudio();
       if (isAutoModeRef.current) {
         setRecordState("idle");
-        toast.error("Erro na classificação automática. A tentar novamente em 2 segundos...");
+        toast.error(language === "pt" ? "Erro na classificação automática. A tentar novamente em 2 segundos..." : "Error in continuous classification. Retrying in 2 seconds...");
         scheduleAutoRecording(2000);
       } else {
         setRecordState("idle");
-        toast.error("Erro ao classificar o áudio. Tente novamente.");
+        toast.error(language === "pt" ? "Erro ao classificar o áudio. Tente novamente." : "Error classifying audio. Try again.");
       }
     },
   });
 
   const feedbackMutation = trpc.events.feedback.useMutation({
-    onSuccess: () => toast.success("Obrigado pelo feedback!"),
+    onSuccess: () => toast.success(language === "pt" ? "Obrigado pelo feedback!" : "Thank you for your feedback!"),
   });
 
   // Countdown timer during recording
@@ -818,7 +856,7 @@ export default function RecordingPage() {
       return (
         <>
           <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs">A ligar…</span>
+          <span className="text-xs">{t("recordingPage.connecting")}</span>
         </>
       );
     }
@@ -826,7 +864,7 @@ export default function RecordingPage() {
       return (
         <>
           <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs">A analisar…</span>
+          <span className="text-xs">{t("recordingPage.processing")}</span>
         </>
       );
     }
@@ -849,7 +887,7 @@ export default function RecordingPage() {
     return (
       <>
         <Mic size={40} strokeWidth={1.5} />
-        <span className="text-sm font-semibold tracking-wider">Gravar</span>
+        <span className="text-sm font-semibold tracking-wider">{t("recordingPage.record")}</span>
       </>
     );
   };
@@ -864,7 +902,7 @@ export default function RecordingPage() {
             {activeAnimal.species === "dog" ? "🐕" : "🐈"} {activeAnimal.name}
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">Nenhum animal seleccionado</p>
+          <p className="text-sm text-muted-foreground">{t("header.noAnimal")}</p>
         )}
       </div>
 
@@ -875,10 +913,10 @@ export default function RecordingPage() {
             <span className="text-emerald-400 text-lg">📷</span>
             <div>
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                Visão Computacional (YOLOv8)
+                {t("recordingPage.cameraTitle")}
               </p>
               <p className="text-xs text-muted-foreground">
-                Estimar postura para contexto temporal
+                {t("recordingPage.cameraDesc")}
               </p>
             </div>
           </div>
@@ -890,7 +928,7 @@ export default function RecordingPage() {
                 onClick={handleSwitchCamera}
                 className="text-xs font-semibold"
               >
-                {facingMode === "environment" ? "FRONTAL" : "TRASEIRA"}
+                {facingMode === "environment" ? t("recordingPage.cameraFront") : t("recordingPage.cameraBack")}
               </Button>
             )}
             <Button
@@ -899,7 +937,7 @@ export default function RecordingPage() {
               onClick={handleToggleCamera}
               className="text-xs font-semibold"
             >
-              {showCamera ? "DESATIVAR" : "ATIVAR"}
+              {showCamera ? t("recordingPage.disable") : t("recordingPage.enable")}
             </Button>
           </div>
         </div>
@@ -923,17 +961,17 @@ export default function RecordingPage() {
             
             <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
               <span className="text-xs font-medium text-muted-foreground">
-                Simular Postura:
+                {t("recordingPage.simulatedPosture")}
               </span>
               <select
                 value={detectedPosture}
                 onChange={(e) => setDetectedPosture(e.target.value)}
                 className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
               >
-                <option value="sitting">Sentado (Relaxado/Atenção)</option>
-                <option value="lying">Deitado (Repouso/Submisso)</option>
-                <option value="standing">De Pé (Alerta/Neutro)</option>
-                <option value="alert">Alerta (Cauda Ereta - Excitação/Perigo)</option>
+                <option value="sitting">{t("recordingPage.postureSitting")}</option>
+                <option value="lying">{t("recordingPage.postureLying")}</option>
+                <option value="standing">{t("recordingPage.postureStanding")}</option>
+                <option value="alert">{t("recordingPage.postureAlert")}</option>
               </select>
             </div>
           </div>
@@ -946,23 +984,23 @@ export default function RecordingPage() {
         <div className="h-8 flex items-center justify-center">
           {isAutoMode ? (
             <p className="text-md font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 animate-pulse text-center">
-              Auto Classify está ligado
+              {t("recordingPage.autoModeOn")}
             </p>
           ) : recordState === "recording" ? (
             <p className="text-sm text-muted-foreground text-center">
-              A gravar e analisar o sinal em tempo real…
+              {t("recordingPage.recordingAcustic")}
             </p>
           ) : recordState === "processing" ? (
             <p className="text-sm text-muted-foreground text-center animate-pulse">
-              A analisar dados acústicos com IA…
+              {t("recordingPage.processingAcustic")}
             </p>
           ) : recordState === "requesting" ? (
             <p className="text-sm text-muted-foreground text-center">
-              A pedir acesso ao microfone…
+              {t("recordingPage.requestingMic")}
             </p>
           ) : (
             <p className="text-sm text-muted-foreground text-center">
-              Premir continuamente para Auto Classify
+              {t("recordingPage.pressForAuto")}
             </p>
           )}
         </div>
@@ -985,8 +1023,8 @@ export default function RecordingPage() {
         </button>
 
         <p className="text-xs text-muted-foreground text-center h-4">
-          {isAutoMode && recordState === "idle" && "Próxima análise acústica a iniciar em breve…"}
-          {!isAutoMode && recordState === "idle" && "Toque para uma gravação única de 3 segundos"}
+          {isAutoMode && recordState === "idle" && t("recordingPage.nextAcusticSoon")}
+          {!isAutoMode && recordState === "idle" && t("recordingPage.tapForSingle")}
         </p>
 
         {(recordState === "recording" || isLiveAudioStreaming) && (
@@ -1004,7 +1042,7 @@ export default function RecordingPage() {
           {result.posture && (
             <div className="flex justify-center">
               <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 bg-emerald-950/20">
-                Postura Estimada: {result.posture.toUpperCase()}
+                {t("recordingPage.postureEstimated")} {result.posture.toUpperCase()}
               </Badge>
             </div>
           )}
@@ -1039,17 +1077,17 @@ export default function RecordingPage() {
           </div>
           <div>
             <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-              Modo contínuo
+              {t("recordingPage.continuousMode")}
             </p>
             <p className="text-xs text-muted-foreground">
               {isAutoMode
-                ? `${autoClassificationCount} classificações nesta sessão`
-                : "Permite classificar sem interrupções"}
+                ? `${autoClassificationCount} ${t("recordingPage.classificationsCount")}`
+                : t("recordingPage.continuousDesc")}
             </p>
             {isAutoMode && lastAutoResult && (
               <p className="text-[11px] text-cyan-300 mt-1 truncate max-w-[220px]">
-                Última: {lastAutoResult.emoji}{" "}
-                {STATE_LABELS[lastAutoResult.state]} ·{" "}
+                {t("recordingPage.lastClass")} {lastAutoResult.emoji}{" "}
+                {t(`states.${lastAutoResult.state}` as any) || STATE_LABELS[lastAutoResult.state]} ·{" "}
                 {Math.round(lastAutoResult.confidence * 100)}%
               </p>
             )}
@@ -1066,7 +1104,7 @@ export default function RecordingPage() {
           )}
           onClick={isAutoMode ? disableAutoMode : enableAutoMode}
         >
-          {isAutoMode ? "PARAR" : "ATIVAR"}
+          {isAutoMode ? t("recordingPage.stop") : t("recordingPage.enable")}
         </Button>
       </div>
 
@@ -1076,7 +1114,7 @@ export default function RecordingPage() {
           <div className="flex items-center gap-2 mb-3">
             <Clock size={16} className="text-muted-foreground" />
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Últimas classificações
+              {t("recordingPage.recentClass")}
             </h2>
           </div>
           {recentEvents.map((event) => (
@@ -1091,32 +1129,38 @@ export default function RecordingPage() {
           <AlertDialogHeader>
             <div className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-500" />
-              <AlertDialogTitle>Permissão de Câmara Negada</AlertDialogTitle>
+              <AlertDialogTitle>{t("recordingPage.cameraDeniedTitle")}</AlertDialogTitle>
             </div>
           </AlertDialogHeader>
           <AlertDialogDescription className="space-y-3">
             <p>
-              A aplicação não consegue aceder à câmara do seu dispositivo. Isto pode acontecer se:
+              {t("recordingPage.cameraDeniedDesc")}
             </p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Negou a permissão quando o browser pediu</li>
-              <li>A câmara está desativada nas definições do browser</li>
-              <li>Outra aplicação está a usar a câmara</li>
-            </ul>
             <p className="font-semibold text-foreground">
-              Para ativar a câmara:
+              {language === "pt" ? "Para ativar a câmara:" : "To enable the camera:"}
             </p>
             <ol className="list-decimal list-inside space-y-1 text-sm">
-              <li>Abra as definições do browser</li>
-              <li>Procure por "Permissões" ou "Privacidade"</li>
-              <li>Encontre "Câmara" e ative para este site</li>
-              <li>Recarregue a página</li>
+              {language === "pt" ? (
+                <>
+                  <li>Abra as definições do browser</li>
+                  <li>Procure por "Permissões" ou "Privacidade"</li>
+                  <li>Encontre "Câmara" e ative para este site</li>
+                  <li>Recarregue a página</li>
+                </>
+              ) : (
+                <>
+                  <li>Open browser settings</li>
+                  <li>Search for "Permissions" or "Privacy"</li>
+                  <li>Find "Camera" and enable for this site</li>
+                  <li>Reload the page</li>
+                </>
+              )}
             </ol>
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogCancel>Fechar</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.close")}</AlertDialogCancel>
             <AlertDialogAction onClick={() => setCameraPermissionDenied(false)}>
-              Entendi
+              {language === "pt" ? "Entendi" : "Got it"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

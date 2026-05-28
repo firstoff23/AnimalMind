@@ -2,23 +2,26 @@ import { useLocation } from "wouter";
 import { Mic, PawPrint, History, BarChart2, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const NAV_ITEMS = [
-  { path: "/",          icon: Mic,       label: "Gravação"   },
-  { path: "/perfil",    icon: PawPrint,  label: "Perfil"     },
-  { path: "/historico", icon: History,   label: "Histórico"  },
-  { path: "/dashboard", icon: BarChart2, label: "Dashboard"  },
-  { path: "/definicoes",icon: Settings,  label: "Definições" },
+  { path: "/",          icon: Mic,       key: "recording" },
+  { path: "/perfil",    icon: PawPrint,  key: "profile" },
+  { path: "/historico", icon: History,   key: "history" },
+  { path: "/dashboard", icon: BarChart2, key: "dashboard" },
+  { path: "/definicoes",icon: Settings,  key: "settings" },
 ];
 
 export function BottomNav() {
   const [location, navigate] = useLocation();
+  const { t } = useLanguage();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border mobile-safe-bottom">
       <div className="flex items-stretch justify-around max-w-lg mx-auto">
-        {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+        {NAV_ITEMS.map(({ path, icon: Icon, key }) => {
           const active = location === path;
+          const label = t(`nav.${key}`);
           return (
             <button
               key={path}

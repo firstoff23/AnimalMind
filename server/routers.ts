@@ -45,6 +45,21 @@ import {
   removeAnimalShare,
   saveBreedFeedback,
   updateUser,
+  getVaccinations,
+  addVaccination,
+  deleteVaccination,
+  getDewormings,
+  addDeworming,
+  deleteDeworming,
+  getDiagnosticTests,
+  addDiagnosticTest,
+  deleteDiagnosticTest,
+  getOtherTreatments,
+  addOtherTreatment,
+  deleteOtherTreatment,
+  getLicensing,
+  addLicensing,
+  deleteLicensing,
 } from "./db";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
@@ -303,6 +318,9 @@ export const appRouter = router({
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
           photoUrl: z.string().optional().nullable(),
           microchipNumber: z.string().max(15).optional().nullable(),
+          height: z.string().max(50).optional().nullable(),
+          tail: z.string().max(50).optional().nullable(),
+          specialMarkings: z.string().optional().nullable(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -324,6 +342,9 @@ export const appRouter = router({
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
           photoUrl: z.string().optional().nullable(),
           microchipNumber: z.string().max(15).optional().nullable(),
+          height: z.string().max(50).optional().nullable(),
+          tail: z.string().max(50).optional().nullable(),
+          specialMarkings: z.string().optional().nullable(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -475,6 +496,170 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await saveBreedFeedback(input);
         return { success: true };
+      }),
+
+    getVaccinations: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getVaccinations(input.animalId);
+      }),
+
+    addVaccination: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          vaccineName: z.string().min(1).max(100),
+          vaccineType: z.enum(["rabies", "other"]),
+          dateAdministered: z.string().length(10),
+          batchNumber: z.string().max(50).optional().nullable(),
+          veterinarian: z.string().max(100).optional().nullable(),
+          nextDueDate: z.string().length(10).optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return addVaccination(input);
+      }),
+
+    deleteVaccination: publicProcedure
+      .input(z.object({ id: z.number(), animalId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return deleteVaccination(input.id);
+      }),
+
+    getDewormings: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getDewormings(input.animalId);
+      }),
+
+    addDeworming: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          type: z.enum(["internal", "external", "both"]),
+          product: z.string().min(1).max(100),
+          dosage: z.string().max(100).optional().nullable(),
+          dateAdministered: z.string().length(10),
+          nextDueDate: z.string().length(10).optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return addDeworming(input);
+      }),
+
+    deleteDeworming: publicProcedure
+      .input(z.object({ id: z.number(), animalId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return deleteDeworming(input.id);
+      }),
+
+    getDiagnosticTests: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getDiagnosticTests(input.animalId);
+      }),
+
+    addDiagnosticTest: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          testName: z.string().min(1).max(100),
+          datePerformed: z.string().length(10),
+          result: z.string().min(1).max(200),
+          notes: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return addDiagnosticTest(input);
+      }),
+
+    deleteDiagnosticTest: publicProcedure
+      .input(z.object({ id: z.number(), animalId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return deleteDiagnosticTest(input.id);
+      }),
+
+    getOtherTreatments: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getOtherTreatments(input.animalId);
+      }),
+
+    addOtherTreatment: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          treatmentName: z.string().min(1).max(200),
+          dateAdministered: z.string().length(10),
+          notes: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return addOtherTreatment(input);
+      }),
+
+    deleteOtherTreatment: publicProcedure
+      .input(z.object({ id: z.number(), animalId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return deleteOtherTreatment(input.id);
+      }),
+
+    getLicensing: publicProcedure
+      .input(z.object({ animalId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId);
+        return getLicensing(input.animalId);
+      }),
+
+    addLicensing: publicProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          licenseNumber: z.string().min(1).max(100),
+          issueDate: z.string().length(10),
+          expiryDate: z.string().length(10).optional().nullable(),
+          issuingAuthority: z.string().min(1).max(150),
+          category: z.enum(["companion", "dangerous", "potentially_dangerous", "hunting", "guard", "other"]),
+          notes: z.string().optional().nullable(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return addLicensing(input);
+      }),
+
+    deleteLicensing: publicProcedure
+      .input(z.object({ id: z.number(), animalId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        return deleteLicensing(input.id);
       }),
   }),
 

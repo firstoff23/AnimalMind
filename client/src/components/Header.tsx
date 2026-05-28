@@ -4,16 +4,18 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LogOut, Moon, Sun, User } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export function Header() {
   const { user, signOut, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success("Desconectado com sucesso");
+      toast.success(t("header.logoutSuccess") !== "header.logoutSuccess" ? t("header.logoutSuccess") : "Desconectado com sucesso");
       setLocation("/login");
     } catch (error: any) {
       toast.error(error.message || "Erro ao desconectar");
@@ -53,7 +55,7 @@ export function Header() {
             className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sair
+            {t("header.logout")}
           </Button>
         </div>
       </div>

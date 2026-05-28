@@ -31,6 +31,12 @@ vi.mock("@supabase/supabase-js", () => {
             }
             return builder;
           }),
+          then: vi.fn().mockImplementation((resolve) => {
+            if (table === "family_members" || table === "family_animals") {
+              return resolve({ data: null, error: new Error("Mock database offline") });
+            }
+            return resolve({ data: [], error: null });
+          }),
         };
         return builder;
       }),

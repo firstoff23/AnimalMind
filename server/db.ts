@@ -113,6 +113,9 @@ export function mapDbAnimal(a: any) {
     coat: a.coat ?? null,
     photoUrl: a.photo_url ?? null,
     microchipNumber: a.microchip_number ?? null,
+    height: a.height ?? null,
+    tail: a.tail ?? null,
+    specialMarkings: a.special_markings ?? null,
     createdAt: a.created_at ? new Date(a.created_at) : null,
     updatedAt: a.updated_at ? new Date(a.updated_at) : null,
   };
@@ -151,6 +154,9 @@ export async function addAnimal(data: {
   coat?: 'short' | 'medium' | 'long' | null;
   photoUrl?: string | null;
   microchipNumber?: string | null;
+  height?: string | null;
+  tail?: string | null;
+  specialMarkings?: string | null;
 }) {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
@@ -168,6 +174,9 @@ export async function addAnimal(data: {
         coat: data.coat,
         photo_url: data.photoUrl,
         microchip_number: data.microchipNumber,
+        height: data.height,
+        tail: data.tail,
+        special_markings: data.specialMarkings,
         is_active: false,
       },
     ])
@@ -226,7 +235,6 @@ export async function getActiveAnimal(userId: number) {
   const all = await getAnimalsByUser(userId);
   return all[0] || null;
 }
-
 export async function updateAnimal(
   animalId: number,
   data: {
@@ -240,6 +248,9 @@ export async function updateAnimal(
     coat?: 'short' | 'medium' | 'long' | null;
     photoUrl?: string | null;
     microchipNumber?: string | null;
+    height?: string | null;
+    tail?: string | null;
+    specialMarkings?: string | null;
   }
 ) {
   const supabase = getSupabase();
@@ -254,6 +265,9 @@ export async function updateAnimal(
   if (data.coat !== undefined) updatePayload.coat = data.coat;
   if (data.photoUrl !== undefined) updatePayload.photo_url = data.photoUrl;
   if (data.microchipNumber !== undefined) updatePayload.microchip_number = data.microchipNumber;
+  if (data.height !== undefined) updatePayload.height = data.height;
+  if (data.tail !== undefined) updatePayload.tail = data.tail;
+  if (data.specialMarkings !== undefined) updatePayload.special_markings = data.specialMarkings;
 
   const { data: result, error } = await supabase
     .from("animals")
@@ -267,9 +281,7 @@ export async function updateAnimal(
     throw error;
   }
   return mapDbAnimal(result);
-}
-
-// ─── Event operations ────────────────────────────────────────────────────────
+}// ─── Event operations ────────────────────────────────────────────────────────
 
 export async function insertEvent(data: {
   userId: number;
@@ -1849,8 +1861,8 @@ async function getUserFamilyIds(userId: number): Promise<number[]> {
       .from("family_members")
       .select("family_id")
       .eq("user_id", userId);
-    if (error) throw error;
-    return (data || []).map((row: any) => Number(row.family_id));
+    if (error || !data) throw error || new Error("Sem dados");
+    return data.map((row: any) => Number(row.family_id));
   } catch {
     const store = readFamilyStore();
     return store.members
@@ -1915,10 +1927,10 @@ export async function getFamilyMembersForUser(userId: number): Promise<FamilyMem
       .from("family_members")
       .select("family_id, user_id, role, joined_at")
       .in("family_id", familyIds);
-    if (error) throw error;
+    if (error || !data) throw error || new Error("Sem dados");
 
     const members: FamilyMemberRecord[] = [];
-    for (const row of data || []) {
+    for (const row of data) {
       const summary = await getUserSummary(Number(row.user_id));
       members.push({
         familyId: Number(row.family_id),
@@ -2196,11 +2208,308 @@ export async function getFamilyActivityForUser(userId: number): Promise<any[]> {
     return [];
   }
 }
-
 async function userHasFamilyAnimalAccess(userId: number, animalId: number): Promise<boolean> {
   const animals = await getFamilyAnimalsForUser(userId);
   return animals.some((animal) => Number(animal.id) === animalId);
 }
 
+// ─── Health records mappings ──────────────────────────────────────────────────
 
+function mapDbVaccination(v: any) {
+  if (!v) return null;
+  return {
+    id: Number(v.id),
+    animalId: Number(v.animal_id),
+    vaccineName: v.vaccine_name,
+    vaccineType: v.vaccine_type as 'rabies' | 'other',
+    dateAdministered: v.date_administered,
+    batchNumber: v.batch_number ?? null,
+    veterinarian: v.veterinarian ?? null,
+    nextDueDate: v.next_due_date ?? null,
+    createdAt: v.created_at ? new Date(v.created_at) : null,
+  };
+}
 
+function mapDbDeworming(d: any) {
+  if (!d) return null;
+  return {
+    id: Number(d.id),
+    animalId: Number(d.animal_id),
+    type: d.type as 'internal' | 'external' | 'both',
+    product: d.product,
+    dosage: d.dosage ?? null,
+    dateAdministered: d.date_administered,
+    nextDueDate: d.next_due_date ?? null,
+    createdAt: d.created_at ? new Date(d.created_at) : null,
+  };
+}
+
+function mapDbDiagnosticTest(t: any) {
+  if (!t) return null;
+  return {
+    id: Number(t.id),
+    animalId: Number(t.animal_id),
+    testName: t.test_name,
+    datePerformed: t.date_performed,
+    result: t.result,
+    notes: t.notes ?? null,
+    createdAt: t.created_at ? new Date(t.created_at) : null,
+  };
+}
+
+function mapDbOtherTreatment(t: any) {
+  if (!t) return null;
+  return {
+    id: Number(t.id),
+    animalId: Number(t.animal_id),
+    treatmentName: t.treatment_name,
+    dateAdministered: t.date_administered,
+    notes: t.notes ?? null,
+    createdAt: t.created_at ? new Date(t.created_at) : null,
+  };
+}
+
+function mapDbLicensing(l: any) {
+  if (!l) return null;
+  return {
+    id: Number(l.id),
+    animalId: Number(l.animal_id),
+    licenseNumber: l.license_number,
+    issueDate: l.issue_date,
+    expiryDate: l.expiry_date ?? null,
+    issuingAuthority: l.issuing_authority,
+    category: l.category as 'companion' | 'dangerous' | 'potentially_dangerous' | 'hunting' | 'guard' | 'other',
+    notes: l.notes ?? null,
+    createdAt: l.created_at ? new Date(l.created_at) : null,
+  };
+}
+
+// ─── Health records DB operations ─────────────────────────────────────────────
+
+export async function getVaccinations(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("vaccinations")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("date_administered", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbVaccination);
+}
+
+export async function addVaccination(data: {
+  animalId: number;
+  vaccineName: string;
+  vaccineType: 'rabies' | 'other';
+  dateAdministered: string;
+  batchNumber?: string | null;
+  veterinarian?: string | null;
+  nextDueDate?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("vaccinations")
+    .insert([{
+      animal_id: data.animalId,
+      vaccine_name: data.vaccineName,
+      vaccine_type: data.vaccineType,
+      date_administered: data.dateAdministered,
+      batch_number: data.batchNumber ?? null,
+      veterinarian: data.veterinarian ?? null,
+      next_due_date: data.nextDueDate ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbVaccination(result);
+}
+
+export async function deleteVaccination(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("vaccinations")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getDewormings(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("dewormings")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("date_administered", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbDeworming);
+}
+
+export async function addDeworming(data: {
+  animalId: number;
+  type: 'internal' | 'external' | 'both';
+  product: string;
+  dosage?: string | null;
+  dateAdministered: string;
+  nextDueDate?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("dewormings")
+    .insert([{
+      animal_id: data.animalId,
+      type: data.type,
+      product: data.product,
+      dosage: data.dosage ?? null,
+      date_administered: data.dateAdministered,
+      next_due_date: data.nextDueDate ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbDeworming(result);
+}
+
+export async function deleteDeworming(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("dewormings")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getDiagnosticTests(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("diagnostic_tests")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("date_performed", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbDiagnosticTest);
+}
+
+export async function addDiagnosticTest(data: {
+  animalId: number;
+  testName: string;
+  datePerformed: string;
+  result: string;
+  notes?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("diagnostic_tests")
+    .insert([{
+      animal_id: data.animalId,
+      test_name: data.testName,
+      date_performed: data.datePerformed,
+      result: data.result,
+      notes: data.notes ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbDiagnosticTest(result);
+}
+
+export async function deleteDiagnosticTest(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("diagnostic_tests")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getOtherTreatments(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("other_treatments")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("date_administered", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbOtherTreatment);
+}
+
+export async function addOtherTreatment(data: {
+  animalId: number;
+  treatmentName: string;
+  dateAdministered: string;
+  notes?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("other_treatments")
+    .insert([{
+      animal_id: data.animalId,
+      treatment_name: data.treatmentName,
+      date_administered: data.dateAdministered,
+      notes: data.notes ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbOtherTreatment(result);
+}
+
+export async function deleteOtherTreatment(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("other_treatments")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getLicensing(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("licensing")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("issue_date", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbLicensing);
+}
+
+export async function addLicensing(data: {
+  animalId: number;
+  licenseNumber: string;
+  issueDate: string;
+  expiryDate?: string | null;
+  issuingAuthority: string;
+  category: 'companion' | 'dangerous' | 'potentially_dangerous' | 'hunting' | 'guard' | 'other';
+  notes?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("licensing")
+    .insert([{
+      animal_id: data.animalId,
+      license_number: data.licenseNumber,
+      issue_date: data.issueDate,
+      expiry_date: data.expiryDate ?? null,
+      issuing_authority: data.issuingAuthority,
+      category: data.category,
+      notes: data.notes ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbLicensing(result);
+}
+
+export async function deleteLicensing(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("licensing")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}

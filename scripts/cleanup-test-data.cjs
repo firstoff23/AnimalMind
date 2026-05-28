@@ -66,6 +66,12 @@ async function runCleanup() {
 
   // 2. Limpeza de Animais Autónomos Remanescentes
   let deletedAnimalsCount = 0;
+  let deletedVaccinationsCount = 0;
+  let deletedDewormingsCount = 0;
+  let deletedTestsCount = 0;
+  let deletedTreatmentsCount = 0;
+  let deletedLicensingCount = 0;
+
   try {
     console.log("A procurar animais de teste...");
     const { data: animals, error: fetchError } = await supabase
@@ -86,6 +92,44 @@ async function runCleanup() {
     });
 
     console.log(`Encontrados ${testAnimals.length} animais de teste.`);
+
+    const testAnimalIds = testAnimals.map((a) => a.id);
+    if (testAnimalIds.length > 0) {
+      try {
+        const { count: vCount } = await supabase.from("vaccinations").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        deletedVaccinationsCount = vCount || 0;
+      } catch (err) {
+        console.error("Erro a contar vacinas:", err.message);
+      }
+
+      try {
+        const { count: dCount } = await supabase.from("dewormings").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        deletedDewormingsCount = dCount || 0;
+      } catch (err) {
+        console.error("Erro a contar desparasitacoes:", err.message);
+      }
+
+      try {
+        const { count: tCount } = await supabase.from("diagnostic_tests").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        deletedTestsCount = tCount || 0;
+      } catch (err) {
+        console.error("Erro a contar testes:", err.message);
+      }
+
+      try {
+        const { count: trCount } = await supabase.from("other_treatments").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        deletedTreatmentsCount = trCount || 0;
+      } catch (err) {
+        console.error("Erro a contar tratamentos:", err.message);
+      }
+
+      try {
+        const { count: lCount } = await supabase.from("licensing").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        deletedLicensingCount = lCount || 0;
+      } catch (err) {
+        console.error("Erro a contar licenciamento:", err.message);
+      }
+    }
 
     for (const animal of testAnimals) {
       console.log(`A apagar animal: ${animal.name} (ID: ${animal.id})...`);
@@ -188,6 +232,11 @@ async function runCleanup() {
   console.log("\n=== RELATÓRIO DE LIMPEZA ===");
   console.log(`Utilizadores Supabase apagados: ${deletedUsersCount}`);
   console.log(`Animais Supabase apagados:      ${deletedAnimalsCount}`);
+  console.log(`Vacinas apagadas (cascade):     ${deletedVaccinationsCount}`);
+  console.log(`Desparasitações (cascade):      ${deletedDewormingsCount}`);
+  console.log(`Testes diagnóstico (cascade):   ${deletedTestsCount}`);
+  console.log(`Tratamentos (cascade):          ${deletedTreatmentsCount}`);
+  console.log(`Licenciamentos (cascade):       ${deletedLicensingCount}`);
   console.log(`Anotações Supabase apagadas:    ${deletedFeedbackCount}`);
   console.log(`Redis:                          ${deletedRedisCount} chaves apagadas`);
   console.log("============================================\n");

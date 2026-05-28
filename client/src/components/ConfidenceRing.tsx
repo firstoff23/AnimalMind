@@ -1,5 +1,6 @@
 import React from "react";
 import { STATE_COLORS, STATE_LABELS, type EmotionalState } from "../../../shared/types";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface ConfidenceRingProps {
   confidence: number;
@@ -18,6 +19,7 @@ function toPercent(confidence: number) {
 }
 
 export function ConfidenceRing({ confidence, emoji, state }: ConfidenceRingProps) {
+  const { t } = useLanguage();
   const percent = toPercent(confidence);
   const color = getConfidenceColor(percent);
   const radius = 45;
@@ -77,10 +79,10 @@ export function ConfidenceRing({ confidence, emoji, state }: ConfidenceRingProps
 
       <div className="flex flex-col items-center gap-1">
         <span className="text-2xl font-bold tracking-normal" style={{ color: STATE_COLORS[state] }}>
-          {STATE_LABELS[state]}
+          {t(`states.${state}` as any) || STATE_LABELS[state]}
         </span>
         <span className="text-sm font-medium" style={{ color }}>
-          confiança
+          {t("historyPage.tableConf").toLowerCase()}
         </span>
       </div>
     </div>

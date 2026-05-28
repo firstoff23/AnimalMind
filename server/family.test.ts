@@ -2,21 +2,34 @@ import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
+import fs from "fs";
+import path from "path";
+
+const FAMILY_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "family_shares.json");
 
 vi.mock("@supabase/supabase-js", () => {
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {
+        let lastEqColumn: string | null = null;
+        let lastEqValue: any = null;
         const builder: any = {
           select: vi.fn().mockReturnThis(),
           insert: vi.fn().mockReturnThis(),
           update: vi.fn().mockReturnThis(),
           upsert: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockImplementation((col: string, val: any) => {
+            lastEqColumn = col;
+            lastEqValue = val;
+            return builder;
+          }),
           order: vi.fn().mockReturnThis(),
           single: vi.fn().mockImplementation(() => {
             if (table === "users") {
-              return Promise.resolve({ data: { id: 1 }, error: null });
+              if (lastEqValue === "partner@family.local" || lastEqValue === 2 || lastEqValue === "demo-user-002") {
+                return Promise.resolve({ data: { id: 2, email: "partner@family.local", name: "Partner User" }, error: null });
+              }
+              return Promise.resolve({ data: { id: 1, email: "demo@animalmind.local", name: "Test User" }, error: null });
             }
             if (table === "animals") {
               return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
@@ -35,10 +48,6 @@ vi.mock("@supabase/supabase-js", () => {
     }),
   };
 });
-import fs from "fs";
-import path from "path";
-
-const FAMILY_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "family_shares.json");
 
 function createMockContext(userId: number, openId: string, email: string): TrpcContext {
   return {

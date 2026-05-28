@@ -59,6 +59,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { jsPDF } from "jspdf";
+import { useLanguage } from "@/hooks/useLanguage";
 import {
   buildHistoryCsv,
   downloadTextFile,
@@ -115,6 +116,7 @@ function EventRow({
   isPlaying: boolean;
   onPlayToggle: (eventId: number, audioUrl: string) => void;
 }) {
+  const { t, language } = useLanguage();
   const x = useMotionValue(0);
   
   // Transform backgrounds opacity based on x offset
@@ -204,7 +206,7 @@ function EventRow({
         style={{ opacity: opacityCorrect, width: "100%" }}
       >
         <ThumbsUp size={16} aria-hidden="true" />
-        <span>Correcto</span>
+        <span>{t("recordingPage.correct")}</span>
       </motion.div>
 
       {/* Incorrect background (Red) - Swiping Left */}
@@ -212,7 +214,7 @@ function EventRow({
         className="absolute inset-y-0 right-0 flex items-center justify-end gap-2 px-4 text-xs font-semibold text-red-400 bg-red-950/70"
         style={{ opacity: opacityIncorrect, width: "100%" }}
       >
-        <span>Incorrecto</span>
+        <span>{t("recordingPage.incorrect")}</span>
         <ThumbsDown size={16} aria-hidden="true" />
       </motion.div>
 
@@ -233,7 +235,7 @@ function EventRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold" style={{ color }}>
-              {STATE_LABELS[state]}
+              {t(`states.${state}` as any) || STATE_LABELS[state]}
             </span>
             {event.feedback && (
               <span className="text-xs">
@@ -243,12 +245,12 @@ function EventRow({
           </div>
           <p className="text-xs text-muted-foreground">
             {event.modelUsed.toUpperCase()} ·{" "}
-            {new Date(event.createdAt).toLocaleDateString("pt-PT", {
+            {new Date(event.createdAt).toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
               day: "2-digit",
               month: "short",
               year: "numeric",
             })}{" "}
-            {new Date(event.createdAt).toLocaleTimeString("pt-PT", {
+            {new Date(event.createdAt).toLocaleTimeString(language === "pt" ? "pt-PT" : "en-US", {
               hour: "2-digit",
               minute: "2-digit",
             })}
@@ -330,6 +332,7 @@ function RawEventDialog({
   event: HistoryEvent | null;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useLanguage();
   const state = event?.state as EmotionalState | undefined;
   const pct = event ? Math.round(event.confidence * 100) : 0;
 
@@ -338,23 +341,23 @@ function RawEventDialog({
       {event && state && (
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Dados brutos</DialogTitle>
-            <DialogDescription>Registo #{event.id}</DialogDescription>
+            <DialogTitle>{t("historyPage.rawData")}</DialogTitle>
+            <DialogDescription>{t("historyPage.recordNo")}{event.id}</DialogDescription>
           </DialogHeader>
 
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <div className="rounded-lg bg-secondary p-3">
-              <dt className="text-xs text-muted-foreground">Estado</dt>
+              <dt className="text-xs text-muted-foreground">{t("historyPage.tableState")}</dt>
               <dd className="font-semibold text-foreground">
-                {STATE_LABELS[state]}
+                {t(`states.${state}` as any) || STATE_LABELS[state]}
               </dd>
             </div>
             <div className="rounded-lg bg-secondary p-3">
-              <dt className="text-xs text-muted-foreground">Confiança</dt>
+              <dt className="text-xs text-muted-foreground">{t("historyPage.tableConf")}</dt>
               <dd className="font-semibold text-foreground">{pct}%</dd>
             </div>
             <div className="rounded-lg bg-secondary p-3">
-              <dt className="text-xs text-muted-foreground">Modelo</dt>
+              <dt className="text-xs text-muted-foreground">{t("historyPage.tableModel")}</dt>
               <dd className="font-semibold text-foreground">
                 {event.modelUsed.toUpperCase()}
               </dd>
@@ -362,20 +365,20 @@ function RawEventDialog({
             <div className="rounded-lg bg-secondary p-3">
               <dt className="text-xs text-muted-foreground">Feedback</dt>
               <dd className="font-semibold text-foreground">
-                {event.feedback ?? "Sem feedback"}
+                {event.feedback ?? t("historyPage.noFeedback")}
               </dd>
             </div>
             {/* Notas section */}
             <div className="rounded-lg bg-secondary p-3 col-span-2">
-              <dt className="text-xs text-muted-foreground">Nota de Observação</dt>
+              <dt className="text-xs text-muted-foreground">{t("recordingPage.observationNote")}</dt>
               <dd className="font-medium text-foreground italic mt-1 whitespace-pre-wrap">
-                {event.notes || "Sem notas de observação adicionadas."}
+                {event.notes || t("historyPage.noNotesAdded")}
               </dd>
             </div>
             {/* Audio section */}
             {event.audioUrl && (
               <div className="rounded-lg bg-secondary p-3 col-span-2 flex flex-col gap-1.5">
-                <dt className="text-xs text-muted-foreground">Gravação do Animal</dt>
+                <dt className="text-xs text-muted-foreground">{t("historyPage.animalRecording")}</dt>
                 <dd className="mt-1">
                   <audio
                     src={event.audioUrl}
@@ -399,16 +402,17 @@ function RawEventDialog({
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyState({ filtered }: { filtered: boolean }) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
       <span className="text-5xl">{filtered ? "🔍" : "🎙️"}</span>
       <p className="font-semibold text-foreground">
-        {filtered ? "Sem resultados" : "Sem histórico ainda"}
+        {filtered ? t("historyPage.clear").replace("Limpar", "Sem resultados").replace("Clear", "No results") : t("historyPage.noEvents").replace("Nenhum evento registado para os filtros selecionados.", "Sem histórico ainda").replace("No events recorded for the selected filters.", "No history yet")}
       </p>
       <p className="text-sm text-muted-foreground max-w-xs">
         {filtered
-          ? "Tente ajustar os filtros para encontrar registos."
-          : "Grave o som do seu animal para ver o histórico de classificações aqui."}
+          ? t("historyPage.noEvents").replace("Nenhum evento registado para os filtros selecionados.", "Tente ajustar os filtros para encontrar registos.").replace("No events recorded for the selected filters.", "Try adjusting the filters to find records.")
+          : t("recordingPage.tapForSingle").replace("Toque para uma gravação única de 3 segundos", "Grave o som do seu animal para ver o histórico de classificações aqui.").replace("Tap for a single 3-second recording", "Record your pet's sound to see classification history here.")}
       </p>
     </div>
   );
@@ -417,6 +421,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
 // ─── History Page ─────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
+  const { t, language } = useLanguage();
   const [viewTab, setViewTab] = useState<"list" | "evolution">("list");
   const [page, setPage] = useState(1);
   const [stateFilter, setStateFilter] = useState<string>("all");
@@ -504,9 +509,9 @@ export default function HistoryPage() {
     onSuccess: () => {
       utils.events.list.invalidate();
       utils.events.listForAnimal.invalidate();
-      toast.success("Classificação actualizada");
+      toast.success(language === "pt" ? "Classificação atualizada" : "Classification updated");
     },
-    onError: () => toast.error("Não foi possível guardar o feedback."),
+    onError: () => toast.error(language === "pt" ? "Não foi possível guardar o feedback." : "Could not save feedback."),
   });
   const exportMutation = trpc.events.exportData.useMutation();
 
@@ -538,22 +543,29 @@ export default function HistoryPage() {
     return sorted.map((e) => {
       const state = e.state as EmotionalState;
       return {
-        date: new Date(e.createdAt).toLocaleDateString("pt-PT", {
+        date: new Date(e.createdAt).toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
           day: "2-digit",
           month: "2-digit",
           hour: "2-digit",
           minute: "2-digit"
         }),
         stateValue: stateValues[state] ?? 0,
-        stateName: STATE_LABELS[state] ?? e.state,
+        stateName: t(`states.${state}` as any) || STATE_LABELS[state] || e.state,
         emoji: STATE_EMOJIS[state] ?? "",
         confidence: Math.round(e.confidence * 100),
       };
     });
-  }, [chartEventsQuery.data?.events]);
+  }, [chartEventsQuery.data?.events, language, t]);
 
   const formatYAxis = (val: number) => {
-    const statesByValue = ["🔴 Angústia", "🔵 Alerta", "🟠 Fome", "🟡 Atenção", "🟢 Excitação", "⚪ Relaxado"];
+    const statesByValue = [
+      `🔴 ${t("states.distress")}`,
+      `🔵 ${t("states.alert")}`,
+      `🟠 ${t("states.hunger")}`,
+      `🟡 ${t("states.attention")}`,
+      `🟢 ${t("states.excitement")}`,
+      `⚪ ${t("states.relaxed")}`,
+    ];
     return statesByValue[val] || "";
   };
 
@@ -588,7 +600,7 @@ export default function HistoryPage() {
     try {
       const exportEvents = await loadExportEvents();
       if (exportEvents.length === 0) {
-        toast.info("Não há registos para exportar.");
+        toast.info(t("historyPage.noRecordsExport"));
         return;
       }
       const csv = buildHistoryCsv(exportEvents);
@@ -597,10 +609,10 @@ export default function HistoryPage() {
         "text/csv;charset=utf-8",
         `animalmind-historico-${exportFileDate()}.csv`,
       );
-      toast.success("CSV exportado");
+      toast.success(t("historyPage.csvExported"));
     } catch (error) {
       console.error("CSV export failed:", error);
-      toast.error("Não foi possível exportar CSV.");
+      toast.error(t("historyPage.csvExportFailed"));
     } finally {
       setExportFormat(null);
     }
@@ -611,7 +623,7 @@ export default function HistoryPage() {
     try {
       const exportEvents = await loadExportEvents();
       if (exportEvents.length === 0) {
-        toast.info("Não há registos para exportar.");
+        toast.info(t("historyPage.noRecordsExport"));
         return;
       }
 
@@ -635,7 +647,7 @@ export default function HistoryPage() {
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const animalLabel = getAnimalScopeLabel(exportEvents);
       const periodLabel = getPeriodLabel(exportFilters.dateFrom, exportFilters.dateTo);
-      const generatedAt = new Date().toLocaleString("pt-PT");
+      const generatedAt = new Date().toLocaleString(language === "pt" ? "pt-PT" : "en-US");
 
       const drawPhotoFallback = () => {
         doc.setFillColor(226, 232, 240); // slate-200
@@ -649,12 +661,12 @@ export default function HistoryPage() {
       const drawHeader = () => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(16);
-        doc.text("AnimalMind - Histórico de classificações", 14, 16);
+        doc.text(language === "pt" ? "AnimalMind - Histórico de classificações" : "AnimalMind - Classification History", 14, 16);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(`Animal: ${animalLabel}`, 14, 24);
-        doc.text(`Período: ${periodLabel}`, 14, 30);
-        doc.text(`Gerado em: ${generatedAt}`, 14, 36);
+        doc.text(`${t("historyPage.animal")}: ${animalLabel}`, 14, 24);
+        doc.text(`${language === "pt" ? "Período" : "Period"}: ${periodLabel}`, 14, 30);
+        doc.text(`${language === "pt" ? "Gerado em" : "Generated at"}: ${generatedAt}`, 14, 36);
 
         // Draw photo at top right
         if (photoBase64) {
@@ -673,13 +685,13 @@ export default function HistoryPage() {
       };
 
       const columns = [
-        { label: "Data", x: 14, width: 35 },
-        { label: "Animal", x: 52, width: 42 },
-        { label: "Estado", x: 98, width: 42 },
-        { label: "Conf.", x: 144, width: 20 },
-        { label: "Modelo", x: 168, width: 42 },
+        { label: t("common.date"), x: 14, width: 35 },
+        { label: t("historyPage.animal"), x: 52, width: 42 },
+        { label: t("historyPage.tableState"), x: 98, width: 42 },
+        { label: t("historyPage.tableConf").slice(0, 5), x: 144, width: 20 },
+        { label: t("historyPage.tableModel"), x: 168, width: 42 },
         { label: "Feedback", x: 214, width: 32 },
-        { label: "Áudio", x: 250, width: 32 },
+        { label: language === "pt" ? "Áudio" : "Audio", x: 250, width: 32 },
       ];
 
       const truncate = (value: string, maxLength: number) =>
@@ -716,13 +728,13 @@ export default function HistoryPage() {
 
         const state = event.state as EmotionalState;
         const row = [
-          new Date(event.createdAt).toLocaleDateString("pt-PT"),
+          new Date(event.createdAt).toLocaleDateString(language === "pt" ? "pt-PT" : "en-US"),
           event.animalName || `#${event.animalId ?? ""}`,
-          STATE_LABELS[state] ?? event.state,
+          t(`states.${state}` as any) || STATE_LABELS[state] || event.state,
           `${Math.round(Number(event.confidence) * 100)}%`,
           event.modelUsed,
           event.feedback ?? "",
-          event.audioUrl ? "Sim" : "Não",
+          event.audioUrl ? (language === "pt" ? "Sim" : "Yes") : (language === "pt" ? "Não" : "No"),
         ];
 
         columns.forEach((column, index) => {
@@ -751,11 +763,11 @@ export default function HistoryPage() {
       
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
-      doc.text("Relatório de Evolução Emocional", 14, 16);
+      doc.text(t("historyPage.emotionalEvolutionTitle"), 14, 16);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text(`Resumo estatístico para: ${animalLabel}`, 14, 24);
-      doc.text(`Total de classificações: ${exportEvents.length}`, 14, 30);
+      doc.text(`${language === "pt" ? "Resumo estatístico para" : "Statistical summary for"}: ${animalLabel}`, 14, 24);
+      doc.text(`${language === "pt" ? "Total de classificações" : "Total classifications"}: ${exportEvents.length}`, 14, 30);
       
       doc.setDrawColor(226, 232, 240);
       doc.line(14, 35, 283, 35);
@@ -794,7 +806,7 @@ export default function HistoryPage() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         const emoji = STATE_EMOJIS[state as EmotionalState] || "";
-        const label = STATE_LABELS[state as EmotionalState] || state;
+        const label = t(`states.${state}` as any) || STATE_LABELS[state as EmotionalState] || state;
         doc.text(`${emoji} ${label}`, xPos + barWidth / 2, chartY + 5, { align: "center" });
       });
       
@@ -804,7 +816,7 @@ export default function HistoryPage() {
       doc.line(chartX - 5, chartY, chartX - 5, chartY - chartHeight - 10);
 
       doc.save(`animalmind-historico-${exportFileDate()}.pdf`);
-      toast.success("PDF exportado");
+      toast.success(t("historyPage.pdfExported"));
     } catch (error) {
       console.error("PDF export failed:", error);
       toast.error("Não foi possível exportar PDF.");
@@ -817,7 +829,7 @@ export default function HistoryPage() {
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-4 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold text-foreground">Histórico</h1>
+        <h1 className="text-xl font-bold text-foreground">{t("historyPage.title")}</h1>
         <div className="flex flex-wrap items-center gap-2">
           {isFiltered && (
             <Button
@@ -827,7 +839,7 @@ export default function HistoryPage() {
               className="text-muted-foreground gap-1 h-8 px-2"
             >
               <X size={14} />
-              Limpar
+              {t("historyPage.clear")}
             </Button>
           )}
           <Button
@@ -840,7 +852,7 @@ export default function HistoryPage() {
             )}
           >
             <Filter size={14} />
-            Filtros
+            {t("historyPage.filters")}
           </Button>
           <Button
             variant={showExportActions ? "default" : "outline"}
@@ -852,7 +864,7 @@ export default function HistoryPage() {
             )}
           >
             <Download size={14} />
-            Exportar
+            {t("historyPage.export")}
           </Button>
         </div>
       </div>
@@ -866,7 +878,7 @@ export default function HistoryPage() {
             className="h-10 gap-2"
           >
             <Download size={15} />
-            {exportFormat === "csv" ? "A gerar..." : "CSV"}
+            {exportFormat === "csv" ? t("historyPage.generating") : "CSV"}
           </Button>
           <Button
             variant="outline"
@@ -875,7 +887,7 @@ export default function HistoryPage() {
             className="h-10 gap-2"
           >
             <FileText size={15} />
-            {exportFormat === "pdf" ? "A gerar..." : "PDF"}
+            {exportFormat === "pdf" ? t("historyPage.generating") : "PDF"}
           </Button>
         </div>
       )}
@@ -891,7 +903,7 @@ export default function HistoryPage() {
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          Lista de Registos
+          {t("historyPage.recordList")}
         </button>
         <button
           onClick={() => setViewTab("evolution")}
@@ -902,7 +914,7 @@ export default function HistoryPage() {
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          Evolução Emocional
+          {t("historyPage.emotionalEvolution")}
         </button>
       </div>
 
@@ -912,20 +924,20 @@ export default function HistoryPage() {
           {/* Animal filter */}
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-              Animal
+              {t("historyPage.animal")}
             </p>
             <Select
               value={animalIdFilter ? String(animalIdFilter) : "all"}
               onValueChange={handleAnimalFilter}
             >
               <SelectTrigger className="w-full bg-secondary border-border">
-                <SelectValue placeholder="Todos os animais" />
+                <SelectValue placeholder={t("historyPage.allAnimals")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">
                   <span className="inline-flex items-center gap-2">
                     <PawPrint size={14} />
-                    Todos os animais
+                    {t("historyPage.allAnimals")}
                   </span>
                 </SelectItem>
                 {animals.map((animal) => (
@@ -940,12 +952,12 @@ export default function HistoryPage() {
           {/* State filter */}
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-              Estado emocional
+              {t("historyPage.filterState")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {ALL_STATES.map((s) => (
                 <button
-                  key={s}
+                   key={s}
                   onClick={() => {
                     setStateFilter(s);
                     setPage(1);
@@ -958,7 +970,7 @@ export default function HistoryPage() {
                   )}
                 >
                   {s !== "all" && STATE_EMOJIS[s as EmotionalState]}{" "}
-                  {STATE_FILTER_LABELS[s]}
+                  {s === "all" ? t("historyPage.allStates") : (t(`states.${s}` as any) || STATE_LABELS[s as EmotionalState])}
                 </button>
               ))}
             </div>
@@ -967,7 +979,7 @@ export default function HistoryPage() {
           {/* Date range */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">De</label>
+              <label className="text-xs text-muted-foreground">{t("historyPage.dateFrom")}</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -979,7 +991,7 @@ export default function HistoryPage() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Até</label>
+              <label className="text-xs text-muted-foreground">{t("historyPage.dateTo")}</label>
               <input
                 type="date"
                 value={dateTo}
@@ -995,13 +1007,13 @@ export default function HistoryPage() {
           {/* Quick period presets */}
           <div className="pt-2 border-t border-border/50">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-              Período Rápido
+              {t("historyPage.quickPeriod")}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: "7 Dias", days: 7 },
-                { label: "30 Dias", days: 30 },
-                { label: "3 Meses", days: 90 },
+                { label: t("historyPage.7days"), days: 7 },
+                { label: t("historyPage.30days"), days: 30 },
+                { label: t("historyPage.90days"), days: 90 },
               ].map((p) => (
                 <Button
                   key={p.label}
@@ -1044,17 +1056,17 @@ export default function HistoryPage() {
           {stateFilter !== "all" && (
             <Badge variant="secondary" className="text-xs gap-1">
               {STATE_EMOJIS[stateFilter as EmotionalState]}{" "}
-              {STATE_LABELS[stateFilter as EmotionalState]}
+              {t(`states.${stateFilter}` as any) || STATE_LABELS[stateFilter as EmotionalState]}
             </Badge>
           )}
           {dateFrom && (
             <Badge variant="secondary" className="text-xs">
-              De: {dateFrom}
+              {t("historyPage.dateFrom")}: {dateFrom}
             </Badge>
           )}
           {dateTo && (
             <Badge variant="secondary" className="text-xs">
-              Até: {dateTo}
+              {t("historyPage.dateTo")}: {dateTo}
             </Badge>
           )}
         </div>
@@ -1098,7 +1110,7 @@ export default function HistoryPage() {
                 className="gap-1"
               >
                 <ChevronLeft size={16} />
-                Anterior
+                {t("historyPage.previous")}
               </Button>
               <span className="text-sm text-muted-foreground">
                 {page} / {totalPages}
@@ -1110,7 +1122,7 @@ export default function HistoryPage() {
                 disabled={page === totalPages}
                 className="gap-1"
               >
-                Seguinte
+                {t("historyPage.next")}
                 <ChevronRight size={16} />
               </Button>
             </div>
@@ -1119,14 +1131,14 @@ export default function HistoryPage() {
           {/* Total count */}
           {total > 0 && (
             <p className="text-xs text-muted-foreground text-center">
-              {total} {total === 1 ? "registo" : "registos"} no total
+              {total} {total === 1 ? t("historyPage.record") : t("historyPage.records")} {t("historyPage.inTotal")}
             </p>
           )}
         </>
       ) : (
         <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Evolução de Estados Emocionais
+            {t("historyPage.emotionalEvolutionTitle")}
           </h2>
           
           {chartEventsQuery.isLoading ? (
@@ -1135,7 +1147,7 @@ export default function HistoryPage() {
             </div>
           ) : chartData.length === 0 ? (
             <div className="py-24 text-center text-muted-foreground text-sm">
-              Sem classificações no período selecionado
+              {t("historyPage.noClassificationsPeriod")}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={320}>
@@ -1166,10 +1178,10 @@ export default function HistoryPage() {
                       <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-xl space-y-1">
                         <p className="text-muted-foreground">{data.date}</p>
                         <p className="font-bold text-foreground">
-                          Estado: {data.emoji} {data.stateName}
+                          {t("historyPage.tableState")}: {data.emoji} {data.stateName}
                         </p>
                         <p className="text-primary font-semibold">
-                          Confiança: {data.confidence}%
+                          {t("historyPage.tableConf")}: {data.confidence}%
                         </p>
                       </div>
                     );

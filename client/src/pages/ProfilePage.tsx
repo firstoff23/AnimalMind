@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Plus, Check, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/hooks/useLanguage";
 import {
   RadarChart,
   PolarGrid,
@@ -39,6 +40,7 @@ function AnimalCard({
   active: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useLanguage();
   return (
     <button
       onClick={onSelect}
@@ -54,11 +56,13 @@ function AnimalCard({
       <p className="font-semibold text-sm text-foreground truncate">{animal.name}</p>
       <p className="text-xs text-muted-foreground truncate">{animal.breed ?? "—"}</p>
       {animal.age !== null && (
-        <p className="text-xs text-muted-foreground">{animal.age} anos</p>
+        <p className="text-xs text-muted-foreground">
+          {animal.age} {animal.age === 1 ? t("profilePage.year") : t("profilePage.years")}
+        </p>
       )}
       {active && (
         <Badge className="mt-2 text-[10px] px-1.5 py-0.5 bg-primary text-primary-foreground">
-          <Check size={10} className="mr-0.5" /> Activo
+          <Check size={10} className="mr-0.5" /> {t("profilePage.active")}
         </Badge>
       )}
     </button>
@@ -68,6 +72,7 @@ function AnimalCard({
 // ─── Weekly Stats Mini Chart ──────────────────────────────────────────────────
 
 function WeeklyChart({ animalId }: { animalId: number }) {
+  const { t } = useLanguage();
   const { data: events = [] } = trpc.animals.weeklyStats.useQuery({ animalId });
 
   const counts: Record<EmotionalState, number> = {
@@ -87,7 +92,7 @@ function WeeklyChart({ animalId }: { animalId: number }) {
   if (events.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-        Sem dados esta semana
+        {t("dashboardPage.noRecords")}
       </div>
     );
   }
@@ -124,6 +129,7 @@ function WeeklyChart({ animalId }: { animalId: number }) {
 // ─── Add Animal Form ──────────────────────────────────────────────────────────
 
 function AddAnimalForm({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [species, setSpecies] = useState<"dog" | "cat">("dog");
   const [age, setAge] = useState("");
@@ -155,6 +161,9 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const [color, setColor] = useState("");
   const [coat, setCoat] = useState<"short" | "medium" | "long" | "">("");
   const [microchipNumber, setMicrochipNumber] = useState("");
+  const [height, setHeight] = useState("");
+  const [tail, setTail] = useState<"long" | "short" | "docked" | "tailless" | "">("");
+  const [specialMarkings, setSpecialMarkings] = useState("");
 
   // Helper to handle selecting a breed
   const handleSelectBreedHelper = (breedName: string, breedList: string[]) => {
@@ -210,7 +219,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   const addMutation = trpc.animals.add.useMutation({
     onSuccess: () => {
-      toast.success("Animal adicionado com sucesso!");
+      toast.success(t("profilePage.saveSuccess"));
       if (predictionInfo) {
         const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
         saveBreedFeedbackMutation.mutate({
@@ -223,12 +232,12 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
       utils.animals.list.invalidate();
       onClose();
     },
-    onError: () => toast.error("Erro ao adicionar animal."),
+    onError: () => toast.error(t("profilePage.saveError")),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return toast.error("O nome é obrigatório.");
+    if (!name.trim()) return toast.error(t("profilePage.saveError")); // Or a generic validation toast
     const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
     addMutation.mutate({
       name: name.trim(),
@@ -240,6 +249,9 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
       color: color.trim() || undefined,
       coat: coat || undefined,
       microchipNumber: microchipNumber.trim() || undefined,
+      height: height.trim() || undefined,
+      tail: tail || undefined,
+      specialMarkings: specialMarkings.trim() || undefined,
     });
   };
 
@@ -318,7 +330,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4 page-enter">
-      <h3 className="font-semibold text-foreground">Adicionar Animal</h3>
+      <h3 className="font-semibold text-foreground">{t("profilePage.addAnimal")}</h3>
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Species toggle */}
         <div className="flex gap-2">
@@ -334,13 +346,13 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
                   : "border-border text-muted-foreground hover:border-primary/50"
               )}
             >
-              {s === "dog" ? "🐕 Cão" : "🐈 Gato"}
+              {s === "dog" ? `🐕 ${t("profilePage.speciesDog")}` : `🐈 ${t("profilePage.speciesCat")}`}
             </button>
           ))}
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="name" className="text-xs text-muted-foreground">Nome *</Label>
+          <Label htmlFor="name" className="text-xs text-muted-foreground">{t("profilePage.name")} *</Label>
           <Input
             id="name"
             value={name}
@@ -352,7 +364,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
         {/* Breed select with photo ID button */}
         <div className="space-y-1">
-          <Label htmlFor="breed" className="text-xs text-muted-foreground">Raça</Label>
+          <Label htmlFor="breed" className="text-xs text-muted-foreground">{t("profilePage.breed")}</Label>
           <div className="flex gap-2">
             <select
               id="breed"
@@ -365,11 +377,11 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
               }}
               className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border flex-1"
             >
-              <option value="">Indefinida / Desconhecida</option>
+              <option value="">{t("profilePage.breedPlaceholder")}</option>
               {breeds.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
-              <option value="other">Outra (digitar...)</option>
+              <option value="other">{t("profilePage.breedPlaceholder") === "Indefinida / Desconhecida" ? "Outra (digitar...)" : "Other (type...)"}</option>
             </select>
 
             {/* Hidden file input */}
@@ -388,7 +400,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
               disabled={identifyLoading}
               onClick={() => fileInputRef.current?.click()}
               className="shrink-0 gap-1.5 border-primary/40 text-primary hover:bg-primary/10 px-3"
-              title="Identificar raça por foto"
+              title={t("profilePage.identifyBreed")}
             >
               {identifyLoading ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -396,7 +408,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 <Camera size={14} />
               )}
               <span className="hidden sm:inline text-xs">
-                {identifyLoading ? "A identificar…" : "📷 Identificar"}
+                {identifyLoading ? t("common.loading") : `📷 ${t("profilePage.identifyBreed")}`}
               </span>
             </Button>
           </div>
@@ -406,7 +418,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
             <Input
               value={customBreed}
               onChange={(e) => setCustomBreed(e.target.value)}
-              placeholder="Digite a raça..."
+              placeholder={t("profilePage.breed")}
               className="bg-secondary border-border mt-1.5"
             />
           )}
@@ -421,7 +433,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
               />
               {identifyLoading && (
                 <p className="text-xs text-muted-foreground animate-pulse">
-                  A analisar foto com IA…
+                  {t("profilePage.identifyBreedDesc")}
                 </p>
               )}
             </div>
@@ -431,7 +443,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
           {breedSuggestions.length > 0 && (
             <div className="mt-2 space-y-1">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">
-                Sugestões (clique para selecionar)
+                {t("profilePage.identifyBreedDesc") === "A identificar..." ? "Sugestões (clique para selecionar)" : "Suggestions (click to select)"}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {breedSuggestions.map((s, i) => (
@@ -462,7 +474,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="age" className="text-xs text-muted-foreground">Idade (anos)</Label>
+            <Label htmlFor="age" className="text-xs text-muted-foreground">{t("profilePage.age")}</Label>
             <Input
               id="age"
               type="number"
@@ -475,7 +487,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="color" className="text-xs text-muted-foreground">Cor</Label>
+            <Label htmlFor="color" className="text-xs text-muted-foreground">{t("profilePage.color")}</Label>
             <Input
               id="color"
               value={color}
@@ -488,7 +500,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
         <div className="grid grid-cols-1 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="dateOfBirth" className="text-xs text-muted-foreground">Data de Nascimento</Label>
+            <Label htmlFor="dateOfBirth" className="text-xs text-muted-foreground">{t("profilePage.dateOfBirth")}</Label>
             <Input
               id="dateOfBirth"
               type="date"
@@ -500,12 +512,12 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Sexo</Label>
+          <Label className="text-xs text-muted-foreground">{t("profilePage.sex")}</Label>
           <div className="flex gap-2">
             {([
-              { value: "male", label: "♂️ Macho" },
-              { value: "female", label: "♀️ Fêmea" },
-              { value: "unknown", label: "❓ Não definido" }
+              { value: "male", label: `♂️ ${t("profilePage.sexMale")}` },
+              { value: "female", label: `♀️ ${t("profilePage.sexFemale")}` },
+              { value: "unknown", label: `❓ ${t("profilePage.sexUnknown")}` }
             ] as const).map((s) => (
               <button
                 key={s.value}
@@ -525,12 +537,12 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Pelagem</Label>
+          <Label className="text-xs text-muted-foreground">{t("profilePage.coat")}</Label>
           <div className="flex gap-2">
             {([
-              { value: "short", label: "Curta" },
-              { value: "medium", label: "Média" },
-              { value: "long", label: "Comprida" }
+              { value: "short", label: t("profilePage.coatShort") },
+              { value: "medium", label: t("profilePage.coatMedium") },
+              { value: "long", label: t("profilePage.coatLong") }
             ] as const).map((c) => (
               <button
                 key={c.value}
@@ -550,13 +562,52 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="microchipNumber" className="text-xs text-muted-foreground">Número de Microchip</Label>
+          <Label htmlFor="microchipNumber" className="text-xs text-muted-foreground">{t("profilePage.microchip")}</Label>
           <Input
             id="microchipNumber"
             value={microchipNumber}
             onChange={(e) => setMicrochipNumber(e.target.value.slice(0, 15))}
             placeholder="Ex: 900115000678234"
             className="bg-secondary border-border"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="height" className="text-xs text-muted-foreground">{t("profilePage.height")}</Label>
+            <Input
+              id="height"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+              placeholder="Ex: 45"
+              className="bg-secondary border-border"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="tail" className="text-xs text-muted-foreground">{t("profilePage.tail")}</Label>
+            <select
+              id="tail"
+              value={tail}
+              onChange={(e) => setTail(e.target.value as any)}
+              className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border text-foreground"
+            >
+              <option value="">{t("profilePage.tail")}</option>
+              <option value="long">{t("profilePage.tailLong")}</option>
+              <option value="short">{t("profilePage.tailShort")}</option>
+              <option value="docked">{t("profilePage.tailDocked")}</option>
+              <option value="tailless">{t("profilePage.tailTailless")}</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="specialMarkings" className="text-xs text-muted-foreground">{t("profilePage.specialMarkings")}</Label>
+          <textarea
+            id="specialMarkings"
+            value={specialMarkings}
+            onChange={(e) => setSpecialMarkings(e.target.value)}
+            placeholder="Sinais particulares, cicatrizes, manchas..."
+            className="w-full text-sm p-3 rounded-md bg-secondary border border-border text-foreground min-h-[60px] focus:outline-none"
           />
         </div>
 
@@ -568,7 +619,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
             className="flex-1"
             onClick={onClose}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -576,7 +627,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
             className="flex-1 bg-primary text-primary-foreground"
             disabled={addMutation.isPending}
           >
-            {addMutation.isPending ? "A guardar…" : "Guardar"}
+            {addMutation.isPending ? t("common.loading") : t("common.save")}
           </Button>
         </div>
       </form>
@@ -588,6 +639,7 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 // ─── Profile Page ─────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
+  const { t } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [, setLocation] = useLocation();
   const { data: animals = [] } = trpc.animals.list.useQuery();
@@ -606,14 +658,14 @@ export default function ProfilePage() {
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">Perfil do Animal</h1>
+        <h1 className="text-xl font-bold text-foreground">{t("profilePage.title")}</h1>
         <Button
           size="sm"
           onClick={() => setShowForm((v) => !v)}
           className="gap-1.5 bg-primary text-primary-foreground"
         >
           <Plus size={16} />
-          Adicionar
+          {t("common.add")}
         </Button>
       </div>
 
@@ -624,7 +676,7 @@ export default function ProfilePage() {
       {animals.length > 0 ? (
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">
-            Seleccionar animal
+            {t("profilePage.selectAnimal")}
           </p>
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
             {animals.map((animal) => (
@@ -641,14 +693,14 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
           <span className="text-5xl">🐾</span>
           <p className="text-muted-foreground text-sm">
-            Ainda não tem animais registados.
+            {t("profilePage.noAnimals")}
           </p>
           <Button
             size="sm"
             onClick={() => setShowForm(true)}
             className="bg-primary text-primary-foreground"
           >
-            Adicionar primeiro animal
+            {t("profilePage.addFirst")}
           </Button>
         </div>
       )}
@@ -657,7 +709,7 @@ export default function ProfilePage() {
       {activeAnimal && (
         <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Distribuição semanal — {activeAnimal.name}
+            {t("profilePage.weeklyDistribution")} — {activeAnimal.name}
           </h2>
           <WeeklyChart animalId={activeAnimal.id} />
         </div>
@@ -674,8 +726,8 @@ export default function ProfilePage() {
               <div>
                 <p className="font-bold text-foreground">{activeAnimal.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {activeAnimal.breed ?? "Raça desconhecida"}
-                  {activeAnimal.age !== null && ` · ${activeAnimal.age} anos`}
+                  {activeAnimal.breed ?? t("profilePage.unknownBreed")}
+                  {activeAnimal.age !== null && ` · ${activeAnimal.age} ${activeAnimal.age === 1 ? t("profilePage.year") : t("profilePage.years")}`}
                 </p>
               </div>
             </div>
@@ -685,20 +737,20 @@ export default function ProfilePage() {
               onClick={() => setLocation(`/animal/${activeAnimal.id}`)}
               className="gap-1 bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary text-xs"
             >
-              Ver Detalhes
+              {t("profilePage.viewDetails")}
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-secondary rounded-xl p-3 text-center">
-              <p className="text-xs text-muted-foreground">Espécie</p>
+              <p className="text-xs text-muted-foreground">{t("profilePage.species")}</p>
               <p className="font-semibold text-sm">
-                {activeAnimal.species === "dog" ? "Cão" : "Gato"}
+                {activeAnimal.species === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
               </p>
             </div>
             <div className="bg-secondary rounded-xl p-3 text-center">
-              <p className="text-xs text-muted-foreground">Idade</p>
+              <p className="text-xs text-muted-foreground">{t("profilePage.age").split(" ")[0]}</p>
               <p className="font-semibold text-sm">
-                {activeAnimal.age !== null ? `${activeAnimal.age} anos` : "—"}
+                {activeAnimal.age !== null ? `${activeAnimal.age} ${activeAnimal.age === 1 ? t("profilePage.year") : t("profilePage.years")}` : "—"}
               </p>
             </div>
           </div>

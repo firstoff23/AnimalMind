@@ -52,7 +52,7 @@ jobs:
           FAST_API_BACKEND_URL: http://localhost:8000
 
       - name: Cleanup test data
-        run: node scripts/cleanup-test-data.js
+        run: node scripts/cleanup-test-data.cjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
