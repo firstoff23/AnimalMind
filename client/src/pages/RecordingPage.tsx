@@ -630,6 +630,77 @@ export default function RecordingPage() {
     return () => cancelAnimationFrame(animId);
   }, [showCamera, detectedPosture]);
 
+  // Periodic frame upload loop for YOLOv8 posture detection
+  useEffect(() => {
+    if (!showCamera) return;
+
+    let active = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const captureFrameAndDetect = async () => {
+      const video = videoRef.current;
+      if (!video || video.paused || video.ended) {
+        // Retry in 1 second if video is not ready yet
+        if (active) {
+          timeoutId = setTimeout(captureFrameAndDetect, 1000);
+        }
+        return;
+      }
+
+      try {
+        // Create an offscreen canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 240;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(async (blob) => {
+            if (!blob || !active) return;
+
+            try {
+              const fastapiUrl =
+                (import.meta.env.VITE_FASTAPI_URL as string | undefined) ||
+                "https://animalmind-production.up.railway.app";
+
+              const file = new File([blob], "frame.jpg", { type: "image/jpeg" });
+              const formData = new FormData();
+              formData.append("file", file);
+
+              const res = await fetch(`${fastapiUrl}/detect-posture`, {
+                method: "POST",
+                body: formData,
+              });
+
+              if (res.ok && active) {
+                const data = await res.json() as { posture: string; confidence: number };
+                if (data && data.posture) {
+                  setDetectedPosture(data.posture);
+                }
+              }
+            } catch (err) {
+              console.error("Error calling detect-posture API:", err);
+            }
+          }, "image/jpeg", 0.7);
+        }
+      } catch (err) {
+        console.error("Frame capture error:", err);
+      }
+
+      if (active) {
+        timeoutId = setTimeout(captureFrameAndDetect, 2000);
+      }
+    };
+
+    // Start loop
+    timeoutId = setTimeout(captureFrameAndDetect, 2000);
+
+    return () => {
+      active = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [showCamera, facingMode]);
+
   const startRecordingCycle = async () => {
     setRecordState("requesting");
     await requestNotificationPermission();

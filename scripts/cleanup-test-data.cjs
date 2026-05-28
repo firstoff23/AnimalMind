@@ -96,38 +96,24 @@ async function runCleanup() {
     const testAnimalIds = testAnimals.map((a) => a.id);
     if (testAnimalIds.length > 0) {
       try {
-        const { count: vCount } = await supabase.from("vaccinations").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        const { count: vCount } = await supabase.from("vaccines").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
         deletedVaccinationsCount = vCount || 0;
       } catch (err) {
         console.error("Erro a contar vacinas:", err.message);
       }
 
       try {
-        const { count: dCount } = await supabase.from("dewormings").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
-        deletedDewormingsCount = dCount || 0;
+        const { data: records, error: rError } = await supabase.from("health_records").select("record_type").in("animal_id", testAnimalIds);
+        if (!rError && records) {
+          deletedDewormingsCount = records.filter(r => r.record_type === "deworming").length;
+          deletedTestsCount = records.filter(r => r.record_type === "diagnostic_test").length;
+          deletedTreatmentsCount = records.filter(r => r.record_type === "other_treatment").length;
+          deletedLicensingCount = records.filter(r => r.record_type === "licensing").length;
+        } else if (rError) {
+          throw rError;
+        }
       } catch (err) {
-        console.error("Erro a contar desparasitacoes:", err.message);
-      }
-
-      try {
-        const { count: tCount } = await supabase.from("diagnostic_tests").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
-        deletedTestsCount = tCount || 0;
-      } catch (err) {
-        console.error("Erro a contar testes:", err.message);
-      }
-
-      try {
-        const { count: trCount } = await supabase.from("other_treatments").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
-        deletedTreatmentsCount = trCount || 0;
-      } catch (err) {
-        console.error("Erro a contar tratamentos:", err.message);
-      }
-
-      try {
-        const { count: lCount } = await supabase.from("licensing").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
-        deletedLicensingCount = lCount || 0;
-      } catch (err) {
-        console.error("Erro a contar licenciamento:", err.message);
+        console.error("Erro a contar registos clinicos:", err.message);
       }
     }
 

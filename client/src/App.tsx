@@ -25,6 +25,7 @@ import AnimalDetailPage from "./pages/AnimalDetailPage";
 import VetPage from "./pages/VetPage";
 import VetDashboard from "./pages/VetDashboard";
 import FamilyDashboard from "./pages/FamilyDashboard";
+import HealthPage from "./pages/HealthPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -48,6 +49,7 @@ function Router() {
           {/* Protected routes */}
           <Route path="/" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
           <Route path="/perfil" component={(props) => <ProtectedRoute component={ProfilePage} {...props} />} />
+          <Route path="/health" component={(props) => <ProtectedRoute component={HealthPage} {...props} />} />
           <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />
           <Route path="/historico" component={(props) => <ProtectedRoute component={HistoryPage} {...props} />} />
           <Route path="/dashboard" component={(props) => <ProtectedRoute component={DashboardPage} {...props} />} />

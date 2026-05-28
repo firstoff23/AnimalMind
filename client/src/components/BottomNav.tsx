@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Mic, PawPrint, History, BarChart2, Settings } from "lucide-react";
+import { Mic, PawPrint, History, BarChart2, Settings, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -7,6 +7,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 const NAV_ITEMS = [
   { path: "/",          icon: Mic,       key: "recording" },
   { path: "/perfil",    icon: PawPrint,  key: "profile" },
+  { path: "/health",    icon: Heart,     key: "health" },
   { path: "/historico", icon: History,   key: "history" },
   { path: "/dashboard", icon: BarChart2, key: "dashboard" },
   { path: "/definicoes",icon: Settings,  key: "settings" },

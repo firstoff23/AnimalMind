@@ -2513,3 +2513,143 @@ export async function deleteLicensing(id: number) {
   if (error) throw error;
   return { success: true };
 }
+
+// ─── Health records (Consolidated) and Vaccines V2 ────────────────────────────
+
+export function mapDbVaccine(v: any) {
+  if (!v) return null;
+  return {
+    id: Number(v.id),
+    animalId: Number(v.animal_id),
+    vaccineName: v.vaccine_name,
+    vaccineType: v.vaccine_type as 'rabies' | 'other',
+    dateAdministered: v.date_administered,
+    batchNumber: v.batch_number ?? null,
+    veterinarian: v.veterinarian ?? null,
+    nextDueDate: v.next_due_date ?? null,
+    createdAt: v.created_at ? new Date(v.created_at) : null,
+  };
+}
+
+export async function getVaccines(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("vaccines")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("date_administered", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbVaccine);
+}
+
+export async function addVaccine(data: {
+  animalId: number;
+  vaccineName: string;
+  vaccineType: 'rabies' | 'other';
+  dateAdministered: string;
+  batchNumber?: string | null;
+  veterinarian?: string | null;
+  nextDueDate?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("vaccines")
+    .insert([{
+      animal_id: data.animalId,
+      vaccine_name: data.vaccineName,
+      vaccine_type: data.vaccineType,
+      date_administered: data.dateAdministered,
+      batch_number: data.batchNumber ?? null,
+      veterinarian: data.veterinarian ?? null,
+      next_due_date: data.nextDueDate ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbVaccine(result);
+}
+
+export async function deleteVaccine(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("vaccines")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}
+
+export function mapDbHealthRecord(r: any) {
+  if (!r) return null;
+  return {
+    id: Number(r.id),
+    animalId: Number(r.animal_id),
+    recordType: r.record_type as 'deworming' | 'diagnostic_test' | 'other_treatment' | 'licensing' | 'notes',
+    date: r.date,
+    product: r.product ?? null,
+    dosage: r.dosage ?? null,
+    result: r.result ?? null,
+    category: r.category ?? null,
+    notes: r.notes ?? null,
+    licenseNumber: r.license_number ?? null,
+    issuingAuthority: r.issuing_authority ?? null,
+    nextDueDate: r.next_due_date ?? null,
+    createdAt: r.created_at ? new Date(r.created_at) : null,
+  };
+}
+
+export async function getHealthRecords(animalId: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("health_records")
+    .select("*")
+    .eq("animal_id", animalId)
+    .order("date", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapDbHealthRecord);
+}
+
+export async function addHealthRecord(data: {
+  animalId: number;
+  recordType: 'deworming' | 'diagnostic_test' | 'other_treatment' | 'licensing' | 'notes';
+  date: string;
+  product?: string | null;
+  dosage?: string | null;
+  result?: string | null;
+  category?: string | null;
+  notes?: string | null;
+  licenseNumber?: string | null;
+  issuingAuthority?: string | null;
+  nextDueDate?: string | null;
+}) {
+  const supabase = getSupabase();
+  const { data: result, error } = await supabase
+    .from("health_records")
+    .insert([{
+      animal_id: data.animalId,
+      record_type: data.recordType,
+      date: data.date,
+      product: data.product ?? null,
+      dosage: data.dosage ?? null,
+      result: data.result ?? null,
+      category: data.category ?? null,
+      notes: data.notes ?? null,
+      license_number: data.licenseNumber ?? null,
+      issuing_authority: data.issuingAuthority ?? null,
+      next_due_date: data.nextDueDate ?? null,
+    }])
+    .select()
+    .single();
+  if (error) throw error;
+  return mapDbHealthRecord(result);
+}
+
+export async function deleteHealthRecord(id: number) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("health_records")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+  return { success: true };
+}

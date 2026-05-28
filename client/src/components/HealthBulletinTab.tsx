@@ -99,11 +99,8 @@ export default function HealthBulletinTab({
   });
 
   // Backend queries
-  const { data: vaccinations = [], refetch: refetchVaccines } = trpc.animals.getVaccinations.useQuery({ animalId });
-  const { data: dewormings = [], refetch: refetchDewormings } = trpc.animals.getDewormings.useQuery({ animalId });
-  const { data: tests = [], refetch: refetchTests } = trpc.animals.getDiagnosticTests.useQuery({ animalId });
-  const { data: treatments = [], refetch: refetchTreatments } = trpc.animals.getOtherTreatments.useQuery({ animalId });
-  const { data: licenses = [], refetch: refetchLicenses } = trpc.animals.getLicensing.useQuery({ animalId });
+  const { data: vaccinations = [], refetch: refetchVaccines } = trpc.health.getVaccines.useQuery({ animalId });
+  const { data: healthRecords = [], refetch: refetchHealthRecords } = trpc.health.getHealthRecords.useQuery({ animalId });
 
   // Backend mutations
   const updateAnimalMutation = trpc.animals.update.useMutation({
@@ -115,7 +112,7 @@ export default function HealthBulletinTab({
     onError: () => toast.error(t("profilePage.saveError")),
   });
 
-  const addVaccineMutation = trpc.animals.addVaccination.useMutation({
+  const addVaccineMutation = trpc.health.addVaccine.useMutation({
     onSuccess: () => {
       toast.success(language === "pt" ? "Vacina registada!" : "Vaccine registered!");
       setActiveForm(null);
@@ -124,76 +121,115 @@ export default function HealthBulletinTab({
     onError: () => toast.error(t("common.error")),
   });
 
-  const deleteVaccineMutation = trpc.animals.deleteVaccination.useMutation({
+  const deleteVaccineMutation = trpc.health.deleteVaccine.useMutation({
     onSuccess: () => {
       toast.success(language === "pt" ? "Vacina eliminada." : "Vaccine deleted.");
       refetchVaccines();
     },
   });
 
-  const addDewormingMutation = trpc.animals.addDeworming.useMutation({
+  const addHealthRecordMutation = trpc.health.addHealthRecord.useMutation({
     onSuccess: () => {
-      toast.success(language === "pt" ? "Desparasitação registada!" : "Deworming registered!");
+      toast.success(language === "pt" ? "Registo clínico adicionado!" : "Clinical record added!");
       setActiveForm(null);
-      refetchDewormings();
+      refetchHealthRecords();
     },
     onError: () => toast.error(t("common.error")),
   });
 
-  const deleteDewormingMutation = trpc.animals.deleteDeworming.useMutation({
+  const deleteHealthRecordMutation = trpc.health.deleteHealthRecord.useMutation({
     onSuccess: () => {
       toast.success(language === "pt" ? "Registo eliminado." : "Record deleted.");
-      refetchDewormings();
+      refetchHealthRecords();
     },
   });
 
-  const addTestMutation = trpc.animals.addDiagnosticTest.useMutation({
-    onSuccess: () => {
-      toast.success(language === "pt" ? "Teste registado!" : "Test registered!");
-      setActiveForm(null);
-      refetchTests();
+  // Map sub-mutations to unified health records mutations
+  const addDewormingMutation = {
+    mutate: (data: { animalId: number; type: string; product: string; dosage?: string | null; dateAdministered: string; nextDueDate?: string | null }) => {
+      addHealthRecordMutation.mutate({
+        animalId: data.animalId,
+        recordType: "deworming",
+        date: data.dateAdministered,
+        product: data.product,
+        dosage: data.dosage,
+        category: data.type,
+        nextDueDate: data.nextDueDate,
+      });
     },
-    onError: () => toast.error(t("common.error")),
-  });
+    isPending: addHealthRecordMutation.isPending,
+  };
 
-  const deleteTestMutation = trpc.animals.deleteDiagnosticTest.useMutation({
-    onSuccess: () => {
-      toast.success(language === "pt" ? "Teste eliminado." : "Test deleted.");
-      refetchTests();
+  const deleteDewormingMutation = {
+    mutate: (data: { id: number; animalId: number }) => {
+      deleteHealthRecordMutation.mutate({ id: data.id });
     },
-  });
+    isPending: deleteHealthRecordMutation.isPending,
+  };
 
-  const addTreatmentMutation = trpc.animals.addOtherTreatment.useMutation({
-    onSuccess: () => {
-      toast.success(language === "pt" ? "Tratamento registado!" : "Treatment registered!");
-      setActiveForm(null);
-      refetchTreatments();
+  const addTestMutation = {
+    mutate: (data: { animalId: number; testName: string; datePerformed: string; result: string; notes?: string | null }) => {
+      addHealthRecordMutation.mutate({
+        animalId: data.animalId,
+        recordType: "diagnostic_test",
+        date: data.datePerformed,
+        product: data.testName,
+        result: data.result,
+        notes: data.notes,
+      });
     },
-    onError: () => toast.error(t("common.error")),
-  });
+    isPending: addHealthRecordMutation.isPending,
+  };
 
-  const deleteTreatmentMutation = trpc.animals.deleteOtherTreatment.useMutation({
-    onSuccess: () => {
-      toast.success(language === "pt" ? "Tratamento eliminado." : "Treatment deleted.");
-      refetchTreatments();
+  const deleteTestMutation = {
+    mutate: (data: { id: number; animalId: number }) => {
+      deleteHealthRecordMutation.mutate({ id: data.id });
     },
-  });
+    isPending: deleteHealthRecordMutation.isPending,
+  };
 
-  const addLicenseMutation = trpc.animals.addLicensing.useMutation({
-    onSuccess: () => {
-      toast.success(language === "pt" ? "Licenciamento registado!" : "Licensing registered!");
-      setActiveForm(null);
-      refetchLicenses();
+  const addTreatmentMutation = {
+    mutate: (data: { animalId: number; treatmentName: string; dateAdministered: string; notes?: string | null }) => {
+      addHealthRecordMutation.mutate({
+        animalId: data.animalId,
+        recordType: "other_treatment",
+        date: data.dateAdministered,
+        product: data.treatmentName,
+        notes: data.notes,
+      });
     },
-    onError: () => toast.error(t("common.error")),
-  });
+    isPending: addHealthRecordMutation.isPending,
+  };
 
-  const deleteLicenseMutation = trpc.animals.deleteLicensing.useMutation({
-    onSuccess: () => {
-      toast.success(language === "pt" ? "Licença eliminada." : "License deleted.");
-      refetchLicenses();
+  const deleteTreatmentMutation = {
+    mutate: (data: { id: number; animalId: number }) => {
+      deleteHealthRecordMutation.mutate({ id: data.id });
     },
-  });
+    isPending: deleteHealthRecordMutation.isPending,
+  };
+
+  const addLicenseMutation = {
+    mutate: (data: { animalId: number; licenseNumber: string; issueDate: string; expiryDate?: string | null; issuingAuthority: string; category: any; notes?: string | null }) => {
+      addHealthRecordMutation.mutate({
+        animalId: data.animalId,
+        recordType: "licensing",
+        date: data.issueDate,
+        licenseNumber: data.licenseNumber,
+        issuingAuthority: data.issuingAuthority,
+        category: data.category,
+        nextDueDate: data.expiryDate,
+        notes: data.notes,
+      });
+    },
+    isPending: addHealthRecordMutation.isPending,
+  };
+
+  const deleteLicenseMutation = {
+    mutate: (data: { id: number; animalId: number }) => {
+      deleteHealthRecordMutation.mutate({ id: data.id });
+    },
+    isPending: deleteHealthRecordMutation.isPending,
+  };
 
   // Handler for physical features form
   const handlePhysicalSubmit = (e: React.FormEvent) => {
@@ -217,6 +253,49 @@ export default function HealthBulletinTab({
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
+
+  // Derive sub-arrays from healthRecords with appropriate types matching the UI expectation
+  const dewormings = (healthRecords || [])
+    .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "deworming")
+    .map(r => ({
+      id: r.id,
+      product: r.product || "",
+      type: r.category || "internal",
+      dateAdministered: r.date,
+      dosage: r.dosage,
+      nextDueDate: r.nextDueDate,
+    }));
+
+  const tests = (healthRecords || [])
+    .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "diagnostic_test")
+    .map(r => ({
+      id: r.id,
+      testName: r.product || "",
+      datePerformed: r.date,
+      result: r.result || "",
+      notes: r.notes,
+    }));
+
+  const treatments = (healthRecords || [])
+    .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "other_treatment")
+    .map(r => ({
+      id: r.id,
+      treatmentName: r.product || "",
+      dateAdministered: r.date,
+      notes: r.notes,
+    }));
+
+  const licenses = (healthRecords || [])
+    .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "licensing")
+    .map(r => ({
+      id: r.id,
+      licenseNumber: r.licenseNumber || "",
+      issuingAuthority: r.issuingAuthority || "",
+      issueDate: r.date,
+      expiryDate: r.nextDueDate,
+      category: r.category || "companion",
+      notes: r.notes,
+    }));
 
   const activeVaccinations = (vaccinations || []).filter((v): v is NonNullable<typeof v> => v !== null);
   const activeDewormings = (dewormings || []).filter((d): d is NonNullable<typeof d> => d !== null);
@@ -444,7 +523,7 @@ export default function HealthBulletinTab({
                         </div>
                         {!animal.isShared && (
                           <button
-                            onClick={() => deleteVaccineMutation.mutate({ id: v.id, animalId })}
+                            onClick={() => deleteVaccineMutation.mutate({ id: v.id })}
                             className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                             title={t("common.delete")}
                           >
@@ -481,7 +560,7 @@ export default function HealthBulletinTab({
                         )}
                         {!animal.isShared && (
                           <button
-                            onClick={() => deleteVaccineMutation.mutate({ id: v.id, animalId })}
+                            onClick={() => deleteVaccineMutation.mutate({ id: v.id })}
                             className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                           >
                             <Trash2 size={13} />

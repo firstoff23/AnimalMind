@@ -187,3 +187,39 @@ export const licensing = mysqlTable("licensing", {
 
 export type Licensing = typeof licensing.$inferSelect;
 export type InsertLicensing = typeof licensing.$inferInsert;
+
+// ─── Health Records (Consolidated) ──────────────────────────────────────────
+export const healthRecords = mysqlTable("health_records", {
+  id: int("id").autoincrement().primaryKey(),
+  animalId: int("animal_id").notNull(),
+  recordType: varchar("record_type", { length: 50 }).notNull(), // deworming, diagnostic_test, other_treatment, licensing, notes
+  date: varchar("date", { length: 10 }).notNull(),
+  product: varchar("product", { length: 100 }),
+  dosage: varchar("dosage", { length: 100 }),
+  result: varchar("result", { length: 200 }),
+  category: varchar("category", { length: 50 }),
+  notes: text("notes"),
+  licenseNumber: varchar("license_number", { length: 100 }),
+  issuingAuthority: varchar("issuing_authority", { length: 150 }),
+  nextDueDate: varchar("next_due_date", { length: 10 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type HealthRecord = typeof healthRecords.$inferSelect;
+export type InsertHealthRecord = typeof healthRecords.$inferInsert;
+
+// ─── Vaccines ──────────────────────────────────────────────────────────────
+export const vaccines = mysqlTable("vaccines", {
+  id: int("id").autoincrement().primaryKey(),
+  animalId: int("animal_id").notNull(),
+  vaccineName: varchar("vaccine_name", { length: 100 }).notNull(),
+  vaccineType: varchar("vaccine_type", { length: 20 }).notNull(), // rabies, other
+  dateAdministered: varchar("date_administered", { length: 10 }).notNull(),
+  batchNumber: varchar("batch_number", { length: 50 }),
+  veterinarian: varchar("veterinarian", { length: 100 }),
+  nextDueDate: varchar("next_due_date", { length: 10 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Vaccine = typeof vaccines.$inferSelect;
+export type InsertVaccine = typeof vaccines.$inferInsert;

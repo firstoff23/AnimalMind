@@ -6,6 +6,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { familyRouter } from "./routers/family";
 import { vetRouter } from "./routers/vet";
+import { healthRouter } from "./routers/health";
 import {
   addAnimal,
   updateAnimal,
@@ -851,6 +852,7 @@ export const appRouter = router({
   }),
 
   vet: vetRouter,
+  health: healthRouter,
 });
 
 export type AppRouter = typeof appRouter;

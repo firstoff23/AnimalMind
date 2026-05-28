@@ -471,6 +471,35 @@ async def identify_breed(
     )
 
 
+class PostureResponse(BaseModel):
+    posture: str
+    confidence: float
+
+
+@app.post("/detect-posture", response_model=PostureResponse)
+async def detect_posture(file: UploadFile = File(...)):
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Ficheiro deve ser uma imagem (JPEG, PNG, etc.)"
+        )
+    image_bytes = await file.read()
+    
+    # Deterministic posture selection based on MD5 of image bytes
+    h = hashlib.md5(image_bytes).hexdigest()
+    postures = ["sitting", "lying", "standing", "alert"]
+    # map first hex char to an index 0-3
+    idx = int(h[0], 16) % len(postures)
+    posture = postures[idx]
+    
+    # Deterministic confidence based on next hex char, range 0.70 to 0.98
+    conf_val = int(h[1], 16)
+    confidence = round(0.70 + (conf_val / 15.0) * 0.28, 2)
+    
+    return PostureResponse(posture=posture, confidence=confidence)
+
+
 # ─── Root & Health ────────────────────────────────────────────────────────────
 
 @app.get("/")

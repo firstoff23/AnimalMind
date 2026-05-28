@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { pt } from "../locales/pt";
-import { en } from "../locales/en";
+import React, { createContext, useContext } from "react";
+import i18n from "i18next";
+import { initReactI18next, useTranslation } from "react-i18next";
+import pt from "../locales/pt.json";
+import en from "../locales/en.json";
 
 type Language = "pt" | "en";
 
@@ -12,50 +14,52 @@ interface LanguageContextProps {
 
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
 
-const translations: Record<Language, any> = { pt, en };
+// Initialize i18next
+const savedLang = (() => {
+  if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+    const saved = localStorage.getItem("cortex_lang");
+    return saved === "pt" || saved === "en" ? saved : "pt";
+  }
+  return "pt";
+})();
+
+if (!i18n.isInitialized) {
+  i18n
+    .use(initReactI18next)
+    .init({
+      resources: {
+        pt: { translation: pt },
+        en: { translation: en },
+      },
+      lng: savedLang,
+      fallbackLng: "pt",
+      interpolation: {
+        escapeValue: false, // react already safes from xss
+      },
+      react: {
+        useSuspense: false,
+      },
+    });
+}
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
-      const saved = localStorage.getItem("cortex_lang") as Language | null;
-      return saved === "pt" || saved === "en" ? saved : "pt";
-    }
-    return "pt";
-  });
+  const { t, i18n: i18nInstance } = useTranslation();
+  const language = (i18nInstance.language || "pt") as Language;
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
+    i18nInstance.changeLanguage(lang);
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       localStorage.setItem("cortex_lang", lang);
     }
   };
 
-  const t = (key: string): string => {
-    const parts = key.split(".");
-    let result = translations[language];
-
-    for (const part of parts) {
-      if (result && result[part] !== undefined) {
-        result = result[part];
-      } else {
-        // Fallback to 'pt' if the key isn't found in current language
-        let fallbackResult = translations["pt"];
-        for (const fbPart of parts) {
-          if (fallbackResult && fallbackResult[fbPart] !== undefined) {
-            fallbackResult = fallbackResult[fbPart];
-          } else {
-            return key; // return key string if absolutely not found
-          }
-        }
-        return typeof fallbackResult === "string" ? fallbackResult : key;
-      }
-    }
-
-    return typeof result === "string" ? result : key;
+  const translate = (key: string): string => {
+    const res = t(key);
+    return typeof res === "string" ? res : key;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t: translate }}>
       {children}
     </LanguageContext.Provider>
   );
