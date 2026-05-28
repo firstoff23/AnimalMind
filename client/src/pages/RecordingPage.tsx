@@ -367,6 +367,10 @@ export default function RecordingPage() {
 
   const handleToggleCamera = async () => {
     if (showCamera) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
       setShowCamera(false);
     } else {
       try {
@@ -378,12 +382,15 @@ export default function RecordingPage() {
           },
         });
         
-        // Stop stream immediately
-        stream.getTracks().forEach((track) => track.stop());
-        
+        streamRef.current = stream;
         setCameraPermissionDenied(false);
         setCameraError(null);
         setShowCamera(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((err) => console.error("Play error:", err));
+        }
       } catch (err) {
         console.error("Camera access error:", err);
         let errorMessage = "Não foi possível aceder à câmara.";
@@ -417,75 +424,72 @@ export default function RecordingPage() {
     }
   };
 
-  // Manage WebRTC stream
-  useEffect(() => {
-    if (showCamera) {
-      const initCamera = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              width: 320,
-              height: 240,
-              facingMode: { ideal: facingMode },
-            },
-          });
-          
-          streamRef.current = stream;
-          setCameraPermissionDenied(false);
-          setCameraError(null);
-          
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play().catch((err) => console.error("Play error:", err));
-          }
-        } catch (err) {
-          console.error("Camera access error:", err);
-          
-          let errorMessage = "Não foi possível aceder à câmara.";
-          let isDenied = false;
-          
-          if (err instanceof DOMException) {
-            switch (err.name) {
-              case "NotAllowedError":
-                errorMessage = "Permissão de câmara negada. Ative nas definições do browser.";
-                isDenied = true;
-                break;
-              case "NotFoundError":
-                errorMessage = "Nenhuma câmara disponível no dispositivo.";
-                break;
-              case "NotReadableError":
-                errorMessage = "A câmara está a ser utilizada por outra aplicação.";
-                break;
-              case "SecurityError":
-                errorMessage = "Acesso à câmara bloqueado por razões de segurança.";
-                break;
-              case "TypeError":
-                errorMessage = "Configuração de câmara inválida.";
-                break;
-            }
-          }
-          
-          setCameraPermissionDenied(isDenied);
-          setCameraError(errorMessage);
-          toast.error(errorMessage);
-          setShowCamera(false);
-        }
-      };
-      
-      initCamera();
-    } else {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
+  const handleSwitchCamera = async () => {
+    const newMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(newMode);
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
-    
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 320,
+          height: 240,
+          facingMode: { ideal: newMode },
+        },
+      });
+
+      streamRef.current = stream;
+      setCameraPermissionDenied(false);
+      setCameraError(null);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch((err) => console.error("Play error during switch:", err));
       }
-    };
-  }, [showCamera, facingMode]);
+    } catch (err) {
+      console.error("Camera access error during switch:", err);
+      let errorMessage = "Não foi possível aceder à câmara.";
+      let isDenied = false;
+
+      if (err instanceof DOMException) {
+        switch (err.name) {
+          case "NotAllowedError":
+            errorMessage = "Permissão de câmara negada. Ative nas definições do browser.";
+            isDenied = true;
+            break;
+          case "NotFoundError":
+            errorMessage = "Nenhuma câmara disponível no dispositivo.";
+            break;
+          case "NotReadableError":
+            errorMessage = "A câmara está a ser utilizada por outra aplicação.";
+            break;
+          case "SecurityError":
+            errorMessage = "Acesso à câmara bloqueado por razões de segurança.";
+            break;
+          case "TypeError":
+            errorMessage = "Configuração de câmara inválida.";
+            break;
+        }
+      }
+
+      setCameraPermissionDenied(isDenied);
+      setCameraError(errorMessage);
+      toast.error(errorMessage);
+      setShowCamera(false);
+    }
+  };
+
+  const videoRefCallback = (el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && streamRef.current) {
+      el.srcObject = streamRef.current;
+      el.play().catch((err) => console.error("Play error in callback ref:", err));
+    }
+  };
 
   // YOLOv8 simulated skeleton canvas loop
   useEffect(() => {
@@ -741,6 +745,10 @@ export default function RecordingPage() {
 
   useEffect(() => {
     return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
       clearAutoRecordingTimer();
       stopLiveAudio();
@@ -879,7 +887,7 @@ export default function RecordingPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setFacingMode(prev => prev === "environment" ? "user" : "environment")}
+                onClick={handleSwitchCamera}
                 className="text-xs font-semibold"
               >
                 {facingMode === "environment" ? "FRONTAL" : "TRASEIRA"}
@@ -900,7 +908,7 @@ export default function RecordingPage() {
           <div className="space-y-3 pt-2 border-t border-border/50 page-enter">
             <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-black border border-border">
               <video
-                ref={videoRef}
+                ref={videoRefCallback}
                 muted
                 playsInline
                 className={cn("w-full h-full object-cover", facingMode === "user" && "scale-x-[-1]")}
