@@ -44,6 +44,12 @@ jobs:
 
       - name: Test
         run: pnpm test
+                env:
+          SUPABASE_URL: https://test.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key-for-ci
+          SUPABASE_ANON_KEY: test-anon-key-for-ci
+          GEMINI_API_KEY: test-gemini-key-for-ci
+          FAST_API_BACKEND_URL: http://localhost:8000
 
       - name: Cleanup test data
         run: node scripts/cleanup-test-data.js
