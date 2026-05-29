@@ -42,11 +42,23 @@ if (!i18n.isInitialized) {
     });
 }
 
+import { useAppStore } from "@/store/appStore";
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t, i18n: i18nInstance } = useTranslation();
+  const storeLanguage = useAppStore((state) => state.language);
+  const setStoreLanguage = useAppStore((state) => state.setLanguage);
+  
   const language = (i18nInstance.language || "pt") as Language;
 
+  React.useEffect(() => {
+    if (storeLanguage !== language) {
+      i18nInstance.changeLanguage(storeLanguage);
+    }
+  }, [storeLanguage, language, i18nInstance]);
+
   const setLanguage = (lang: Language) => {
+    setStoreLanguage(lang);
     i18nInstance.changeLanguage(lang);
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       localStorage.setItem("cortex_lang", lang);

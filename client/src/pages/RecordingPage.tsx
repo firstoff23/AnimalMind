@@ -325,9 +325,20 @@ const SKELETON_TEMPLATES: Record<string, Record<string, Point>> = {
 
 // ─── Recording Page ───────────────────────────────────────────────────────────
 
+import { useAppStore } from "@/store/appStore";
+
 export default function RecordingPage() {
   const { t, language } = useLanguage();
+  const { cameraActive, setCamera, setRecording } = useAppStore();
+  const showCamera = cameraActive;
+  const setShowCamera = setCamera;
+
   const [recordState, setRecordState] = useState<RecordingState>("idle");
+
+  useEffect(() => {
+    setRecording(recordState === "recording");
+  }, [recordState, setRecording]);
+
   const [result, setResult] = useState<ClassifyResult | null>(null);
   const [countdown, setCountdown] = useState(3);
   const {
@@ -354,7 +365,6 @@ export default function RecordingPage() {
   const isLongPressActiveRef = useRef(false);
 
   // Vision state hooks
-  const [showCamera, setShowCamera] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [detectedPosture, setDetectedPosture] = useState<string>("sitting");
   const [detectedSpecies, setDetectedSpecies] = useState<{ species: string; confidence: number } | null>(null);
