@@ -17,7 +17,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity, AlertCircle } from "lucide-react";
+import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity as InfinityIcon, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -983,7 +983,7 @@ export default function RecordingPage() {
     if (isAutoMode) {
       return (
         <>
-          <Infinity size={40} strokeWidth={1.5} className="animate-pulse text-cyan-200" />
+          <InfinityIcon size={40} strokeWidth={1.5} className="animate-pulse text-cyan-200" />
           <span className="text-sm font-semibold tracking-wider">AUTO</span>
         </>
       );
@@ -1195,7 +1195,7 @@ export default function RecordingPage() {
               isAutoMode ? "bg-cyan-500/10 text-cyan-400" : "bg-muted text-muted-foreground"
             )}
           >
-            <Infinity size={16} />
+            <InfinityIcon size={16} />
           </div>
           <div>
             <p className="text-xs font-semibold text-foreground uppercase tracking-wider">

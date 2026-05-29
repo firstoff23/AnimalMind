@@ -6,6 +6,17 @@ import { LogOut, Moon, Sun, User, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAppStore } from "@/store/appStore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function Header() {
   const { user, signOut, isAuthenticated } = useAuth();
@@ -61,15 +72,34 @@ export function Header() {
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
           
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-            className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            {t("header.logout")}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                {t("header.logout")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Terminar sessão</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-400">
+                  Tem a certeza que deseja terminar a sua sessão? Terá de introduzir as suas credenciais novamente para aceder ao AnimalMind.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="border-slate-700 hover:bg-slate-800 text-white">
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                  Terminar Sessão
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </header>

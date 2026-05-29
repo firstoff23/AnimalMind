@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Plus, Check, Camera, Loader2 } from "lucide-react";
+import { Plus, Check, Camera, Loader2, AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import { motion } from "framer-motion";
@@ -150,6 +151,25 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
 
+  const [nameBlurred, setNameBlurred] = useState(false);
+  const [specialMarkingsBlurred, setSpecialMarkingsBlurred] = useState(false);
+  const [specialMarkings, setSpecialMarkings] = useState("");
+
+  // Validation logic (after all state declarations)
+  const isNameValid = name.trim().length > 0 && name.length <= 50;
+  const isSpecialMarkingsValid = specialMarkings.length <= 500;
+  const isFormValid = isNameValid && isSpecialMarkingsValid;
+
+  const nameError = nameBlurred && !isNameValid
+    ? (name.length > 50
+      ? "O nome do animal excede o limite permitido. O nome deve ter no máximo 50 caracteres. Por favor, abrevie ou use um nome mais curto."
+      : "O nome do animal está em branco. É necessário atribuir um nome para identificar o perfil do animal. Por favor, introduza o nome no campo.")
+    : "";
+
+  const specialMarkingsError = specialMarkingsBlurred && !isSpecialMarkingsValid
+    ? "O texto de sinais particulares excede o limite. Os sinais particulares devem ter no máximo 500 caracteres. Reduza o texto antes de guardar."
+    : "";
+
   const [predictionInfo, setPredictionInfo] = useState<{
     predictedBreed: string;
     confidence: number;
@@ -174,7 +194,8 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const [microchipNumber, setMicrochipNumber] = useState("");
   const [height, setHeight] = useState("");
   const [tail, setTail] = useState<"long" | "short" | "docked" | "tailless" | "">("");
-  const [specialMarkings, setSpecialMarkings] = useState("");
+
+
 
   // Helper to handle selecting a breed
   const handleSelectBreedHelper = (breedName: string, breedList: string[]) => {
@@ -363,14 +384,38 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="name" className="text-xs text-muted-foreground">{t("profilePage.name")} *</Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Bobi"
-            className="bg-secondary border-border"
-          />
+          <div className="flex justify-between items-center">
+            <Label htmlFor="name" className="text-xs text-muted-foreground">{t("profilePage.name")} *</Label>
+            <div className="flex items-center gap-2">
+              {isNameValid && (
+                <span className="text-emerald-400 text-[10px] flex items-center gap-0.5">
+                  <Check size={10} /> ✓
+                </span>
+              )}
+              <span className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
+                {name.length}/50
+              </span>
+            </div>
+          </div>
+          <div className="relative">
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => setNameBlurred(true)}
+              placeholder="Ex: Bobi"
+              maxLength={60}
+              className={`bg-secondary border-border ${
+                nameError ? "border-red-500 focus-visible:ring-red-500/50" : ""
+              } ${isNameValid ? "border-emerald-500/50 focus-visible:ring-emerald-500/50" : ""}`}
+            />
+          </div>
+          {nameError && (
+            <p className="text-[10px] text-red-400 font-medium leading-relaxed mt-1 flex gap-1 items-start">
+              <AlertCircle size={12} className="shrink-0 mt-0.5" />
+              <span>{nameError}</span>
+            </p>
+          )}
         </div>
 
         {/* Breed select with photo ID button */}
@@ -612,14 +657,29 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="specialMarkings" className="text-xs text-muted-foreground">{t("profilePage.specialMarkings")}</Label>
+          <div className="flex justify-between items-center">
+            <Label htmlFor="specialMarkings" className="text-xs text-muted-foreground">{t("profilePage.specialMarkings")}</Label>
+            <span className={`text-[10px] ${specialMarkings.length > 450 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
+              {specialMarkings.length}/500
+            </span>
+          </div>
           <textarea
             id="specialMarkings"
             value={specialMarkings}
             onChange={(e) => setSpecialMarkings(e.target.value)}
+            onBlur={() => setSpecialMarkingsBlurred(true)}
             placeholder="Sinais particulares, cicatrizes, manchas..."
-            className="w-full text-sm p-3 rounded-md bg-secondary border border-border text-foreground min-h-[60px] focus:outline-none"
+            maxLength={600}
+            className={`w-full text-sm p-3 rounded-md bg-secondary border text-foreground min-h-[60px] focus:outline-none ${
+              specialMarkingsError ? "border-red-500 focus:border-red-500" : "border-border"
+            }`}
           />
+          {specialMarkingsError && (
+            <p className="text-[10px] text-red-400 font-medium leading-relaxed mt-1 flex gap-1 items-start">
+              <AlertCircle size={12} className="shrink-0 mt-0.5" />
+              <span>{specialMarkingsError}</span>
+            </p>
+          )}
         </div>
 
         <div className="flex gap-2 pt-1">
@@ -635,8 +695,12 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
           <Button
             type="submit"
             size="sm"
-            className="flex-1 bg-primary text-primary-foreground"
-            disabled={addMutation.isPending}
+            disabled={addMutation.isPending || !isFormValid}
+            className={`flex-1 font-semibold transition-all ${
+              isFormValid
+                ? "bg-primary text-primary-foreground hover:bg-emerald-600 shadow-md shadow-primary/20"
+                : "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border-border"
+            }`}
           >
             {addMutation.isPending ? t("common.loading") : t("common.save")}
           </Button>
@@ -653,7 +717,7 @@ export default function ProfilePage() {
   const { t } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [, setLocation] = useLocation();
-  const { data: animals = [] } = trpc.animals.list.useQuery();
+  const { data: animals = [], isLoading, error, refetch } = trpc.animals.list.useQuery();
   const utils = trpc.useUtils();
 
   const setActiveMutation = trpc.animals.setActive.useMutation({
@@ -683,8 +747,28 @@ export default function ProfilePage() {
       {/* Add form */}
       {showForm && <AddAnimalForm onClose={() => setShowForm(false)} />}
 
-      {/* Animal cards scroll */}
-      {animals.length > 0 ? (
+      {/* Animal cards list - 4 States */}
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-32 bg-slate-800" />
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            {[1, 2, 3].map((n) => (
+              <Skeleton key={n} className="flex-shrink-0 w-36 h-28 rounded-2xl bg-slate-800" />
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake">
+          <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
+          <p className="text-sm text-foreground font-semibold">Não foi possível carregar a lista de animais.</p>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
+            Ocorreu uma falha ao comunicar com o servidor da base de dados. Por favor, verifique a sua ligação à internet e prima o botão abaixo para tentar novamente.
+          </p>
+          <Button size="sm" onClick={() => refetch()} className="bg-primary text-primary-foreground rounded-xl">
+            Tentar novamente
+          </Button>
+        </div>
+      ) : animals.length > 0 ? (
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">
             {t("profilePage.selectAnimal")}
@@ -702,17 +786,17 @@ export default function ProfilePage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 bg-secondary/10 border border-dashed border-border rounded-2xl p-6">
           <span className="text-5xl">🐾</span>
-          <p className="text-muted-foreground text-sm">
-            {t("profilePage.noAnimals")}
+          <p className="text-muted-foreground text-sm font-medium">
+            Ainda não tens animais. Adiciona o teu primeiro companheiro! 🐾
           </p>
           <Button
             size="sm"
             onClick={() => setShowForm(true)}
-            className="bg-primary text-primary-foreground"
+            className="bg-primary text-primary-foreground rounded-xl"
           >
-            {t("profilePage.addFirst")}
+            + Adicionar animal
           </Button>
         </div>
       )}

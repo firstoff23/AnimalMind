@@ -547,6 +547,8 @@ export default function HistoryPage() {
 
   const data = useAnimalEndpoint ? animalEventsQuery.data : allEventsQuery.data;
   const isLoading = useAnimalEndpoint ? animalEventsQuery.isLoading : allEventsQuery.isLoading;
+  const queryError = useAnimalEndpoint ? animalEventsQuery.error : allEventsQuery.error;
+  const refetchData = useAnimalEndpoint ? animalEventsQuery.refetch : allEventsQuery.refetch;
 
   const events = (data?.events ?? []) as HistoryEvent[];
   const total = data?.total ?? 0;
@@ -1302,8 +1304,25 @@ export default function HistoryPage() {
           {/* TanStack Table */}
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             {isLoading ? (
-              <div className="py-12 flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="p-4 space-y-2">
+                {[1,2,3,4].map(n => (
+                  <div key={n} className="flex items-center gap-3 py-3 border-b border-border/30 last:border-0">
+                    <div className="w-8 h-8 rounded-full bg-slate-800 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 space-y-1">
+                      <div className="h-3 bg-slate-800 rounded animate-pulse w-24" />
+                      <div className="h-2 bg-slate-800 rounded animate-pulse w-36" />
+                    </div>
+                    <div className="h-3 bg-slate-800 rounded animate-pulse w-10" />
+                  </div>
+                ))}
+              </div>
+            ) : queryError ? (
+              <div className="py-10 px-6 text-center space-y-3">
+                <p className="text-sm text-foreground font-semibold">Erro ao carregar histórico.</p>
+                <p className="text-xs text-muted-foreground">Falha ao comunicar com o servidor.</p>
+                <Button size="sm" onClick={() => refetchData()} className="bg-primary text-primary-foreground rounded-xl">
+                  Tentar novamente
+                </Button>
               </div>
             ) : events.length === 0 ? (
               <EmptyState filtered={isFiltered} />

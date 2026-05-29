@@ -5,6 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Users, UserPlus, Trash2, Clock, CheckCircle2, AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FamilyShareTabProps {
   animalId: number;
@@ -14,6 +24,7 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<"read" | "write">("read");
   const [, setLocation] = useLocation();
+  const [revokeTargetId, setRevokeTargetId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -66,13 +77,39 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
   };
 
   const handleRevoke = (shareId: number) => {
-    if (confirm("Tens a certeza que desejas revogar a partilha com este tutor?")) {
-      revokeMutation.mutate({ shareId, animalId });
+    setRevokeTargetId(shareId);
+  };
+
+  const handleRevokeConfirm = () => {
+    if (revokeTargetId !== null) {
+      revokeMutation.mutate({ shareId: revokeTargetId, animalId });
+      setRevokeTargetId(null);
     }
   };
 
   return (
     <div className="space-y-6 pt-4">
+      {revokeTargetId !== null && (
+        <AlertDialog open={revokeTargetId !== null} onOpenChange={(open) => !open && setRevokeTargetId(null)}>
+          <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Revogar Partilha</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-400">
+                Tem a certeza que deseja revogar o acesso deste tutor a este animal? Esta ação é irreversível.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-slate-700 hover:bg-slate-800 text-white">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleRevokeConfirm} className="bg-red-600 hover:bg-red-750 text-white border-none">
+                Revogar Acesso
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
       <div className="bg-secondary/20 border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2 text-foreground">
           <Home size={18} className="text-emerald-400" />

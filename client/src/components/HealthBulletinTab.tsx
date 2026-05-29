@@ -20,12 +20,22 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface HealthBulletinTabProps {
   animalId: number;
   species: "dog" | "cat";
   animal: any;
-  onRefreshAnimal: () => void;
+  onRefreshAnimal?: () => void;
 }
 
 export default function HealthBulletinTab({
@@ -53,6 +63,10 @@ export default function HealthBulletinTab({
 
   // Dialog / Modal Form Visibility
   const [activeForm, setActiveForm] = useState<"vaccine" | "deworming" | "test" | "treatment" | "license" | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
+    type: "vaccine" | "deworming" | "test" | "treatment" | "license";
+  } | null>(null);
 
   // Input states for vaccine
   const [vaccineForm, setVaccineForm] = useState({
@@ -107,7 +121,7 @@ export default function HealthBulletinTab({
     onSuccess: () => {
       toast.success(t("profilePage.saveSuccess"));
       setIsEditingPhysical(false);
-      onRefreshAnimal();
+      onRefreshAnimal?.();
     },
     onError: () => toast.error(t("profilePage.saveError")),
   });
@@ -538,7 +552,7 @@ export default function HealthBulletinTab({
                         </div>
                         {!animal.isShared && (
                           <button
-                            onClick={() => deleteVaccineMutation.mutate({ id: v.id })}
+                            onClick={() => setDeleteTarget({ id: v.id, type: "vaccine" })}
                             className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                             title={t("common.delete")}
                           >
@@ -575,7 +589,7 @@ export default function HealthBulletinTab({
                         )}
                         {!animal.isShared && (
                           <button
-                            onClick={() => deleteVaccineMutation.mutate({ id: v.id })}
+                            onClick={() => setDeleteTarget({ id: v.id, type: "vaccine" })}
                             className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                           >
                             <Trash2 size={13} />
@@ -776,7 +790,7 @@ export default function HealthBulletinTab({
                       )}
                       {!animal.isShared && (
                         <button
-                          onClick={() => deleteDewormingMutation.mutate({ id: d.id, animalId })}
+                          onClick={() => setDeleteTarget({ id: d.id, type: "deworming" })}
                           className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                         >
                           <Trash2 size={13} />
@@ -925,7 +939,7 @@ export default function HealthBulletinTab({
                     <div className="text-right">
                       {!animal.isShared && (
                         <button
-                          onClick={() => deleteTestMutation.mutate({ id: t.id, animalId })}
+                          onClick={() => setDeleteTarget({ id: t.id, type: "test" })}
                           className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                         >
                           <Trash2 size={13} />
@@ -1059,7 +1073,7 @@ export default function HealthBulletinTab({
                     <div className="text-right">
                       {!animal.isShared && (
                         <button
-                          onClick={() => deleteTreatmentMutation.mutate({ id: t.id, animalId })}
+                          onClick={() => setDeleteTarget({ id: t.id, type: "treatment" })}
                           className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                         >
                           <Trash2 size={13} />
@@ -1187,7 +1201,7 @@ export default function HealthBulletinTab({
                     <div className="text-right">
                       {!animal.isShared && (
                         <button
-                          onClick={() => deleteLicenseMutation.mutate({ id: l.id, animalId })}
+                          onClick={() => setDeleteTarget({ id: l.id, type: "license" })}
                           className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
                         >
                           <Trash2 size={13} />
@@ -1312,6 +1326,41 @@ export default function HealthBulletinTab({
           </div>
         )}
       </div>
+      {/* ─── AlertDialog de confirmação de eliminação ───────────────────── */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === "pt" ? "Eliminar registo?" : "Delete record?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === "pt"
+                ? "Esta ação é irreversível. O registo será eliminado permanentemente."
+                : "This action cannot be undone. The record will be permanently deleted."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!deleteTarget) return;
+                const { id, type } = deleteTarget;
+                if (type === "vaccine") deleteVaccineMutation.mutate({ id });
+                else if (type === "deworming") deleteDewormingMutation.mutate({ id, animalId });
+                else if (type === "test") deleteTestMutation.mutate({ id, animalId });
+                else if (type === "treatment") deleteTreatmentMutation.mutate({ id, animalId });
+                else if (type === "license") deleteLicenseMutation.mutate({ id, animalId });
+                setDeleteTarget(null);
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
