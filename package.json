@@ -93,6 +93,7 @@
     "superjson": "^1.13.3",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
+    "tone": "^15.1.22",
     "vaul": "^1.1.2",
     "workbox-window": "^7.4.1",
     "wouter": "^3.3.5",

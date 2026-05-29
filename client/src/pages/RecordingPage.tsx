@@ -391,6 +391,7 @@ export default function RecordingPage() {
     start: startLiveAudio,
     stop: stopLiveAudio,
     stopAndGetBlob: stopAndGetBlobLiveAudio,
+    stream: liveAudioStream,
   } = useLiveAudioStream();
 
   const [isAutoMode, setIsAutoMode] = useState(false);
@@ -412,6 +413,9 @@ export default function RecordingPage() {
   const [mediaPipeLandmarks, setMediaPipeLandmarks] = useState<any>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
   const lastRecordedBlobRef = useRef<Blob | null>(null);
+  const [dominantFreq, setDominantFreq] = useState<number>(0);
+  const [spectralEnergy, setSpectralEnergy] = useState<number>(0);
+  const [tonalBrightness, setTonalBrightness] = useState<number>(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -1126,6 +1130,98 @@ export default function RecordingPage() {
     onSuccess: () => toast.success(language === "pt" ? "Obrigado pelo feedback!" : "Thank you for your feedback!"),
   });
 
+  // Tone.js FFT audio analysis hook
+  useEffect(() => {
+    if (recordState !== "recording" || !liveAudioStream) {
+      return;
+    }
+
+    let active = true;
+    let analyser: any;
+    let micSource: any;
+    let animationFrameId: number;
+
+    const startToneAnalysis = async () => {
+      try {
+        const Tone = await import("tone");
+        
+        if (Tone.getContext().state !== "running") {
+          await Tone.getContext().resume();
+        }
+
+        analyser = new Tone.Analyser("fft", 256);
+        micSource = Tone.getContext().createMediaStreamSource(liveAudioStream);
+        micSource.connect(analyser);
+
+        const sampleRate = Tone.getContext().sampleRate || 44100;
+        const binWidth = sampleRate / 512;
+
+        const analyze = () => {
+          if (!active) return;
+
+          const values = analyser.getValue() as Float32Array;
+          if (values && values.length > 0) {
+            let maxVal = -Infinity;
+            let maxIdx = 0;
+            let sumEnergy = 0;
+            let weightedSum = 0;
+            let sumAmp = 0;
+
+            for (let i = 0; i < values.length; i++) {
+              const db = values[i];
+              const amp = Math.pow(10, db / 20);
+              sumEnergy += amp * amp;
+              sumAmp += amp;
+
+              const freq = i * binWidth;
+              weightedSum += amp * freq;
+
+              if (db > maxVal) {
+                maxVal = db;
+                maxIdx = i;
+              }
+            }
+
+            const domPitch = Math.round(maxIdx * binWidth);
+            const energy = Math.round(sumEnergy * 100) / 100;
+            const brightness = sumAmp > 0 ? Math.round(weightedSum / sumAmp) : 0;
+
+            if (active) {
+              setDominantFreq(domPitch);
+              setSpectralEnergy(energy);
+              setTonalBrightness(brightness);
+            }
+          }
+
+          animationFrameId = requestAnimationFrame(analyze);
+        };
+
+        analyze();
+      } catch (err) {
+        console.error("Failed to run Tone.js frequency analysis:", err);
+      }
+    };
+
+    startToneAnalysis();
+
+    return () => {
+      active = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      if (micSource) {
+        try {
+          micSource.disconnect();
+        } catch (e) {}
+      }
+      if (analyser) {
+        try {
+          analyser.dispose();
+        } catch (e) {}
+      }
+    };
+  }, [recordState, liveAudioStream]);
+
   // Countdown timer during recording
   useEffect(() => {
     if (recordState !== "recording") return;
@@ -1165,6 +1261,9 @@ export default function RecordingPage() {
               audio: audioBase64,
               audioMimeType,
               posture: showCamera ? detectedPosture : undefined,
+              pitch: dominantFreq,
+              spectralEnergy,
+              tonalBrightness,
             });
           })();
           
@@ -1382,15 +1481,20 @@ export default function RecordingPage() {
       {/* Recording button */}
       <div className="flex flex-col items-center gap-4">
         {/* Instruction text above button */}
-        <div className="h-8 flex items-center justify-center">
+        <div className="min-h-[2.5rem] flex flex-col items-center justify-center">
           {isAutoMode ? (
             <p className="text-md font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 animate-pulse text-center">
               {t("recordingPage.autoModeOn")}
             </p>
           ) : recordState === "recording" ? (
-            <p className="text-sm text-muted-foreground text-center">
-              {t("recordingPage.recordingAcustic")}
-            </p>
+            <div className="flex flex-col items-center">
+              <p className="text-sm text-muted-foreground text-center">
+                {t("recordingPage.recordingAcustic")}
+              </p>
+              <p className="text-xs font-semibold text-emerald-400 mt-1">
+                Frequência dominante: {dominantFreq}Hz
+              </p>
+            </div>
           ) : recordState === "processing" ? (
             <p className="text-sm text-muted-foreground text-center animate-pulse">
               {t("recordingPage.processingAcustic")}

@@ -188,5 +188,6 @@ export function useLiveAudioStream() {
     start,
     stop,
     stopAndGetBlob,
+    stream: streamRef.current,
   };
 }

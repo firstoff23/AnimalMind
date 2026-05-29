@@ -183,6 +183,9 @@ export const appRouter = router({
           audio: z.string().optional(),
           audioMimeType: z.string().optional(),
           posture: z.string().optional(),
+          pitch: z.number().optional(),
+          spectralEnergy: z.number().optional(),
+          tonalBrightness: z.number().optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
