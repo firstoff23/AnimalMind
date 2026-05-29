@@ -134,6 +134,7 @@ function mapDbEvent(e: any) {
   const createdAt = e.created_at ?? e.createdAt ?? null;
   return {
     id: e.id,
+    animalId: e.animal_id ?? e.animalId ?? null,
     state: e.state,
     confidence: Number(e.confidence),
     emoji: e.emoji ?? "",

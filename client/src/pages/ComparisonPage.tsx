@@ -46,10 +46,11 @@ export default function ComparisonPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [period, setPeriod] = useState<7 | 30 | 90>(30);
 
-  const { data: eventsData = [] } = trpc.events.history.useQuery(
-    { limit: 1000 },
+  const { data: listData } = trpc.events.list.useQuery(
+    { pageSize: 1000 },
     { enabled: animals.length > 0 }
   );
+  const eventsData = listData?.events ?? [];
 
   const toggleAnimal = (id: number) => {
     setSelectedIds((prev) =>
