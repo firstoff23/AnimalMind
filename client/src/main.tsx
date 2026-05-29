@@ -67,10 +67,14 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+import { NuqsAdapter } from "nuqs/adapters/react";
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <NuqsAdapter>
+        <App />
+      </NuqsAdapter>
     </QueryClientProvider>
   </trpc.Provider>
 );

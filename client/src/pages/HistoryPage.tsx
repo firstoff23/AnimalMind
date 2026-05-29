@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useMemo, type PointerEvent } from "react";
 import { useLocation } from "wouter";
+import { useQueryState, parseAsInteger } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -435,9 +436,49 @@ export default function HistoryPage() {
   const { t, language } = useLanguage();
   const [viewTab, setViewTab] = useState<"list" | "evolution">("list");
   const [page, setPage] = useState(1);
-  const [stateFilter, setStateFilter] = useState<string>("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+
+  // nuqs URL query state hooks
+  const [animalParam, setAnimalParam] = useQueryState("animal", parseAsInteger);
+  const [animalIdLegacyParam, setAnimalIdLegacyParam] = useQueryState("animalId", parseAsInteger);
+  const [emotionParam, setEmotionParam] = useQueryState("emotion", { defaultValue: "all" });
+  const [dateFromParam, setDateFromParam] = useQueryState("dateFrom", { defaultValue: "" });
+  const [dateToParam, setDateToParam] = useQueryState("dateTo", { defaultValue: "" });
+  const [period, setPeriod] = useQueryState("period", { defaultValue: "" });
+
+  const animalIdFilter = animalParam !== null ? animalParam : (animalIdLegacyParam !== null ? animalIdLegacyParam : undefined);
+
+  const stateFilter = emotionParam || "all";
+  const setStateFilter = (val: string) => {
+    setEmotionParam(val === "all" ? null : val);
+  };
+
+  const dateFrom = dateFromParam || "";
+  const setDateFrom = (val: string) => {
+    setDateFromParam(val || null);
+  };
+
+  const dateTo = dateToParam || "";
+  const setDateTo = (val: string) => {
+    setDateToParam(val || null);
+  };
+
+  // Sync period filter
+  useEffect(() => {
+    if (period === "week") {
+      const now = new Date();
+      const past = new Date();
+      past.setDate(now.getDate() - 7);
+      setDateFromParam(past.toISOString().split("T")[0]);
+      setDateToParam(now.toISOString().split("T")[0]);
+    } else if (period === "month") {
+      const now = new Date();
+      const past = new Date();
+      past.setDate(now.getDate() - 30);
+      setDateFromParam(past.toISOString().split("T")[0]);
+      setDateToParam(now.toISOString().split("T")[0]);
+    }
+  }, [period]);
+
   const [showFilters, setShowFilters] = useState(false);
   const [showExportActions, setShowExportActions] = useState(false);
   const [exportFormat, setExportFormat] = useState<"csv" | "pdf" | null>(null);
@@ -445,11 +486,6 @@ export default function HistoryPage() {
   const [playingEventId, setPlayingEventId] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [, setLocation] = useLocation();
-
-  const queryParams = new URLSearchParams(window.location.search);
-  const animalIdParam = queryParams.get("animalId");
-  const parsedAnimalId = animalIdParam ? Number.parseInt(animalIdParam, 10) : Number.NaN;
-  const animalIdFilter = Number.isFinite(parsedAnimalId) ? parsedAnimalId : undefined;
 
   const { data: animals = [] } = trpc.animals.list.useQuery();
   const filterAnimal = animals.find((animal) => animal.id === animalIdFilter);
@@ -746,15 +782,17 @@ export default function HistoryPage() {
   };
 
   const clearFilters = () => {
-    setStateFilter("all");
-    setDateFrom("");
-    setDateTo("");
+    setEmotionParam(null);
+    setDateFromParam(null);
+    setDateToParam(null);
+    setPeriod(null);
     setPage(1);
   };
 
   const handleAnimalFilter = (value: string) => {
     setPage(1);
-    setLocation(value === "all" ? "/historico" : `/historico?animalId=${value}`);
+    setAnimalParam(value === "all" ? null : parseInt(value, 10));
+    setAnimalIdLegacyParam(null);
   };
 
   const exportFilters = {

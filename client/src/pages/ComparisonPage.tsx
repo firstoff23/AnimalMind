@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryState } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,8 +44,22 @@ const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"
 export default function ComparisonPage() {
   const { t, language } = useLanguage();
   const { data: animals = [] } = trpc.animals.list.useQuery();
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [period, setPeriod] = useState<7 | 30 | 90>(30);
+
+  const [a1, setA1] = useQueryState("a1");
+  const [a2, setA2] = useQueryState("a2");
+  const [a3, setA3] = useQueryState("a3");
+  const [a4, setA4] = useQueryState("a4");
+  const [periodStr, setPeriodStr] = useQueryState("period", { defaultValue: "month" });
+
+  const selectedIds = [a1, a2, a3, a4]
+    .map((id) => (id ? parseInt(id, 10) : null))
+    .filter((id): id is number => id !== null && !isNaN(id));
+
+  const period = periodStr === "week" ? 7 : periodStr === "quarter" ? 90 : 30;
+
+  const setPeriod = (days: 7 | 30 | 90) => {
+    setPeriodStr(days === 7 ? "week" : days === 90 ? "quarter" : "month");
+  };
 
   const { data: listData } = trpc.events.list.useQuery(
     { pageSize: 1000 },
@@ -53,9 +68,15 @@ export default function ComparisonPage() {
   const eventsData = listData?.events ?? [];
 
   const toggleAnimal = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id].slice(0, 4)
-    );
+    const activeIdsCurrent = selectedIds.length > 0 ? selectedIds : animals.slice(0, 2).map((a) => a.id);
+    let newIds = activeIdsCurrent.includes(id)
+      ? activeIdsCurrent.filter((x) => x !== id)
+      : [...activeIdsCurrent, id].slice(0, 4);
+
+    setA1(newIds[0] ? String(newIds[0]) : null);
+    setA2(newIds[1] ? String(newIds[1]) : null);
+    setA3(newIds[2] ? String(newIds[2]) : null);
+    setA4(newIds[3] ? String(newIds[3]) : null);
   };
 
   const cutoff = new Date(Date.now() - period * 24 * 60 * 60 * 1000);
