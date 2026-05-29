@@ -332,7 +332,22 @@ export default function HealthBulletinTab({
                   </div>
                   <div>
                     <span className="text-muted-foreground block">{t("profilePage.microchip")}</span>
-                    <span className="font-mono font-medium text-foreground">{animal.microchipNumber || "—"}</span>
+                    {animal.microchipNumber ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-medium text-foreground">{animal.microchipNumber}</span>
+                        <a
+                          href={`https://www.siac.vet/verificar/${animal.microchipNumber}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Verificar no SIAC"
+                          className="text-[9px] px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors font-semibold"
+                        >
+                          SIAC ↗
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="font-mono font-medium text-foreground">—</span>
+                    )}
                   </div>
                   <div>
                     <span className="text-muted-foreground block">{t("profilePage.sex")}</span>
