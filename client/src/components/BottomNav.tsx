@@ -25,9 +25,11 @@ export function BottomNav() {
           const active = location === path;
           const label = t(`nav.${key}`);
           return (
-            <button
+            <motion.button
               key={path}
               onClick={() => navigate(path)}
+              animate={{ scale: active ? 1.05 : 1 }}
+              transition={{ duration: 0.2 }}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 py-2.5 px-1 transition-all duration-200",
                 "active:scale-95",
@@ -60,7 +62,7 @@ export function BottomNav() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>

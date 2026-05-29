@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
@@ -1103,12 +1104,22 @@ export default function RecordingPage() {
           )}
         </div>
 
-        <button
+        <motion.button
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
           onPointerLeave={handlePointerCancel}
           disabled={recordState === "requesting" || recordState === "processing"}
+          animate={
+            recordState === "recording" || isAutoMode
+              ? { scale: [1, 1.05, 1] }
+              : { scale: 1 }
+          }
+          transition={
+            recordState === "recording" || isAutoMode
+              ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
+              : { duration: 0.2 }
+          }
           className={cn(
             "w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2",
             "font-semibold shadow-2xl transition-all duration-300",
@@ -1118,7 +1129,7 @@ export default function RecordingPage() {
           aria-label="Iniciar gravação"
         >
           {renderButtonContent()}
-        </button>
+        </motion.button>
 
         <p className="text-xs text-muted-foreground text-center h-4">
           {isAutoMode && recordState === "idle" && t("recordingPage.nextAcusticSoon")}

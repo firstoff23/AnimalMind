@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Plus, Check, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
+import { motion } from "framer-motion";
 import {
   RadarChart,
   PolarGrid,
@@ -35,15 +36,25 @@ function AnimalCard({
   animal,
   active,
   onSelect,
+  index,
 }: {
   animal: { id: number; name: string; species: string; breed: string | null; age: number | null; isActive: boolean };
   active: boolean;
   onSelect: () => void;
+  index: number;
 }) {
   const { t } = useLanguage();
   return (
-    <button
+    <motion.button
       onClick={onSelect}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-20px" }}
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+      }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
       className={cn(
         "flex-shrink-0 w-36 rounded-2xl p-4 border transition-all duration-200 text-left",
         "active:scale-95",
@@ -65,7 +76,7 @@ function AnimalCard({
           <Check size={10} className="mr-0.5" /> {t("profilePage.active")}
         </Badge>
       )}
-    </button>
+    </motion.button>
   );
 }
 
@@ -679,12 +690,13 @@ export default function ProfilePage() {
             {t("profilePage.selectAnimal")}
           </p>
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-            {animals.map((animal) => (
+            {animals.map((animal, idx) => (
               <AnimalCard
                 key={animal.id}
                 animal={animal}
                 active={animal.isActive}
                 onSelect={() => setLocation(`/animal/${animal.id}`)}
+                index={idx}
               />
             ))}
           </div>
