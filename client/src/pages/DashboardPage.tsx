@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AlertCircle, PawPrint, Loader2 } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/lib/utils";
+import { AlertBanner } from "@/components/AlertBanner";
+import { TrendCard } from "@/components/TrendCard";
 import {
   BarChart,
   Bar,
@@ -255,6 +257,8 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {activeAnimal && <AlertBanner animalId={activeAnimal.id} />}
+
       {/* ─── 4 States: loading / error / empty / success ─── */}
       {animalsLoading ? (
         <div className="space-y-4">
@@ -415,6 +419,8 @@ export default function DashboardPage() {
       {/* All charts and detailed data - only show when data is loaded */}
       {!animalsLoading && !animalsError && animals.length > 0 && (
         <>
+          <TrendCard animalId={activeAnimal.id} />
+
           {/* Dominant state card */}
           {todayStats ? (
             <div

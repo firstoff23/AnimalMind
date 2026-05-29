@@ -7,6 +7,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { familyRouter } from "./routers/family";
 import { vetRouter } from "./routers/vet";
 import { healthRouter } from "./routers/health";
+import { trendsRouter } from "./routers/trends";
 import {
   addAnimal,
   updateAnimal,
@@ -854,6 +855,7 @@ export const appRouter = router({
 
   vet: vetRouter,
   health: healthRouter,
+  trends: trendsRouter,
 });
 
 export type AppRouter = typeof appRouter;

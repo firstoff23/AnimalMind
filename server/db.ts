@@ -2653,3 +2653,19 @@ export async function deleteHealthRecord(id: number) {
   if (error) throw error;
   return { success: true };
 }
+
+export async function getTrendsEvents(animalId: number, days = 30) {
+  const supabase = getSupabase();
+  const sinceDate = new Date();
+  sinceDate.setDate(sinceDate.getDate() - days);
+
+  const { data, error } = await supabase
+    .from("classification_events")
+    .select("*")
+    .eq("animal_id", animalId)
+    .gte("created_at", sinceDate.toISOString())
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
