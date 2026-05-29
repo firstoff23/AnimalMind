@@ -356,6 +356,7 @@ export default function RecordingPage() {
   const [showCamera, setShowCamera] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
   const [detectedPosture, setDetectedPosture] = useState<string>("sitting");
+  const [detectedSpecies, setDetectedSpecies] = useState<{ species: string; confidence: number } | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -678,6 +679,26 @@ export default function RecordingPage() {
                   setDetectedPosture(data.posture);
                 }
               }
+
+              // Auto-detect species only if no animal is selected
+              if (!activeAnimal) {
+                try {
+                  const speciesForm = new FormData();
+                  speciesForm.append("file", new File([blob], "frame.jpg", { type: "image/jpeg" }));
+                  const speciesRes = await fetch(`${fastapiUrl}/detect-species`, {
+                    method: "POST",
+                    body: speciesForm,
+                  });
+                  if (speciesRes.ok && active) {
+                    const speciesData = await speciesRes.json() as { species: string; confidence: number };
+                    if (speciesData && speciesData.species !== "unknown") {
+                      setDetectedSpecies(speciesData);
+                    }
+                  }
+                } catch (specErr) {
+                  // Species detection is best-effort; ignore errors
+                }
+              }
             } catch (err) {
               console.error("Error calling detect-posture API:", err);
             }
@@ -971,6 +992,12 @@ export default function RecordingPage() {
         {activeAnimal ? (
           <p className="text-sm text-muted-foreground">
             {activeAnimal.species === "dog" ? "🐕" : "🐈"} {activeAnimal.name}
+          </p>
+        ) : detectedSpecies ? (
+          <p className="text-sm text-emerald-400 font-medium">
+            {language === "pt" ? "IA detetou" : "AI detected"}:{" "}
+            {detectedSpecies.species === "dog" ? "🐕 " + (language === "pt" ? "Cão" : "Dog") : "🐈 " + (language === "pt" ? "Gato" : "Cat")}{" "}
+            <span className="text-xs text-emerald-500/70">({Math.round(detectedSpecies.confidence * 100)}%)</span>
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">{t("header.noAnimal")}</p>
