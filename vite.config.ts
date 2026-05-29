@@ -167,8 +167,8 @@ const plugins = [
       name: "AnimalMind",
       short_name: "AnimalMind",
       description: "Animal Mind: Inteligência Emocional e Visão para Animais de Estimação",
-      theme_color: "#111827",
-      background_color: "#111827",
+      theme_color: "#6366f1",
+      background_color: "#0f172a",
       display: "standalone",
       start_url: "/",
       icons: [
