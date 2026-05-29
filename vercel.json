@@ -45,7 +45,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "microphone=(self), camera=(), geolocation=()"
+          "value": "camera=*, microphone=*"
         }
       ]
     }

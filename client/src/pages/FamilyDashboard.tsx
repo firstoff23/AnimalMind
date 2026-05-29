@@ -5,20 +5,33 @@ import FamilyInvite from "@/components/FamilyInvite";
 import { trpc } from "@/lib/trpc";
 import { PawPrint, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function FamilyDashboard({ params }: { params?: { code?: string } }) {
   const [, setLocation] = useLocation();
   const [familyName, setFamilyName] = useState("");
   const [joinCode, setJoinCode] = useState(params?.code ?? "");
   const utils = trpc.useUtils();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (params?.code) setJoinCode(params.code.toUpperCase());
   }, [params?.code]);
 
-  const membersQuery = trpc.family.getMembers.useQuery();
-  const animalsQuery = trpc.family.getAnimals.useQuery();
-  const activityQuery = trpc.family.getActivity.useQuery();
+  const membersQuery = trpc.family.getMembers.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
+  const familyId = membersQuery.data?.[0]?.familyId;
+
+  const animalsQuery = trpc.family.getAnimals.useQuery(undefined, {
+    enabled: isAuthenticated && !!familyId,
+    retry: false,
+  });
+  const activityQuery = trpc.family.getActivity.useQuery(undefined, {
+    enabled: isAuthenticated && !!familyId,
+    retry: false,
+  });
 
   const createFamilyMutation = trpc.family.create.useMutation({
     onSuccess: () => {

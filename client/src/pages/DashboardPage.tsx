@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart,
   Bar,
@@ -56,12 +57,26 @@ function ConfidenceTooltip({ active, payload, label }: { active?: boolean; paylo
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
-  const { data: animals = [] } = trpc.animals.list.useQuery();
+  const { isAuthenticated } = useAuth();
+  const { data: animals = [] } = trpc.animals.list.useQuery(undefined, { enabled: isAuthenticated });
   const activeAnimal = animals.find((a) => a.isActive) ?? animals[0];
 
   const utils = trpc.useUtils();
-  const { data: invitations = [], refetch: refetchInvitations } = trpc.animals.getPendingInvitations.useQuery();
-  const { data: familyActivity = [] } = trpc.family.getActivity.useQuery();
+  const { data: invitations = [], refetch: refetchInvitations } = trpc.animals.getPendingInvitations.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+
+  const { data: familyMembers = [] } = trpc.family.getMembers.useQuery(
+    undefined,
+    { enabled: isAuthenticated, retry: false }
+  );
+  const familyId = familyMembers[0]?.familyId;
+
+  const { data: familyActivity = [] } = trpc.family.getActivity.useQuery(
+    undefined,
+    { enabled: isAuthenticated && !!familyId, retry: false }
+  );
 
   const respondMutation = trpc.animals.respondToInvitation.useMutation({
     onSuccess: () => {
