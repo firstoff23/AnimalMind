@@ -263,6 +263,8 @@
     "avgConfidence": "Confiança média diária",
     "insufficientDataChart": "Dados insuficientes para o gráfico",
     "legend": "Legenda",
+    "statsRecordings": "Gravações (7 dias)",
+    "statsAnimals": "Animais",
     "responseSuccess": "Resposta enviada com sucesso!",
     "responseError": "Erro ao responder:"
   },

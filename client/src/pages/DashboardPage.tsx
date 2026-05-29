@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { useMotionValue, animate } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart,
@@ -52,6 +53,27 @@ function ConfidenceTooltip({ active, payload, label }: { active?: boolean; paylo
       </p>
     </div>
   );
+}
+
+function AnimatedNumber({ value }: { value: number }) {
+  const count = useMotionValue(0);
+  const spanRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    count.set(0);
+    const controls = animate(count, value, {
+      duration: 1.5,
+      ease: "easeOut",
+      onUpdate: (latest) => {
+        if (spanRef.current) {
+          spanRef.current.textContent = String(Math.round(latest));
+        }
+      }
+    });
+    return () => controls.stop();
+  }, [value, count]);
+
+  return <span ref={spanRef}>0</span>;
 }
 
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
@@ -191,6 +213,28 @@ export default function DashboardPage() {
           </p>
         )}
       </div>
+
+      {/* Stats Cards */}
+      {animals.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <SpotlightCard className="flex flex-col items-center justify-center p-4 text-center">
+            <span className="text-2xl font-bold text-primary">
+              <AnimatedNumber value={events.length} />
+            </span>
+            <span className="text-xs text-muted-foreground mt-1 font-medium">
+              {t("dashboardPage.statsRecordings")}
+            </span>
+          </SpotlightCard>
+          <SpotlightCard className="flex flex-col items-center justify-center p-4 text-center">
+            <span className="text-2xl font-bold text-primary">
+              <AnimatedNumber value={animals.length} />
+            </span>
+            <span className="text-xs text-muted-foreground mt-1 font-medium">
+              {t("dashboardPage.statsAnimals")}
+            </span>
+          </SpotlightCard>
+        </div>
+      )}
 
       {/* Pending Invitations Banner */}
       {invitations.length > 0 && (

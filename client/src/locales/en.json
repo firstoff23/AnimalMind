@@ -263,6 +263,8 @@
     "avgConfidence": "Daily average confidence",
     "insufficientDataChart": "Insufficient data for chart",
     "legend": "Legend",
+    "statsRecordings": "Recordings (7 days)",
+    "statsAnimals": "Animals",
     "responseSuccess": "Response sent successfully!",
     "responseError": "Error responding:"
   },
