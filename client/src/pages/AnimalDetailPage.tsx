@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import FamilyShareTab from "@/components/FamilyShareTab";
 import HealthBulletinTab from "@/components/HealthBulletinTab";
+import LazyAnimal3DModel from "@/components/LazyAnimal3DModel";
 import { useLanguage } from "@/hooks/useLanguage";
 import {
   ResponsiveContainer,
@@ -366,6 +367,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   // Anomaly check based on baseline settings
   // Anomaly is defined as a distress/alert state vocalization, OR a state that is NOT in the animal's typical states list
   const recentEvents = historyRes?.events || [];
+  const currentEmotion = recentEvents[0]?.state || "relaxed";
   const anomalyAlerts = recentEvents.filter((ev) => {
     const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
     const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
@@ -403,8 +405,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
           {animal.species === "dog" ? "DOG" : "CAT"}
         </div>
 
-        <div className="text-5xl bg-secondary/80 w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner z-10">
-          {animal.species === "dog" ? "🐕" : "🐈"}
+        <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden z-10">
+          <LazyAnimal3DModel
+            species={animal.species}
+            emotion={currentEmotion}
+            photoUrl={animal.photoUrl}
+            name={animal.name}
+          />
         </div>
         <div className="z-10">
           <div className="flex items-center gap-2">
