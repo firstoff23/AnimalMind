@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const NAV_ITEMS = [
-  { path: "/",           icon: Mic,        key: "recording" },
+  { path: "/gravar",     icon: Mic,        key: "recording" },
   { path: "/perfil",     icon: PawPrint,   key: "profile" },
   { path: "/health",     icon: Heart,      key: "health" },
   { path: "/historico",  icon: History,    key: "history" },

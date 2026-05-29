@@ -32,6 +32,7 @@ import VetDashboard from "./pages/VetDashboard";
 import FamilyDashboard from "./pages/FamilyDashboard";
 import HealthPage from "./pages/HealthPage";
 import ComparisonPage from "./pages/ComparisonPage";
+import LandingPage from "./pages/LandingPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -57,8 +58,11 @@ function Router() {
           <Route path="/verify-email" component={VerifyEmailPage} />
           <Route path="/auth/callback" component={AuthCallbackPage} />
 
+          {/* Public routes */}
+          <Route path="/" component={LandingPage} />
+
           {/* Protected routes */}
-          <Route path="/" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
+          <Route path="/gravar" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
           <Route path="/perfil" component={(props) => <ProtectedRoute component={ProfilePage} {...props} />} />
           <Route path="/health" component={(props) => <ProtectedRoute component={HealthPage} {...props} />} />
           <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />

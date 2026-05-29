@@ -313,5 +313,28 @@
     "hunger": "Hunger",
     "alert": "Alert",
     "relaxed": "Relaxed"
+  },
+  "landing": {
+    "title": "Understand Your Pet's Mind",
+    "subtitle": "Real-time acoustic AI-powered monitoring of your companion's emotional state and well-being.",
+    "getStarted": "Get Started",
+    "howItWorks": "How It Works",
+    "features": "Features",
+    "step1Title": "1. Record Sound",
+    "step1Desc": "Record your pet's barks, meows, or other sounds directly in the application.",
+    "step2Title": "2. AI Analysis",
+    "step2Desc": "Our advanced models classify the emotional state in real time based on sound.",
+    "step3Title": "3. Track Evolution",
+    "step3Desc": "View reports, well-being trends, and share the profile with your family.",
+    "feat1Title": "Acoustic Intelligence",
+    "feat1Desc": "Refined classification among 6 emotional states: distress, excitement, alert, hunger, attention, and relaxation.",
+    "feat2Title": "Evolution & Alerts",
+    "feat2Desc": "Automatic identification of escapes from typical behavior (baseline) and preventive well-being alerts.",
+    "feat3Title": "Family Sharing",
+    "feat3Desc": "Invite co-guardians to manage health duties and track the pet's status in real time.",
+    "pwaAvailable": "Available to install as PWA",
+    "login": "Log In",
+    "register": "Register",
+    "dashboard": "Dashboard"
   }
 }

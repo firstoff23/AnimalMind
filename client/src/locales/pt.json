@@ -312,5 +312,28 @@
     "hunger": "Fome",
     "alert": "Alerta",
     "relaxed": "Relaxado"
+  },
+  "landing": {
+    "title": "Compreenda a Mente do Seu Animal",
+    "subtitle": "Monitorização em tempo real do estado emocional e bem-estar do seu companheiro através de Inteligência Artificial acústica.",
+    "getStarted": "Começar Agora",
+    "howItWorks": "Como Funciona",
+    "features": "Funcionalidades",
+    "step1Title": "1. Grave o Som",
+    "step1Desc": "Grave os latidos, miados ou outros sons do seu animal diretamente na aplicação.",
+    "step2Title": "2. Análise de IA",
+    "step2Desc": "Os nossos modelos avançados classificam o estado emocional em tempo real com base no som.",
+    "step3Title": "3. Acompanhe a Evolução",
+    "step3Desc": "Visualize relatórios, tendências de bem-estar e partilhe o perfil com a sua família.",
+    "feat1Title": "Inteligência Acústica",
+    "feat1Desc": "Classificação refinada entre 6 estados emocionais: angústia, excitação, alerta, fome, atenção e relaxamento.",
+    "feat2Title": "Evolução e Alertas",
+    "feat2Desc": "Identificação automática de desvios no comportamento típico (baseline) e alertas preventivos de bem-estar.",
+    "feat3Title": "Partilha Familiar",
+    "feat3Desc": "Convide co-tutores para gerir as tarefas de saúde e acompanhar o estado do animal em tempo real.",
+    "pwaAvailable": "Disponível para instalar como PWA",
+    "login": "Iniciar Sessão",
+    "register": "Registar",
+    "dashboard": "Painel de Controlo"
   }
 }
