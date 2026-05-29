@@ -6,7 +6,7 @@ import { GlowingButton } from "@/components/ui/GlowingButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
-import { LiveAudioMeter } from "@/components/LiveAudioMeter";
+import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -1150,10 +1150,11 @@ export default function RecordingPage() {
         </p>
 
         {(recordState === "recording" || isLiveAudioStreaming) && (
-          <LiveAudioMeter
+          <P5AudioVisualizer
             level={liveAudioLevel}
             waveform={liveWaveform}
             isActive={isLiveAudioStreaming}
+            emotion={result ? result.state : "neutral"}
           />
         )}
       </div>
