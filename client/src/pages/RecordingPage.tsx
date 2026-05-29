@@ -410,6 +410,8 @@ export default function RecordingPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isMediaPipeActive, setIsMediaPipeActive] = useState(false);
   const [mediaPipeLandmarks, setMediaPipeLandmarks] = useState<any>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const lastRecordedBlobRef = useRef<Blob | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -1031,6 +1033,7 @@ export default function RecordingPage() {
 
   const classifyMutation = trpc.classify.run.useMutation({
     onSuccess: (data) => {
+      setIsOfflineMode(false);
       const res = data as ClassifyResult;
       setResult(res);
       utils.events.recent.invalidate();
@@ -1056,15 +1059,58 @@ export default function RecordingPage() {
 
       if (isAutoModeRef.current) {
         setAutoClassificationCount((count) => count + 1);
-         setLastAutoResult(res);
+        setLastAutoResult(res);
         setRecordState("idle");
         scheduleAutoRecording(1500);
       } else {
         setRecordState("idle");
       }
     },
-    onError: () => {
+    onError: async () => {
       stopLiveAudio();
+
+      const lastBlob = lastRecordedBlobRef.current;
+      if (lastBlob) {
+        try {
+          toast.info(language === "pt" ? "Servidor indisponível. A classificar offline com TF.js..." : "Server unavailable. Classifying offline with TF.js...");
+
+          const localClassifier = await import("@/lib/localClassifier");
+          const localRes = await localClassifier.runLocalYAMNet(lastBlob);
+
+          const res: ClassifyResult = {
+            state: localRes.state as EmotionalState,
+            confidence: localRes.confidence,
+            emoji: localRes.emoji,
+            model_used: "yamnet-local" as any,
+            cached: false,
+            eventId: undefined,
+            posture: showCamera ? detectedPosture : undefined,
+          };
+
+          setResult(res);
+          setIsOfflineMode(true);
+
+          sendClassificationNotification(
+            res.state,
+            res.confidence,
+            activeAnimal?.name,
+            undefined
+          );
+
+          if (isAutoModeRef.current) {
+            setAutoClassificationCount((count) => count + 1);
+            setLastAutoResult(res);
+            setRecordState("idle");
+            scheduleAutoRecording(1500);
+          } else {
+            setRecordState("idle");
+          }
+          return;
+        } catch (localErr) {
+          console.error("Local TFJS classification failed:", localErr);
+        }
+      }
+
       if (isAutoModeRef.current) {
         setRecordState("idle");
         toast.error(language === "pt" ? "Erro na classificação automática. A tentar novamente em 2 segundos..." : "Error in continuous classification. Retrying in 2 seconds...");
@@ -1097,6 +1143,7 @@ export default function RecordingPage() {
             try {
               const res = await stopAndGetBlobLiveAudio();
               if (res) {
+                lastRecordedBlobRef.current = res.blob;
                 audioMimeType = res.mimeType;
                 const base64Promise = new Promise<string>((resolve, reject) => {
                   const reader = new FileReader();
@@ -1410,6 +1457,13 @@ export default function RecordingPage() {
             <div className="flex justify-center">
               <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 bg-emerald-950/20">
                 {t("recordingPage.postureEstimated")} {result.posture.toUpperCase()}
+              </Badge>
+            </div>
+          )}
+          {isOfflineMode && (
+            <div className="flex justify-center">
+              <Badge variant="destructive" className="text-xs animate-pulse bg-red-950/50 border-red-500/30 text-red-400">
+                ⚠️ {language === "pt" ? "Modo offline (TF.js local)" : "Offline Mode (Local TF.js)"}
               </Badge>
             </div>
           )}
