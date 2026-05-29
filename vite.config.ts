@@ -162,6 +162,7 @@ const plugins = [
       globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       cleanupOutdatedCaches: true,
       navigateFallback: "/index.html",
+      maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
     },
     manifest: {
       name: "AnimalMind",
