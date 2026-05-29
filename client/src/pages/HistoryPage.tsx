@@ -81,6 +81,7 @@ import {
   getPeriodLabel,
   type HistoryExportEvent,
 } from "@/lib/historyExport";
+import { HowlerAudioPlayer } from "@/components/HowlerAudioPlayer";
 
 const PAGE_SIZE = 10;
 
@@ -277,23 +278,9 @@ function EventRow({
         </div>
 
         {event.audioUrl && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPlayToggle(event.id, event.audioUrl!);
-            }}
-            className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center hover:bg-secondary/40 text-cyan-400 hover:text-cyan-300"
-            aria-label={isPlaying ? "Pausar som" : "Ouvir som"}
-          >
-            {isPlaying ? (
-              <Pause size={14} fill="currentColor" />
-            ) : (
-              <Play size={14} fill="currentColor" className="ml-0.5" />
-            )}
-          </Button>
+          <div onClick={(e) => e.stopPropagation()}>
+            <HowlerAudioPlayer audioUrl={event.audioUrl} />
+          </div>
         )}
 
         <div className="text-right flex-shrink-0">
@@ -394,11 +381,7 @@ function RawEventDialog({
               <div className="rounded-lg bg-secondary p-3 col-span-2 flex flex-col gap-1.5">
                 <dt className="text-xs text-muted-foreground">{t("historyPage.animalRecording")}</dt>
                 <dd className="mt-1">
-                  <audio
-                    src={event.audioUrl}
-                    controls
-                    className="w-full h-9 rounded-lg"
-                  />
+                  <HowlerAudioPlayer audioUrl={event.audioUrl} />
                 </dd>
               </div>
             )}
@@ -672,13 +655,7 @@ export default function HistoryPage() {
         return (
           <div className="flex items-center gap-2">
             {event.audioUrl && (
-              <button
-                onClick={() => handlePlayToggle(event.id, event.audioUrl!)}
-                className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
-                title={playingEventId === event.id ? "Pausar" : "Reproduzir"}
-              >
-                {playingEventId === event.id ? <Pause size={12} /> : <Play size={12} />}
-              </button>
+              <HowlerAudioPlayer audioUrl={event.audioUrl} />
             )}
             <button
               onClick={() => setRawEvent(event)}
