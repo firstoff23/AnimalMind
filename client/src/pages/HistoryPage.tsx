@@ -40,8 +40,19 @@ import {
   Play,
   Pause,
   PawPrint,
+  ArrowUpDown,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  type ColumnDef,
+} from "@tanstack/react-table";
 import {
   STATE_LABELS,
   STATE_COLORS,
@@ -479,8 +490,8 @@ export default function HistoryPage() {
 
   const allEventsQuery = trpc.events.list.useQuery(
     {
-      page,
-      pageSize: PAGE_SIZE,
+      page: 1,
+      pageSize: 1000,
       state: stateFilter !== "all" ? stateFilter : undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
@@ -492,8 +503,8 @@ export default function HistoryPage() {
   const animalEventsQuery = trpc.events.listForAnimal.useQuery(
     {
       animalId: animalIdFilter!,
-      page,
-      pageSize: PAGE_SIZE,
+      page: 1,
+      pageSize: 1000,
     },
     { enabled: useAnimalEndpoint }
   );
@@ -514,6 +525,171 @@ export default function HistoryPage() {
     onError: () => toast.error(language === "pt" ? "Não foi possível guardar o feedback." : "Could not save feedback."),
   });
   const exportMutation = trpc.events.exportData.useMutation();
+
+  const columns = useMemo<ColumnDef<HistoryEvent>[]>(() => [
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
+        >
+          Data <ArrowUpDown size={12} />
+        </button>
+      ),
+      cell: ({ row }) => {
+        const date = new Date(row.original.createdAt);
+        return (
+          <span className="text-xs text-muted-foreground">
+            {date.toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}{" "}
+            {date.toLocaleTimeString(language === "pt" ? "pt-PT" : "en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "animalId",
+      header: ({ column }) => (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
+        >
+          Animal <ArrowUpDown size={12} />
+        </button>
+      ),
+      cell: ({ row }) => {
+        const id = row.original.animalId;
+        const animal = animals.find((a) => a.id === id);
+        return (
+          <span className="text-xs font-semibold text-foreground">
+            {animal ? animal.name : `#${id ?? ""}`}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "state",
+      header: ({ column }) => (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
+        >
+          Emoção <ArrowUpDown size={12} />
+        </button>
+      ),
+      cell: ({ row }) => {
+        const state = row.original.state as EmotionalState;
+        const color = STATE_COLORS[state];
+        return (
+          <span className="text-xs font-bold flex items-center gap-1" style={{ color }}>
+            <span>{row.original.emoji}</span>
+            <span>{t(`states.${state}` as any) || STATE_LABELS[state]}</span>
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "confidence",
+      header: ({ column }) => (
+        <button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
+        >
+          Confiança <ArrowUpDown size={12} />
+        </button>
+      ),
+      cell: ({ row }) => {
+        const pct = Math.round(row.original.confidence * 100);
+        return <span className="text-xs font-medium tabular-nums">{pct}%</span>;
+      },
+    },
+    {
+      id: "duration",
+      header: "Duração",
+      cell: () => <span className="text-xs text-muted-foreground">3.0s</span>,
+    },
+    {
+      id: "actions",
+      header: "Ações",
+      cell: ({ row }) => {
+        const event = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            {event.audioUrl && (
+              <button
+                onClick={() => handlePlayToggle(event.id, event.audioUrl!)}
+                className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
+                title={playingEventId === event.id ? "Pausar" : "Reproduzir"}
+              >
+                {playingEventId === event.id ? <Pause size={12} /> : <Play size={12} />}
+              </button>
+            )}
+            <button
+              onClick={() => setRawEvent(event)}
+              className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors text-[10px] px-1.5 font-semibold"
+              title="Ver Dados Brutos"
+            >
+              JSON
+            </button>
+            <div className="flex items-center gap-1">
+              <button
+                disabled={feedbackMutation.isPending}
+                onClick={() => feedbackMutation.mutate({ eventId: event.id, feedback: "correct" })}
+                className={cn(
+                  "p-1 rounded-lg hover:bg-emerald-950/30 text-muted-foreground hover:text-emerald-400 transition-colors",
+                  event.feedback === "correct" && "text-emerald-400 bg-emerald-950/20"
+                )}
+                title="Correto"
+              >
+                <ThumbsUp size={12} />
+              </button>
+              <button
+                disabled={feedbackMutation.isPending}
+                onClick={() => feedbackMutation.mutate({ eventId: event.id, feedback: "incorrect" })}
+                className={cn(
+                  "p-1 rounded-lg hover:bg-red-950/30 text-muted-foreground hover:text-red-400 transition-colors",
+                  event.feedback === "incorrect" && "text-red-400 bg-red-950/20"
+                )}
+                title="Incorreto"
+              >
+                <ThumbsDown size={12} />
+              </button>
+            </div>
+          </div>
+        );
+      },
+    },
+  ], [animals, language, playingEventId, feedbackMutation.isPending]);
+
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [sorting, setSorting] = useState<any[]>([]);
+
+  const table = useReactTable({
+    data: events,
+    columns,
+    state: {
+      globalFilter,
+      sorting,
+    },
+    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
+  });
 
   const chartEventsQuery = trpc.events.list.useQuery(
     {
@@ -1074,8 +1250,19 @@ export default function HistoryPage() {
 
       {viewTab === "list" ? (
         <>
-          {/* Events list */}
-          <div className="bg-card border border-border rounded-2xl px-4">
+          {/* Search Filter */}
+          <div className="flex items-center gap-2 mb-4 bg-slate-900/40 p-2 rounded-xl border border-border">
+            <Search size={14} className="text-muted-foreground ml-1" />
+            <input
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder={language === "pt" ? "Pesquisar por texto..." : "Search text..."}
+              className="bg-transparent text-xs text-foreground focus:outline-none w-full"
+            />
+          </div>
+
+          {/* TanStack Table */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
             {isLoading ? (
               <div className="py-12 flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -1083,43 +1270,58 @@ export default function HistoryPage() {
             ) : events.length === 0 ? (
               <EmptyState filtered={isFiltered} />
             ) : (
-              events.map((event) => (
-                <EventRow
-                  key={event.id}
-                  event={event}
-                  disabled={feedbackMutation.isPending}
-                  isPlaying={playingEventId === event.id}
-                  onPlayToggle={handlePlayToggle}
-                  onOpenRawData={setRawEvent}
-                  onFeedback={(eventId, feedback) => {
-                    feedbackMutation.mutate({ eventId, feedback });
-                  }}
-                />
-              ))
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id} className="border-b border-border bg-muted/20">
+                        {headerGroup.headers.map((header) => (
+                          <th key={header.id} className="px-4 py-3 text-xs font-semibold text-muted-foreground">
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id} className="border-b border-border/40 hover:bg-muted/5 last:border-0">
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-4 py-3 text-xs align-middle">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
+          {!isLoading && events.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
                 className="gap-1"
               >
                 <ChevronLeft size={16} />
                 {t("historyPage.previous")}
               </Button>
-              <span className="text-sm text-muted-foreground">
-                {page} / {totalPages}
+              <span className="text-xs text-muted-foreground">
+                Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
                 className="gap-1"
               >
                 {t("historyPage.next")}
@@ -1130,7 +1332,7 @@ export default function HistoryPage() {
 
           {/* Total count */}
           {total > 0 && (
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center mt-2">
               {total} {total === 1 ? t("historyPage.record") : t("historyPage.records")} {t("historyPage.inTotal")}
             </p>
           )}
