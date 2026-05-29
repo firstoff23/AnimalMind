@@ -43,8 +43,10 @@ import {
   PawPrint,
   ArrowUpDown,
   Search,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import {
   useReactTable,
   getCoreRowModel,
@@ -487,7 +489,7 @@ export default function HistoryPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [, setLocation] = useLocation();
 
-  const { data: animals = [] } = trpc.animals.list.useQuery();
+  const { data: animals = [], refetch: refetchAnimals } = trpc.animals.list.useQuery();
   const filterAnimal = animals.find((animal) => animal.id === animalIdFilter);
 
   const handlePlayToggle = (eventId: number, audioUrl: string) => {
@@ -549,6 +551,15 @@ export default function HistoryPage() {
   const isLoading = useAnimalEndpoint ? animalEventsQuery.isLoading : allEventsQuery.isLoading;
   const queryError = useAnimalEndpoint ? animalEventsQuery.error : allEventsQuery.error;
   const refetchData = useAnimalEndpoint ? animalEventsQuery.refetch : allEventsQuery.refetch;
+
+  const handleRefresh = async () => {
+    await Promise.all([
+      refetchAnimals(),
+      refetchData()
+    ]);
+  };
+
+  const { pullDistance, isRefreshing, touchHandlers } = usePullToRefresh(handleRefresh);
 
   const events = (data?.events ?? []) as HistoryEvent[];
   const total = data?.total ?? 0;
@@ -1042,7 +1053,33 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-4 max-w-lg mx-auto">
+    <div 
+      className="relative overflow-x-hidden min-h-full"
+      {...touchHandlers}
+    >
+      {/* Pull to refresh indicator */}
+      <div 
+        className="absolute left-0 right-0 flex items-center justify-center pointer-events-none transition-all duration-200 z-50"
+        style={{ 
+          top: `${pullDistance - 35}px`, 
+          opacity: pullDistance > 15 ? 1 : 0 
+        }}
+      >
+        <div className="bg-slate-900/90 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+          <Loader2 size={12} className={cn("text-primary", (isRefreshing || pullDistance >= 80) && "animate-spin")} />
+          <span className="text-[10px] text-muted-foreground font-medium">
+            {isRefreshing ? "A atualizar..." : pullDistance >= 80 ? "Solte para atualizar" : "Puxe para atualizar"}
+          </span>
+        </div>
+      </div>
+
+      <div 
+        className="page-enter min-h-full px-4 pt-6 pb-4 space-y-4 max-w-lg mx-auto"
+        style={{ 
+          transform: `translateY(${pullDistance}px)`,
+          transition: pullDistance === 0 ? "transform 0.2s ease-out" : "none"
+        }}
+      >
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground">{t("historyPage.title")}</h1>
@@ -1465,6 +1502,7 @@ export default function HistoryPage() {
           if (!open) setRawEvent(null);
         }}
       />
+    </div>
     </div>
   );
 }

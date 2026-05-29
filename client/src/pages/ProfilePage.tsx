@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Drawer } from "vaul";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -711,10 +712,8 @@ function AddAnimalForm({ onClose }: { onClose: () => void }) {
 }
 
 
-// ─── Profile Page ─────────────────────────────────────────────────────────────
-
 export default function ProfilePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [, setLocation] = useLocation();
   const { data: animals = [], isLoading, error, refetch } = trpc.animals.list.useQuery();
@@ -736,7 +735,7 @@ export default function ProfilePage() {
         <h1 className="text-xl font-bold text-foreground">{t("profilePage.title")}</h1>
         <Button
           size="sm"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => setShowForm(true)}
           className="gap-1.5 bg-primary text-primary-foreground"
         >
           <Plus size={16} />
@@ -744,8 +743,21 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      {/* Add form */}
-      {showForm && <AddAnimalForm onClose={() => setShowForm(false)} />}
+      {/* Add form using vaul Drawer */}
+      <Drawer.Root open={showForm} onOpenChange={setShowForm}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm animate-fade-in" />
+          <Drawer.Content className="bg-slate-900 border-t border-slate-800 flex flex-col rounded-t-3xl h-[85vh] fixed bottom-0 left-0 right-0 z-50 outline-none max-w-lg mx-auto">
+            <div className="p-4 bg-slate-900 flex-1 overflow-y-auto rounded-t-3xl scrollbar-none">
+              <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-slate-700 mb-6" />
+              <Drawer.Title className="text-lg font-bold text-foreground text-center mb-4">
+                {language === "pt" ? "Adicionar Novo Animal" : "Add New Animal"}
+              </Drawer.Title>
+              <AddAnimalForm onClose={() => setShowForm(false)} />
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
       {/* Animal cards list - 4 States */}
       {isLoading ? (

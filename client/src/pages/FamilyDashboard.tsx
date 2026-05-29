@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import FamilyInvite from "@/components/FamilyInvite";
 import { trpc } from "@/lib/trpc";
-import { PawPrint, Users } from "lucide-react";
+import { PawPrint, Users, AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -51,6 +52,65 @@ export default function FamilyDashboard({ params }: { params?: { code?: string }
     },
     onError: (error) => toast.error(error.message),
   });
+
+  const isLoading = membersQuery.isLoading || (!!familyId && (animalsQuery.isLoading || activityQuery.isLoading));
+  const isError = membersQuery.isError || (!!familyId && (animalsQuery.isError || activityQuery.isError));
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-slate-950 px-4 py-6 text-slate-100">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b border-slate-800 pb-5">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24 bg-slate-800" />
+              <Skeleton className="h-8 w-48 bg-slate-800" />
+              <Skeleton className="h-4 w-96 bg-slate-800" />
+            </div>
+            <Skeleton className="h-9 w-32 bg-slate-800" />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Skeleton className="h-28 rounded-lg bg-slate-800" />
+            <Skeleton className="h-28 rounded-lg bg-slate-800" />
+          </div>
+          <div className="grid gap-5 lg:grid-cols-3">
+            <Skeleton className="h-64 rounded-lg bg-slate-800" />
+            <Skeleton className="h-64 rounded-lg bg-slate-800" />
+            <Skeleton className="h-64 rounded-lg bg-slate-800" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-full bg-slate-950 px-4 py-6 text-slate-100 flex items-center justify-center pt-16">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake max-w-md w-full">
+          <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
+          <h2 className="text-sm font-semibold text-foreground">
+            Erro ao carregar dashboard de família.
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Falha ao comunicar com o servidor. Verifique a sua ligação e tente novamente.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => {
+              membersQuery.refetch();
+              if (familyId) {
+                animalsQuery.refetch();
+                activityQuery.refetch();
+              }
+            }}
+            className="bg-primary text-primary-foreground rounded-xl"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-full bg-slate-950 px-4 py-6 text-slate-100">

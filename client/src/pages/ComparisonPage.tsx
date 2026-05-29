@@ -3,7 +3,9 @@ import { useQueryState } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PawPrint, BarChart3 } from "lucide-react";
+import { PawPrint, BarChart3, AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   BarChart,
   Bar,
@@ -43,7 +45,7 @@ const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"
 
 export default function ComparisonPage() {
   const { t, language } = useLanguage();
-  const { data: animals = [] } = trpc.animals.list.useQuery();
+  const { data: animals = [], isLoading: isLoadingAnimals, error: errorAnimals, refetch: refetchAnimals } = trpc.animals.list.useQuery();
 
   const [a1, setA1] = useQueryState("a1");
   const [a2, setA2] = useQueryState("a2");
@@ -61,7 +63,7 @@ export default function ComparisonPage() {
     setPeriodStr(days === 7 ? "week" : days === 90 ? "quarter" : "month");
   };
 
-  const { data: listData } = trpc.events.list.useQuery(
+  const { data: listData, isLoading: isLoadingEvents, error: errorEvents, refetch: refetchEvents } = trpc.events.list.useQuery(
     { pageSize: 1000 },
     { enabled: animals.length > 0 }
   );
@@ -135,6 +137,48 @@ export default function ComparisonPage() {
       </div>
     );
   };
+
+  if (isLoadingAnimals || (animals.length > 0 && isLoadingEvents)) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64 bg-slate-800" />
+          <Skeleton className="h-4 w-48 bg-slate-800" />
+        </div>
+        <Skeleton className="h-28 rounded-2xl bg-slate-800" />
+        <Skeleton className="h-64 rounded-2xl bg-slate-800" />
+        <Skeleton className="h-64 rounded-2xl bg-slate-800" />
+      </div>
+    );
+  }
+
+  if (errorAnimals || errorEvents) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 pt-16 text-center">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake max-w-md mx-auto">
+          <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
+          <h2 className="text-sm font-semibold text-foreground">
+            {language === "pt" ? "Erro ao carregar dados de comparação." : "Error loading comparison data."}
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {language === "pt"
+              ? "Falha ao comunicar com o servidor. Verifique a sua ligação e tente novamente."
+              : "Failed to communicate with the server. Please check your connection and try again."}
+          </p>
+          <Button
+            size="sm"
+            onClick={() => {
+              refetchAnimals();
+              refetchEvents();
+            }}
+            className="bg-primary text-primary-foreground rounded-xl"
+          >
+            {language === "pt" ? "Tentar novamente" : "Try again"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (animals.length === 0) {
     return (

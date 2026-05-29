@@ -8,7 +8,9 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useMotionValue, animate } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, PawPrint } from "lucide-react";
+import { AlertCircle, PawPrint, Loader2 } from "lucide-react";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { cn } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -119,15 +121,26 @@ export default function DashboardPage() {
     respondMutation.mutate({ invitationId, action });
   };
 
-  const { data: events = [] } = trpc.animals.weeklyStats.useQuery(
+  const { data: events = [], refetch: refetchEvents } = trpc.animals.weeklyStats.useQuery(
     { animalId: activeAnimal?.id },
     { enabled: !!activeAnimal }
   );
 
-  const { data: beliefState } = trpc.animals.getBeliefState.useQuery(
+  const { data: beliefState, refetch: refetchBelief } = trpc.animals.getBeliefState.useQuery(
     { animalId: activeAnimal?.id },
     { enabled: !!activeAnimal }
   );
+
+  const handleRefresh = async () => {
+    await Promise.all([
+      refetchAnimals(),
+      refetchInvitations(),
+      activeAnimal ? refetchEvents() : Promise.resolve(),
+      activeAnimal ? refetchBelief() : Promise.resolve(),
+    ]);
+  };
+
+  const { pullDistance, isRefreshing, touchHandlers } = usePullToRefresh(handleRefresh);
 
   const dominantBelief = useMemo(() => {
     if (!beliefState) return null;
@@ -205,7 +218,33 @@ export default function DashboardPage() {
   }, [events]);
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-5 max-w-lg mx-auto">
+    <div 
+      className="relative overflow-x-hidden min-h-full"
+      {...touchHandlers}
+    >
+      {/* Pull to refresh indicator */}
+      <div 
+        className="absolute left-0 right-0 flex items-center justify-center pointer-events-none transition-all duration-200 z-50"
+        style={{ 
+          top: `${pullDistance - 35}px`, 
+          opacity: pullDistance > 15 ? 1 : 0 
+        }}
+      >
+        <div className="bg-slate-900/90 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+          <Loader2 size={12} className={cn("text-primary", (isRefreshing || pullDistance >= 80) && "animate-spin")} />
+          <span className="text-[10px] text-muted-foreground font-medium">
+            {isRefreshing ? "A atualizar..." : pullDistance >= 80 ? "Solte para atualizar" : "Puxe para atualizar"}
+          </span>
+        </div>
+      </div>
+
+      <div 
+        className="page-enter min-h-full px-4 pt-6 pb-4 space-y-5 max-w-lg mx-auto"
+        style={{ 
+          transform: `translateY(${pullDistance}px)`,
+          transition: pullDistance === 0 ? "transform 0.2s ease-out" : "none"
+        }}
+      >
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-foreground">{t("dashboardPage.title")}</h1>
@@ -580,6 +619,7 @@ export default function DashboardPage() {
           </SpotlightCard>
         </>
       )}
+    </div>
     </div>
   );
 }

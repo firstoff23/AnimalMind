@@ -4,14 +4,15 @@ import { useLanguage } from "@/hooks/useLanguage";
 import HealthBulletinTab from "@/components/HealthBulletinTab";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, PawPrint, Download } from "lucide-react";
+import { Heart, PawPrint, Download, AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { pdf } from "@react-pdf/renderer";
 import { HealthBulletinPDF } from "@/components/HealthBulletinPDF";
 
 export default function HealthPage() {
   const { t, language } = useLanguage();
-  const { data: animals = [], refetch } = trpc.animals.list.useQuery();
+  const { data: animals = [], refetch, isLoading: isLoadingAnimals, error: errorAnimals } = trpc.animals.list.useQuery();
   const [isExporting, setIsExporting] = useState(false);
 
   // Find active animal or fallback to first animal
@@ -22,11 +23,11 @@ export default function HealthPage() {
     ? animals.find((a) => a.id === selectedAnimalId)
     : activeAnimalFromList;
 
-  const { data: vaccinations = [] } = trpc.health.getVaccines.useQuery(
+  const { data: vaccinations = [], isLoading: isLoadingVaccines, error: errorVaccines, refetch: refetchVaccines } = trpc.health.getVaccines.useQuery(
     { animalId: selectedAnimal?.id ?? 0 },
     { enabled: !!selectedAnimal }
   );
-  const { data: healthRecords = [] } = trpc.health.getHealthRecords.useQuery(
+  const { data: healthRecords = [], isLoading: isLoadingRecords, error: errorRecords, refetch: refetchRecords } = trpc.health.getHealthRecords.useQuery(
     { animalId: selectedAnimal?.id ?? 0 },
     { enabled: !!selectedAnimal }
   );
@@ -83,6 +84,53 @@ export default function HealthPage() {
       setIsExporting(false);
     }
   };
+
+  if (isLoadingAnimals || (selectedAnimal && (isLoadingVaccines || isLoadingRecords))) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48 bg-slate-800" />
+            <Skeleton className="h-4 w-64 bg-slate-800" />
+          </div>
+          <Skeleton className="h-9 w-24 bg-slate-800" />
+        </div>
+        <Skeleton className="h-16 rounded-2xl bg-slate-800" />
+        <Skeleton className="h-64 rounded-2xl bg-slate-800" />
+      </div>
+    );
+  }
+
+  if (errorAnimals || errorVaccines || errorRecords) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 pt-16 text-center">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake max-w-md mx-auto">
+          <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
+          <h2 className="text-sm font-semibold text-foreground">
+            {language === "pt" ? "Erro ao carregar boletim sanitário." : "Error loading health bulletin."}
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {language === "pt"
+              ? "Falha ao comunicar com o servidor. Verifique a sua ligação e tente novamente."
+              : "Failed to communicate with the server. Please check your connection and try again."}
+          </p>
+          <Button
+            size="sm"
+            onClick={() => {
+              refetch();
+              if (selectedAnimal) {
+                refetchVaccines();
+                refetchRecords();
+              }
+            }}
+            className="bg-primary text-primary-foreground rounded-xl"
+          >
+            {language === "pt" ? "Tentar novamente" : "Try again"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (animals.length === 0) {
     return (
