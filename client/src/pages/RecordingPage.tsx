@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { motion } from "framer-motion";
+import { GlowingButton } from "@/components/ui/GlowingButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
@@ -1114,7 +1115,7 @@ export default function RecordingPage() {
           )}
         </div>
 
-        <motion.button
+        <GlowingButton
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
@@ -1130,6 +1131,8 @@ export default function RecordingPage() {
               ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
               : { duration: 0.2 }
           }
+          active={recordState === "recording" || isAutoMode}
+          glowColor={recordState === "recording" ? "#ef4444" : isAutoMode ? "#06b6d4" : "#10b981"}
           className={cn(
             "w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2",
             "font-semibold shadow-2xl transition-all duration-300",
@@ -1139,7 +1142,7 @@ export default function RecordingPage() {
           aria-label="Iniciar gravação"
         >
           {renderButtonContent()}
-        </motion.button>
+        </GlowingButton>
 
         <p className="text-xs text-muted-foreground text-center h-4">
           {isAutoMode && recordState === "idle" && t("recordingPage.nextAcusticSoon")}

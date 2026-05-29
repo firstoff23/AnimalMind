@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart,
@@ -328,7 +329,7 @@ export default function DashboardPage() {
       )}
 
       {/* POMDP Belief State - Humor Consolidado */}
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+      <SpotlightCard className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             {t("dashboardPage.consolidatedMood")}
@@ -398,10 +399,10 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-      </div>
+      </SpotlightCard>
 
       {/* Bar chart: state distribution */}
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      <SpotlightCard className="space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           {t("dashboardPage.statesDistributionTitle")}
         </h2>
@@ -438,10 +439,10 @@ export default function DashboardPage() {
             </BarChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </SpotlightCard>
 
       {/* Line chart: daily average confidence */}
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      <SpotlightCard className="space-y-3">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           {t("dashboardPage.avgConfidence")}
         </h2>
@@ -478,10 +479,10 @@ export default function DashboardPage() {
             </LineChart>
           </ResponsiveContainer>
         )}
-      </div>
+      </SpotlightCard>
 
       {/* State legend */}
-      <div className="bg-card border border-border rounded-2xl p-4">
+      <SpotlightCard>
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           {t("dashboardPage.legend")}
         </h2>
@@ -495,7 +496,7 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
-      </div>
+      </SpotlightCard>
     </div>
   );
 }

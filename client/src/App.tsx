@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Lenis from "lenis";
 import { CommandPalette } from "@/components/CommandPalette";
 import { useAppStore } from "@/store/appStore";
+import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -38,7 +39,10 @@ function Router() {
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      {/* Background Grid */}
+      {isAuthenticated && <BackgroundGrid />}
+
       {/* Header — only shown when authenticated */}
       {isAuthenticated && <Header />}
 
