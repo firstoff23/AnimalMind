@@ -87,7 +87,7 @@ function App() {
             <TooltipProvider>
               <Toaster
                 theme="dark"
-                position="top-center"
+                position="bottom-center"
                 toastOptions={{
                   style: {
                     background: "oklch(0.12 0.012 264)",
