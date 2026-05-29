@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
 import Lenis from "lenis";
+import { CommandPalette } from "@/components/CommandPalette";
+import { useAppStore } from "@/store/appStore";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -32,6 +34,8 @@ import ComparisonPage from "./pages/ComparisonPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
+  const commandPaletteOpen = useAppStore((state) => state.commandPaletteOpen);
+  const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -74,6 +78,11 @@ function Router() {
 
       {/* Bottom nav — only shown when authenticated */}
       {isAuthenticated && <BottomNav />}
+
+      {/* Global Command Palette */}
+      {isAuthenticated && (
+        <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+      )}
     </div>
   );
 }

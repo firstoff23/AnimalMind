@@ -2,15 +2,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, User } from "lucide-react";
+import { LogOut, Moon, Sun, User, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
+import { useAppStore } from "@/store/appStore";
 
 export function Header() {
   const { user, signOut, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
+  const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
 
   const handleLogout = async () => {
     try {
@@ -36,6 +38,17 @@ export function Header() {
             <User className="w-4 h-4" />
             <span className="text-sm">{user?.email}</span>
           </div>
+
+          <Button
+            onClick={() => setCommandPaletteOpen(true)}
+            variant="outline"
+            size="icon"
+            className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+            aria-label="Abrir pesquisa"
+            title="Pesquisar (Ctrl+K)"
+          >
+            <Search className="w-4 h-4" />
+          </Button>
 
           <Button
             onClick={toggleTheme}
