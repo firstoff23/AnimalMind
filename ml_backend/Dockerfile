@@ -3,7 +3,7 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PORT=7860 \
+    PORT=8000 \
     HOME=/home/appuser \
     TFHUB_CACHE_DIR=/home/appuser/.cache/tfhub_modules
 
@@ -24,6 +24,6 @@ RUN chown -R 1000:1000 /app /home/appuser
 
 USER 1000
 
-EXPOSE 7860
+EXPOSE 8000
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
