@@ -26,6 +26,7 @@ import VetPage from "./pages/VetPage";
 import VetDashboard from "./pages/VetDashboard";
 import FamilyDashboard from "./pages/FamilyDashboard";
 import HealthPage from "./pages/HealthPage";
+import ComparisonPage from "./pages/ComparisonPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -59,6 +60,7 @@ function Router() {
           <Route path="/vet" component={(props) => <ProtectedRoute component={VetDashboard} {...props} />} />
           <Route path="/family" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
           <Route path="/join/:code" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
+          <Route path="/comparison" component={(props) => <ProtectedRoute component={ComparisonPage} {...props} />} />
 
           {/* Not found */}
           <Route path="/404" component={NotFound} />
