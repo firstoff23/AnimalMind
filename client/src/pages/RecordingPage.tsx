@@ -324,6 +324,43 @@ const SKELETON_TEMPLATES: Record<string, Record<string, Point>> = {
   }
 };
 
+function determinePostureFromLandmarks(landmarks: any[]): string | null {
+  if (!landmarks || landmarks.length < 25) return null;
+  const leftShoulder = landmarks[11];
+  const rightShoulder = landmarks[12];
+  const leftHip = landmarks[23];
+  const rightHip = landmarks[24];
+  const leftAnkle = landmarks[27];
+  const rightAnkle = landmarks[28];
+
+  if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) return null;
+
+  const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+  const hipY = (leftHip.y + rightHip.y) / 2;
+  const shoulderX = (leftShoulder.x + rightShoulder.x) / 2;
+  const hipX = (leftHip.x + rightHip.x) / 2;
+
+  const dy = Math.abs(hipY - shoulderY);
+  
+  if (dy < 0.12) {
+    return "lying";
+  }
+
+  if (leftAnkle && rightAnkle) {
+    const ankleY = (leftAnkle.y + rightAnkle.y) / 2;
+    const hipToAnkle = Math.abs(ankleY - hipY);
+    if (hipToAnkle < 0.15) {
+      return "sitting";
+    }
+  }
+
+  if (dy > 0.28) {
+    return "standing";
+  }
+
+  return "sitting";
+}
+
 // ─── Recording Page ───────────────────────────────────────────────────────────
 
 import { useAppStore } from "@/store/appStore";
@@ -371,6 +408,8 @@ export default function RecordingPage() {
   const [detectedSpecies, setDetectedSpecies] = useState<{ species: string; confidence: number } | null>(null);
   const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isMediaPipeActive, setIsMediaPipeActive] = useState(false);
+  const [mediaPipeLandmarks, setMediaPipeLandmarks] = useState<any>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -542,7 +581,7 @@ export default function RecordingPage() {
     }
   };
 
-  // YOLOv8 simulated skeleton canvas loop
+  // YOLOv8 simulated or MediaPipe skeleton canvas loop
   useEffect(() => {
     if (!showCamera) return;
     let animId: number;
@@ -554,94 +593,293 @@ export default function RecordingPage() {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const template = SKELETON_TEMPLATES[detectedPosture] || SKELETON_TEMPLATES.sitting;
-      const points: Record<string, Point> = {};
-      const time = Date.now() * 0.005;
-      
-      Object.entries(template).forEach(([name, pt]) => {
-        const amp = (detectedPosture === "alert" && name === "tailTip") ? 8 : 2;
-        const speed = (detectedPosture === "alert" && name === "tailTip") ? 3 : 1;
-        const dx = Math.sin(time * speed + pt.x) * amp;
-        const dy = Math.cos(time * speed + pt.y) * amp;
-        points[name] = { x: pt.x + dx, y: pt.y + dy };
-      });
+      if (isMediaPipeActive && mediaPipeLandmarks) {
+        // DRAW MEDIAPIPE OVERLAY
+        const getPt = (idx: number) => {
+          const lm = mediaPipeLandmarks[idx];
+          if (!lm) return null;
+          return { x: lm.x * canvas.width, y: lm.y * canvas.height };
+        };
 
-      // Draw skeleton lines
-      ctx.strokeStyle = "rgba(16, 185, 129, 0.85)"; // emerald
-      ctx.lineWidth = 3.5;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
+        const nose = getPt(0);
+        const leftEye = getPt(2);
+        const rightEye = getPt(5);
+        const leftEar = getPt(7);
+        const rightEar = getPt(8);
+        const leftShoulder = getPt(11);
+        const rightShoulder = getPt(12);
+        const leftElbow = getPt(13);
+        const rightElbow = getPt(14);
+        const leftWrist = getPt(15);
+        const rightWrist = getPt(16);
+        const leftHip = getPt(23);
+        const rightHip = getPt(24);
+        const leftAnkle = getPt(27);
+        const rightAnkle = getPt(28);
 
-      const drawLine = (p1?: Point, p2?: Point) => {
-        if (!p1 || !p2) return;
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
-      };
+        const neck = (leftShoulder && rightShoulder) ? { x: (leftShoulder.x + rightShoulder.x) / 2, y: (leftShoulder.y + rightShoulder.y) / 2 } : null;
+        const hip = (leftHip && rightHip) ? { x: (leftHip.x + rightHip.x) / 2, y: (leftHip.y + rightHip.y) / 2 } : null;
 
-      // Connect head
-      drawLine(points.leftEar, points.leftEye);
-      drawLine(points.leftEye, points.nose);
-      drawLine(points.nose, points.rightEye);
-      drawLine(points.rightEye, points.rightEar);
-      drawLine(points.nose, points.neck);
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.85)"; // emerald
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
 
-      // Spine & Leg
-      drawLine(points.neck, points.shoulder);
-      drawLine(points.shoulder, points.elbow);
-      drawLine(points.elbow, points.frontPaw);
-      drawLine(points.shoulder, points.backHip);
-      drawLine(points.backHip, points.backPaw);
+        const drawLine = (p1?: { x: number, y: number } | null, p2?: { x: number, y: number } | null) => {
+          if (!p1 || !p2) return;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        };
 
-      // Tail
-      drawLine(points.backHip, points.tailBase);
-      drawLine(points.tailBase, points.tailTip);
+        // Head connections
+        drawLine(leftEar, leftEye);
+        drawLine(leftEye, nose);
+        drawLine(nose, rightEye);
+        drawLine(rightEye, rightEar);
+        if (neck) drawLine(nose, neck);
 
-      // Draw joints (Keypoints)
-      Object.entries(points).forEach(([name, pt]) => {
-        ctx.beginPath();
-        if (name === "nose") {
-          ctx.fillStyle = "#ec4899"; // Pink nose
-          ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
-        } else {
-          ctx.fillStyle = "#10b981"; // Emerald joints
-          ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+        // Spine and legs
+        drawLine(neck, leftElbow);
+        drawLine(leftElbow, leftWrist);
+        drawLine(neck, rightElbow);
+        drawLine(rightElbow, rightWrist);
+        drawLine(neck, hip);
+        drawLine(hip, leftAnkle);
+        drawLine(hip, rightAnkle);
+
+        // Draw simulated tail
+        if (hip) {
+          const tailTip = { x: hip.x - 30, y: hip.y - 15 + Math.sin(Date.now() * 0.005) * 8 };
+          drawLine(hip, tailTip);
         }
-        ctx.fill();
+
+        // Draw joints (Keypoints)
+        const joints = [
+          { pt: nose, name: "nose" },
+          { pt: leftEye, name: "joint" },
+          { pt: rightEye, name: "joint" },
+          { pt: leftEar, name: "joint" },
+          { pt: rightEar, name: "joint" },
+          { pt: leftShoulder, name: "joint" },
+          { pt: rightShoulder, name: "joint" },
+          { pt: leftElbow, name: "joint" },
+          { pt: rightElbow, name: "joint" },
+          { pt: leftWrist, name: "joint" },
+          { pt: rightWrist, name: "joint" },
+          { pt: leftHip, name: "joint" },
+          { pt: rightHip, name: "joint" },
+          { pt: leftAnkle, name: "joint" },
+          { pt: rightAnkle, name: "joint" }
+        ];
+
+        joints.forEach(({ pt, name }) => {
+          if (!pt) return;
+          ctx.beginPath();
+          if (name === "nose") {
+            ctx.fillStyle = "#ec4899"; // Pink nose
+            ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+          } else {
+            ctx.fillStyle = "#10b981"; // Emerald joints
+            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          
+          ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+
+        // Bounding Box
+        const validPts = [nose, leftEye, rightEye, leftEar, rightEar, leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist, leftHip, rightHip, leftAnkle, rightAnkle].filter(p => p !== null) as { x: number, y: number }[];
+        if (validPts.length > 0) {
+          const xs = validPts.map(p => p.x);
+          const ys = validPts.map(p => p.y);
+          const minX = Math.min(...xs) - 15;
+          const maxX = Math.max(...xs) + 15;
+          const minY = Math.min(...ys) - 15;
+          const maxY = Math.max(...ys) + 15;
+
+          ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+          ctx.setLineDash([]);
+        }
+
+        // Label
+        ctx.fillStyle = "#10b981";
+        ctx.font = "bold 10px Inter, sans-serif";
+        ctx.fillText(`MediaPipe Local: ${detectedPosture.toUpperCase()}`, 10, 20);
+
+      } else {
+        // DRAW SIMULATED SKELETON
+        const template = SKELETON_TEMPLATES[detectedPosture] || SKELETON_TEMPLATES.sitting;
+        const points: Record<string, Point> = {};
+        const time = Date.now() * 0.005;
         
-        ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
-        ctx.stroke();
-      });
+        Object.entries(template).forEach(([name, pt]) => {
+          const amp = (detectedPosture === "alert" && name === "tailTip") ? 8 : 2;
+          const speed = (detectedPosture === "alert" && name === "tailTip") ? 3 : 1;
+          const dx = Math.sin(time * speed + pt.x) * amp;
+          const dy = Math.cos(time * speed + pt.y) * amp;
+          points[name] = { x: pt.x + dx, y: pt.y + dy };
+        });
 
-      // Calculate Bounding Box
-      const xs = Object.values(points).map(p => p.x);
-      const ys = Object.values(points).map(p => p.y);
-      const minX = Math.min(...xs) - 15;
-      const maxX = Math.max(...xs) + 15;
-      const minY = Math.min(...ys) - 15;
-      const maxY = Math.max(...ys) + 15;
+        // Draw skeleton lines
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.85)"; // emerald
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
 
-      ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
-      ctx.setLineDash([]);
+        const drawLine = (p1?: Point, p2?: Point) => {
+          if (!p1 || !p2) return;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        };
 
-      // Label
-      ctx.fillStyle = "#10b981";
-      ctx.font = "bold 10px Inter, sans-serif";
-      ctx.fillText(`YOLOv8: ${detectedPosture.toUpperCase()}`, minX + 5, minY - 5);
+        // Connect head
+        drawLine(points.leftEar, points.leftEye);
+        drawLine(points.leftEye, points.nose);
+        drawLine(points.nose, points.rightEye);
+        drawLine(points.rightEye, points.rightEar);
+        drawLine(points.nose, points.neck);
+
+        // Spine & Leg
+        drawLine(points.neck, points.shoulder);
+        drawLine(points.shoulder, points.elbow);
+        drawLine(points.elbow, points.frontPaw);
+        drawLine(points.shoulder, points.backHip);
+        drawLine(points.backHip, points.backPaw);
+
+        // Tail
+        drawLine(points.backHip, points.tailBase);
+        drawLine(points.tailBase, points.tailTip);
+
+        // Draw joints (Keypoints)
+        Object.entries(points).forEach(([name, pt]) => {
+          ctx.beginPath();
+          if (name === "nose") {
+            ctx.fillStyle = "#ec4899"; // Pink nose
+            ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+          } else {
+            ctx.fillStyle = "#10b981"; // Emerald joints
+            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          
+          ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+
+        // Calculate Bounding Box
+        const xs = Object.values(points).map(p => p.x);
+        const ys = Object.values(points).map(p => p.y);
+        const minX = Math.min(...xs) - 15;
+        const maxX = Math.max(...xs) + 15;
+        const minY = Math.min(...ys) - 15;
+        const maxY = Math.max(...ys) + 15;
+
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+        ctx.setLineDash([]);
+
+        // Label
+        ctx.fillStyle = "#10b981";
+        ctx.font = "bold 10px Inter, sans-serif";
+        ctx.fillText(`Server Fallback: ${detectedPosture.toUpperCase()}`, minX + 5, minY - 5);
+      }
 
       animId = requestAnimationFrame(render);
     };
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [showCamera, detectedPosture]);
+  }, [showCamera, detectedPosture, isMediaPipeActive, mediaPipeLandmarks]);
+
+  // MediaPipe Pose browser detection loop
+  useEffect(() => {
+    if (!showCamera) {
+      setIsMediaPipeActive(false);
+      setMediaPipeLandmarks(null);
+      return;
+    }
+    let active = true;
+    let pose: any;
+
+    const initPose = async () => {
+      try {
+        const mpPose = await import("@mediapipe/pose");
+        pose = new mpPose.Pose({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+        });
+        pose.setOptions({
+          modelComplexity: 0,
+          smoothLandmarks: true,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5
+        });
+
+        pose.onResults((results: any) => {
+          if (!active) return;
+          if (results.poseLandmarks) {
+            setIsMediaPipeActive(true);
+            setMediaPipeLandmarks(results.poseLandmarks);
+            
+            const posture = determinePostureFromLandmarks(results.poseLandmarks);
+            if (posture) {
+              setDetectedPosture(posture);
+            }
+          } else {
+            setMediaPipeLandmarks(null);
+          }
+        });
+
+        const video = videoRef.current;
+        if (video) {
+          const processFrame = async () => {
+            if (!active) return;
+            if (video.readyState >= 2) {
+              try {
+                await pose.send({ image: video });
+              } catch (err) {
+                console.warn("MediaPipe Pose frame process error:", err);
+              }
+            }
+            if (active) {
+              requestAnimationFrame(processFrame);
+            }
+          };
+          requestAnimationFrame(processFrame);
+        }
+      } catch (err) {
+        console.error("Failed to load/init MediaPipe Pose:", err);
+        if (active) {
+          setIsMediaPipeActive(false);
+        }
+      }
+    };
+
+    initPose();
+    return () => {
+      active = false;
+      if (pose) {
+        try {
+          pose.close();
+        } catch (e) {}
+      }
+    };
+  }, [showCamera]);
 
   // Periodic frame upload loop for YOLOv8 posture detection
   useEffect(() => {
@@ -651,6 +889,12 @@ export default function RecordingPage() {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const captureFrameAndDetect = async () => {
+      if (isMediaPipeActive) {
+        if (active) {
+          timeoutId = setTimeout(captureFrameAndDetect, 2000);
+        }
+        return;
+      }
       const video = videoRef.current;
       if (!video || video.paused || video.ended) {
         // Retry in 1 second if video is not ready yet
