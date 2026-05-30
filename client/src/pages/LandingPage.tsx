@@ -64,8 +64,8 @@ export default function LandingPage() {
           {t("landing.pwaAvailable") || "Disponível para instalar como PWA"}
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight max-w-3xl leading-tight">
-          {t("landing.title") || "Compreenda a Mente do Seu Animal"}
+        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-4xl leading-tight">
+          {t("landing.title") || "Monitorize sinais de bem-estar do seu animal através de áudio e padrões comportamentais."}
         </h1>
         
         <p className="text-base sm:text-xl text-slate-400 max-w-2xl leading-relaxed">
@@ -91,6 +91,13 @@ export default function LandingPage() {
               </Button>
             </>
           )}
+        </div>
+
+        <div className="max-w-2xl mx-auto p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-250 text-xs sm:text-sm flex items-center justify-center gap-2">
+          <span className="text-base">⚠️</span>
+          <p className="text-left">
+            <strong>Aviso Legal:</strong> AnimalMind não substitui avaliação veterinária. Os resultados são estimativas comportamentais.
+          </p>
         </div>
 
         {/* How It Works Section */}
