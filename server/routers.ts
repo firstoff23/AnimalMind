@@ -213,7 +213,7 @@ export const appRouter = router({
 
   // ── Classify ────────────────────────────────────────────────────────────────
   classify: router({
-    run: publicProcedure
+    run: protectedProcedure
       .input(
         z.object({
           animalId: z.number().optional(),
@@ -330,12 +330,12 @@ export const appRouter = router({
 
   // ── Animals ─────────────────────────────────────────────────────────────────
   animals: router({
-    list: publicProcedure.query(async ({ ctx }) => {
+    list: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       return getAnimalsByUser(userId);
     }),
 
-    add: publicProcedure
+    add: protectedProcedure
       .input(
         z.object({
           name: z.string().min(1).max(100),
@@ -358,7 +358,7 @@ export const appRouter = router({
         return addAnimal({ ...input, userId });
       }),
 
-    update: publicProcedure
+    update: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -384,7 +384,7 @@ export const appRouter = router({
         return updateAnimal(animalId, data);
       }),
 
-    setActive: publicProcedure
+    setActive: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -392,19 +392,19 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    getActive: publicProcedure.query(async ({ ctx }) => {
+    getActive: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       return getActiveAnimal(userId);
     }),
 
-    weeklyStats: publicProcedure
+    weeklyStats: protectedProcedure
       .input(z.object({ animalId: z.number().optional() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         return getWeeklyStats(userId, input.animalId);
       }),
 
-    get: publicProcedure
+    get: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -418,7 +418,7 @@ export const appRouter = router({
         return animal;
       }),
 
-    getBaseline: publicProcedure
+    getBaseline: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -430,7 +430,7 @@ export const appRouter = router({
         }
       }),
 
-    updateBaseline: publicProcedure
+    updateBaseline: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -445,7 +445,7 @@ export const appRouter = router({
         return updateAnimalBaseline(input.animalId, input);
       }),
 
-    getBeliefState: publicProcedure
+    getBeliefState: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -453,7 +453,7 @@ export const appRouter = router({
         return getLatestBeliefState(input.animalId);
       }),
 
-    inviteShare: publicProcedure
+    inviteShare: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -473,7 +473,7 @@ export const appRouter = router({
         return createShareInvitation(userId, input.animalId, input.email, input.permission);
       }),
 
-    listShares: publicProcedure
+    listShares: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -481,7 +481,7 @@ export const appRouter = router({
         return getAnimalShares(input.animalId);
       }),
 
-    removeShare: publicProcedure
+    removeShare: protectedProcedure
       .input(z.object({ shareId: z.number(), animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -496,12 +496,12 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    getPendingInvitations: publicProcedure.query(async ({ ctx }) => {
+    getPendingInvitations: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       return getPendingInvitations(userId);
     }),
 
-    respondToInvitation: publicProcedure
+    respondToInvitation: protectedProcedure
       .input(
         z.object({
           invitationId: z.number(),
@@ -514,7 +514,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    saveBreedFeedback: publicProcedure
+    saveBreedFeedback: protectedProcedure
       .input(
         z.object({
           animalType: z.enum(["dog", "cat"]),
@@ -528,7 +528,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    getVaccinations: publicProcedure
+    getVaccinations: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -536,7 +536,7 @@ export const appRouter = router({
         return getVaccinations(input.animalId);
       }),
 
-    addVaccination: publicProcedure
+    addVaccination: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -554,7 +554,7 @@ export const appRouter = router({
         return addVaccination(input);
       }),
 
-    deleteVaccination: publicProcedure
+    deleteVaccination: protectedProcedure
       .input(z.object({ id: z.number(), animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -562,7 +562,7 @@ export const appRouter = router({
         return deleteVaccination(input.id);
       }),
 
-    getDewormings: publicProcedure
+    getDewormings: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -570,7 +570,7 @@ export const appRouter = router({
         return getDewormings(input.animalId);
       }),
 
-    addDeworming: publicProcedure
+    addDeworming: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -587,7 +587,7 @@ export const appRouter = router({
         return addDeworming(input);
       }),
 
-    deleteDeworming: publicProcedure
+    deleteDeworming: protectedProcedure
       .input(z.object({ id: z.number(), animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -595,7 +595,7 @@ export const appRouter = router({
         return deleteDeworming(input.id);
       }),
 
-    getDiagnosticTests: publicProcedure
+    getDiagnosticTests: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -603,7 +603,7 @@ export const appRouter = router({
         return getDiagnosticTests(input.animalId);
       }),
 
-    addDiagnosticTest: publicProcedure
+    addDiagnosticTest: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -619,7 +619,7 @@ export const appRouter = router({
         return addDiagnosticTest(input);
       }),
 
-    deleteDiagnosticTest: publicProcedure
+    deleteDiagnosticTest: protectedProcedure
       .input(z.object({ id: z.number(), animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -627,7 +627,7 @@ export const appRouter = router({
         return deleteDiagnosticTest(input.id);
       }),
 
-    getOtherTreatments: publicProcedure
+    getOtherTreatments: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -635,7 +635,7 @@ export const appRouter = router({
         return getOtherTreatments(input.animalId);
       }),
 
-    addOtherTreatment: publicProcedure
+    addOtherTreatment: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -650,7 +650,7 @@ export const appRouter = router({
         return addOtherTreatment(input);
       }),
 
-    deleteOtherTreatment: publicProcedure
+    deleteOtherTreatment: protectedProcedure
       .input(z.object({ id: z.number(), animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -658,7 +658,7 @@ export const appRouter = router({
         return deleteOtherTreatment(input.id);
       }),
 
-    getLicensing: publicProcedure
+    getLicensing: protectedProcedure
       .input(z.object({ animalId: z.number() }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -666,7 +666,7 @@ export const appRouter = router({
         return getLicensing(input.animalId);
       }),
 
-    addLicensing: publicProcedure
+    addLicensing: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -684,7 +684,7 @@ export const appRouter = router({
         return addLicensing(input);
       }),
 
-    deleteLicensing: publicProcedure
+    deleteLicensing: protectedProcedure
       .input(z.object({ id: z.number(), animalId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -695,7 +695,7 @@ export const appRouter = router({
 
   // ── Events ──────────────────────────────────────────────────────────────────
   events: router({
-    recent: publicProcedure
+    recent: protectedProcedure
       .input(z.object({ limit: z.number().default(5) }))
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -703,7 +703,7 @@ export const appRouter = router({
         return events.map(mapDbEvent);
       }),
 
-    list: publicProcedure
+    list: protectedProcedure
       .input(
         z.object({
           page:     z.number().default(1),
@@ -731,7 +731,7 @@ export const appRouter = router({
         };
       }),
 
-    feedback: publicProcedure
+    feedback: protectedProcedure
       .input(
         z.object({
           eventId:  z.number(),
@@ -744,7 +744,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    exportData: publicProcedure
+    exportData: protectedProcedure
       .input(
         z.object({
           state: z.string().optional(),
@@ -769,7 +769,7 @@ export const appRouter = router({
         };
       }),
 
-    exportCsv: publicProcedure.query(async ({ ctx }) => {
+    exportCsv: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       const events = await getAllEventsForExport(userId);
       const header = "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
@@ -789,13 +789,13 @@ export const appRouter = router({
       return { csv: [header, ...rows].join("\n") };
     }),
 
-    getNotes: publicProcedure
+    getNotes: protectedProcedure
       .input(z.object({ eventId: z.number() }))
       .query(async ({ input }) => {
         return getEventNotes(input.eventId);
       }),
 
-    updateNotes: publicProcedure
+    updateNotes: protectedProcedure
       .input(
         z.object({
           eventId: z.number(),
@@ -807,7 +807,7 @@ export const appRouter = router({
         return { success: true, notes };
       }),
 
-    listForAnimal: publicProcedure
+    listForAnimal: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -829,7 +829,7 @@ export const appRouter = router({
         };
       }),
 
-    statsForAnimal: publicProcedure
+    statsForAnimal: protectedProcedure
       .input(
         z.object({
           animalId: z.number(),
@@ -841,7 +841,7 @@ export const appRouter = router({
         return getStatsForAnimal(input.animalId, userId, input.days);
       }),
 
-    getVisualMetadata: publicProcedure
+    getVisualMetadata: protectedProcedure
       .input(z.object({ eventId: z.number() }))
       .query(async ({ input }) => {
         const posture = await getEventPosture(input.eventId);
@@ -852,7 +852,7 @@ export const appRouter = router({
 
   // ── Settings ────────────────────────────────────────────────────────────────
   settings: router({
-    get: publicProcedure.query(async ({ ctx }) => {
+    get: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       const s = await getSettings(userId);
       if (!s) {
@@ -867,7 +867,7 @@ export const appRouter = router({
       };
     }),
 
-    update: publicProcedure
+    update: protectedProcedure
       .input(
         z.object({
           notificationsEnabled: z.boolean().optional(),

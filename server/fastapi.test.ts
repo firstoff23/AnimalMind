@@ -87,6 +87,16 @@ describe("tRPC classify.run with FastAPI backend", () => {
   it("throws TRPCError when FastAPI and Hugging Face are offline/invalid", async () => {
     if (!credentialsValid) return; // Skip if no Supabase credentials
 
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.includes("localhost") || url.includes("fly.dev") || url.includes("hf.space")) {
+        return Promise.reject(new Error("Network offline"));
+      }
+      return originalFetch(input, init);
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
     // Set an invalid FastAPI URL
     process.env.FASTAPI_BACKEND_URL = "http://localhost:9999-invalid-port";
 
@@ -98,6 +108,8 @@ describe("tRPC classify.run with FastAPI backend", () => {
       audio: mockBase64Audio,
       audioMimeType: "audio/wav",
     })).rejects.toThrow("Classificação indisponível. Tente novamente.");
+
+    vi.unstubAllGlobals();
   }, 10000);
 
   it("uses FastAPI response when it is online and returns valid data", async () => {

@@ -111,7 +111,19 @@ vi.mock("./db", () => ({
 
 // ─── Context factory ──────────────────────────────────────────────────────────
 
-function makeCtx(user: TrpcContext["user"] = null): TrpcContext {
+const dummyUser = {
+  id: 1,
+  openId: "demo-user-001",
+  email: "demo@animalmind.local",
+  name: "Demo User",
+  loginMethod: "demo",
+  role: "user",
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  lastSignedIn: new Date(),
+};
+
+function makeCtx(user: TrpcContext["user"] = dummyUser): TrpcContext {
   return {
     user,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],

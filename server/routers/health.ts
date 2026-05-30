@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import {
   getVaccines,
   addVaccine,
@@ -10,13 +10,13 @@ import {
 } from "../db";
 
 export const healthRouter = router({
-  getVaccines: publicProcedure
+  getVaccines: protectedProcedure
     .input(z.object({ animalId: z.number() }))
     .query(async ({ input }) => {
       return getVaccines(input.animalId);
     }),
 
-  addVaccine: publicProcedure
+  addVaccine: protectedProcedure
     .input(
       z.object({
         animalId: z.number(),
@@ -32,19 +32,19 @@ export const healthRouter = router({
       return addVaccine(input);
     }),
 
-  deleteVaccine: publicProcedure
+  deleteVaccine: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteVaccine(input.id);
     }),
 
-  getHealthRecords: publicProcedure
+  getHealthRecords: protectedProcedure
     .input(z.object({ animalId: z.number() }))
     .query(async ({ input }) => {
       return getHealthRecords(input.animalId);
     }),
 
-  addHealthRecord: publicProcedure
+  addHealthRecord: protectedProcedure
     .input(
       z.object({
         animalId: z.number(),
@@ -70,7 +70,7 @@ export const healthRouter = router({
       return addHealthRecord(input);
     }),
 
-  deleteHealthRecord: publicProcedure
+  deleteHealthRecord: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       return deleteHealthRecord(input.id);
