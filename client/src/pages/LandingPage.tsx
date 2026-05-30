@@ -175,23 +175,79 @@ export default function LandingPage() {
             </SpotlightCard>
           </div>
         </section>
+
+        {/* FAQ Section */}
+        <section className="w-full py-16 space-y-12 border-t border-slate-900/65 mt-12">
+          <div className="text-center space-y-3">
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Perguntas Frequentes (FAQ)
+            </h2>
+            <p className="text-sm text-slate-400 max-w-xl mx-auto">
+              Esclareça as suas dúvidas sobre o funcionamento e privacidade da AnimalMind.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
+            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
+              <h3 className="font-bold text-base text-slate-200">Como funciona a classificação acústica?</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Utilizamos modelos de redes neuronais avançados para analisar as frequências, tom e intensidade das vocalizações gravadas do seu animal, estimando o seu estado emocional de forma científica.
+              </p>
+            </div>
+            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
+              <h3 className="font-bold text-base text-slate-200">A classificação é 100% precisa?</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Não. A nossa plataforma fornece estimativas indicativas com base em padrões sonoros. Não substitui um diagnóstico médico efetuado por um médico veterinário.
+              </p>
+            </div>
+            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
+              <h3 className="font-bold text-base text-slate-200">Como é protegida a minha privacidade?</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Os ficheiros de áudio são guardados num armazenamento totalmente privado no Supabase e acedidos via URLs assinadas e temporárias. Pode apagar os seus registos a qualquer momento.
+              </p>
+            </div>
+            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
+              <h3 className="font-bold text-base text-slate-200">O que é a baseline do animal?</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                A baseline é o perfil de comportamento habitual do seu animal. A nossa IA calcula as suas reações habituais para detetar mudanças anómalas que possam indicar desconforto ou stresse.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} AnimalMind. Todos os direitos reservados.</p>
+        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <p>© {new Date().getFullYear()} AnimalMind. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setLocation("/privacidade")}
+                className="hover:text-indigo-450 transition-colors font-medium text-slate-400 hover:text-indigo-400"
+              >
+                Política de Privacidade
+              </button>
+              <span>·</span>
+              <a 
+                href="mailto:suporte@animalmind.local"
+                className="hover:text-indigo-450 transition-colors font-medium text-slate-400 hover:text-indigo-400"
+              >
+                Contacto de Suporte
+              </a>
+            </div>
+          </div>
+          
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLanguage("pt")}
-              className={cn("hover:text-slate-350 transition-colors", language === "pt" && "text-indigo-400 font-semibold")}
+              className={cn("hover:text-slate-300 transition-colors", language === "pt" && "text-indigo-400 font-semibold")}
             >
               Português
             </button>
             <span>·</span>
             <button
               onClick={() => setLanguage("en")}
-              className={cn("hover:text-slate-350 transition-colors", language === "en" && "text-indigo-400 font-semibold")}
+              className={cn("hover:text-slate-300 transition-colors", language === "en" && "text-indigo-400 font-semibold")}
             >
               English
             </button>
