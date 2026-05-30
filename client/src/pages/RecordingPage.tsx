@@ -20,12 +20,11 @@ import {
 import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity as InfinityIcon, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
-import callBackend from "@/lib/apiClient";
 import { useNotifications } from "@/hooks/useNotifications";
+import { Switch } from "@/components/ui/switch";
 import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Switch } from "@/components/ui/switch";
 
 type RecordingState = "idle" | "requesting" | "recording" | "processing";
 type CameraState = "idle" | "loading" | "allowed" | "denied" | "not_found" | "error";
@@ -375,15 +374,6 @@ export default function RecordingPage() {
   const showCamera = cameraState === "allowed";
   const setShowCamera = setCamera;
 
-  const [isYoloActive, setIsYoloActive] = useState(false);
-  const [hasStartedOnboarding, setHasStartedOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (cameraState !== "allowed") {
-      setIsYoloActive(false);
-    }
-  }, [cameraState]);
-
   const [recordState, setRecordState] = useState<RecordingState>("idle");
 
   useEffect(() => {
@@ -439,6 +429,16 @@ export default function RecordingPage() {
   const { data: settingsData } = trpc.settings.get.useQuery();
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
+
+  const [isYoloActive, setIsYoloActive] = useState(false);
+  const detectPostureMutation = trpc.classify.detectPosture.useMutation();
+  const detectSpeciesMutation = trpc.classify.detectSpecies.useMutation();
+
+  useEffect(() => {
+    if (cameraState !== "allowed") {
+      setIsYoloActive(false);
+    }
+  }, [cameraState]);
 
   const handleToggleCamera = async () => {
     if (cameraState === "allowed" || cameraState === "loading") {
@@ -679,14 +679,7 @@ export default function RecordingPage() {
 
   // YOLOv8 simulated or MediaPipe skeleton canvas loop
   useEffect(() => {
-    if (!showCamera || !isYoloActive) {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext("2d");
-        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-      return;
-    }
+    if (!showCamera) return;
     let animId: number;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -908,11 +901,11 @@ export default function RecordingPage() {
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [showCamera, detectedPosture, isMediaPipeActive, mediaPipeLandmarks, isYoloActive]);
+  }, [showCamera, detectedPosture, isMediaPipeActive, mediaPipeLandmarks]);
 
   // MediaPipe Pose browser detection loop
   useEffect(() => {
-    if (!showCamera || !isYoloActive) {
+    if (!showCamera) {
       setIsMediaPipeActive(false);
       setMediaPipeLandmarks(null);
       return;
@@ -982,7 +975,7 @@ export default function RecordingPage() {
         } catch (e) {}
       }
     };
-  }, [showCamera, isYoloActive]);
+  }, [showCamera]);
 
   // Periodic frame upload loop for YOLOv8 posture detection
   useEffect(() => {
@@ -1015,45 +1008,39 @@ export default function RecordingPage() {
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob(async (blob) => {
-            if (!blob || !active) return;
+          const base64Image = canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
+          if (!active) return;
 
-            try {
-              const file = new File([blob], "frame.jpg", { type: "image/jpeg" });
-
-              // Posture detection — primary (Fly.dev) → fallback (HF Space)
-              try {
-                const formData = new FormData();
-                formData.append("file", file);
-                const res = await callBackend("/detect-posture", { method: "POST", body: formData });
-                if (active) {
-                  const data = await res.json() as { posture: string; confidence: number };
-                  if (data?.posture) setDetectedPosture(data.posture);
+          detectPostureMutation.mutate(
+            { image: base64Image },
+            {
+              onSuccess: (data) => {
+                if (active && data?.posture) {
+                  setDetectedPosture(data.posture);
                 }
-              } catch {
-                // Both backends failed — keep last known posture
-              }
-
-              // Species detection (best-effort) — only when no animal selected
-              if (!activeAnimal) {
-                try {
-                  const speciesForm = new FormData();
-                  speciesForm.append("file", new File([blob], "frame.jpg", { type: "image/jpeg" }));
-                  const speciesRes = await callBackend("/detect-species", { method: "POST", body: speciesForm });
-                  if (active) {
-                    const speciesData = await speciesRes.json() as { species: string; confidence: number };
-                    if (speciesData?.species && speciesData.species !== "unknown") {
-                      setDetectedSpecies(speciesData);
-                    }
-                  }
-                } catch {
-                  // Species detection is best-effort; ignore errors
-                }
-              }
-            } catch (err) {
-              console.error("Error calling detect-posture API:", err);
+              },
+              onError: (err) => {
+                console.warn("Posture mutation failed:", err);
+              },
             }
-          }, "image/jpeg", 0.7);
+          );
+
+          // Species detection (best-effort) — only when no animal selected
+          if (!activeAnimal) {
+            detectSpeciesMutation.mutate(
+              { image: base64Image },
+              {
+                onSuccess: (data) => {
+                  if (active && data?.species && data.species !== "unknown") {
+                    setDetectedSpecies(data);
+                  }
+                },
+                onError: (err) => {
+                  console.warn("Species mutation failed:", err);
+                },
+              }
+            );
+          }
         }
       } catch (err) {
         console.error("Frame capture error:", err);
@@ -1071,7 +1058,7 @@ export default function RecordingPage() {
       active = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [showCamera, facingMode, isYoloActive]);
+  }, [showCamera, isYoloActive, facingMode, activeAnimal]);
 
   const startRecordingCycle = async () => {
     setRecordState("requesting");
@@ -1177,7 +1164,7 @@ export default function RecordingPage() {
             model_used: "yamnet-local" as any,
             cached: false,
             eventId: undefined,
-            posture: (showCamera && isYoloActive) ? detectedPosture : undefined,
+            posture: showCamera ? detectedPosture : undefined,
           };
 
           setResult(res);
@@ -1349,7 +1336,7 @@ export default function RecordingPage() {
               animalId: activeAnimal?.id,
               audio: audioBase64,
               audioMimeType,
-              posture: (showCamera && isYoloActive) ? detectedPosture : undefined,
+              posture: showCamera ? detectedPosture : undefined,
               pitch: dominantFreq,
               spectralEnergy,
               tonalBrightness,
@@ -1475,8 +1462,6 @@ export default function RecordingPage() {
     );
   };
 
-  const showOnboarding = recentEvents.length === 0 && !hasStartedOnboarding;
-
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto select-none touch-callout-none">
       {/* Header */}
@@ -1497,54 +1482,53 @@ export default function RecordingPage() {
         )}
       </div>
 
-      {/* Onboarding / Empty State */}
-      {showOnboarding && (
-        <div className="bg-card border border-primary/20 rounded-2xl p-5 space-y-4 shadow-lg page-enter relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none" />
-          <div className="space-y-1">
-            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+      {/* Onboarding / Empty State "Como funciona" */}
+      {recentEvents.length === 0 && (
+        <div className="bg-gradient-to-br from-indigo-950/40 via-purple-950/20 to-slate-900 border border-purple-500/20 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden page-enter">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-xl pointer-events-none" />
+          <div className="space-y-1.5">
+            <h2 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-indigo-100 flex items-center gap-1.5">
               <span>💡</span> {language === "pt" ? "Como funciona" : "How it works"}
             </h2>
-            <p className="text-xs text-muted-foreground text-left">
+            <p className="text-xs text-muted-foreground leading-relaxed text-left">
               {language === "pt" 
-                ? "Siga estes passos simples para classificar o estado emocional do seu animal:" 
-                : "Follow these simple steps to classify your pet's emotional state:"}
+                ? "Siga estes 3 passos simples para começar a traduzir os sentimentos do seu companheiro."
+                : "Follow these 3 simple steps to start translating your companion's feelings."}
             </p>
           </div>
           
-          <div className="grid grid-cols-3 gap-2.5 pt-1 text-left">
-            <div className="bg-secondary/40 border border-border/50 rounded-xl p-2.5 space-y-1 flex flex-col items-center text-center">
-              <span className="text-base">🎙️</span>
-              <p className="text-[10px] font-bold text-foreground">{language === "pt" ? "1. Gravar" : "1. Record"}</p>
-              <p className="text-[9px] text-muted-foreground leading-tight">
-                {language === "pt" ? "Registe 3s de áudio." : "Record 3s of audio."}
-              </p>
+          <div className="grid grid-cols-3 gap-3 pt-1">
+            <div className="flex flex-col items-center text-center space-y-1 p-2.5 rounded-xl bg-purple-500/5 border border-purple-500/5">
+              <span className="text-xl">🎙️</span>
+              <span className="text-[10px] font-bold text-foreground">1. {language === "pt" ? "Gravar" : "Record"}</span>
+              <span className="text-[9px] text-muted-foreground leading-normal">
+                {language === "pt" ? "Grave o som ou áudio" : "Record the sound"}
+              </span>
             </div>
-            <div className="bg-secondary/40 border border-border/50 rounded-xl p-2.5 space-y-1 flex flex-col items-center text-center">
-              <span className="text-base">🤖</span>
-              <p className="text-[10px] font-bold text-foreground">{language === "pt" ? "2. Analisar" : "2. Analyze"}</p>
-              <p className="text-[9px] text-muted-foreground leading-tight">
-                {language === "pt" ? "IA analisa som e pose." : "AI analyzes sound & pose."}
-              </p>
+            <div className="flex flex-col items-center text-center space-y-1 p-2.5 rounded-xl bg-purple-500/5 border border-purple-500/5">
+              <span className="text-xl">🧠</span>
+              <span className="text-[10px] font-bold text-foreground">2. {language === "pt" ? "IA Analisa" : "AI Analyzes"}</span>
+              <span className="text-[9px] text-muted-foreground leading-normal">
+                {language === "pt" ? "A IA processa o comportamento" : "AI processes behavior"}
+              </span>
             </div>
-            <div className="bg-secondary/40 border border-border/50 rounded-xl p-2.5 space-y-1 flex flex-col items-center text-center">
-              <span className="text-base">📈</span>
-              <p className="text-[10px] font-bold text-foreground">{language === "pt" ? "3. Histórico" : "3. History"}</p>
-              <p className="text-[9px] text-muted-foreground leading-tight">
-                {language === "pt" ? "Acompanhe a evolução." : "Track the evolution."}
-              </p>
+            <div className="flex flex-col items-center text-center space-y-1 p-2.5 rounded-xl bg-purple-500/5 border border-purple-500/5">
+              <span className="text-xl">📊</span>
+              <span className="text-[10px] font-bold text-foreground">3. {language === "pt" ? "Histórico" : "History"}</span>
+              <span className="text-[9px] text-muted-foreground leading-normal">
+                {language === "pt" ? "Acompanhe a evolução" : "Track evolution"}
+              </span>
             </div>
           </div>
 
-          <Button
-            onClick={() => {
-              setHasStartedOnboarding(true);
-              handleButtonClick();
-            }}
-            className="w-full bg-primary hover:bg-emerald-600 text-white font-semibold text-xs py-2 rounded-xl transition-all"
-          >
-            {language === "pt" ? "Começar" : "Get Started"}
-          </Button>
+          <div className="pt-1">
+            <Button 
+              onClick={() => startRecordingCycle()}
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs py-2 rounded-xl shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all"
+            >
+              {language === "pt" ? "Começar" : "Get Started"}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -1557,51 +1541,92 @@ export default function RecordingPage() {
       </div>
 
       {/* Módulo de Visão Computacional */}
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-emerald-400 text-lg">📷</span>
             <div>
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                {language === "pt" ? "Visão Computacional (YOLOv8)" : "Computer Vision (YOLOv8)"}
+                {t("recordingPage.cameraTitle")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {language === "pt" ? "Análise postural em tempo real" : "Real-time posture analysis"}
+                {t("recordingPage.cameraDesc")}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex gap-2">
             {cameraState === "allowed" && (
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 onClick={handleSwitchCamera}
-                className="text-[10px] h-7 px-2 font-semibold"
+                className="text-xs font-semibold"
               >
                 {facingMode === "environment" ? t("recordingPage.cameraFront") : t("recordingPage.cameraBack")}
               </Button>
             )}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">YOLOv8</span>
-              <Switch
-                checked={isYoloActive}
-                onCheckedChange={setIsYoloActive}
-                disabled={cameraState !== "allowed"}
-                aria-label="Toggle YOLOv8"
-              />
-            </div>
+            {cameraState !== "idle" && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleToggleCamera}
+                className="text-xs font-semibold"
+              >
+                {t("recordingPage.disable")}
+              </Button>
+            )}
           </div>
         </div>
 
-        {cameraState !== "allowed" && (
-          <p className="text-xs text-amber-500/80 font-medium text-left">
-            ⚠️ {language === "pt" ? "Ative a câmera para usar a Visão Computacional." : "Activate the camera to use Computer Vision."}
-          </p>
+        {/* Toggle YOLOv8 */}
+        <div className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-secondary/10">
+          <div className="flex flex-col gap-0.5 text-left max-w-[80%]">
+            <span className="text-xs font-semibold text-foreground">
+              {language === "pt" ? "Visão Computacional (YOLOv8)" : "Computer Vision (YOLOv8)"}
+            </span>
+            <span className="text-[10px] text-muted-foreground leading-normal">
+              {cameraState === "allowed" 
+                ? (language === "pt" ? "Detetar espécie e postura via inteligência artificial" : "Detect species and posture via artificial intelligence")
+                : (language === "pt" ? "Ative a câmera para usar a Visão Computacional." : "Activate the camera to use Computer Vision.")}
+            </span>
+          </div>
+          <Switch
+            checked={isYoloActive}
+            onCheckedChange={setIsYoloActive}
+            disabled={cameraState !== "allowed"}
+          />
+        </div>
+
+        {/* Render UI state machine for camera */}
+        {cameraState === "idle" && (
+          <div className="flex flex-col items-center justify-center p-6 border border-dashed border-border rounded-xl bg-secondary/5 text-center space-y-3">
+            <span className="text-3xl select-none">📷</span>
+            <p className="text-xs text-muted-foreground max-w-[240px] leading-relaxed">
+              {language === "pt" 
+                ? "Ative a câmera para utilizar a Visão Computacional (YOLOv8) e detetar a postura do seu animal em tempo real." 
+                : "Activate the camera to use Computer Vision (YOLOv8) and detect your pet's posture in real-time."}
+            </p>
+            <Button
+              onClick={handleToggleCamera}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-5 py-2 rounded-xl shadow-md transition-all active:scale-[0.98]"
+            >
+              {language === "pt" ? "Ativar Câmera" : "Activate Camera"}
+            </Button>
+          </div>
         )}
 
-        <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-slate-950/40 border border-border flex items-center justify-center">
-          {cameraState === "allowed" && (
-            <>
+        {cameraState === "loading" && (
+          <div className="flex flex-col items-center justify-center p-6 border border-border rounded-xl bg-secondary/5 text-center space-y-3">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-muted-foreground font-medium">
+              {language === "pt" ? "A pedir permissão para a câmera…" : "Requesting camera permission..."}
+            </p>
+          </div>
+        )}
+
+        {cameraState === "allowed" && (
+          <div className="space-y-3 pt-2 border-t border-border/50 page-enter">
+            <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-black border border-border">
               <video
                 ref={videoRefCallback}
                 muted
@@ -1611,124 +1636,96 @@ export default function RecordingPage() {
                   facingMode === "user" && "scale-x-[-1]"
                 )}
               />
-              {isYoloActive && (
-                <canvas
-                  ref={canvasRef}
-                  width={320}
-                  height={240}
-                  className={cn("absolute inset-0 w-full h-full pointer-events-none", facingMode === "user" && "scale-x-[-1]")}
-                />
-              )}
-              <div className="absolute bottom-2 left-2 right-2 bg-slate-950/80 px-2 py-1 rounded text-[10px] text-white/90 text-center font-medium">
-                {language === "pt" ? "Câmera ativa. Pronto para Visão Computacional (YOLOv8)." : "Camera active. Ready for Computer Vision (YOLOv8)."}
-              </div>
-            </>
-          )}
+              <canvas
+                ref={canvasRef}
+                width={320}
+                height={240}
+                className={cn("absolute inset-0 w-full h-full pointer-events-none", facingMode === "user" && "scale-x-[-1]")}
+              />
+            </div>
+            
+            <p className="text-xs text-emerald-400 font-semibold text-center flex items-center justify-center gap-1.5 pt-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              {language === "pt" 
+                ? "Câmera ativa. Pronto para Visão Computacional (YOLOv8)." 
+                : "Camera active. Ready for Computer Vision (YOLOv8)."}
+            </p>
 
-          {cameraState === "idle" && (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
-              <span className="text-4xl">📷</span>
-              <p className="text-xs text-muted-foreground">
-                {language === "pt" ? "A câmera está desligada." : "Camera is turned off."}
-              </p>
-              <Button
-                onClick={handleToggleCamera}
-                className="bg-primary hover:bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-xl"
+            <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("recordingPage.simulatedPosture")}
+              </span>
+              <select
+                value={detectedPosture}
+                onChange={(e) => setDetectedPosture(e.target.value)}
+                className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
               >
-                {language === "pt" ? "Ativar Câmera" : "Activate Camera"}
-              </Button>
+                <option value="sitting">{t("recordingPage.postureSitting")}</option>
+                <option value="lying">{t("recordingPage.postureLying")}</option>
+                <option value="standing">{t("recordingPage.postureStanding")}</option>
+                <option value="alert">{t("recordingPage.postureAlert")}</option>
+              </select>
             </div>
-          )}
+          </div>
+        )}
 
-          {cameraState === "loading" && (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
-              <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-1" />
-              <p className="text-xs font-medium text-foreground">
-                {language === "pt" ? "A pedir permissão para a câmera..." : "Requesting camera permission..."}
-              </p>
+        {cameraState === "denied" && (
+          <div className="flex flex-col items-center justify-center p-5 border border-red-500/20 rounded-xl bg-red-500/5 text-center space-y-3">
+            <span className="text-3xl select-none">⚠️</span>
+            <p className="text-xs font-bold text-red-400">{language === "pt" ? "Permissão de câmera negada" : "Camera permission denied"}</p>
+            <div className="text-[10px] text-muted-foreground text-left w-full max-w-[280px] bg-background/50 p-2.5 rounded-lg border border-border/50 space-y-1">
+              <p className="font-semibold text-foreground">{language === "pt" ? "Passos para ativar:" : "Steps to enable:"}</p>
+              <ol className="list-decimal list-inside space-y-0.5">
+                {language === "pt" ? (
+                  <>
+                    <li>Abra as definições do browser</li>
+                    <li>Procure por \"Permissões\" ou \"Privacidade\"</li>
+                    <li>Encontre \"Câmara\" e ative para este site</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Open browser settings</li>
+                    <li>Search for \"Permissions\" or \"Privacy\"</li>
+                    <li>Find \"Camera\" and enable for this site</li>
+                  </>
+                )}
+              </ol>
             </div>
-          )}
-
-          {cameraState === "denied" && (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
-              <span className="text-3xl animate-bounce">⚠️</span>
-              <p className="text-xs font-bold text-red-400">
-                {language === "pt" ? "Permissão de câmera negada" : "Camera permission denied"}
-              </p>
-              <div className="text-[10px] text-muted-foreground leading-relaxed max-w-[240px] text-left space-y-1">
-                <p className="font-semibold">{language === "pt" ? "Passos para ativar:" : "Steps to activate:"}</p>
-                <ol className="list-decimal list-inside space-y-0.5">
-                  {language === "pt" ? (
-                    <>
-                      <li>Aceda às definições do browser</li>
-                      <li>Procure por 'Permissões' ou 'Privacidade'</li>
-                      <li>Ative a câmara para este site</li>
-                    </>
-                  ) : (
-                    <>
-                      <li>Open browser settings</li>
-                      <li>Search for 'Permissions' or 'Privacy'</li>
-                      <li>Enable camera for this site</li>
-                    </>
-                  )}
-                </ol>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleCamera}
-                className="text-xs font-semibold h-8"
-              >
-                {language === "pt" ? "Tentar novamente" : "Try again"}
-              </Button>
-            </div>
-          )}
-
-          {cameraState === "not_found" && (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
-              <span className="text-3xl">❌</span>
-              <p className="text-xs font-semibold text-yellow-400">
-                {language === "pt" ? "Nenhuma câmera encontrada. Verifique o dispositivo." : "No camera found. Check the device."}
-              </p>
-            </div>
-          )}
-
-          {cameraState === "error" && (
-            <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
-              <span className="text-3xl">❌</span>
-              <p className="text-xs font-semibold text-red-500">
-                {language === "pt" ? "Ocorreu um erro ao aceder à câmera." : "An error occurred while accessing the camera."}
-              </p>
-              {cameraError && (
-                <p className="text-[10px] text-muted-foreground max-w-[240px] truncate">{cameraError}</p>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleCamera}
-                className="text-xs font-semibold h-8"
-              >
-                {language === "pt" ? "Tentar novamente" : "Try again"}
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {cameraState === "allowed" && isYoloActive && (
-          <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40 page-enter">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("recordingPage.simulatedPosture")}
-            </span>
-            <select
-              value={detectedPosture}
-              onChange={(e) => setDetectedPosture(e.target.value)}
-              className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
+            <Button
+              onClick={handleToggleCamera}
+              variant="outline"
+              size="sm"
+              className="text-xs border-red-500/30 hover:bg-red-500/10"
             >
-              <option value="sitting">{t("recordingPage.postureSitting")}</option>
-              <option value="lying">{t("recordingPage.postureLying")}</option>
-              <option value="standing">{t("recordingPage.postureStanding")}</option>
-              <option value="alert">{t("recordingPage.postureAlert")}</option>
-            </select>
+              {language === "pt" ? "Tentar novamente" : "Try again"}
+            </Button>
+          </div>
+        )}
+
+        {cameraState === "not_found" && (
+          <div className="flex flex-col items-center justify-center p-6 border border-yellow-500/20 rounded-xl bg-yellow-500/5 text-center space-y-2">
+            <span className="text-3xl select-none">❌</span>
+            <p className="text-xs font-bold text-yellow-400">
+              {language === "pt" ? "Nenhuma câmera encontrada. Verifique o dispositivo." : "No camera found. Check the device."}
+            </p>
+          </div>
+        )}
+
+        {cameraState === "error" && (
+          <div className="flex flex-col items-center justify-center p-6 border border-red-500/20 rounded-xl bg-red-500/5 text-center space-y-3">
+            <span className="text-3xl select-none">❌</span>
+            <p className="text-xs font-bold text-red-400 font-semibold">
+              {language === "pt" ? "Ocorreu um erro ao aceder à câmera." : "An error occurred while accessing the camera."}
+            </p>
+            {cameraError && <p className="text-[10px] text-muted-foreground max-w-[240px] leading-normal">{cameraError}</p>}
+            <Button
+              onClick={handleToggleCamera}
+              variant="outline"
+              size="sm"
+              className="text-xs border-red-500/30 hover:bg-red-500/10"
+            >
+              {language === "pt" ? "Tentar novamente" : "Try again"}
+            </Button>
           </div>
         )}
       </div>
@@ -1902,6 +1899,49 @@ export default function RecordingPage() {
           ))}
         </div>
       )}
+
+      {/* Camera Permission Error Modal */}
+      <AlertDialog open={cameraPermissionDenied} onOpenChange={setCameraPermissionDenied}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              <AlertDialogTitle>{t("recordingPage.cameraDeniedTitle")}</AlertDialogTitle>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="space-y-3">
+            <p>
+              {t("recordingPage.cameraDeniedDesc")}
+            </p>
+            <p className="font-semibold text-foreground">
+              {language === "pt" ? "Para ativar a câmara:" : "To enable the camera:"}
+            </p>
+            <ol className="list-decimal list-inside space-y-1 text-sm">
+              {language === "pt" ? (
+                <>
+                  <li>Abra as definições do browser</li>
+                  <li>Procure por "Permissões" ou "Privacidade"</li>
+                  <li>Encontre "Câmara" e ative para este site</li>
+                  <li>Recarregue a página</li>
+                </>
+              ) : (
+                <>
+                  <li>Open browser settings</li>
+                  <li>Search for "Permissions" or "Privacy"</li>
+                  <li>Find "Camera" and enable for this site</li>
+                  <li>Reload the page</li>
+                </>
+              )}
+            </ol>
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.close")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setCameraPermissionDenied(false)}>
+              {language === "pt" ? "Entendi" : "Got it"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Discreet footer disclaimer */}
       <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed max-w-[360px] mx-auto pt-4 pb-2">
