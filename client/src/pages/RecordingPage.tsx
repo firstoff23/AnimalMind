@@ -922,43 +922,61 @@ export default function RecordingPage() {
             if (!blob || !active) return;
 
             try {
-              const fastapiUrl =
+              // Tier-1: Fly.dev, Tier-2: HF Space — for posture/species detection
+              const primaryUrl =
                 (import.meta.env.VITE_FASTAPI_URL as string | undefined) ||
-                "https://animalmind-production.up.railway.app";
+                "https://animalmind-backend.fly.dev";
+              const secondaryUrl = import.meta.env.VITE_HF_SPACE_URL as string | undefined;
+              const detectionUrls = [primaryUrl, ...(secondaryUrl ? [secondaryUrl] : [])];
 
               const file = new File([blob], "frame.jpg", { type: "image/jpeg" });
-              const formData = new FormData();
-              formData.append("file", file);
+              let postureDetected = false;
 
-              const res = await fetch(`${fastapiUrl}/detect-posture`, {
-                method: "POST",
-                body: formData,
-              });
+              for (const fastapiUrl of detectionUrls) {
+                try {
+                  const formData = new FormData();
+                  formData.append("file", file);
 
-              if (res.ok && active) {
-                const data = await res.json() as { posture: string; confidence: number };
-                if (data && data.posture) {
-                  setDetectedPosture(data.posture);
+                  const res = await fetch(`${fastapiUrl}/detect-posture`, {
+                    method: "POST",
+                    body: formData,
+                    signal: AbortSignal.timeout(5000),
+                  });
+
+                  if (res.ok && active) {
+                    const data = await res.json() as { posture: string; confidence: number };
+                    if (data && data.posture) {
+                      setDetectedPosture(data.posture);
+                    }
+                    postureDetected = true;
+                    break;
+                  }
+                } catch {
+                  // try next backend
                 }
               }
 
               // Auto-detect species only if no animal is selected
               if (!activeAnimal) {
-                try {
-                  const speciesForm = new FormData();
-                  speciesForm.append("file", new File([blob], "frame.jpg", { type: "image/jpeg" }));
-                  const speciesRes = await fetch(`${fastapiUrl}/detect-species`, {
-                    method: "POST",
-                    body: speciesForm,
-                  });
-                  if (speciesRes.ok && active) {
-                    const speciesData = await speciesRes.json() as { species: string; confidence: number };
-                    if (speciesData && speciesData.species !== "unknown") {
-                      setDetectedSpecies(speciesData);
+                for (const fastapiUrl of detectionUrls) {
+                  try {
+                    const speciesForm = new FormData();
+                    speciesForm.append("file", new File([blob], "frame.jpg", { type: "image/jpeg" }));
+                    const speciesRes = await fetch(`${fastapiUrl}/detect-species`, {
+                      method: "POST",
+                      body: speciesForm,
+                      signal: AbortSignal.timeout(5000),
+                    });
+                    if (speciesRes.ok && active) {
+                      const speciesData = await speciesRes.json() as { species: string; confidence: number };
+                      if (speciesData && speciesData.species !== "unknown") {
+                        setDetectedSpecies(speciesData);
+                      }
+                      break;
                     }
+                  } catch {
+                    // Species detection is best-effort; try next backend
                   }
-                } catch (specErr) {
-                  // Species detection is best-effort; ignore errors
                 }
               }
             } catch (err) {

@@ -87,6 +87,10 @@ const STATE_EMOJIS: Record<EmotionalState, string> = {
 
 const MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
 
+// Primary backend: always Fly.dev; secondary: HF Space from env
+const PRIMARY_BACKEND_URL = "https://animalmind-backend.fly.dev";
+const CLASSIFY_TIMEOUT_MS = 5000;
+
 function randomClassify(): {
   state: EmotionalState;
   confidence: number;
@@ -102,6 +106,51 @@ function randomClassify(): {
 
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Attempt to classify audio against a single backend URL, with timeout. */
+async function tryClassifyBackend(
+  url: string,
+  formData: FormData,
+  timeoutMs: number
+): Promise<{ state: string; confidence: number; emoji: string; model_used: string } | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${url}/classify`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return await response.json() as { state: string; confidence: number; emoji: string; model_used: string };
+  } catch (err) {
+    const isTimeout = err instanceof Error && err.name === "AbortError";
+    console.warn(`[Classify] Backend ${url} failed${isTimeout ? " (timeout)" : ""}: ${err}`);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Map raw backend response into our typed result shape. */
+function mapBackendResult(
+  data: { state: string; confidence: number; emoji: string; model_used: string }
+): { state: EmotionalState; confidence: number; emoji: string; model_used: ModelUsed; cached: boolean } | null {
+  if (!STATES.includes(data.state as EmotionalState)) return null;
+  let modelUsedMapped: ModelUsed = "yamnet";
+  if (data.model_used === "wav2vec2") modelUsedMapped = "wav2vec2";
+  else if (data.model_used === "gemini") modelUsedMapped = "gemini";
+  else if (data.model_used?.includes("yamnet")) modelUsedMapped = "yamnet";
+  return {
+    state: data.state as EmotionalState,
+    confidence: data.confidence,
+    emoji: data.emoji || STATE_EMOJIS[data.state as EmotionalState],
+    model_used: modelUsedMapped,
+    cached: false,
+  };
 }
 
 // ─── Effective user ID (demo fallback) ───────────────────────────────────────
@@ -206,53 +255,42 @@ export const appRouter = router({
         else if (mime.includes("ogg")) ext = "ogg";
         else if (mime.includes("mpeg")) ext = "mp3";
 
-        if (process.env.FASTAPI_BACKEND_URL && buffer) {
-          try {
+        // ── 3-tier backend fallback ──────────────────────────────────────────
+        // Tier 1: Primary — always Fly.dev (hardcoded primary)
+        // Tier 2: Secondary — HF Space from HF_SPACE_URL env var
+        // Tier 3: Local random fallback (client will also try TF.js local)
+        if (buffer) {
+          const hfSpaceUrl = process.env.HF_SPACE_URL?.replace(/\/$/, "");
+          const backendsToTry = [
+            PRIMARY_BACKEND_URL,
+            ...(hfSpaceUrl ? [hfSpaceUrl] : []),
+          ];
+
+          for (const backendUrl of backendsToTry) {
             const file = new File([buffer], `audio.${ext}`, { type: mime });
             const formData = new FormData();
             formData.append("file", file);
 
-            const response = await fetch(`${process.env.FASTAPI_BACKEND_URL}/classify`, {
-              method: "POST",
-              body: formData,
-            });
-
-            if (!response.ok) {
-              throw new Error(`FastAPI responded with status: ${response.status}`);
+            const data = await tryClassifyBackend(backendUrl, formData, CLASSIFY_TIMEOUT_MS);
+            if (data) {
+              const mapped = mapBackendResult(data);
+              if (mapped) {
+                result = mapped;
+                console.log(`[Classify] Success from ${backendUrl}:`, result);
+                break;
+              } else {
+                console.warn(`[Classify] ${backendUrl} returned invalid state "${data.state}", trying next.`);
+              }
             }
+          }
 
-            const data = await response.json() as {
-              state: string;
-              confidence: number;
-              emoji: string;
-              model_used: string;
-            };
-
-            // Map returned model_used to our ModelUsed type
-            let modelUsedMapped: ModelUsed = "yamnet";
-            if (data.model_used === "wav2vec2") modelUsedMapped = "wav2vec2";
-            else if (data.model_used === "gemini") modelUsedMapped = "gemini";
-            else if (data.model_used.includes("yamnet")) modelUsedMapped = "yamnet";
-
-            if (STATES.includes(data.state as EmotionalState)) {
-              result = {
-                state: data.state as EmotionalState,
-                confidence: data.confidence,
-                emoji: data.emoji || STATE_EMOJIS[data.state as EmotionalState],
-                model_used: modelUsedMapped,
-                cached: false,
-              };
-              console.log("[Classify] Classification from FastAPI successful:", result);
-            } else {
-              console.warn(`[Classify] FastAPI returned invalid state "${data.state}", using fallback.`);
-            }
-          } catch (err) {
-            console.error("[Classify] FastAPI call failed, falling back to random classification:", err);
+          if (!result) {
+            console.warn("[Classify] All ML backends failed — using random fallback (client will try TF.js).");
           }
         }
 
         if (!result) {
-          // Simulate 2-second processing
+          // Simulate 2-second processing when no audio or all backends failed
           await sleep(2000);
           result = randomClassify();
         }
