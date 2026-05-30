@@ -87,8 +87,9 @@ const STATE_EMOJIS: Record<EmotionalState, string> = {
 
 const MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
 
-// Primary backend: always Fly.dev; secondary: HF Space from env
+// Primary backend: always Fly.dev (hardcoded); secondary: HF Space (hardcoded)
 const PRIMARY_BACKEND_URL = "https://animalmind-backend.fly.dev";
+const HF_BACKEND_URL = "https://firstoff-animalmind-backend.hf.space";
 const CLASSIFY_TIMEOUT_MS = 5000;
 
 function randomClassify(): {
@@ -255,16 +256,12 @@ export const appRouter = router({
         else if (mime.includes("ogg")) ext = "ogg";
         else if (mime.includes("mpeg")) ext = "mp3";
 
-        // ── 3-tier backend fallback ──────────────────────────────────────────
-        // Tier 1: Primary — always Fly.dev (hardcoded primary)
-        // Tier 2: Secondary — HF Space from HF_SPACE_URL env var
-        // Tier 3: Local random fallback (client will also try TF.js local)
+        // ── 2-tier backend fallback (both URLs hardcoded) ────────────────────
+        // Tier 1: Fly.dev (PRIMARY_BACKEND_URL), 5 s timeout
+        // Tier 2: HF Space (HF_BACKEND_URL)
+        // Tier 3: Random fallback (client will also try TF.js local)
         if (buffer) {
-          const hfSpaceUrl = process.env.HF_SPACE_URL?.replace(/\/$/, "");
-          const backendsToTry = [
-            PRIMARY_BACKEND_URL,
-            ...(hfSpaceUrl ? [hfSpaceUrl] : []),
-          ];
+          const backendsToTry = [PRIMARY_BACKEND_URL, HF_BACKEND_URL];
 
           for (const backendUrl of backendsToTry) {
             const file = new File([buffer], `audio.${ext}`, { type: mime });

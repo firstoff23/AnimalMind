@@ -20,6 +20,7 @@ import {
 import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity as InfinityIcon, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
+import callBackend from "@/lib/apiClient";
 import { useNotifications } from "@/hooks/useNotifications";
 import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
@@ -922,61 +923,35 @@ export default function RecordingPage() {
             if (!blob || !active) return;
 
             try {
-              // Tier-1: Fly.dev, Tier-2: HF Space — for posture/species detection
-              const primaryUrl =
-                (import.meta.env.VITE_FASTAPI_URL as string | undefined) ||
-                "https://animalmind-backend.fly.dev";
-              const secondaryUrl = import.meta.env.VITE_HF_SPACE_URL as string | undefined;
-              const detectionUrls = [primaryUrl, ...(secondaryUrl ? [secondaryUrl] : [])];
-
               const file = new File([blob], "frame.jpg", { type: "image/jpeg" });
-              let postureDetected = false;
 
-              for (const fastapiUrl of detectionUrls) {
-                try {
-                  const formData = new FormData();
-                  formData.append("file", file);
-
-                  const res = await fetch(`${fastapiUrl}/detect-posture`, {
-                    method: "POST",
-                    body: formData,
-                    signal: AbortSignal.timeout(5000),
-                  });
-
-                  if (res.ok && active) {
-                    const data = await res.json() as { posture: string; confidence: number };
-                    if (data && data.posture) {
-                      setDetectedPosture(data.posture);
-                    }
-                    postureDetected = true;
-                    break;
-                  }
-                } catch {
-                  // try next backend
+              // Posture detection — primary (Fly.dev) → fallback (HF Space)
+              try {
+                const formData = new FormData();
+                formData.append("file", file);
+                const res = await callBackend("/detect-posture", { method: "POST", body: formData });
+                if (active) {
+                  const data = await res.json() as { posture: string; confidence: number };
+                  if (data?.posture) setDetectedPosture(data.posture);
                 }
+              } catch {
+                // Both backends failed — keep last known posture
               }
 
-              // Auto-detect species only if no animal is selected
+              // Species detection (best-effort) — only when no animal selected
               if (!activeAnimal) {
-                for (const fastapiUrl of detectionUrls) {
-                  try {
-                    const speciesForm = new FormData();
-                    speciesForm.append("file", new File([blob], "frame.jpg", { type: "image/jpeg" }));
-                    const speciesRes = await fetch(`${fastapiUrl}/detect-species`, {
-                      method: "POST",
-                      body: speciesForm,
-                      signal: AbortSignal.timeout(5000),
-                    });
-                    if (speciesRes.ok && active) {
-                      const speciesData = await speciesRes.json() as { species: string; confidence: number };
-                      if (speciesData && speciesData.species !== "unknown") {
-                        setDetectedSpecies(speciesData);
-                      }
-                      break;
+                try {
+                  const speciesForm = new FormData();
+                  speciesForm.append("file", new File([blob], "frame.jpg", { type: "image/jpeg" }));
+                  const speciesRes = await callBackend("/detect-species", { method: "POST", body: speciesForm });
+                  if (active) {
+                    const speciesData = await speciesRes.json() as { species: string; confidence: number };
+                    if (speciesData?.species && speciesData.species !== "unknown") {
+                      setDetectedSpecies(speciesData);
                     }
-                  } catch {
-                    // Species detection is best-effort; try next backend
                   }
+                } catch {
+                  // Species detection is best-effort; ignore errors
                 }
               }
             } catch (err) {
