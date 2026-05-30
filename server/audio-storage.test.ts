@@ -28,13 +28,14 @@ describe("audio storage persistence", () => {
 
   it("uploads recorded audio to the audio-recordings bucket", async () => {
     const upload = vi.fn().mockResolvedValue({ data: { path: "events/1/test.webm" }, error: null });
-    const getPublicUrl = vi.fn().mockReturnValue({
+    const createSignedUrl = vi.fn().mockResolvedValue({
       data: {
-        publicUrl:
-          "https://animalmind.supabase.co/storage/v1/object/public/audio-recordings/events/1/test.webm",
+        signedUrl:
+          "https://animalmind.supabase.co/storage/v1/object/sign/audio-recordings/events/1/test.webm?token=xyz",
       },
+      error: null,
     });
-    const from = vi.fn(() => ({ upload, getPublicUrl }));
+    const from = vi.fn(() => ({ upload, createSignedUrl }));
     const createBucket = vi.fn().mockResolvedValue({ data: null, error: null });
     const client = { storage: { createBucket, from } };
 
@@ -46,7 +47,7 @@ describe("audio storage persistence", () => {
     expect(createBucket).toHaveBeenCalledWith(
       "audio-recordings",
       expect.objectContaining({
-        public: true,
+        public: false,
         allowedMimeTypes: expect.arrayContaining(["audio/webm", "audio/wav"]),
       }),
     );
@@ -55,7 +56,7 @@ describe("audio storage persistence", () => {
       contentType: "audio/webm",
       upsert: false,
     });
-    expect(url).toContain("/audio-recordings/events/1/test.webm");
+    expect(url).toContain("/audio-recordings/events/1/test.webm?token=xyz");
   });
 
   it("stores the uploaded audio URL on classification_events.audio_url", async () => {

@@ -623,7 +623,7 @@ export async function uploadAudioToSupabase(
 
   try {
     await supabase.storage.createBucket(AUDIO_RECORDINGS_BUCKET, {
-      public: true,
+      public: false,
       allowedMimeTypes: ["audio/webm", "audio/wav", "audio/ogg", "audio/mpeg", "audio/mp4", "audio/x-m4a"],
     });
   } catch (err) {
@@ -642,11 +642,44 @@ export async function uploadAudioToSupabase(
     throw error;
   }
 
-  const { data: publicUrlData } = supabase.storage
+  const { data: signedUrlData, error: signedUrlError } = await supabase.storage
     .from(AUDIO_RECORDINGS_BUCKET)
-    .getPublicUrl(fileName);
+    .createSignedUrl(fileName, 3600);
 
-  return publicUrlData.publicUrl;
+  if (signedUrlError) {
+    console.error("[Storage] Supabase signed URL generation failed:", signedUrlError);
+    throw signedUrlError;
+  }
+
+  return signedUrlData.signedUrl;
+}
+
+export async function getSignedAudioUrl(pathOrUrl: string | null | undefined): Promise<string | null> {
+  if (!pathOrUrl) return null;
+  
+  // Extract path from signed or public URL if needed
+  let path = pathOrUrl;
+  if (pathOrUrl.startsWith("http")) {
+    const parts = pathOrUrl.split("/audio-recordings/");
+    if (parts.length > 1) {
+      path = parts[1].split("?")[0];
+    }
+  }
+  
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.storage
+      .from(AUDIO_RECORDINGS_BUCKET)
+      .createSignedUrl(path, 3600);
+    if (error) {
+      console.error("[Storage] Failed to sign URL:", error);
+      return pathOrUrl;
+    }
+    return data.signedUrl;
+  } catch (err) {
+    console.error("[Storage] Error signing URL:", err);
+    return pathOrUrl;
+  }
 }
 
 // ─── Animal Baseline operations (Supabase JSONB + local fallback) ────────────

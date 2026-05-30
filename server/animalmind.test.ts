@@ -6,6 +6,7 @@ import { getAllEventsForExport } from "./db";
 // ─── Mock DB ──────────────────────────────────────────────────────────────────
 
 vi.mock("./db", () => ({
+  getSignedAudioUrl: vi.fn().mockImplementation((url) => Promise.resolve(url)),
   getDemoUserId: vi.fn().mockResolvedValue(1),
   getOrCreateDemoUserId: vi.fn().mockResolvedValue(1),
   insertEvent: vi.fn().mockResolvedValue({ id: 99 }),

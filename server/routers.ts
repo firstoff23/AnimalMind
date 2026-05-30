@@ -27,6 +27,7 @@ import {
   getEventNotes,
   updateEventNotes,
   uploadAudioToSupabase,
+  getSignedAudioUrl,
   updateEventAudio,
   getAnimalById,
   getAnimalBaseline,
@@ -700,7 +701,13 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         const events = await getRecentEvents(userId, input.limit);
-        return events.map(mapDbEvent);
+        const mapped = events.map(mapDbEvent);
+        return Promise.all(
+          mapped.map(async (e) => ({
+            ...e,
+            audioUrl: await getSignedAudioUrl(e.audioUrl),
+          }))
+        );
       }),
 
     list: protectedProcedure
@@ -725,8 +732,14 @@ export const appRouter = router({
           input.dateTo,
           input.animalId
         );
+        const mappedEvents = await Promise.all(
+          result.events.map(mapDbEvent).map(async (e) => ({
+            ...e,
+            audioUrl: await getSignedAudioUrl(e.audioUrl),
+          }))
+        );
         return {
-          events: result.events.map(mapDbEvent),
+          events: mappedEvents,
           total: result.total,
         };
       }),
@@ -762,8 +775,14 @@ export const appRouter = router({
           animalId: input.animalId,
         };
         const events = await getAllEventsForExport(userId, filters);
+        const mappedEvents = await Promise.all(
+          events.map(mapEventForExport).map(async (e) => ({
+            ...e,
+            audioUrl: await getSignedAudioUrl(e.audioUrl),
+          }))
+        );
         return {
-          events: events.map(mapEventForExport),
+          events: mappedEvents,
           filters,
           generatedAt: new Date().toISOString(),
         };
@@ -773,18 +792,21 @@ export const appRouter = router({
       const userId = await effectiveUserId(ctx.user);
       const events = await getAllEventsForExport(userId);
       const header = "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
-      const rows = events.map((e: any) =>
-        [
-          e.id,
-          e.state,
-          e.confidence,
-          e.emoji,
-          e.model_used,
-          e.cached,
-          e.feedback ?? "",
-          e.audio_url ?? "",
-          new Date(e.created_at).toISOString(),
-        ].join(",")
+      const rows = await Promise.all(
+        events.map(async (e: any) => {
+          const signedUrl = await getSignedAudioUrl(e.audio_url);
+          return [
+            e.id,
+            e.state,
+            e.confidence,
+            e.emoji,
+            e.model_used,
+            e.cached,
+            e.feedback ?? "",
+            signedUrl ?? "",
+            new Date(e.created_at).toISOString(),
+          ].join(",");
+        })
       );
       return { csv: [header, ...rows].join("\n") };
     }),
@@ -823,8 +845,14 @@ export const appRouter = router({
           input.page,
           input.pageSize
         );
+        const mappedEvents = await Promise.all(
+          result.events.map(mapDbEvent).map(async (e) => ({
+            ...e,
+            audioUrl: await getSignedAudioUrl(e.audioUrl),
+          }))
+        );
         return {
-          events: result.events.map(mapDbEvent),
+          events: mappedEvents,
           total: result.total,
         };
       }),
