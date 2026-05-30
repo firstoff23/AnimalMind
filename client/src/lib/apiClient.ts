@@ -2,7 +2,9 @@
 // Primary:  VITE_API_URL (or VITE_FASTAPI_URL) — Fly.io, 5 s timeout.
 // Fallback: hardcoded HF Space — no timeout (best-effort).
 
-const HF_SPACE_URL = "https://firstoff-animalmind-backend.hf.space";
+const HF_SPACE_URL =
+  (import.meta.env.VITE_HF_SPACE_URL as string | undefined) ||
+  "https://firstoff-animalmind-backend.hf.space";
 
 async function callBackend(endpoint: string, options: RequestInit): Promise<Response> {
   const primary =
