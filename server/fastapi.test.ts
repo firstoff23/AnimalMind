@@ -84,7 +84,7 @@ describe("tRPC classify.run with FastAPI backend", () => {
     }
   });
 
-  it("falls back to random classification when FastAPI is offline/invalid url", async () => {
+  it("throws TRPCError when FastAPI and Hugging Face are offline/invalid", async () => {
     if (!credentialsValid) return; // Skip if no Supabase credentials
 
     // Set an invalid FastAPI URL
@@ -92,17 +92,12 @@ describe("tRPC classify.run with FastAPI backend", () => {
 
     const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
 
-    // Should not throw, should fall back to random classification
-    const result = await caller.classify.run({
+    // Should throw TRPC error
+    await expect(caller.classify.run({
       animalId: testAnimalId,
       audio: mockBase64Audio,
       audioMimeType: "audio/wav",
-    });
-
-    expect(result).toHaveProperty("state");
-    expect(result).toHaveProperty("confidence");
-    expect(result).toHaveProperty("emoji");
-    expect(result.model_used).toBeDefined();
+    })).rejects.toThrow("Classificação indisponível. Tente novamente.");
   }, 10000);
 
   it("uses FastAPI response when it is online and returns valid data", async () => {

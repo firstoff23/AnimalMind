@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, vi } from "vitest";
+import { describe, expect, it, beforeAll, beforeEach, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
@@ -82,6 +82,26 @@ describe("tRPC classify.run with audio", () => {
     } catch {
       credentialsValid = false;
     }
+  });
+
+  beforeEach(() => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.includes("classify") || url.includes("fly.dev") || url.includes("hf.space")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            state: "relaxed",
+            confidence: 0.95,
+            emoji: "⚪",
+            model_used: "yamnet"
+          })
+        });
+      }
+      return originalFetch(input, init);
+    });
+    vi.stubGlobal("fetch", mockFetch);
   });
 
   it("accepts base64 audio and runs without crashing", async () => {

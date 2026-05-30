@@ -92,19 +92,6 @@ const PRIMARY_BACKEND_URL = "https://animalmind-backend.fly.dev";
 const HF_BACKEND_URL = "https://firstoff-animalmind-backend.hf.space";
 const CLASSIFY_TIMEOUT_MS = 5000;
 
-function randomClassify(): {
-  state: EmotionalState;
-  confidence: number;
-  emoji: string;
-  model_used: ModelUsed;
-  cached: boolean;
-} {
-  const state = STATES[Math.floor(Math.random() * STATES.length)];
-  const confidence = Math.round((0.60 + Math.random() * 0.39) * 100) / 100;
-  const model_used = MODELS[Math.floor(Math.random() * MODELS.length)];
-  return { state, confidence, emoji: STATE_EMOJIS[state], model_used, cached: false };
-}
-
 async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -261,7 +248,8 @@ export const appRouter = router({
         // Tier 2: HF Space (HF_BACKEND_URL)
         // Tier 3: Random fallback (client will also try TF.js local)
         if (buffer) {
-          const backendsToTry = [PRIMARY_BACKEND_URL, HF_BACKEND_URL];
+          const primaryUrl = process.env.FASTAPI_BACKEND_URL || process.env.VITE_API_URL || PRIMARY_BACKEND_URL;
+          const backendsToTry = [primaryUrl, HF_BACKEND_URL];
 
           for (const backendUrl of backendsToTry) {
             const file = new File([buffer], `audio.${ext}`, { type: mime });
@@ -282,14 +270,15 @@ export const appRouter = router({
           }
 
           if (!result) {
-            console.warn("[Classify] All ML backends failed — using random fallback (client will try TF.js).");
+            console.warn("[Classify] All ML backends failed.");
           }
         }
 
         if (!result) {
-          // Simulate 2-second processing when no audio or all backends failed
-          await sleep(2000);
-          result = randomClassify();
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Classificação indisponível. Tente novamente.",
+          });
         }
 
         const userId = await effectiveUserId(ctx.user);

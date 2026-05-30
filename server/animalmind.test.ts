@@ -122,9 +122,33 @@ function makeCtx(user: TrpcContext["user"] = null): TrpcContext {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("classify.run", () => {
+  beforeEach(() => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.includes("classify") || url.includes("fly.dev") || url.includes("hf.space")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            state: "relaxed",
+            confidence: 0.95,
+            emoji: "⚪",
+            model_used: "yamnet"
+          })
+        });
+      }
+      return originalFetch(input, init);
+    });
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
   it("retorna um resultado com os campos obrigatórios", async () => {
+    const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.classify.run({});
+    const result = await caller.classify.run({
+      audio: mockBase64Audio,
+      audioMimeType: "audio/wav",
+    });
     expect(result).toHaveProperty("state");
     expect(result).toHaveProperty("confidence");
     expect(result).toHaveProperty("emoji");
@@ -136,8 +160,13 @@ describe("classify.run", () => {
   }, 10000);
 
   it("aceita animalId opcional", async () => {
+    const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.classify.run({ animalId: 1 });
+    const result = await caller.classify.run({
+      animalId: 1,
+      audio: mockBase64Audio,
+      audioMimeType: "audio/wav",
+    });
     expect(result.state).toBeDefined();
   }, 10000);
 });

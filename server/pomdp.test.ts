@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { describe, expect, it, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
@@ -57,6 +57,26 @@ describe("tRPC POMDP, Posture and Vet Mode", () => {
     }
   });
 
+  beforeEach(() => {
+    const originalFetch = globalThis.fetch;
+    const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.includes("classify") || url.includes("fly.dev") || url.includes("hf.space")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            state: "relaxed",
+            confidence: 0.95,
+            emoji: "⚪",
+            model_used: "yamnet"
+          })
+        });
+      }
+      return originalFetch(input, init);
+    });
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
   it("can get belief state for an animal", async () => {
     if (!credentialsValid) return;
 
@@ -69,9 +89,12 @@ describe("tRPC POMDP, Posture and Vet Mode", () => {
   it("can run classification with posture and update belief state", async () => {
     if (!credentialsValid) return;
 
+    const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
     const result = await caller.classify.run({
       animalId: testAnimalId,
       posture: "sitting",
+      audio: mockBase64Audio,
+      audioMimeType: "audio/wav",
     });
 
     expect(result).toHaveProperty("eventId");
