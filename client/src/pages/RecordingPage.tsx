@@ -25,6 +25,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 import { useLanguage } from "@/hooks/useLanguage";
+import { Switch } from "@/components/ui/switch";
 
 type RecordingState = "idle" | "requesting" | "recording" | "processing";
 type CameraState = "idle" | "loading" | "allowed" | "denied" | "not_found" | "error";
@@ -374,6 +375,15 @@ export default function RecordingPage() {
   const showCamera = cameraState === "allowed";
   const setShowCamera = setCamera;
 
+  const [isYoloActive, setIsYoloActive] = useState(false);
+  const [hasStartedOnboarding, setHasStartedOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (cameraState !== "allowed") {
+      setIsYoloActive(false);
+    }
+  }, [cameraState]);
+
   const [recordState, setRecordState] = useState<RecordingState>("idle");
 
   useEffect(() => {
@@ -669,7 +679,14 @@ export default function RecordingPage() {
 
   // YOLOv8 simulated or MediaPipe skeleton canvas loop
   useEffect(() => {
-    if (!showCamera) return;
+    if (!showCamera || !isYoloActive) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      return;
+    }
     let animId: number;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -891,11 +908,11 @@ export default function RecordingPage() {
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [showCamera, detectedPosture, isMediaPipeActive, mediaPipeLandmarks]);
+  }, [showCamera, detectedPosture, isMediaPipeActive, mediaPipeLandmarks, isYoloActive]);
 
   // MediaPipe Pose browser detection loop
   useEffect(() => {
-    if (!showCamera) {
+    if (!showCamera || !isYoloActive) {
       setIsMediaPipeActive(false);
       setMediaPipeLandmarks(null);
       return;
@@ -965,11 +982,11 @@ export default function RecordingPage() {
         } catch (e) {}
       }
     };
-  }, [showCamera]);
+  }, [showCamera, isYoloActive]);
 
   // Periodic frame upload loop for YOLOv8 posture detection
   useEffect(() => {
-    if (!showCamera) return;
+    if (!showCamera || !isYoloActive) return;
 
     let active = true;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -1054,7 +1071,7 @@ export default function RecordingPage() {
       active = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [showCamera, facingMode]);
+  }, [showCamera, facingMode, isYoloActive]);
 
   const startRecordingCycle = async () => {
     setRecordState("requesting");
@@ -1160,7 +1177,7 @@ export default function RecordingPage() {
             model_used: "yamnet-local" as any,
             cached: false,
             eventId: undefined,
-            posture: showCamera ? detectedPosture : undefined,
+            posture: (showCamera && isYoloActive) ? detectedPosture : undefined,
           };
 
           setResult(res);
@@ -1332,7 +1349,7 @@ export default function RecordingPage() {
               animalId: activeAnimal?.id,
               audio: audioBase64,
               audioMimeType,
-              posture: showCamera ? detectedPosture : undefined,
+              posture: (showCamera && isYoloActive) ? detectedPosture : undefined,
               pitch: dominantFreq,
               spectralEnergy,
               tonalBrightness,
@@ -1458,6 +1475,8 @@ export default function RecordingPage() {
     );
   };
 
+  const showOnboarding = recentEvents.length === 0 && !hasStartedOnboarding;
+
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto select-none touch-callout-none">
       {/* Header */}
@@ -1478,6 +1497,57 @@ export default function RecordingPage() {
         )}
       </div>
 
+      {/* Onboarding / Empty State */}
+      {showOnboarding && (
+        <div className="bg-card border border-primary/20 rounded-2xl p-5 space-y-4 shadow-lg page-enter relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none" />
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <span>💡</span> {language === "pt" ? "Como funciona" : "How it works"}
+            </h2>
+            <p className="text-xs text-muted-foreground text-left">
+              {language === "pt" 
+                ? "Siga estes passos simples para classificar o estado emocional do seu animal:" 
+                : "Follow these simple steps to classify your pet's emotional state:"}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2.5 pt-1 text-left">
+            <div className="bg-secondary/40 border border-border/50 rounded-xl p-2.5 space-y-1 flex flex-col items-center text-center">
+              <span className="text-base">🎙️</span>
+              <p className="text-[10px] font-bold text-foreground">{language === "pt" ? "1. Gravar" : "1. Record"}</p>
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                {language === "pt" ? "Registe 3s de áudio." : "Record 3s of audio."}
+              </p>
+            </div>
+            <div className="bg-secondary/40 border border-border/50 rounded-xl p-2.5 space-y-1 flex flex-col items-center text-center">
+              <span className="text-base">🤖</span>
+              <p className="text-[10px] font-bold text-foreground">{language === "pt" ? "2. Analisar" : "2. Analyze"}</p>
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                {language === "pt" ? "IA analisa som e pose." : "AI analyzes sound & pose."}
+              </p>
+            </div>
+            <div className="bg-secondary/40 border border-border/50 rounded-xl p-2.5 space-y-1 flex flex-col items-center text-center">
+              <span className="text-base">📈</span>
+              <p className="text-[10px] font-bold text-foreground">{language === "pt" ? "3. Histórico" : "3. History"}</p>
+              <p className="text-[9px] text-muted-foreground leading-tight">
+                {language === "pt" ? "Acompanhe a evolução." : "Track the evolution."}
+              </p>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => {
+              setHasStartedOnboarding(true);
+              handleButtonClick();
+            }}
+            className="w-full bg-primary hover:bg-emerald-600 text-white font-semibold text-xs py-2 rounded-xl transition-all"
+          >
+            {language === "pt" ? "Começar" : "Get Started"}
+          </Button>
+        </div>
+      )}
+
       {/* Veterinary Disclaimer */}
       <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5 shadow-sm">
         <span className="text-base select-none mt-0.5">⚠️</span>
@@ -1487,55 +1557,61 @@ export default function RecordingPage() {
       </div>
 
       {/* Módulo de Visão Computacional */}
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-emerald-400 text-lg">📷</span>
             <div>
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
-                {t("recordingPage.cameraTitle")}
+                {language === "pt" ? "Visão Computacional (YOLOv8)" : "Computer Vision (YOLOv8)"}
               </p>
               <p className="text-xs text-muted-foreground">
-                {t("recordingPage.cameraDesc")}
+                {language === "pt" ? "Análise postural em tempo real" : "Real-time posture analysis"}
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
             {cameraState === "allowed" && (
               <Button
                 variant="outline"
-                size="sm"
+                size="xs"
                 onClick={handleSwitchCamera}
-                className="text-xs font-semibold"
+                className="text-[10px] h-7 px-2 font-semibold"
               >
                 {facingMode === "environment" ? t("recordingPage.cameraFront") : t("recordingPage.cameraBack")}
               </Button>
             )}
-            <Button
-              variant={cameraState !== "idle" ? "destructive" : "outline"}
-              size="sm"
-              onClick={handleToggleCamera}
-              className="text-xs font-semibold"
-            >
-              {cameraState !== "idle" ? t("recordingPage.disable") : t("recordingPage.enable")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">YOLOv8</span>
+              <Switch
+                checked={isYoloActive}
+                onCheckedChange={setIsYoloActive}
+                disabled={cameraState !== "allowed"}
+                aria-label="Toggle YOLOv8"
+              />
+            </div>
           </div>
         </div>
 
-        {cameraState !== "idle" && (
-          <div className="space-y-3 pt-2 border-t border-border/50 page-enter">
-            <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-black border border-border">
+        {cameraState !== "allowed" && (
+          <p className="text-xs text-amber-500/80 font-medium text-left">
+            ⚠️ {language === "pt" ? "Ative a câmera para usar a Visão Computacional." : "Activate the camera to use Computer Vision."}
+          </p>
+        )}
+
+        <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-slate-950/40 border border-border flex items-center justify-center">
+          {cameraState === "allowed" && (
+            <>
               <video
                 ref={videoRefCallback}
                 muted
                 playsInline
                 className={cn(
                   "w-full h-full object-cover",
-                  facingMode === "user" && "scale-x-[-1]",
-                  cameraState !== "allowed" && "hidden"
+                  facingMode === "user" && "scale-x-[-1]"
                 )}
               />
-              {cameraState === "allowed" && (
+              {isYoloActive && (
                 <canvas
                   ref={canvasRef}
                   width={320}
@@ -1543,67 +1619,116 @@ export default function RecordingPage() {
                   className={cn("absolute inset-0 w-full h-full pointer-events-none", facingMode === "user" && "scale-x-[-1]")}
                 />
               )}
-              
-              {/* State Machine Overlays */}
-              {cameraState === "loading" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 text-white p-4 text-center">
-                  <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
-                  <p className="text-xs font-semibold">{language === "pt" ? "A iniciar câmara..." : "Starting camera..."}</p>
-                </div>
-              )}
-              
-              {cameraState === "denied" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center">
-                  <span className="text-3xl mb-2">🔒</span>
-                  <p className="text-xs font-bold text-red-400 mb-1">{language === "pt" ? "Acesso Negado" : "Access Denied"}</p>
-                  <p className="text-[10px] text-muted-foreground max-w-[260px]">
-                    {language === "pt"
-                      ? "Por favor, ative a permissão da câmara nas definições do seu browser e recarregue a página."
-                      : "Please enable camera permissions in your browser settings and reload the page."}
-                  </p>
-                </div>
-              )}
-              
-              {cameraState === "not_found" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center">
-                  <span className="text-3xl mb-2">🚫</span>
-                  <p className="text-xs font-bold text-yellow-400 mb-1">{language === "pt" ? "Câmara Não Encontrada" : "Camera Not Found"}</p>
-                  <p className="text-[10px] text-muted-foreground max-w-[260px]">
-                    {language === "pt"
-                      ? "Não foi detetada nenhuma câmara neste dispositivo."
-                      : "No camera was detected on this device."}
-                  </p>
-                </div>
-              )}
-              
-              {cameraState === "error" && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center">
-                  <span className="text-3xl mb-2">⚠️</span>
-                  <p className="text-xs font-bold text-red-500 mb-1">{language === "pt" ? "Erro na Câmara" : "Camera Error"}</p>
-                  <p className="text-[10px] text-muted-foreground max-w-[260px] line-clamp-3">
-                    {cameraError || (language === "pt" ? "Erro desconhecido." : "Unknown error.")}
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            {cameraState === "allowed" && (
-              <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
-                <span className="text-xs font-medium text-muted-foreground">
-                  {t("recordingPage.simulatedPosture")}
-                </span>
-                <select
-                  value={detectedPosture}
-                  onChange={(e) => setDetectedPosture(e.target.value)}
-                  className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
-                >
-                  <option value="sitting">{t("recordingPage.postureSitting")}</option>
-                  <option value="lying">{t("recordingPage.postureLying")}</option>
-                  <option value="standing">{t("recordingPage.postureStanding")}</option>
-                  <option value="alert">{t("recordingPage.postureAlert")}</option>
-                </select>
+              <div className="absolute bottom-2 left-2 right-2 bg-slate-950/80 px-2 py-1 rounded text-[10px] text-white/90 text-center font-medium">
+                {language === "pt" ? "Câmera ativa. Pronto para Visão Computacional (YOLOv8)." : "Camera active. Ready for Computer Vision (YOLOv8)."}
               </div>
-            )}
+            </>
+          )}
+
+          {cameraState === "idle" && (
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+              <span className="text-4xl">📷</span>
+              <p className="text-xs text-muted-foreground">
+                {language === "pt" ? "A câmera está desligada." : "Camera is turned off."}
+              </p>
+              <Button
+                onClick={handleToggleCamera}
+                className="bg-primary hover:bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-xl"
+              >
+                {language === "pt" ? "Ativar Câmera" : "Activate Camera"}
+              </Button>
+            </div>
+          )}
+
+          {cameraState === "loading" && (
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
+              <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-1" />
+              <p className="text-xs font-medium text-foreground">
+                {language === "pt" ? "A pedir permissão para a câmera..." : "Requesting camera permission..."}
+              </p>
+            </div>
+          )}
+
+          {cameraState === "denied" && (
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+              <span className="text-3xl animate-bounce">⚠️</span>
+              <p className="text-xs font-bold text-red-400">
+                {language === "pt" ? "Permissão de câmera negada" : "Camera permission denied"}
+              </p>
+              <div className="text-[10px] text-muted-foreground leading-relaxed max-w-[240px] text-left space-y-1">
+                <p className="font-semibold">{language === "pt" ? "Passos para ativar:" : "Steps to activate:"}</p>
+                <ol className="list-decimal list-inside space-y-0.5">
+                  {language === "pt" ? (
+                    <>
+                      <li>Aceda às definições do browser</li>
+                      <li>Procure por 'Permissões' ou 'Privacidade'</li>
+                      <li>Ative a câmara para este site</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Open browser settings</li>
+                      <li>Search for 'Permissions' or 'Privacy'</li>
+                      <li>Enable camera for this site</li>
+                    </>
+                  )}
+                </ol>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleCamera}
+                className="text-xs font-semibold h-8"
+              >
+                {language === "pt" ? "Tentar novamente" : "Try again"}
+              </Button>
+            </div>
+          )}
+
+          {cameraState === "not_found" && (
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
+              <span className="text-3xl">❌</span>
+              <p className="text-xs font-semibold text-yellow-400">
+                {language === "pt" ? "Nenhuma câmera encontrada. Verifique o dispositivo." : "No camera found. Check the device."}
+              </p>
+            </div>
+          )}
+
+          {cameraState === "error" && (
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+              <span className="text-3xl">❌</span>
+              <p className="text-xs font-semibold text-red-500">
+                {language === "pt" ? "Ocorreu um erro ao aceder à câmera." : "An error occurred while accessing the camera."}
+              </p>
+              {cameraError && (
+                <p className="text-[10px] text-muted-foreground max-w-[240px] truncate">{cameraError}</p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleCamera}
+                className="text-xs font-semibold h-8"
+              >
+                {language === "pt" ? "Tentar novamente" : "Try again"}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {cameraState === "allowed" && isYoloActive && (
+          <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40 page-enter">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("recordingPage.simulatedPosture")}
+            </span>
+            <select
+              value={detectedPosture}
+              onChange={(e) => setDetectedPosture(e.target.value)}
+              className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
+            >
+              <option value="sitting">{t("recordingPage.postureSitting")}</option>
+              <option value="lying">{t("recordingPage.postureLying")}</option>
+              <option value="standing">{t("recordingPage.postureStanding")}</option>
+              <option value="alert">{t("recordingPage.postureAlert")}</option>
+            </select>
           </div>
         )}
       </div>
@@ -1778,48 +1903,12 @@ export default function RecordingPage() {
         </div>
       )}
 
-      {/* Camera Permission Error Modal */}
-      <AlertDialog open={cameraPermissionDenied} onOpenChange={setCameraPermissionDenied}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <AlertDialogTitle>{t("recordingPage.cameraDeniedTitle")}</AlertDialogTitle>
-            </div>
-          </AlertDialogHeader>
-          <AlertDialogDescription className="space-y-3">
-            <p>
-              {t("recordingPage.cameraDeniedDesc")}
-            </p>
-            <p className="font-semibold text-foreground">
-              {language === "pt" ? "Para ativar a câmara:" : "To enable the camera:"}
-            </p>
-            <ol className="list-decimal list-inside space-y-1 text-sm">
-              {language === "pt" ? (
-                <>
-                  <li>Abra as definições do browser</li>
-                  <li>Procure por "Permissões" ou "Privacidade"</li>
-                  <li>Encontre "Câmara" e ative para este site</li>
-                  <li>Recarregue a página</li>
-                </>
-              ) : (
-                <>
-                  <li>Open browser settings</li>
-                  <li>Search for "Permissions" or "Privacy"</li>
-                  <li>Find "Camera" and enable for this site</li>
-                  <li>Reload the page</li>
-                </>
-              )}
-            </ol>
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.close")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setCameraPermissionDenied(false)}>
-              {language === "pt" ? "Entendi" : "Got it"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Discreet footer disclaimer */}
+      <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed max-w-[360px] mx-auto pt-4 pb-2">
+        {language === "pt"
+          ? "AnimalMind não substitui avaliação veterinária. Os resultados são estimativas comportamentais baseadas em áudio e contexto."
+          : "AnimalMind does not replace veterinary evaluation. Results are behavioral estimates based on audio and context."}
+      </p>
     </div>
   );
 }
