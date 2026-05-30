@@ -33,6 +33,7 @@ import FamilyDashboard from "./pages/FamilyDashboard";
 import HealthPage from "./pages/HealthPage";
 import ComparisonPage from "./pages/ComparisonPage";
 import LandingPage from "./pages/LandingPage";
+import PrivacyPage from "./pages/PrivacyPage";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -60,6 +61,7 @@ function Router() {
 
           {/* Public routes */}
           <Route path="/" component={LandingPage} />
+          <Route path="/privacidade" component={PrivacyPage} />
 
           {/* Protected routes */}
           <Route path="/gravar" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
