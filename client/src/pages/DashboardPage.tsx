@@ -281,15 +281,60 @@ export default function DashboardPage() {
           </Button>
         </div>
       ) : animals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 bg-secondary/10 border border-dashed border-border rounded-2xl p-6">
-          <span className="text-5xl">🐾</span>
-          <p className="text-foreground font-semibold">Ainda não tens animais.</p>
-          <p className="text-muted-foreground text-sm">Adiciona o teu primeiro companheiro para começar a registar emoções.</p>
-          <Link to="/perfil">
-            <Button size="sm" className="bg-primary text-primary-foreground rounded-xl gap-1.5">
-              <PawPrint size={14} /> + Adicionar animal
-            </Button>
-          </Link>
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-8 bg-slate-900/30 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm max-w-lg mx-auto">
+          <div className="relative">
+            <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse" />
+            <span className="relative text-6xl">✨</span>
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-100">Bem-vindo ao AnimalMind!</h2>
+            <p className="text-slate-400 text-xs sm:text-sm max-w-sm leading-relaxed">
+              Vamos configurar a sua conta. Siga os passos rápidos abaixo para começar a monitorizar o seu companheiro.
+            </p>
+          </div>
+
+          <div className="w-full space-y-4 text-left">
+            {/* Step 1 */}
+            <div className="flex gap-4 items-center bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4 transition-all duration-300">
+              <div className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-md">
+                1
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-bold text-slate-200">Adicionar o Seu Primeiro Animal</h4>
+                <p className="text-[11px] text-indigo-300">Crie o perfil com espécie, raça e idade do seu companheiro.</p>
+              </div>
+              <Link to="/perfil">
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs px-3.5 shadow-md">
+                  Criar Perfil
+                </Button>
+              </Link>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex gap-4 items-center bg-slate-900/40 border border-slate-900 rounded-2xl p-4 opacity-50">
+              <div className="w-9 h-9 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-sm shrink-0">
+                2
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-semibold text-slate-400">Gravar uma Vocalização</h4>
+                <p className="text-[11px] text-slate-500">Capte o áudio do seu animal no gravador para obter o relatório de bem-estar.</p>
+              </div>
+              <span className="text-slate-500 text-xs">Aguardando</span>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex gap-4 items-center bg-slate-900/40 border border-slate-900 rounded-2xl p-4 opacity-50">
+              <div className="w-9 h-9 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-sm shrink-0">
+                3
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-semibold text-slate-400">Analisar Tendências</h4>
+                <p className="text-[11px] text-slate-500">Aceda a estatísticas semanais e alertas automáticos de alteração comportamental.</p>
+              </div>
+              <span className="text-slate-500 text-xs">Aguardando</span>
+            </div>
+          </div>
         </div>
       ) : (
         /* Stats Cards */
