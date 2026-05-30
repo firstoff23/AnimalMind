@@ -102,12 +102,11 @@ describe("tRPC classify.run with FastAPI backend", () => {
 
     const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
 
-    // Should throw TRPC error
     await expect(caller.classify.run({
       animalId: testAnimalId,
       audio: mockBase64Audio,
       audioMimeType: "audio/wav",
-    })).rejects.toThrow("Classificação indisponível. Tente novamente.");
+    })).rejects.toThrow("Não foi possível classificar o áudio neste momento. O áudio foi guardado para análise posterior.");
 
     vi.unstubAllGlobals();
   }, 10000);

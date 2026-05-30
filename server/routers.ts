@@ -64,6 +64,7 @@ import {
   addLicensing,
   deleteLicensing,
 } from "./db";
+import { checkRateLimit } from "./_core/rateLimiter";
 import type { EmotionalState, ModelUsed } from "../shared/types";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -97,16 +98,17 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Attempt to classify audio against a single backend URL, with timeout. */
-async function tryClassifyBackend(
+/** General POST helper for ML backends. */
+async function tryBackendPost(
   url: string,
+  endpoint: string,
   formData: FormData,
   timeoutMs: number
-): Promise<{ state: string; confidence: number; emoji: string; model_used: string } | null> {
+): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`${url}/classify`, {
+    const response = await fetch(`${url}${endpoint}`, {
       method: "POST",
       body: formData,
       signal: controller.signal,
@@ -114,14 +116,43 @@ async function tryClassifyBackend(
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    return await response.json() as { state: string; confidence: number; emoji: string; model_used: string };
+    return await response.json();
   } catch (err) {
     const isTimeout = err instanceof Error && err.name === "AbortError";
-    console.warn(`[Classify] Backend ${url} failed${isTimeout ? " (timeout)" : ""}: ${err}`);
+    console.warn(`[ML] Backend ${url}${endpoint} failed${isTimeout ? " (timeout)" : ""}: ${err}`);
     return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Attempt to classify audio against a single backend URL, with timeout. */
+async function tryClassifyBackend(
+  url: string,
+  formData: FormData,
+  timeoutMs: number
+): Promise<{ state: string; confidence: number; emoji: string; model_used: string } | null> {
+  return tryBackendPost(url, "/classify", formData, timeoutMs);
+}
+
+/** Attempt to run vision detections against primary/fallback ML backend. */
+async function tryVisionBackend(
+  endpoint: string,
+  imageBuffer: Buffer,
+  timeoutMs: number
+): Promise<any> {
+  const primaryUrl = process.env.FASTAPI_BACKEND_URL || process.env.VITE_API_URL || PRIMARY_BACKEND_URL;
+  const backendsToTry = [primaryUrl, HF_BACKEND_URL];
+  
+  for (const backendUrl of backendsToTry) {
+    const file = new File([imageBuffer], "frame.jpg", { type: "image/jpeg" });
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    const data = await tryBackendPost(backendUrl, endpoint, formData, timeoutMs);
+    if (data) return data;
+  }
+  return null;
 }
 
 /** Map raw backend response into our typed result shape. */
@@ -185,24 +216,6 @@ function mapDbEvent(e: any) {
   };
 }
 
-const rateLimitCache = new Map<string, number[]>();
-const WINDOW_MS = 60000;
-const MAX_REQUESTS_PER_MINUTE = 15;
-
-function checkTrpcRateLimit(identifier: string) {
-  const now = Date.now();
-  const timestamps = rateLimitCache.get(identifier) || [];
-  const activeTimestamps = timestamps.filter((t) => now - t < WINDOW_MS);
-  if (activeTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: "Demasiados pedidos. Tente novamente dentro de alguns instantes.",
-    });
-  }
-  activeTimestamps.push(now);
-  rateLimitCache.set(identifier, activeTimestamps);
-}
-
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -245,13 +258,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const ip =
-          (ctx.req?.headers?.["x-forwarded-for"] as string) ||
-          ctx.req?.socket?.remoteAddress ||
-          "unknown";
-        const identifier = ctx.user ? `user_${ctx.user.id}` : `ip_${ip}`;
-        checkTrpcRateLimit(identifier);
-
+        checkRateLimit(ctx, "classify.run", 30);
         let result: {
           state: EmotionalState;
           confidence: number;
@@ -302,8 +309,8 @@ export const appRouter = router({
 
         if (!result) {
           throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Classificação indisponível. Tente novamente.",
+            code: "SERVICE_UNAVAILABLE",
+            message: "Não foi possível classificar o áudio neste momento. O áudio foi guardado para análise posterior.",
           });
         }
 
@@ -351,6 +358,44 @@ export const appRouter = router({
         }
 
         return { ...result, eventId, audioUrl, beliefState, posture: input.posture || null };
+      }),
+
+    detectPosture: protectedProcedure
+      .input(
+        z.object({
+          image: z.string(), // base64 JPEG
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        checkRateLimit(ctx, "classify.detectPosture", 45);
+        const buffer = Buffer.from(input.image, "base64");
+        const data = await tryVisionBackend("/detect-posture", buffer, CLASSIFY_TIMEOUT_MS);
+        if (!data) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "Detecção de postura indisponível no momento.",
+          });
+        }
+        return data as { posture: string; confidence: number };
+      }),
+
+    detectSpecies: protectedProcedure
+      .input(
+        z.object({
+          image: z.string(), // base64 JPEG
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        checkRateLimit(ctx, "classify.detectSpecies", 45);
+        const buffer = Buffer.from(input.image, "base64");
+        const data = await tryVisionBackend("/detect-species", buffer, CLASSIFY_TIMEOUT_MS);
+        if (!data) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message: "Detecção de espécie indisponível no momento.",
+          });
+        }
+        return data as { species: string; confidence: number };
       }),
   }),
 

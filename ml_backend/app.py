@@ -5,7 +5,7 @@ import tempfile
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
@@ -73,25 +73,6 @@ async def shutdown():
     if db_pool:
         await db_pool.close()
         print("[DB] Pool fechado.")
-
-
-# --- In-Memory Rate Limiter ---
-import time
-
-py_rate_limit_cache = {}
-
-def check_rate_limit(client_id: str, route: str, limit_per_minute: int = 30):
-    now = time.time()
-    key = f"{client_id}:{route}"
-    timestamps = py_rate_limit_cache.get(key, [])
-    timestamps = [t for t in timestamps if now - t < 60]
-    if len(timestamps) >= limit_per_minute:
-        raise HTTPException(
-            status_code=429,
-            detail="Demasiados pedidos. Tente novamente dentro de alguns instantes."
-        )
-    timestamps.append(now)
-    py_rate_limit_cache[key] = timestamps
 
 
 # ─── Audio Classification (YAMNet) ───────────────────────────────────────────
@@ -290,9 +271,7 @@ def classify_with_yamnet(wav_path: str) -> Dict[str, object]:
 
 
 @app.post("/classify", response_model=ClassificationResponse)
-async def classify_audio(request: Request, file: UploadFile = File(...)):
-    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
-    check_rate_limit(client_ip, "classify", limit_per_minute=15)
+async def classify_audio(file: UploadFile = File(...)):
     filename = file.filename or "recording.webm"
     ext = os.path.splitext(filename)[1].lower() or ".webm"
     audio_bytes = await file.read()
@@ -556,9 +535,7 @@ def _detect_posture_yolo(image_bytes: bytes):
 
 
 @app.post("/detect-posture", response_model=PostureResponse)
-async def detect_posture(request: Request, file: UploadFile = File(...)):
-    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
-    check_rate_limit(client_ip, "detect-posture", limit_per_minute=20)
+async def detect_posture(file: UploadFile = File(...)):
     content_type = file.content_type or ""
     if not content_type.startswith("image/"):
         raise HTTPException(
@@ -651,9 +628,7 @@ class SpeciesResponse(BaseModel):
 
 
 @app.post("/detect-species", response_model=SpeciesResponse)
-async def detect_species(request: Request, file: UploadFile = File(...)):
-    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
-    check_rate_limit(client_ip, "detect-species", limit_per_minute=20)
+async def detect_species(file: UploadFile = File(...)):
     """
     Deteta automaticamente se o animal na imagem é cão, gato, ou desconhecido.
     Usa google/vit-base-patch16-224 (ImageNet) sem requerer seleção prévia de espécie.
