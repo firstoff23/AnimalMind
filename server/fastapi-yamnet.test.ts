@@ -17,7 +17,7 @@ describe("FastAPI YAMNet backend contract", () => {
   });
 
   it("declares TensorFlow Hub runtime dependencies", () => {
-    expect(requirements).toMatch(/^tensorflow[<>=]/m);
+    expect(requirements).toMatch(/^tensorflow(-cpu)?[<>=]/m);
     expect(requirements).toMatch(/^tensorflow-hub[<>=]/m);
   });
 });
