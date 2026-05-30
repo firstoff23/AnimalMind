@@ -27,6 +27,7 @@ import type { EmotionalState } from "../../../shared/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
 type RecordingState = "idle" | "requesting" | "recording" | "processing";
+type CameraState = "idle" | "loading" | "allowed" | "denied" | "not_found" | "error";
 
 interface ClassifyResult {
   state: EmotionalState;
@@ -369,7 +370,8 @@ import { useAppStore } from "@/store/appStore";
 export default function RecordingPage() {
   const { t, language } = useLanguage();
   const { cameraActive, setCamera, setRecording } = useAppStore();
-  const showCamera = cameraActive;
+  const [cameraState, setCameraState] = useState<CameraState>(cameraActive ? "loading" : "idle");
+  const showCamera = cameraState === "allowed";
   const setShowCamera = setCamera;
 
   const [recordState, setRecordState] = useState<RecordingState>("idle");
@@ -429,18 +431,22 @@ export default function RecordingPage() {
   const recentEvents = recentEventsData as RecentEvent[];
 
   const handleToggleCamera = async () => {
-    if (showCamera) {
+    if (cameraState === "allowed" || cameraState === "loading") {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
+      setCameraState("idle");
       setShowCamera(false);
     } else {
+      setCameraState("loading");
+      setShowCamera(true);
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         const errorMessage = language === "pt"
           ? "O seu browser ou dispositivo não suporta acesso direto à câmara (ou não é um contexto seguro HTTPS)."
           : "Your browser or device does not support direct camera access (or it is not a secure HTTPS context).";
         setCameraError(errorMessage);
+        setCameraState("error");
         toast.error(errorMessage);
         return;
       }
@@ -467,7 +473,7 @@ export default function RecordingPage() {
         streamRef.current = stream;
         setCameraPermissionDenied(false);
         setCameraError(null);
-        setShowCamera(true);
+        setCameraState("allowed");
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -477,6 +483,7 @@ export default function RecordingPage() {
         console.error("Camera access error:", err);
         let errorMessage = language === "pt" ? "Não foi possível aceder à câmara." : "Could not access camera.";
         let isDenied = false;
+        let nextState: CameraState = "error";
         
         if (err instanceof DOMException) {
           switch (err.name) {
@@ -484,27 +491,24 @@ export default function RecordingPage() {
             case "PermissionDeniedError":
               errorMessage = language === "pt" ? "Permissão de câmara negada. Ative nas definições do browser." : "Camera permission denied. Enable in browser settings.";
               isDenied = true;
+              nextState = "denied";
               break;
             case "NotFoundError":
             case "DevicesNotFoundError":
               errorMessage = language === "pt" ? "Nenhuma câmara disponível no dispositivo." : "No camera available on this device.";
+              nextState = "not_found";
               break;
-            case "NotReadableError":
-            case "TrackStartError":
-              errorMessage = language === "pt" ? "A câmara está a ser utilizada por outra aplicação ou pelo sistema." : "The camera is already in use by another app or system resource.";
-              break;
-            case "SecurityError":
-              errorMessage = language === "pt" ? "Acesso à câmara bloqueado por razões de segurança." : "Camera access blocked due to security reasons.";
-              break;
-            case "TypeError":
-              errorMessage = language === "pt" ? "Configuração de câmara inválida." : "Invalid camera configuration.";
+            default:
+              nextState = "error";
               break;
           }
         }
         
         setCameraPermissionDenied(isDenied);
         setCameraError(errorMessage);
+        setCameraState(nextState);
         toast.error(errorMessage);
+        setShowCamera(false);
       }
     }
   };
@@ -518,6 +522,8 @@ export default function RecordingPage() {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+
+    setCameraState("loading");
 
     try {
       let stream: MediaStream;
@@ -539,6 +545,7 @@ export default function RecordingPage() {
       streamRef.current = stream;
       setCameraPermissionDenied(false);
       setCameraError(null);
+      setCameraState("allowed");
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -548,6 +555,7 @@ export default function RecordingPage() {
       console.error("Camera access error during switch:", err);
       let errorMessage = language === "pt" ? "Não foi possível aceder à câmara." : "Could not access camera.";
       let isDenied = false;
+      let nextState: CameraState = "error";
 
       if (err instanceof DOMException) {
         switch (err.name) {
@@ -555,26 +563,22 @@ export default function RecordingPage() {
           case "PermissionDeniedError":
             errorMessage = language === "pt" ? "Permissão de câmara negada. Ative nas definições do browser." : "Camera permission denied. Enable in browser settings.";
             isDenied = true;
+            nextState = "denied";
             break;
           case "NotFoundError":
           case "DevicesNotFoundError":
             errorMessage = language === "pt" ? "Nenhuma câmara disponível no dispositivo." : "No camera available on this device.";
+            nextState = "not_found";
             break;
-          case "NotReadableError":
-          case "TrackStartError":
-            errorMessage = language === "pt" ? "A câmara está a ser utilizada por outra aplicação ou pelo sistema." : "The camera is already in use by another app or system resource.";
-            break;
-          case "SecurityError":
-            errorMessage = language === "pt" ? "Acesso à câmara bloqueado por razões de segurança." : "Camera access blocked due to security reasons.";
-            break;
-          case "TypeError":
-            errorMessage = language === "pt" ? "Configuração de câmara inválida." : "Invalid camera configuration.";
+          default:
+            nextState = "error";
             break;
         }
       }
 
       setCameraPermissionDenied(isDenied);
       setCameraError(errorMessage);
+      setCameraState(nextState);
       toast.error(errorMessage);
       setShowCamera(false);
     }
@@ -587,6 +591,81 @@ export default function RecordingPage() {
       el.play().catch((err) => console.error("Play error in callback ref:", err));
     }
   };
+
+  // Auto-init camera if cameraActive from store is true
+  useEffect(() => {
+    if (cameraActive) {
+      void (async () => {
+        setCameraState("loading");
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          const errorMessage = language === "pt"
+            ? "O seu browser ou dispositivo não suporta acesso direto à câmara (ou não é um contexto seguro HTTPS)."
+            : "Your browser or device does not support direct camera access (or it is not a secure HTTPS context).";
+          setCameraError(errorMessage);
+          setCameraState("error");
+          return;
+        }
+
+        try {
+          let stream: MediaStream;
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                width: { ideal: 320 },
+                height: { ideal: 240 },
+                facingMode: { ideal: facingMode },
+              },
+            });
+          } catch (constraintErr) {
+            console.warn("Camera getUserMedia failed with ideal constraints, trying fallback...", constraintErr);
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+            });
+          }
+          
+          streamRef.current = stream;
+          setCameraPermissionDenied(false);
+          setCameraError(null);
+          setCameraState("allowed");
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch((err) => console.error("Play error:", err));
+          }
+        } catch (err) {
+          console.error("Camera access error on auto-init:", err);
+          let errorMessage = language === "pt" ? "Não foi possível aceder à câmara." : "Could not access camera.";
+          let isDenied = false;
+          let nextState: CameraState = "error";
+          
+          if (err instanceof DOMException) {
+            switch (err.name) {
+              case "NotAllowedError":
+              case "PermissionDeniedError":
+                errorMessage = language === "pt" ? "Permissão de câmara negada. Ative nas definições do browser." : "Camera permission denied. Enable in browser settings.";
+                isDenied = true;
+                nextState = "denied";
+                break;
+              case "NotFoundError":
+              case "DevicesNotFoundError":
+                errorMessage = language === "pt" ? "Nenhuma câmara disponível no dispositivo." : "No camera available on this device.";
+                nextState = "not_found";
+                break;
+              default:
+                nextState = "error";
+                break;
+            }
+          }
+          
+          setCameraPermissionDenied(isDenied);
+          setCameraError(errorMessage);
+          setCameraState(nextState);
+          setShowCamera(false);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // YOLOv8 simulated or MediaPipe skeleton canvas loop
   useEffect(() => {
@@ -1414,7 +1493,7 @@ export default function RecordingPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            {showCamera && (
+            {cameraState === "allowed" && (
               <Button
                 variant="outline"
                 size="sm"
@@ -1425,48 +1504,98 @@ export default function RecordingPage() {
               </Button>
             )}
             <Button
-              variant={showCamera ? "destructive" : "outline"}
+              variant={cameraState !== "idle" ? "destructive" : "outline"}
               size="sm"
               onClick={handleToggleCamera}
               className="text-xs font-semibold"
             >
-              {showCamera ? t("recordingPage.disable") : t("recordingPage.enable")}
+              {cameraState !== "idle" ? t("recordingPage.disable") : t("recordingPage.enable")}
             </Button>
           </div>
         </div>
 
-        {showCamera && (
+        {cameraState !== "idle" && (
           <div className="space-y-3 pt-2 border-t border-border/50 page-enter">
             <div className="relative w-full max-w-[320px] mx-auto aspect-[4/3] rounded-xl overflow-hidden bg-black border border-border">
               <video
                 ref={videoRefCallback}
                 muted
                 playsInline
-                className={cn("w-full h-full object-cover", facingMode === "user" && "scale-x-[-1]")}
+                className={cn(
+                  "w-full h-full object-cover",
+                  facingMode === "user" && "scale-x-[-1]",
+                  cameraState !== "allowed" && "hidden"
+                )}
               />
-              <canvas
-                ref={canvasRef}
-                width={320}
-                height={240}
-                className={cn("absolute inset-0 w-full h-full pointer-events-none", facingMode === "user" && "scale-x-[-1]")}
-              />
+              {cameraState === "allowed" && (
+                <canvas
+                  ref={canvasRef}
+                  width={320}
+                  height={240}
+                  className={cn("absolute inset-0 w-full h-full pointer-events-none", facingMode === "user" && "scale-x-[-1]")}
+                />
+              )}
+              
+              {/* State Machine Overlays */}
+              {cameraState === "loading" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 text-white p-4 text-center">
+                  <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
+                  <p className="text-xs font-semibold">{language === "pt" ? "A iniciar câmara..." : "Starting camera..."}</p>
+                </div>
+              )}
+              
+              {cameraState === "denied" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center">
+                  <span className="text-3xl mb-2">🔒</span>
+                  <p className="text-xs font-bold text-red-400 mb-1">{language === "pt" ? "Acesso Negado" : "Access Denied"}</p>
+                  <p className="text-[10px] text-muted-foreground max-w-[260px]">
+                    {language === "pt"
+                      ? "Por favor, ative a permissão da câmara nas definições do seu browser e recarregue a página."
+                      : "Please enable camera permissions in your browser settings and reload the page."}
+                  </p>
+                </div>
+              )}
+              
+              {cameraState === "not_found" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center">
+                  <span className="text-3xl mb-2">🚫</span>
+                  <p className="text-xs font-bold text-yellow-400 mb-1">{language === "pt" ? "Câmara Não Encontrada" : "Camera Not Found"}</p>
+                  <p className="text-[10px] text-muted-foreground max-w-[260px]">
+                    {language === "pt"
+                      ? "Não foi detetada nenhuma câmara neste dispositivo."
+                      : "No camera was detected on this device."}
+                  </p>
+                </div>
+              )}
+              
+              {cameraState === "error" && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center">
+                  <span className="text-3xl mb-2">⚠️</span>
+                  <p className="text-xs font-bold text-red-500 mb-1">{language === "pt" ? "Erro na Câmara" : "Camera Error"}</p>
+                  <p className="text-[10px] text-muted-foreground max-w-[260px] line-clamp-3">
+                    {cameraError || (language === "pt" ? "Erro desconhecido." : "Unknown error.")}
+                  </p>
+                </div>
+              )}
             </div>
             
-            <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("recordingPage.simulatedPosture")}
-              </span>
-              <select
-                value={detectedPosture}
-                onChange={(e) => setDetectedPosture(e.target.value)}
-                className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
-              >
-                <option value="sitting">{t("recordingPage.postureSitting")}</option>
-                <option value="lying">{t("recordingPage.postureLying")}</option>
-                <option value="standing">{t("recordingPage.postureStanding")}</option>
-                <option value="alert">{t("recordingPage.postureAlert")}</option>
-              </select>
-            </div>
+            {cameraState === "allowed" && (
+              <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t("recordingPage.simulatedPosture")}
+                </span>
+                <select
+                  value={detectedPosture}
+                  onChange={(e) => setDetectedPosture(e.target.value)}
+                  className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50"
+                >
+                  <option value="sitting">{t("recordingPage.postureSitting")}</option>
+                  <option value="lying">{t("recordingPage.postureLying")}</option>
+                  <option value="standing">{t("recordingPage.postureStanding")}</option>
+                  <option value="alert">{t("recordingPage.postureAlert")}</option>
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>
