@@ -18,10 +18,28 @@ async function callBackend(endpoint: string, options: RequestInit): Promise<Resp
       signal: AbortSignal.timeout(5000),
     });
     if (res.ok) return res;
+    if (res.status === 429) {
+      throw new Error("Demasiados pedidos. Tente novamente dentro de alguns instantes.");
+    }
     throw new Error(`Primary failed: ${res.status}`);
-  } catch {
+  } catch (err: any) {
+    if (err?.message?.includes("Demasiados pedidos")) {
+      throw err;
+    }
     // Fallback to HF Space (best-effort, no extra timeout)
-    return fetch(`${HF_SPACE_URL}${endpoint}`, options);
+    try {
+      const fallbackRes = await fetch(`${HF_SPACE_URL}${endpoint}`, options);
+      if (fallbackRes.ok) return fallbackRes;
+      if (fallbackRes.status === 429) {
+        throw new Error("Demasiados pedidos. Tente novamente dentro de alguns instantes.");
+      }
+      throw new Error(`Fallback failed: ${fallbackRes.status}`);
+    } catch (fallbackErr: any) {
+      if (fallbackErr?.message?.includes("Demasiados pedidos")) {
+        throw fallbackErr;
+      }
+      throw fallbackErr;
+    }
   }
 }
 

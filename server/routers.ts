@@ -185,6 +185,24 @@ function mapDbEvent(e: any) {
   };
 }
 
+const rateLimitCache = new Map<string, number[]>();
+const WINDOW_MS = 60000;
+const MAX_REQUESTS_PER_MINUTE = 15;
+
+function checkTrpcRateLimit(identifier: string) {
+  const now = Date.now();
+  const timestamps = rateLimitCache.get(identifier) || [];
+  const activeTimestamps = timestamps.filter((t) => now - t < WINDOW_MS);
+  if (activeTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Demasiados pedidos. Tente novamente dentro de alguns instantes.",
+    });
+  }
+  activeTimestamps.push(now);
+  rateLimitCache.set(identifier, activeTimestamps);
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -198,7 +216,7 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
-    updateProfile: publicProcedure
+    updateProfile: protectedProcedure
       .input(
         z.object({
           name: z.string().min(1).max(100).optional(),
@@ -227,6 +245,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const ip =
+          (ctx.req?.headers?.["x-forwarded-for"] as string) ||
+          ctx.req?.socket?.remoteAddress ||
+          "unknown";
+        const identifier = ctx.user ? `user_${ctx.user.id}` : `ip_${ip}`;
+        checkTrpcRateLimit(identifier);
+
         let result: {
           state: EmotionalState;
           confidence: number;
