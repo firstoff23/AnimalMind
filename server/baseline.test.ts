@@ -2,10 +2,7 @@ import { describe, expect, it, beforeAll, afterAll } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
 
-const BASELINES_FILE_PATH = path.resolve(import.meta.dirname, "baselines.json");
 
 function createMockContext(): TrpcContext {
   return {
@@ -114,17 +111,5 @@ describe("tRPC animals and baselines", () => {
     expect(Array.isArray(res.events)).toBe(true);
   });
 
-  afterAll(() => {
-    // Clean up our changes to baselines.json for testAnimalId
-    try {
-      if (fs.existsSync(BASELINES_FILE_PATH)) {
-        const content = fs.readFileSync(BASELINES_FILE_PATH, "utf8");
-        const baselines = JSON.parse(content);
-        delete baselines[testAnimalId];
-        fs.writeFileSync(BASELINES_FILE_PATH, JSON.stringify(baselines, null, 2), "utf8");
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  });
+
 });

@@ -2,39 +2,99 @@ import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
 
-const FAMILY_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "family_shares.json");
 
 vi.mock("@supabase/supabase-js", () => {
+  let isShareDeleted = false;
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {
         let lastEqColumn: string | null = null;
         let lastEqValue: any = null;
+        let currentOperation: "insert" | "select" | "update" | "delete" = "select";
+        let lastInsertData: any = null;
+
         const builder: any = {
-          select: vi.fn().mockReturnThis(),
-          insert: vi.fn().mockReturnThis(),
-          update: vi.fn().mockReturnThis(),
-          upsert: vi.fn().mockReturnThis(),
+          select: vi.fn().mockImplementation(() => {
+            currentOperation = "select";
+            return builder;
+          }),
+          insert: vi.fn().mockImplementation((data: any) => {
+            currentOperation = "insert";
+            lastInsertData = Array.isArray(data) ? data[0] : data;
+            return builder;
+          }),
+          update: vi.fn().mockImplementation(() => {
+            currentOperation = "update";
+            return builder;
+          }),
+          upsert: vi.fn().mockImplementation(() => {
+            currentOperation = "update";
+            return builder;
+          }),
+          delete: vi.fn().mockImplementation(() => {
+            currentOperation = "delete";
+            isShareDeleted = true;
+            return builder;
+          }),
           eq: vi.fn().mockImplementation((col: string, val: any) => {
             lastEqColumn = col;
             lastEqValue = val;
             return builder;
           }),
+          or: vi.fn().mockImplementation(() => {
+            return builder;
+          }),
           order: vi.fn().mockReturnThis(),
           single: vi.fn().mockImplementation(() => {
+            let data: any = null;
             if (table === "users") {
               if (lastEqValue === "partner@family.local" || lastEqValue === 2 || lastEqValue === "demo-user-002") {
-                return Promise.resolve({ data: { id: 2, email: "partner@family.local", name: "Partner User" }, error: null });
+                data = { id: 2, email: "partner@family.local", name: "Partner User" };
+              } else {
+                data = { id: 1, email: "demo@animalmind.local", name: "Test User" };
               }
-              return Promise.resolve({ data: { id: 1, email: "demo@animalmind.local", name: "Test User" }, error: null });
+            } else if (table === "animals") {
+              data = { id: 1, user_id: 1, name: "Bobi", species: "dog" };
+            } else if (table === "family_shares") {
+              if (isShareDeleted) {
+                data = null;
+              } else {
+                data = {
+                  id: 1,
+                  owner_id: 1,
+                  animal_id: 1,
+                  shared_with_email: "partner@family.local",
+                  shared_with_user_id: 2,
+                  status: "pending",
+                  permission: "read",
+                  created_at: new Date().toISOString()
+                };
+              }
             }
-            if (table === "animals") {
-              return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
+            return Promise.resolve({ data, error: null });
+          }),
+          maybeSingle: vi.fn().mockImplementation(() => {
+            let data: any = null;
+            if (table === "family_shares") {
+              if (lastEqValue === "partner@family.local") {
+                data = null; // Return null so that it creates a new invitation
+              } else {
+                if (!isShareDeleted) {
+                  data = {
+                    id: 1,
+                    owner_id: 1,
+                    animal_id: 1,
+                    shared_with_email: "partner@family.local",
+                    shared_with_user_id: 2,
+                    status: "pending",
+                    permission: "read",
+                    created_at: new Date().toISOString()
+                  };
+                }
+              }
             }
-            return Promise.resolve({ data: null, error: null });
+            return Promise.resolve({ data, error: null });
           }),
           limit: vi.fn().mockImplementation(() => {
             if (table === "animals") {
@@ -42,12 +102,34 @@ vi.mock("@supabase/supabase-js", () => {
             }
             return builder;
           }),
+          then: vi.fn().mockImplementation((resolve) => {
+            let data: any = [];
+            if (table === "family_shares") {
+              if (!isShareDeleted) {
+                data = [
+                  {
+                    id: 1,
+                    owner_id: 1,
+                    animal_id: 1,
+                    shared_with_email: "partner@family.local",
+                    shared_with_user_id: 2,
+                    status: "pending",
+                    permission: "read",
+                    created_at: new Date().toISOString(),
+                    animal: { id: 1, name: "Bobi", species: "dog" }
+                  }
+                ];
+              }
+            }
+            return Promise.resolve({ data, error: null }).then(resolve);
+          })
         };
         return builder;
       }),
     }),
   };
 });
+
 
 function createMockContext(userId: number, openId: string, email: string): TrpcContext {
   return {
@@ -187,14 +269,5 @@ describe("tRPC Family Sharing / Multi-utilizador", () => {
     expect(sharedIds).not.toContain(ownerAnimalId);
   });
 
-  afterAll(() => {
-    // Clean up temporary family shares
-    try {
-      if (fs.existsSync(FAMILY_SHARES_FILE_PATH)) {
-        fs.unlinkSync(FAMILY_SHARES_FILE_PATH);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  });
+
 });

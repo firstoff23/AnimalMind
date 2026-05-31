@@ -2,12 +2,85 @@ import { describe, expect, it, beforeAll, afterAll, beforeEach, vi } from "vites
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
 
-const BELIEF_STATES_FILE_PATH = path.resolve(import.meta.dirname, "belief_states.json");
-const POSTURES_FILE_PATH = path.resolve(import.meta.dirname, "postures.json");
-const VET_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "vet_shares.json");
+vi.mock("@supabase/supabase-js", () => {
+  let lastInsertData: any = {};
+  return {
+    createClient: vi.fn().mockReturnValue({
+      storage: {
+        from: vi.fn().mockReturnValue({
+          upload: vi.fn().mockImplementation(() => Promise.resolve({ data: { path: "audio/test.mp3" }, error: null })),
+          createSignedUrl: vi.fn().mockImplementation(() => Promise.resolve({ data: { signedUrl: "https://mock-signed-url.com" }, error: null }))
+        })
+      },
+      from: vi.fn().mockImplementation((table: string) => {
+        let lastEqValue: any = null;
+        const builder: any = {
+          select: vi.fn().mockReturnThis(),
+          insert: vi.fn().mockImplementation((data: any) => {
+            const item = Array.isArray(data) ? data[0] : data;
+            lastInsertData = { ...lastInsertData, ...item };
+            return builder;
+          }),
+          update: vi.fn().mockImplementation((data: any) => {
+            lastInsertData = { ...lastInsertData, ...data };
+            return builder;
+          }),
+          upsert: vi.fn().mockImplementation((data: any) => {
+            const item = Array.isArray(data) ? data[0] : data;
+            lastInsertData = { ...lastInsertData, ...item };
+            return builder;
+          }),
+          eq: vi.fn().mockImplementation((col: string, val: any) => {
+            lastEqValue = val;
+            return builder;
+          }),
+          gte: vi.fn().mockReturnThis(),
+          not: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockReturnThis(),
+          single: vi.fn().mockImplementation(() => {
+            if (table === "users") {
+              return Promise.resolve({ data: { id: 1 }, error: null });
+            }
+            if (table === "animals") {
+              return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog", baseline_data: {} }, error: null });
+            }
+            if (table === "classification_events") {
+              return Promise.resolve({ data: { id: 123, ...lastInsertData }, error: null });
+            }
+            return Promise.resolve({ data: null, error: null });
+          }),
+          maybeSingle: vi.fn().mockImplementation(() => {
+            if (table === "classification_events") {
+              return Promise.resolve({
+                data: {
+                  id: 123,
+                  belief_state: {
+                    relaxed: 0.5,
+                    excitement: 0.1,
+                    distress: 0.1,
+                    hunger: 0.1,
+                    alert: 0.1,
+                    attention: 0.1,
+                    updatedAt: new Date().toISOString()
+                  }
+                },
+                error: null
+              });
+            }
+            return Promise.resolve({ data: null, error: null });
+          }),
+          then: vi.fn().mockImplementation((resolve) => {
+            return resolve({ data: [], error: null });
+          })
+        };
+        return builder;
+      }),
+    }),
+  };
+});
+
 
 function createMockContext(): TrpcContext {
   return {
@@ -119,19 +192,5 @@ describe("tRPC POMDP, Posture and Vet Mode", () => {
     expect(result).toEqual({ success: true });
   });
 
-  afterAll(() => {
-    // Clean up temporary changes
-    try {
-      [BELIEF_STATES_FILE_PATH, POSTURES_FILE_PATH, VET_SHARES_FILE_PATH].forEach((filePath) => {
-        if (fs.existsSync(filePath)) {
-          const content = fs.readFileSync(filePath, "utf8");
-          const data = JSON.parse(content);
-          // Just delete references for safety or restore
-          // In testing, we can let it be or remove the specific keys if they are animalId/eventId based.
-        }
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  });
+
 });

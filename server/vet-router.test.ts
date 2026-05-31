@@ -1,7 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -9,18 +7,35 @@ vi.mock("@supabase/supabase-js", () => {
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {
+        let lastEqColumn: string | null = null;
+        let lastEqValue: any = null;
         const builder: any = {
           select: vi.fn().mockReturnThis(),
           insert: vi.fn().mockReturnThis(),
           update: vi.fn().mockReturnThis(),
           upsert: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(), single: vi.fn().mockImplementation(() => {
+          eq: vi.fn().mockImplementation((col: string, val: any) => {
+            lastEqColumn = col;
+            lastEqValue = val;
+            return builder;
+          }),
+          or: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          single: vi.fn().mockImplementation(() => {
             if (table === "users") {
               return Promise.resolve({ data: { id: 1 }, error: null });
             }
             if (table === "animals") {
               return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
+            }
+            return Promise.resolve({ data: null, error: null });
+          }),
+          maybeSingle: vi.fn().mockImplementation(() => {
+            if (table === "classification_events") {
+              return Promise.resolve({
+                data: { state: "relaxed", confidence: 0.95, created_at: new Date().toISOString() },
+                error: null,
+              });
             }
             return Promise.resolve({ data: null, error: null });
           }),
@@ -30,6 +45,26 @@ vi.mock("@supabase/supabase-js", () => {
             }
             return builder;
           }),
+          then: vi.fn().mockImplementation((resolve) => {
+            if (table === "vet_shares") {
+              return resolve({
+                data: [
+                  {
+                    id: 1,
+                    animal_id: 1,
+                    owner_id: 1,
+                    vet_user_id: 2,
+                    vet_email: "vet-router@animalmind.local",
+                    vet_name: "Dr. Teste",
+                    owner_note: "Observar ansiedade em consultas futuras.",
+                    shared_at: new Date().toISOString()
+                  }
+                ],
+                error: null
+              });
+            }
+            return resolve({ data: [], error: null });
+          }),
         };
         return builder;
       }),
@@ -37,8 +72,7 @@ vi.mock("@supabase/supabase-js", () => {
   };
 });
 
-const VET_SHARES_FILE_PATH = path.resolve(import.meta.dirname, "vet_shares.json");
-const VET_CLINICAL_NOTES_FILE_PATH = path.resolve(import.meta.dirname, "vet_clinical_notes.json");
+
 
 function createMockContext(
   id: number,
@@ -155,9 +189,5 @@ describe("tRPC vetRouter", () => {
     });
   });
 
-  afterAll(() => {
-    [VET_SHARES_FILE_PATH, VET_CLINICAL_NOTES_FILE_PATH].forEach((filePath) => {
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    });
-  });
+
 });

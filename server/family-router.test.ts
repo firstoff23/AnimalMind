@@ -1,42 +1,135 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import path from "path";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
 vi.mock("@supabase/supabase-js", () => {
+  const families: any[] = [];
+  const family_members: any[] = [];
+  const invites: any[] = [];
+  const family_animals: any[] = [];
+  const users: any[] = [
+    { id: 1, email: "demo@animalmind.local", name: "Demo User" },
+    { id: 2, email: "family-member@animalmind.local", name: "Family Member" }
+  ];
+
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {
+        const eqConditions: Record<string, any> = {};
+        let lastEqColumn: string | null = null;
+        let lastEqValue: any = null;
+        let lastInValue: any = null;
+        let lastInsertData: any = null;
+
         const builder: any = {
           select: vi.fn().mockReturnThis(),
-          insert: vi.fn().mockReturnThis(),
-          update: vi.fn().mockReturnThis(),
-          upsert: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          single: vi.fn().mockImplementation(() => {
-            if (table === "users") {
-              return Promise.resolve({ data: { id: 1 }, error: null });
-            }
-            if (table === "animals") {
-              return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
-            }
-            return Promise.resolve({ data: null, error: null });
-          }),
-          limit: vi.fn().mockImplementation(() => {
-            if (table === "animals") {
-              return Promise.resolve({ data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }] });
+          insert: vi.fn().mockImplementation((data: any) => {
+            const arr = Array.isArray(data) ? data : [data];
+            for (const item of arr) {
+              const id = Math.floor(Math.random() * 1000000) + 1;
+              const newItem = { id, created_at: new Date().toISOString(), ...item };
+              if (table === "families") families.push(newItem);
+              if (table === "family_members") family_members.push(newItem);
+              if (table === "invites") invites.push(newItem);
+              if (table === "family_animals") family_animals.push(newItem);
+              lastInsertData = newItem;
             }
             return builder;
           }),
-          then: vi.fn().mockImplementation((resolve) => {
-            if (table === "family_members" || table === "family_animals") {
-              return resolve({ data: null, error: new Error("Mock database offline") });
+          update: vi.fn().mockImplementation((data: any) => {
+            let targetList: any[] = [];
+            if (table === "invites") targetList = invites;
+            for (const item of targetList) {
+              const codeCond = eqConditions["code"];
+              if (codeCond && item.code === codeCond) {
+                Object.assign(item, data);
+              } else if (lastEqColumn && item[lastEqColumn] === lastEqValue) {
+                Object.assign(item, data);
+              }
             }
-            return resolve({ data: [], error: null });
+            return builder;
           }),
+          upsert: vi.fn().mockImplementation((data: any) => {
+            const arr = Array.isArray(data) ? data : [data];
+            let targetList: any[] = [];
+            if (table === "family_members") targetList = family_members;
+            if (table === "family_animals") targetList = family_animals;
+            for (const item of arr) {
+              const match = targetList.find(x => 
+                x.family_id === item.family_id && 
+                ((item.user_id !== undefined && x.user_id === item.user_id) || 
+                 (item.animal_id !== undefined && x.animal_id === item.animal_id))
+              );
+              if (match) {
+                Object.assign(match, item);
+              } else {
+                targetList.push({ id: Math.floor(Math.random() * 1000000) + 1, ...item });
+              }
+            }
+            return builder;
+          }),
+          eq: vi.fn().mockImplementation((col: string, val: any) => {
+            eqConditions[col] = val;
+            lastEqColumn = col;
+            lastEqValue = val;
+            return builder;
+          }),
+          in: vi.fn().mockImplementation((col: string, val: any) => {
+            lastInValue = val;
+            return builder;
+          }),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockImplementation(() => {
+            return builder;
+          }),
+          single: vi.fn().mockImplementation(() => {
+            let data: any = null;
+            if (table === "families" && lastInsertData) {
+              data = lastInsertData;
+            } else if (table === "users") {
+              const emailCond = eqConditions["email"];
+              const idCond = eqConditions["id"];
+              const openIdCond = eqConditions["open_id"];
+              data = users.find(u => 
+                (emailCond && u.email === emailCond) || 
+                (idCond && u.id === idCond) ||
+                (openIdCond && u.openId === openIdCond)
+              );
+              if (!data) data = { id: 1, email: "demo@animalmind.local", name: "Demo User" };
+            } else if (table === "animals") {
+              data = { id: 1, user_id: 1, name: "Bobi", species: "dog" };
+            } else if (table === "invites") {
+              const codeCond = eqConditions["code"];
+              if (codeCond) {
+                data = invites.find(i => i.code === codeCond);
+              } else {
+                data = invites.find(i => i.code === lastEqValue) || lastInsertData;
+              }
+            }
+            return Promise.resolve({ data, error: data ? null : { code: "PGRST116", message: "Not found" } });
+          }),
+          then: vi.fn().mockImplementation((resolve) => {
+            let data: any = [];
+            if (table === "family_members") {
+              if (lastInValue) {
+                data = family_members.filter(m => lastInValue.includes(Number(m.family_id)));
+              } else if (eqConditions["user_id"]) {
+                data = family_members.filter(m => Number(m.user_id) === Number(eqConditions["user_id"]));
+              } else {
+                data = family_members;
+              }
+            } else if (table === "family_animals") {
+              if (lastInValue) {
+                data = family_animals.filter(a => lastInValue.includes(a.family_id));
+              } else {
+                data = family_animals;
+              }
+            } else if (table === "animals") {
+              data = [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }];
+            }
+            return Promise.resolve({ data, error: null }).then(resolve);
+          })
         };
         return builder;
       }),
@@ -44,7 +137,7 @@ vi.mock("@supabase/supabase-js", () => {
   };
 });
 
-const FAMILIES_FILE_PATH = path.resolve(import.meta.dirname, "families.json");
+
 
 function createMockContext(id: number, email: string): TrpcContext {
   return {
@@ -155,7 +248,5 @@ describe("tRPC familyRouter", () => {
     expect(animals.some((animal) => Number(animal.id) === ownerAnimalId)).toBe(true);
   });
 
-  afterAll(() => {
-    if (fs.existsSync(FAMILIES_FILE_PATH)) fs.unlinkSync(FAMILIES_FILE_PATH);
-  });
+
 });
