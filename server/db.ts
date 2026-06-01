@@ -9,7 +9,7 @@ export const AUDIO_RECORDINGS_BUCKET = "audio-recordings";
 
 // Lazy init Supabase client
 // Use Service Role Key for backend operations (has full permissions)
-function getSupabase() {
+export function getSupabase() {
   if (!_supabase) {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
