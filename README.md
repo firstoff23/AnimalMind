@@ -115,17 +115,25 @@ pnpm run dev
 ```
 O frontend estará acessível em `http://localhost:5173`.
 
-### 5. Correr Testes Unitários e de Integração
+### 5. Migrações da Base de Dados (Supabase Native Migrations)
+O projeto utiliza migrações nativas do Supabase localizadas em `supabase-migrations/` como única fonte de verdade.
+* Para aplicar migrações:
+  ```bash
+  pnpm db:push
+  ```
+* Não há suporte para Drizzle ORM (removido para simplificação e evitar duplicações).
+
+### 6. Correr Testes Unitários e de Integração
 ```bash
 pnpm run test
 ```
 
-### 6. Validar Tipagem do TypeScript
+### 7. Validar Tipagem do TypeScript
 ```bash
 pnpm run check
 ```
 
-### 7. Compilar para Produção (Build)
+### 8. Compilar para Produção (Build)
 ```bash
 pnpm run build
 ```

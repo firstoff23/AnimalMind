@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
-import type { InsertUser } from "../drizzle/schema";
+import type { InsertUser } from "../shared/dbTypes";
 import fs from "fs";
 import path from "path";
 
