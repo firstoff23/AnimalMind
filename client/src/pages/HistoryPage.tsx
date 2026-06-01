@@ -4,6 +4,7 @@ import { useQueryState, parseAsInteger } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -1088,6 +1089,7 @@ export default function HistoryPage() {
             variant={showExportActions ? "default" : "outline"}
             size="sm"
             onClick={() => setShowExportActions((v) => !v)}
+            data-testid="history-export-toggle"
             className={cn(
               "gap-1.5 h-8",
               showExportActions && "bg-primary text-primary-foreground",
@@ -1105,6 +1107,7 @@ export default function HistoryPage() {
             variant="outline"
             onClick={handleExportCsv}
             disabled={exportMutation.isPending}
+            data-testid="history-export-csv"
             className="h-10 gap-2"
           >
             <Download size={15} />
@@ -1114,6 +1117,7 @@ export default function HistoryPage() {
             variant="outline"
             onClick={handleExportPdf}
             disabled={exportMutation.isPending}
+            data-testid="history-export-pdf"
             className="h-10 gap-2"
           >
             <FileText size={15} />
@@ -1415,8 +1419,14 @@ export default function HistoryPage() {
           </h2>
           
           {chartEventsQuery.isLoading ? (
-            <div className="py-24 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="space-y-4 py-6">
+              <Skeleton className="h-4 w-40 rounded-lg" />
+              <Skeleton className="h-64 w-full rounded-lg" />
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-16 rounded-lg" />
+                <Skeleton className="h-3 w-24 rounded-lg" />
+                <Skeleton className="h-3 w-16 rounded-lg" />
+              </div>
             </div>
           ) : chartData.length === 0 ? (
             <div className="py-24 text-center text-muted-foreground text-sm">

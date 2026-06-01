@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Build
         run: pnpm build
 
@@ -50,6 +53,9 @@ jobs:
           SUPABASE_ANON_KEY: test-anon-key-for-ci
           GEMINI_API_KEY: test-gemini-key-for-ci
           FAST_API_BACKEND_URL: http://localhost:8000
+
+      - name: E2E smoke tests
+        run: pnpm e2e
 
       - name: Cleanup test data
         run: node scripts/cleanup-test-data.cjs

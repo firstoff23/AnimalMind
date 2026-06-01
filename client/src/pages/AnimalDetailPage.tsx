@@ -35,6 +35,7 @@ import { jsPDF } from "jspdf";
 import FamilyShareTab from "@/components/FamilyShareTab";
 import HealthBulletinTab from "@/components/HealthBulletinTab";
 import LazyAnimal3DModel from "@/components/LazyAnimal3DModel";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { useLanguage } from "@/hooks/useLanguage";
 import {
   ResponsiveContainer,
@@ -354,12 +355,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   };
 
   if (loadingAnimal || loadingBaseline || loadingStats30 || loadingStats7 || loadingHistory) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-4">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-muted-foreground text-sm">{t("calibration.loadingDetails")}</p>
-      </div>
-    );
+    return <AppShellSkeleton mode="content" />;
   }
 
   if (!animal || !baseline) return null;

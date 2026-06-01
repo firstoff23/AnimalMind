@@ -1763,6 +1763,7 @@ export default function RecordingPage() {
         </div>
 
         <GlowingButton
+          data-testid="record-button"
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}

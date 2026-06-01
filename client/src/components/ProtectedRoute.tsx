@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
-import { Spinner } from "@/components/ui/spinner";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 
 interface ProtectedRouteProps {
   component: React.ComponentType<any>;
@@ -19,11 +19,7 @@ export function ProtectedRoute({ component: Component, ...props }: ProtectedRout
   }, [isAuthenticated, loading, setLocation]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Spinner />
-      </div>
-    );
+    return <AppShellSkeleton />;
   }
 
   if (!isAuthenticated) {

@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 
 type Sensitivity = "low" | "medium" | "high";
 
@@ -198,11 +199,7 @@ export default function SettingsPage() {
   };
 
   if (settingsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
+    return <AppShellSkeleton mode="content" />;
   }
 
   return (

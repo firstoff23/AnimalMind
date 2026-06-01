@@ -145,7 +145,7 @@ async function tryVisionBackend(
   const backendsToTry = [primaryUrl, HF_BACKEND_URL];
   
   for (const backendUrl of backendsToTry) {
-    const file = new File([imageBuffer], "frame.jpg", { type: "image/jpeg" });
+    const file = new File([Uint8Array.from(imageBuffer)], "frame.jpg", { type: "image/jpeg" });
     const formData = new FormData();
     formData.append("file", file);
     

@@ -74,6 +74,42 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 
 ---
 
+## 🧩 Como foi construído
+
+O AnimalMind foi construído como uma aplicação React/PWA com backend TypeScript em Express + tRPC. O frontend comunica com o gateway Node.js através de `/api/trpc`, mantendo tipos partilhados entre cliente e servidor. O Supabase fornece autenticação, base de dados PostgreSQL e storage de áudio. A classificação acústica principal é delegada para um backend FastAPI separado em `ml_backend/`, preparado para correr num Hugging Face Space Docker em `0.0.0.0:7860`.
+
+O gateway Node.js mantém a aplicação resiliente: quando o backend ML não está configurado ou falha, a classificação cai para heurísticas locais/servidor para preservar a experiência do utilizador. O frontend adiciona PWA, modo offline básico, exportação CSV/PDF, notificações do browser e uma camada visual rica para gravação, histórico e dashboards.
+
+```mermaid
+flowchart LR
+  user["Tutor no browser"] --> pwa["React PWA<br/>Wouter + Tailwind + tRPC client"]
+  pwa --> api["Vercel / Express API<br/>/api/trpc"]
+  pwa --> auth["Supabase Auth<br/>email verification + sessions"]
+  api --> db["Supabase PostgreSQL<br/>animals, events, family, health"]
+  api --> storage["Supabase Storage<br/>audio-recordings"]
+  api --> ml["Hugging Face Space<br/>FastAPI + YAMNet<br/>0.0.0.0:7860"]
+  ml --> api
+  api --> fallback["Heurísticas/fallback<br/>quando ML está indisponível"]
+  api --> pwa
+  pwa --> notifications["Browser Notification API"]
+```
+
+### Fluxo de classificação
+
+1. O tutor grava áudio no browser com `MediaRecorder`.
+2. O frontend envia a amostra para a mutation `classify.run` via tRPC.
+3. O gateway guarda o áudio no Supabase Storage e tenta classificar no backend FastAPI.
+4. O resultado é persistido em `classification_events` e regressa ao frontend com estado emocional, confiança, `eventId` e URL do áudio.
+5. A UI atualiza dashboards/histórico e pode emitir uma notificação local do browser.
+
+### Deploy
+
+* **Frontend + gateway:** Vercel, com build `pnpm build` e rewrites para `/api`.
+* **Backend ML:** Hugging Face Spaces com Docker, porta obrigatória `7860` e utilizador `1000`.
+* **Dados/Auth:** Supabase. O redirect de verificação de email deve permitir `https://animalmind.vercel.app/auth/callback`.
+
+---
+
 ## 🚀 Como Executar Localmente
 
 ### 1. Instalar Dependências do Gateway Node.js
@@ -107,6 +143,8 @@ FASTAPI_BACKEND_URL="http://localhost:8000"
 ```
 
 Para produção, manter o valor atual até ao deploy no Hugging Face Spaces estar concluído e `/health` responder `200`. Só depois atualizar `FASTAPI_BACKEND_URL` na Vercel para a URL pública do Space.
+
+> Nota: o Dockerfile do Hugging Face Space arranca o FastAPI em `0.0.0.0:7860`, como exigido pelo runtime Docker dos Spaces. O comando local acima pode continuar a usar `8000` para desenvolvimento.
 
 ### 4. Executar o Servidor de Desenvolvimento Node.js
 Retorne à raiz do projeto e execute:
