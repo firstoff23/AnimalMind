@@ -93,10 +93,13 @@ export default function LandingPage() {
           )}
         </div>
 
-        <div className="max-w-2xl mx-auto p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-250 text-xs sm:text-sm flex items-center justify-center gap-2">
-          <span className="text-base">⚠️</span>
-          <p className="text-left">
-            <strong>Aviso Legal:</strong> AnimalMind não substitui avaliação veterinária. Os resultados são estimativas comportamentais.
+        <div className="max-w-2xl mx-auto p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-250 text-xs sm:text-sm flex flex-col gap-2 text-left">
+          <div className="flex items-center gap-2 font-bold text-amber-400">
+            <span className="text-base">⚠️</span>
+            <span>Honestidade Científica & Limitações</span>
+          </div>
+          <p className="leading-relaxed">
+            O **AnimalMind** utiliza o modelo **YAMNet** (um classificador genérico de eventos de áudio) para estimar estados emocionais como aproximações comportamentais. Os resultados apresentados devem ser interpretados como meros <strong>sinais ou indícios</strong>, e nunca como um diagnóstico. Esta aplicação <strong>não substitui uma avaliação veterinária profissional</strong>.
           </p>
         </div>
 

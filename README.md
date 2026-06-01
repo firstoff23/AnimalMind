@@ -140,6 +140,16 @@ pnpm run build
 
 ---
 
+## ⚠️ Limitações e Trabalho Futuro
+
+O **AnimalMind** baseia-se num classificador acústico genérico (YAMNet) e em estimativas comportamentais aproximadas. É fundamental salientar os seguintes aspetos éticos e científicos:
+1. **Classificação Genérica:** O YAMNet é um classificador genérico de eventos de áudio treinado na base de dados AudioSet. Por isso, a deteção e tradução de emoções caninas ou felinas são estimativas estatísticas baseadas em indícios de vocalização geral e não mapeamentos neurobiológicos absolutos.
+2. **Estimativas de Bem-Estar:** As classes de emoções apresentadas pela aplicação (angústia, excitação, etc.) são aproximações comportamentais baseadas em padrões sonoros históricos e na postura corporal indicada. Devem ser consideradas como sinais ou indícios, e nunca como diagnósticos definitivos.
+3. **Não Substituição Médica:** Esta aplicação é uma ferramenta de apoio e entretenimento informativo para tutores. Não substitui, sob qualquer circunstância, o aconselhamento, diagnóstico clínico e acompanhamento por um médico veterinário qualificado.
+4. **Trabalho Futuro:** Planeia-se treinar um classificador específico e dedicado para diferentes tipos de ladridos/miados e vocalizações de stresse animal, integrando uma rede de sensores multimodais e expandindo a base de dados de validação clínica em parceria com faculdades de medicina veterinária.
+
+---
+
 ## 📈 Histórico de Atualizações (Progress Log)
 
 * **Commit 1db40899:** Adiciona a página de detalhe por animal (`/animal/:id`), calibração dinâmica de baseline comportamental com persistência em `baselines.json`, gráficos avançados de análise, testes automatizados e exportação de relatórios em PDF via `jspdf`.
