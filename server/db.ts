@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
-import type { InsertUser } from "../shared/dbTypes";
+import type { InsertUser, User } from "../shared/dbTypes";
 import fs from "fs";
 import path from "path";
 
@@ -22,6 +22,20 @@ export function getSupabase() {
 }
 
 // ─── User operations ──────────────────────────────────────────────────────────
+
+function mapDbUser(user: any): User {
+  return {
+    id: Number(user.id),
+    openId: user.open_id,
+    name: user.name ?? null,
+    email: user.email ?? null,
+    loginMethod: user.login_method ?? null,
+    role: user.role ?? "owner",
+    createdAt: new Date(user.created_at),
+    updatedAt: new Date(user.updated_at),
+    lastSignedIn: new Date(user.last_signed_in),
+  };
+}
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required");
@@ -79,7 +93,7 @@ export async function getUserByOpenId(openId: string) {
     .single();
 
   if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows
-  return data;
+  return data ? mapDbUser(data) : null;
 }
 
 export async function getDemoUserId(): Promise<number | null> {

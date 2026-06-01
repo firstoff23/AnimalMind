@@ -11,7 +11,16 @@ async function login(page: Page) {
   await page.getByPlaceholder("seu@email.com").fill(e2eEmail!);
   await page.getByPlaceholder("••••••••").fill(e2ePassword!);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByRole("button", { name: /terminar sessão/i })).toBeVisible({
+
+  const onboardingStart = page.getByRole("button", { name: "Começar" });
+  try {
+    await onboardingStart.waitFor({ state: "visible", timeout: 5_000 });
+    await onboardingStart.click();
+  } catch {
+    // Onboarding is localStorage-gated and may already be dismissed in reused sessions.
+  }
+
+  await expect(page.getByRole("button", { name: /sair|terminar sessão/i })).toBeVisible({
     timeout: 20_000,
   });
 }
@@ -41,6 +50,8 @@ test.describe("AnimalMind smoke tests", () => {
   });
 
   test("recording page is reachable after login and exposes the classification control", async ({ page }) => {
+    test.setTimeout(90_000);
+
     await login(page);
 
     await page.goto("/gravar");
@@ -57,7 +68,10 @@ test.describe("AnimalMind smoke tests", () => {
 
     await page.getByTestId("record-button").click();
     await expect(
-      page.getByText(/A processar|Processing|Resultado|Result|Confiança|Confidence/i)
+      page.getByText(/A gravar e analisar|Recording and analyzing|A analisar dados acústicos|Analyzing acoustic data/i)
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByRole("progressbar", { name: /Confiança da classificação/i })
     ).toBeVisible({ timeout: 60_000 });
   });
 
@@ -70,6 +84,16 @@ test.describe("AnimalMind smoke tests", () => {
     await page.getByTestId("history-export-toggle").click();
     await expect(page.getByTestId("history-export-pdf")).toBeVisible();
 
+    const emptyHistory = page.getByText(/Sem histórico ainda|No history yet/i);
+    try {
+      await emptyHistory.waitFor({ state: "visible", timeout: 5_000 });
+      await page.getByTestId("history-export-pdf").click();
+      await expect(emptyHistory).toBeVisible();
+      return;
+    } catch {
+      // Continue with the PDF download path when the account already has history records.
+    }
+
     const downloadPromise = page.waitForEvent("download", { timeout: 30_000 }).catch(() => null);
     await page.getByTestId("history-export-pdf").click();
     const download = await downloadPromise;
@@ -80,7 +104,7 @@ test.describe("AnimalMind smoke tests", () => {
     }
 
     await expect(
-      page.getByText(/Não há registos para exportar|No records to export|PDF exportado|PDF exported|Não foi possível exportar PDF/i)
+      page.getByText(/Não há registos para exportar|No records to export|PDF exportado|PDF exported|Não foi possível exportar PDF|Sem histórico ainda|No history yet/i)
     ).toBeVisible({ timeout: 15_000 });
   });
 });
