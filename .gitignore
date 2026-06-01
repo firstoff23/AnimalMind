@@ -66,6 +66,7 @@ server/families.json
 *.bak
 .sb-pentest-context.json
 scratch/
+supabase/.temp/
 
 # Local database files
 server/notes.json
