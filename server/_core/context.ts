@@ -37,6 +37,7 @@ export async function createContext(
             name,
             email: supabaseUser.email ?? null,
             loginMethod: "email",
+            role: "owner",
             lastSignedIn: new Date(),
           });
           user = await getUserByOpenId(supabaseUser.id);
@@ -47,6 +48,7 @@ export async function createContext(
             name: user.name,
             email: user.email,
             loginMethod: user.loginMethod,
+            role: user.role === "user" ? "owner" : user.role,
             lastSignedIn: new Date(),
           });
         }

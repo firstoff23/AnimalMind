@@ -35,8 +35,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     last_signed_in: new Date().toISOString(),
   };
 
-  if (user.role) values.role = user.role;
-  else if (user.openId === ENV.ownerOpenId) values.role = "admin";
+  if (user.role) {
+    values.role = user.role === "user" ? "owner" : user.role;
+  } else if (user.openId === ENV.ownerOpenId) {
+    values.role = "admin";
+  } else {
+    values.role = "owner";
+  }
 
   const { error } = await supabase
     .from("users")
