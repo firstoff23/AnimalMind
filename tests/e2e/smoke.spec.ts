@@ -55,7 +55,7 @@ test.describe("AnimalMind smoke tests", () => {
     await login(page);
 
     await page.goto("/gravar");
-    await expect(page.getByRole("heading", { name: "AnimalMind" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "AnimalMind" }).first()).toBeVisible();
     await expect(page.getByTestId("record-button")).toBeVisible();
 
     if (process.env.E2E_RUN_CLASSIFICATION !== "true") {

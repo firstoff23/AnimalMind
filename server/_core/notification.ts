@@ -112,3 +112,44 @@ export async function notifyOwner(
     return false;
   }
 }
+
+export async function notifyN8N(payload: {
+  animalName: string;
+  species: string;
+  breed?: string | null;
+  state: string;
+  confidence: number;
+  audioUrl?: string | null;
+  posture?: string | null;
+}): Promise<boolean> {
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log("[n8n] Webhook notification skipped: N8N_WEBHOOK_URL is not configured.");
+    return false;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        event: "critical_emotional_state",
+        timestamp: new Date().toISOString(),
+        ...payload,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[n8n] Webhook returned status ${response.status}: ${response.statusText}`);
+      return false;
+    }
+
+    console.log("[n8n] Webhook notification sent successfully.");
+    return true;
+  } catch (error) {
+    console.error("[n8n] Error sending webhook notification:", error);
+    return false;
+  }
+}

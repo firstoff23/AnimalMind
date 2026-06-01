@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
+import { notifyN8N } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -369,6 +370,26 @@ export const appRouter = router({
           }
           if (input.posture) {
             await savePostureForEvent(eventId, input.posture);
+          }
+
+          // Trigger n8n notification for critical states (distress, hunger)
+          if (result.state === "distress" || result.state === "hunger") {
+            try {
+              const animal = await getAnimalById(targetAnimalId, userId);
+              if (animal) {
+                await notifyN8N({
+                  animalName: animal.name,
+                  species: animal.species,
+                  breed: animal.breed,
+                  state: result.state,
+                  confidence: result.confidence,
+                  audioUrl: audioUrl,
+                  posture: input.posture || null,
+                });
+              }
+            } catch (err) {
+              console.error("[n8n] Failed to send critical state notification:", err);
+            }
           }
         }
 

@@ -34,6 +34,7 @@ export default defineConfig({
       args: [
         "--use-fake-device-for-media-stream",
         "--use-fake-ui-for-media-stream",
+        `--use-file-for-fake-audio-capture=${path.resolve(rootDir, ".agents/test_3s_silence.wav")}`,
       ],
     },
   },
