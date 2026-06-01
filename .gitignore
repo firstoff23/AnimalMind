@@ -59,3 +59,13 @@ server/vet_clinical_notes.json
 server/families.json
 
 .env*
+
+# Backups and temporary files
+*.bak
+.sb-pentest-context.json
+scratch/
+
+# Local database files
+server/notes.json
+server/audio.json
+server/family_shares.json
