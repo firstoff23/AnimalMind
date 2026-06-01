@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { getAllEventsForExport } from "./db";
@@ -135,7 +135,12 @@ function makeCtx(user: TrpcContext["user"] = dummyUser): TrpcContext {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("classify.run", () => {
+  const originalFastApiBackendUrl = process.env.FASTAPI_BACKEND_URL;
+  const originalHfBackendUrl = process.env.HF_BACKEND_URL;
+
   beforeEach(() => {
+    process.env.FASTAPI_BACKEND_URL = originalFastApiBackendUrl;
+    process.env.HF_BACKEND_URL = originalHfBackendUrl;
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
       const url = typeof input === "string" ? input : input.url;
@@ -153,6 +158,11 @@ describe("classify.run", () => {
       return originalFetch(input, init);
     });
     vi.stubGlobal("fetch", mockFetch);
+  });
+
+  afterEach(() => {
+    process.env.FASTAPI_BACKEND_URL = originalFastApiBackendUrl;
+    process.env.HF_BACKEND_URL = originalHfBackendUrl;
   });
 
   it("retorna um resultado com os campos obrigatórios", async () => {
@@ -181,6 +191,43 @@ describe("classify.run", () => {
       audioMimeType: "audio/wav",
     });
     expect(result.state).toBeDefined();
+  }, 10000);
+
+  it("falls back from a configured Railway backend to Fly before failing classification", async () => {
+    process.env.FASTAPI_BACKEND_URL = "https://animalmind-production.up.railway.app";
+    process.env.HF_BACKEND_URL = "";
+    const calls: string[] = [];
+    const mockFetch = vi.fn().mockImplementation((input: any) => {
+      const url = typeof input === "string" ? input : input.url;
+      calls.push(url);
+      if (url.includes("animalmind-production.up.railway.app")) {
+        return Promise.resolve({ ok: false, status: 502 });
+      }
+      if (url.includes("animalmind-backend.fly.dev")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            state: "alert",
+            confidence: 0.96,
+            emoji: "🔵",
+            model_used: "yamnet-tfhub",
+          }),
+        });
+      }
+      return Promise.reject(new Error(`Unexpected fetch ${url}`));
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.classify.run({
+      animalId: 1,
+      audio: "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==",
+      audioMimeType: "audio/wav",
+    });
+
+    expect(result.state).toBe("alert");
+    expect(calls[0]).toContain("animalmind-production.up.railway.app");
+    expect(calls[1]).toContain("animalmind-backend.fly.dev");
   }, 10000);
 });
 

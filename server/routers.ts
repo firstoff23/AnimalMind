@@ -89,7 +89,8 @@ const STATE_EMOJIS: Record<EmotionalState, string> = {
 
 const MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
 
-// Primary backend: always Fly.dev (hardcoded); secondary: HF Space (hardcoded)
+// Default ML backends. Runtime env can prepend a deployed backend without
+// removing these known-good fallbacks.
 const PRIMARY_BACKEND_URL = "https://animalmind-backend.fly.dev";
 const HF_BACKEND_URL = "https://firstoff-animalmind-backend.hf.space";
 const CLASSIFY_TIMEOUT_MS = 5000;
@@ -135,16 +136,33 @@ async function tryClassifyBackend(
   return tryBackendPost(url, "/classify", formData, timeoutMs);
 }
 
+function resolveMlBackendUrls() {
+  const candidates = [
+    process.env.FASTAPI_BACKEND_URL,
+    process.env.VITE_API_URL,
+    PRIMARY_BACKEND_URL,
+    process.env.HF_BACKEND_URL,
+    HF_BACKEND_URL,
+  ];
+
+  const seen = new Set<string>();
+  return candidates
+    .filter((url): url is string => Boolean(url?.trim()))
+    .map((url) => url.trim().replace(/\/+$/, ""))
+    .filter((url) => {
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    });
+}
+
 /** Attempt to run vision detections against primary/fallback ML backend. */
 async function tryVisionBackend(
   endpoint: string,
   imageBuffer: Buffer,
   timeoutMs: number
 ): Promise<any> {
-  const primaryUrl = process.env.FASTAPI_BACKEND_URL || process.env.VITE_API_URL || PRIMARY_BACKEND_URL;
-  const backendsToTry = [primaryUrl, HF_BACKEND_URL];
-  
-  for (const backendUrl of backendsToTry) {
+  for (const backendUrl of resolveMlBackendUrls()) {
     const file = new File([Uint8Array.from(imageBuffer)], "frame.jpg", { type: "image/jpeg" });
     const formData = new FormData();
     formData.append("file", file);
@@ -276,15 +294,12 @@ export const appRouter = router({
         else if (mime.includes("ogg")) ext = "ogg";
         else if (mime.includes("mpeg")) ext = "mp3";
 
-        // ── 2-tier backend fallback (both URLs hardcoded) ────────────────────
-        // Tier 1: Fly.dev (PRIMARY_BACKEND_URL), 5 s timeout
-        // Tier 2: HF Space (HF_BACKEND_URL)
-        // Tier 3: Random fallback (client will also try TF.js local)
+        // ── Backend fallback chain ───────────────────────────────────────────
+        // Tier 1: runtime FASTAPI_BACKEND_URL/VITE_API_URL when configured
+        // Tier 2+: known Fly.dev and HF Space fallbacks
+        // Final: client-side TF.js fallback if every server backend fails
         if (buffer) {
-          const primaryUrl = process.env.FASTAPI_BACKEND_URL || process.env.VITE_API_URL || PRIMARY_BACKEND_URL;
-          const backendsToTry = [primaryUrl, HF_BACKEND_URL];
-
-          for (const backendUrl of backendsToTry) {
+          for (const backendUrl of resolveMlBackendUrls()) {
             const file = new File([buffer], `audio.${ext}`, { type: mime });
             const formData = new FormData();
             formData.append("file", file);

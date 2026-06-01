@@ -140,6 +140,36 @@ export function mapDbAnimal(a: any) {
   };
 }
 
+const optionalAnimalColumns = new Set([
+  "date_of_birth",
+  "sex",
+  "color",
+  "coat",
+  "photo_url",
+  "microchip_number",
+  "height",
+  "tail",
+  "special_markings",
+]);
+
+function getMissingAnimalColumn(error: any): string | null {
+  const message = String(error?.message ?? "");
+  const directMatch = message.match(/column animals\.([a-z_]+) does not exist/i);
+  const schemaCacheMatch = message.match(/'([^']+)' column of 'animals'/i);
+  return directMatch?.[1] ?? schemaCacheMatch?.[1] ?? null;
+}
+
+function removeMissingOptionalAnimalColumn(payload: Record<string, any>, error: any) {
+  const column = getMissingAnimalColumn(error);
+  if (!column || !optionalAnimalColumns.has(column) || !(column in payload)) {
+    return false;
+  }
+
+  delete payload[column];
+  console.warn(`[animals] Optional column "${column}" is missing in Supabase; saving without it until the migration is applied.`);
+  return true;
+}
+
 export async function getAnimalsByUser(userId: number) {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -178,29 +208,38 @@ export async function addAnimal(data: {
   specialMarkings?: string | null;
 }) {
   const supabase = getSupabase();
-  const { data: result, error } = await supabase
-    .from("animals")
-    .insert([
-      {
-        user_id: data.userId,
-        name: data.name,
-        species: data.species,
-        breed: data.breed,
-        age: data.age,
-        date_of_birth: data.dateOfBirth,
-        sex: data.sex,
-        color: data.color,
-        coat: data.coat,
-        photo_url: data.photoUrl,
-        microchip_number: data.microchipNumber,
-        height: data.height,
-        tail: data.tail,
-        special_markings: data.specialMarkings,
-        is_active: false,
-      },
-    ])
-    .select()
-    .single();
+  const insertPayload: Record<string, any> = {
+    user_id: data.userId,
+    name: data.name,
+    species: data.species,
+    breed: data.breed,
+    age: data.age,
+    date_of_birth: data.dateOfBirth,
+    sex: data.sex,
+    color: data.color,
+    coat: data.coat,
+    photo_url: data.photoUrl,
+    microchip_number: data.microchipNumber,
+    height: data.height,
+    tail: data.tail,
+    special_markings: data.specialMarkings,
+    is_active: false,
+  };
+
+  let result: any = null;
+  let error: any = null;
+  for (let attempt = 0; attempt <= optionalAnimalColumns.size; attempt += 1) {
+    const response = await supabase
+      .from("animals")
+      .insert([insertPayload])
+      .select()
+      .single();
+    result = response.data;
+    error = response.error;
+    if (!error || !removeMissingOptionalAnimalColumn(insertPayload, error)) {
+      break;
+    }
+  }
 
   if (error) {
     console.error("[addAnimal] Database insert error:", error);
@@ -288,12 +327,31 @@ export async function updateAnimal(
   if (data.tail !== undefined) updatePayload.tail = data.tail;
   if (data.specialMarkings !== undefined) updatePayload.special_markings = data.specialMarkings;
 
-  const { data: result, error } = await supabase
-    .from("animals")
-    .update(updatePayload)
-    .eq("id", animalId)
-    .select()
-    .single();
+  let result: any = null;
+  let error: any = null;
+  for (let attempt = 0; attempt <= optionalAnimalColumns.size; attempt += 1) {
+    const response = await supabase
+      .from("animals")
+      .update(updatePayload)
+      .eq("id", animalId)
+      .select()
+      .single();
+    result = response.data;
+    error = response.error;
+    if (!error || !removeMissingOptionalAnimalColumn(updatePayload, error)) {
+      break;
+    }
+    if (Object.keys(updatePayload).length === 0) {
+      const current = await supabase
+        .from("animals")
+        .select("*")
+        .eq("id", animalId)
+        .single();
+      result = current.data;
+      error = current.error;
+      break;
+    }
+  }
 
   if (error) {
     console.error("[updateAnimal] Database update error:", error);
