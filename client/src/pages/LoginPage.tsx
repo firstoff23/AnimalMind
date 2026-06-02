@@ -51,7 +51,7 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       toast.success("Bem-vindo de volta!");
-      setLocation("/");
+      setLocation("/dashboard");
     } catch (error: any) {
       setShake(true);
       setTimeout(() => setShake(false), 400);

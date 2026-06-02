@@ -39,9 +39,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
-
       - name: Build
         run: pnpm build
 
@@ -54,19 +51,50 @@ jobs:
           GEMINI_API_KEY: test-gemini-key-for-ci
           FAST_API_BACKEND_URL: http://localhost:8000
 
-      - name: E2E smoke tests
-        run: pnpm e2e
+  e2e:
+    name: E2E smoke tests
+    runs-on: ubuntu-latest
+    needs: ci
 
-      - name: Cleanup test data
-        run: node scripts/cleanup-test-data.cjs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E smoke tests
+        run: pnpm test:e2e
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: https://test.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key-for-ci
+          SUPABASE_ANON_KEY: test-anon-key-for-ci
+          VITE_SUPABASE_URL: https://test.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key-for-ci
+          GEMINI_API_KEY: test-gemini-key-for-ci
+          FASTAPI_BACKEND_URL: http://localhost:8000
 
   deploy:
     name: Deploy to Vercel
     runs-on: ubuntu-latest
-    needs: ci
+    needs:
+      - ci
+      - e2e
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     env:

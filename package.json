@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "e2e": "playwright test --workers=1",
     "e2e:headed": "playwright test --headed",
+    "test:e2e": "playwright test",
     "format": "prettier --write .",
     "test": "vitest run",
     "db:push": "supabase db push",

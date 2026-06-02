@@ -1183,7 +1183,10 @@ export default function HistoryPage() {
               value={animalIdFilter ? String(animalIdFilter) : "all"}
               onValueChange={handleAnimalFilter}
             >
-              <SelectTrigger className="w-full bg-secondary border-border">
+              <SelectTrigger
+                data-testid="history-animal-filter-trigger"
+                className="w-full bg-secondary border-border"
+              >
                 <SelectValue placeholder={t("historyPage.allAnimals")} />
               </SelectTrigger>
               <SelectContent>

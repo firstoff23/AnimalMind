@@ -389,6 +389,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
           variant="outline"
           size="sm"
           onClick={handleExportPdf}
+          data-testid="animal-detail-export-pdf"
           className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
         >
           <Download size={15} /> {t("calibration.downloadPdf")}
