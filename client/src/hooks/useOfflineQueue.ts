@@ -180,6 +180,7 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
   return {
     ...summary,
     isProcessing,
+    enqueue: enqueueRecording,
     enqueueRecording,
     processQueue,
     refreshSummary,

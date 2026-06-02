@@ -8,7 +8,7 @@ const DB_NAME = "animalmind-offline-queue";
 const RECORDINGS_STORE = "recordings";
 const META_STORE = "metadata";
 const AUTH_KEY = "supabase-auth";
-const BASE_BACKOFF_MS = 30_000;
+const BASE_BACKOFF_MS = 2_000;
 export const MAX_OFFLINE_QUEUE_ATTEMPTS = 3;
 
 const recordingsStore = createStore(DB_NAME, RECORDINGS_STORE);

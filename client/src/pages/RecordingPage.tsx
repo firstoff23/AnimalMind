@@ -430,7 +430,7 @@ export default function RecordingPage() {
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
   const { data: recentEventsData = [] } = trpc.events.recent.useQuery({ limit: 5 });
   const { data: settingsData } = trpc.settings.get.useQuery();
-  const { enqueueRecording, pendingCount } = useOfflineQueue({ autoProcess: false });
+  const { enqueue, pendingCount } = useOfflineQueue({ autoProcess: false });
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
 
@@ -1330,7 +1330,7 @@ export default function RecordingPage() {
                 return;
               }
 
-              await enqueueRecording({
+              await enqueue({
                 animalId: activeAnimal?.id,
                 audioBlob: recordedBlob,
                 audioMimeType,
@@ -1390,7 +1390,7 @@ export default function RecordingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation.mutate, showCamera, detectedPosture, enqueueRecording]);
+  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation.mutate, showCamera, detectedPosture, enqueue]);
 
   useEffect(() => {
     return () => {
