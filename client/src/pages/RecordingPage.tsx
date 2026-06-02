@@ -22,6 +22,8 @@ import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity as InfinityIcon, Ale
 import { toast } from "sonner";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { isBrowserOffline } from "@/lib/offlineQueue";
 import { Switch } from "@/components/ui/switch";
 import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
@@ -428,6 +430,7 @@ export default function RecordingPage() {
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
   const { data: recentEventsData = [] } = trpc.events.recent.useQuery({ limit: 5 });
   const { data: settingsData } = trpc.settings.get.useQuery();
+  const { enqueueRecording, pendingCount } = useOfflineQueue({ autoProcess: false });
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
 
@@ -1112,40 +1115,66 @@ export default function RecordingPage() {
     toast.success(language === "pt" ? "Modo Automático ativado!" : "Continuous Mode active!");
   };
 
-  const classifyMutation = trpc.classify.run.useMutation({
-    onSuccess: (data) => {
-      setIsOfflineMode(false);
-      const res = data as ClassifyResult;
-      setResult(res);
+  const handleClassificationResult = (res: ClassifyResult, offlineMode: boolean) => {
+    setIsOfflineMode(offlineMode);
+    setResult(res);
+
+    if (!offlineMode) {
       utils.events.recent.invalidate();
-      sendClassificationNotification(
+    }
+
+    sendClassificationNotification(
+      res.state,
+      res.confidence,
+      activeAnimal?.name,
+      res.eventId
+    );
+
+    if (!offlineMode && activeAnimal && (res.state === "distress" || res.state === "hunger")) {
+      sendNotification(
         res.state,
         res.confidence,
-        activeAnimal?.name,
-        res.eventId
+        activeAnimal.name,
+        String(activeAnimal.id),
+        settingsData?.alertSensitivity ?? "medium",
+        settingsData?.notificationsEnabled ?? true,
+        false
       );
+    }
 
-      // Check for critical states
-      if (activeAnimal && (res.state === "distress" || res.state === "hunger")) {
-        sendNotification(
-          res.state,
-          res.confidence,
-          activeAnimal.name,
-          String(activeAnimal.id),
-          settingsData?.alertSensitivity ?? "medium",
-          settingsData?.notificationsEnabled ?? true,
-          false
-        );
-      }
+    if (isAutoModeRef.current) {
+      setAutoClassificationCount((count) => count + 1);
+      setLastAutoResult(res);
+      setRecordState("idle");
+      scheduleAutoRecording(1500);
+    } else {
+      setRecordState("idle");
+    }
+  };
 
-      if (isAutoModeRef.current) {
-        setAutoClassificationCount((count) => count + 1);
-        setLastAutoResult(res);
-        setRecordState("idle");
-        scheduleAutoRecording(1500);
-      } else {
-        setRecordState("idle");
-      }
+  const runLocalClassification = async (blob: Blob) => {
+    toast.info(language === "pt" ? "A classificar offline com TF.js..." : "Classifying offline with TF.js...");
+
+    const localClassifier = await import("@/lib/localClassifier");
+    const localRes = await localClassifier.runLocalYAMNet(blob);
+
+    const res: ClassifyResult = {
+      state: localRes.state as EmotionalState,
+      confidence: localRes.confidence,
+      emoji: localRes.emoji,
+      model_used: "yamnet-local" as any,
+      cached: false,
+      eventId: undefined,
+      posture: showCamera ? detectedPosture : undefined,
+    };
+
+    handleClassificationResult(res, true);
+  };
+
+  const classifyMutation = trpc.classify.run.useMutation({
+    onSuccess: (data) => {
+      const res = data as ClassifyResult;
+      handleClassificationResult(res, false);
     },
     onError: async () => {
       stopLiveAudio();
@@ -1153,39 +1182,8 @@ export default function RecordingPage() {
       const lastBlob = lastRecordedBlobRef.current;
       if (lastBlob) {
         try {
-          toast.info(language === "pt" ? "Servidor indisponível. A classificar offline com TF.js..." : "Server unavailable. Classifying offline with TF.js...");
-
-          const localClassifier = await import("@/lib/localClassifier");
-          const localRes = await localClassifier.runLocalYAMNet(lastBlob);
-
-          const res: ClassifyResult = {
-            state: localRes.state as EmotionalState,
-            confidence: localRes.confidence,
-            emoji: localRes.emoji,
-            model_used: "yamnet-local" as any,
-            cached: false,
-            eventId: undefined,
-            posture: showCamera ? detectedPosture : undefined,
-          };
-
-          setResult(res);
-          setIsOfflineMode(true);
-
-          sendClassificationNotification(
-            res.state,
-            res.confidence,
-            activeAnimal?.name,
-            undefined
-          );
-
-          if (isAutoModeRef.current) {
-            setAutoClassificationCount((count) => count + 1);
-            setLastAutoResult(res);
-            setRecordState("idle");
-            scheduleAutoRecording(1500);
-          } else {
-            setRecordState("idle");
-          }
+          toast.info(language === "pt" ? "Servidor indisponível. A usar fallback local..." : "Server unavailable. Using local fallback...");
+          await runLocalClassification(lastBlob);
           return;
         } catch (localErr) {
           console.error("Local TFJS classification failed:", localErr);
@@ -1312,12 +1310,54 @@ export default function RecordingPage() {
           void (async () => {
             let audioBase64: string | undefined = undefined;
             let audioMimeType: string | undefined = undefined;
+            let recordedBlob: Blob | null = null;
             
             try {
               const res = await stopAndGetBlobLiveAudio();
               if (res) {
                 lastRecordedBlobRef.current = res.blob;
+                recordedBlob = res.blob;
                 audioMimeType = res.mimeType;
+              }
+            } catch (err) {
+              console.error("Failed to capture recorded audio:", err);
+            }
+
+            if (isBrowserOffline()) {
+              if (!recordedBlob) {
+                setRecordState("idle");
+                toast.error(language === "pt" ? "Não foi possível guardar a gravação offline." : "Could not save the offline recording.");
+                return;
+              }
+
+              await enqueueRecording({
+                animalId: activeAnimal?.id,
+                audioBlob: recordedBlob,
+                audioMimeType,
+                posture: showCamera ? detectedPosture : undefined,
+                pitch: dominantFreq,
+                spectralEnergy,
+                tonalBrightness,
+                timestamp: Date.now(),
+              });
+
+              try {
+                await runLocalClassification(recordedBlob);
+              } catch (localErr) {
+                console.error("Local TFJS classification failed:", localErr);
+                setIsOfflineMode(true);
+                if (isAutoModeRef.current) {
+                  setRecordState("idle");
+                  scheduleAutoRecording(1500);
+                } else {
+                  setRecordState("idle");
+                }
+              }
+              return;
+            }
+
+            if (recordedBlob) {
+              try {
                 const base64Promise = new Promise<string>((resolve, reject) => {
                   const reader = new FileReader();
                   reader.onloadend = () => {
@@ -1325,12 +1365,12 @@ export default function RecordingPage() {
                     resolve(dataUrl.split(",")[1]);
                   };
                   reader.onerror = reject;
-                  reader.readAsDataURL(res.blob);
+                  reader.readAsDataURL(recordedBlob);
                 });
                 audioBase64 = await base64Promise;
+              } catch (err) {
+                console.error("Failed to encode recorded audio:", err);
               }
-            } catch (err) {
-              console.error("Failed to capture recorded audio:", err);
             }
             
             classifyMutation.mutate({ 
@@ -1350,7 +1390,7 @@ export default function RecordingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation.mutate, showCamera, detectedPosture]);
+  }, [activeAnimal?.id, recordState, stopAndGetBlobLiveAudio, classifyMutation.mutate, showCamera, detectedPosture, enqueueRecording]);
 
   useEffect(() => {
     return () => {
@@ -1795,6 +1835,17 @@ export default function RecordingPage() {
           {isAutoMode && recordState === "idle" && t("recordingPage.nextAcusticSoon")}
           {!isAutoMode && recordState === "idle" && t("recordingPage.tapForSingle")}
         </p>
+
+        {pendingCount > 0 && (
+          <Badge
+            variant="outline"
+            className="border-amber-500/30 bg-amber-500/10 text-amber-200"
+          >
+            {pendingCount === 1
+              ? "1 gravação pendente"
+              : `${pendingCount} gravações pendentes`}
+          </Badge>
+        )}
 
         {(recordState === "recording" || isLiveAudioStreaming) && (
           <P5AudioVisualizer

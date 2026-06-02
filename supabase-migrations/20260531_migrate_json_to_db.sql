@@ -44,3 +44,7 @@ USING (
   shared_with_user_id = private.current_app_user_id()
   OR shared_with_email = (auth.jwt() ->> 'email')
 );
+
+-- Notify PostgREST to reload schema cache
+NOTIFY pgrst, 'reload schema';
+

@@ -13,9 +13,18 @@ type AlertType = "red" | "orange" | "yellow" | "blue" | null;
 export function AlertBanner({ animalId }: AlertBannerProps) {
   const { language } = useLanguage();
 
-  const { data: trend } = trpc.trends.getWeeklyTrend.useQuery({ animalId });
-  const { data: listData } = trpc.events.listForAnimal.useQuery({ animalId, page: 1, pageSize: 20 });
-  const { data: vaccines } = trpc.health.getVaccines.useQuery({ animalId });
+  const { data: trend } = trpc.trends.getWeeklyTrend.useQuery(
+    { animalId },
+    { enabled: typeof animalId === "number" && !isNaN(animalId) }
+  );
+  const { data: listData } = trpc.events.listForAnimal.useQuery(
+    { animalId, page: 1, pageSize: 20 },
+    { enabled: typeof animalId === "number" && !isNaN(animalId) }
+  );
+  const { data: vaccines } = trpc.health.getVaccines.useQuery(
+    { animalId },
+    { enabled: typeof animalId === "number" && !isNaN(animalId) }
+  );
 
   const [activeAlert, setActiveAlert] = useState<{
     type: AlertType;

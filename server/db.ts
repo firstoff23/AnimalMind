@@ -974,13 +974,21 @@ export async function verifyAnimalOwner(
     throw new Error("Não autorizado");
   }
 
-  const { data: share, error: shareError } = await supabase
-    .from("family_shares")
-    .select("*")
-    .eq("animal_id", animalId)
-    .eq("shared_with_email", user.email.toLowerCase())
-    .eq("status", "accepted")
-    .maybeSingle();
+  let share: any = null;
+  try {
+    const { data, error: shareError } = await supabase
+      .from("family_shares")
+      .select("*")
+      .eq("animal_id", animalId)
+      .eq("shared_with_email", user.email.toLowerCase())
+      .eq("status", "accepted")
+      .maybeSingle();
+    if (shareError) throw shareError;
+    share = data;
+  } catch (err) {
+    console.warn(`[Graceful Degradation] Failed to query family_shares in verifyAnimalOwner:`, err);
+    share = null;
+  }
 
   if (!share) {
     const hasFamilyAccess = await userHasFamilyAnimalAccess(userId, animalId);
@@ -1597,104 +1605,116 @@ export async function createShareInvitation(
   targetEmail: string,
   permission: "read" | "write"
 ): Promise<FamilyShare> {
-  const targetUser = await getUserByEmail(targetEmail);
-  const supabase = getSupabase();
+  try {
+    const targetUser = await getUserByEmail(targetEmail);
+    const supabase = getSupabase();
 
-  const { data: existing, error: findError } = await supabase
-    .from("family_shares")
-    .select("*")
-    .eq("animal_id", animalId)
-    .eq("shared_with_email", targetEmail.toLowerCase())
-    .maybeSingle();
+    const { data: existing, error: findError } = await supabase
+      .from("family_shares")
+      .select("*")
+      .eq("animal_id", animalId)
+      .eq("shared_with_email", targetEmail.toLowerCase())
+      .maybeSingle();
 
-  if (existing) {
-    if (existing.status === "rejected") {
-      const { data: updated, error: updateError } = await supabase
-        .from("family_shares")
-        .update({
-          status: "pending",
-          permission,
-          shared_with_user_id: targetUser ? targetUser.id : null,
-          created_at: new Date().toISOString(),
-        })
-        .eq("id", existing.id)
-        .select()
-        .single();
-      if (updateError) throw updateError;
-      return mapDbFamilyShare(updated);
+    if (findError) throw findError;
+
+    if (existing) {
+      if (existing.status === "rejected") {
+        const { data: updated, error: updateError } = await supabase
+          .from("family_shares")
+          .update({
+            status: "pending",
+            permission,
+            shared_with_user_id: targetUser ? targetUser.id : null,
+            created_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        return mapDbFamilyShare(updated);
+      }
+      throw new Error("Ja existe uma partilha ou convite para este email");
     }
-    throw new Error("Ja existe uma partilha ou convite para este email");
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("family_shares")
+      .insert([
+        {
+          owner_id: ownerId,
+          animal_id: animalId,
+          shared_with_email: targetEmail.toLowerCase(),
+          shared_with_user_id: targetUser ? targetUser.id : null,
+          permission,
+          status: "pending",
+          created_at: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+    return mapDbFamilyShare(inserted);
+  } catch (err) {
+    console.error("[Graceful Degradation] Failed in createShareInvitation:", err);
+    throw new Error("Funcionalidade de partilha temporariamente indisponível.");
   }
-
-  const { data: inserted, error: insertError } = await supabase
-    .from("family_shares")
-    .insert([
-      {
-        owner_id: ownerId,
-        animal_id: animalId,
-        shared_with_email: targetEmail.toLowerCase(),
-        shared_with_user_id: targetUser ? targetUser.id : null,
-        permission,
-        status: "pending",
-        created_at: new Date().toISOString(),
-      },
-    ])
-    .select()
-    .single();
-
-  if (insertError) throw insertError;
-  return mapDbFamilyShare(inserted);
 }
 
 export async function getPendingInvitations(userId: number): Promise<any[]> {
-  const supabase = getSupabase();
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .select("email")
-    .eq("id", userId)
-    .single();
+  try {
+    const supabase = getSupabase();
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("email")
+      .eq("id", userId)
+      .single();
 
-  if (userError || !user || !user.email) return [];
+    if (userError || !user || !user.email) return [];
 
-  const { data, error } = await supabase
-    .from("family_shares")
-    .select("*")
-    .eq("status", "pending")
-    .or(`shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`);
+    const { data, error } = await supabase
+      .from("family_shares")
+      .select("*")
+      .eq("status", "pending")
+      .or(`shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const result: any[] = [];
-  for (const s of data || []) {
-    if (!s.shared_with_user_id) {
-      await supabase
-        .from("family_shares")
-        .update({ shared_with_user_id: userId })
-        .eq("id", s.id);
-      s.shared_with_user_id = userId;
+    const result: any[] = [];
+    for (const s of data || []) {
+      if (!s.shared_with_user_id) {
+        await supabase
+          .from("family_shares")
+          .update({ shared_with_user_id: userId })
+          .eq("id", s.id);
+        s.shared_with_user_id = userId;
+      }
+
+      const { data: animal } = await supabase
+        .from("animals")
+        .select("name, species")
+        .eq("id", s.animal_id)
+        .single();
+
+      const { data: owner } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", s.owner_id)
+        .single();
+
+      result.push({
+        ...mapDbFamilyShare(s),
+        animalName: animal?.name || "Animal",
+        animalSpecies: animal?.species || "dog",
+        ownerName: owner?.name || "Outro tutor",
+      });
     }
 
-    const { data: animal } = await supabase
-      .from("animals")
-      .select("name, species")
-      .eq("id", s.animal_id)
-      .single();
-
-    const { data: owner } = await supabase
-      .from("users")
-      .select("name")
-      .eq("id", s.owner_id)
-      .single();
-
-    result.push({
-      ...mapDbFamilyShare(s),
-      animalName: animal?.name || "Animal",
-      animalSpecies: animal?.species || "dog",
-      ownerName: owner?.name || "Outro tutor",
-    });
+    return result;
+  } catch (err) {
+    console.error("[Graceful Degradation] Failed in getPendingInvitations:", err);
+    return [];
   }
-
-  return result;
 }
 
 export async function respondToInvitation(
@@ -1702,96 +1722,116 @@ export async function respondToInvitation(
   invitationId: number,
   action: "accept" | "reject"
 ): Promise<boolean> {
-  const supabase = getSupabase();
-  const { data: share, error: findError } = await supabase
-    .from("family_shares")
-    .select("*")
-    .eq("id", invitationId)
-    .single();
+  try {
+    const supabase = getSupabase();
+    const { data: share, error: findError } = await supabase
+      .from("family_shares")
+      .select("*")
+      .eq("id", invitationId)
+      .single();
 
-  if (findError || !share) throw new Error("Convite nao encontrado");
+    if (findError || !share) throw new Error("Convite nao encontrado");
 
-  const { data: user } = await supabase
-    .from("users")
-    .select("email")
-    .eq("id", userId)
-    .single();
+    const { data: user } = await supabase
+      .from("users")
+      .select("email")
+      .eq("id", userId)
+      .single();
 
-  if (!user || share.shared_with_email.toLowerCase() !== user.email.toLowerCase()) {
-    throw new Error("Nao autorizado");
+    if (!user || share.shared_with_email.toLowerCase() !== user.email.toLowerCase()) {
+      throw new Error("Nao autorizado");
+    }
+
+    const { error: updateError } = await supabase
+      .from("family_shares")
+      .update({
+        status: action === "accept" ? "accepted" : "rejected",
+        shared_with_user_id: userId,
+      })
+      .eq("id", invitationId);
+
+    if (updateError) throw updateError;
+    return true;
+  } catch (err) {
+    console.error("[Graceful Degradation] Failed in respondToInvitation:", err);
+    throw new Error("Não foi possível responder ao convite neste momento.");
   }
-
-  const { error: updateError } = await supabase
-    .from("family_shares")
-    .update({
-      status: action === "accept" ? "accepted" : "rejected",
-      shared_with_user_id: userId,
-    })
-    .eq("id", invitationId);
-
-  if (updateError) throw updateError;
-  return true;
 }
 
 export async function getSharedAnimalsForUser(userId: number): Promise<any[]> {
-  const supabase = getSupabase();
-  const { data: user } = await supabase
-    .from("users")
-    .select("email")
-    .eq("id", userId)
-    .single();
-
-  if (!user || !user.email) return [];
-
-  const { data: activeShares, error } = await supabase
-    .from("family_shares")
-    .select("*")
-    .eq("status", "accepted")
-    .or(`shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`);
-
-  if (error) return [];
-
-  const result: any[] = [];
-  for (const s of activeShares || []) {
-    const { data: animal } = await supabase
-      .from("animals")
-      .select("*")
-      .eq("id", s.animal_id)
+  try {
+    const supabase = getSupabase();
+    const { data: user } = await supabase
+      .from("users")
+      .select("email")
+      .eq("id", userId)
       .single();
 
-    if (animal) {
-      result.push({
-        ...mapDbAnimal(animal),
-        isShared: true,
-        permission: s.permission,
-      });
-    }
-  }
+    if (!user || !user.email) return [];
 
-  return result;
+    const { data: activeShares, error } = await supabase
+      .from("family_shares")
+      .select("*")
+      .eq("status", "accepted")
+      .or(`shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`);
+
+    if (error) throw error;
+
+    const result: any[] = [];
+    for (const s of activeShares || []) {
+      const { data: animal } = await supabase
+        .from("animals")
+        .select("*")
+        .eq("id", s.animal_id)
+        .single();
+
+      if (animal) {
+        result.push({
+          ...mapDbAnimal(animal),
+          isShared: true,
+          permission: s.permission,
+        });
+      }
+    }
+
+    return result;
+  } catch (err) {
+    console.error("[Graceful Degradation] Failed in getSharedAnimalsForUser:", err);
+    return [];
+  }
 }
 
 export async function getAnimalShares(animalId: number): Promise<any[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("family_shares")
-    .select("*")
-    .eq("animal_id", animalId);
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("family_shares")
+      .select("*")
+      .eq("animal_id", animalId);
 
-  if (error) throw error;
-  return (data || []).map(mapDbFamilyShare);
+    if (error) throw error;
+    return (data || []).map(mapDbFamilyShare);
+  } catch (err) {
+    console.error("[Graceful Degradation] Failed in getAnimalShares:", err);
+    return [];
+  }
 }
 
 export async function removeAnimalShare(ownerId: number, shareId: number): Promise<boolean> {
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("family_shares")
-    .delete()
-    .eq("id", shareId)
-    .eq("owner_id", ownerId);
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("family_shares")
+      .delete()
+      .eq("id", shareId)
+      .eq("owner_id", ownerId);
 
-  if (error) throw error;
-  return true;
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error("[Graceful Degradation] Failed in removeAnimalShare:", err);
+    throw new Error("Não foi possível remover a partilha neste momento.");
+  }
 }
 
 export interface FamilyRecord {

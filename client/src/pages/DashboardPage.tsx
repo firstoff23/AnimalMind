@@ -93,7 +93,7 @@ export default function DashboardPage() {
   const utils = trpc.useUtils();
   const { data: invitations = [], refetch: refetchInvitations } = trpc.animals.getPendingInvitations.useQuery(
     undefined,
-    { enabled: isAuthenticated }
+    { enabled: isAuthenticated, retry: false }
   );
 
   const { data: familyMembers = [] } = trpc.family.getMembers.useQuery(

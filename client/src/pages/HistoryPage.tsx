@@ -529,7 +529,7 @@ export default function HistoryPage() {
       page: 1,
       pageSize: 1000,
     },
-    { enabled: useAnimalEndpoint }
+    { enabled: useAnimalEndpoint && typeof animalIdFilter === "number" && !isNaN(animalIdFilter) }
   );
 
   const data = useAnimalEndpoint ? animalEventsQuery.data : allEventsQuery.data;

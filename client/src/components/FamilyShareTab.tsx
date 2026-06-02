@@ -29,7 +29,7 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
   const utils = trpc.useUtils();
 
   // Query shares list
-  const { data: shares = [], isLoading } = trpc.animals.listShares.useQuery({ animalId });
+  const { data: shares = [], isLoading } = trpc.animals.listShares.useQuery({ animalId }, { retry: false });
   const { data: familyMembers = [] } = trpc.family.getMembers.useQuery();
 
   // Mutation to invite co-tutor

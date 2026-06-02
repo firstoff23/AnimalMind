@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
+import { storeOfflineQueueAuth } from "@/lib/offlineQueue";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -11,6 +12,17 @@ const missingSupabaseConfigMessage =
 
 function getAuthCallbackUrl() {
   return `${window.location.origin}/auth/callback`;
+}
+
+function syncOfflineQueueAuth(session: Session | null) {
+  void storeOfflineQueueAuth(
+    session?.access_token
+      ? {
+          accessToken: session.access_token,
+          expiresAt: session.expires_at ? session.expires_at * 1000 : Date.now() + 60 * 60 * 1000,
+        }
+      : null
+  );
 }
 
 export const supabase = supabaseUrl && supabaseAnonKey
@@ -59,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } = await supabase.auth.getSession();
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        syncOfflineQueueAuth(currentSession);
       } catch (error) {
         console.error("Failed to get session:", error);
       } finally {
@@ -74,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      syncOfflineQueueAuth(newSession);
     });
 
     return () => {
@@ -108,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
     setUser(null);
     setSession(null);
+    syncOfflineQueueAuth(null);
   };
 
   const isEmailVerified = user?.email_confirmed_at ? true : false;

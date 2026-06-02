@@ -6,6 +6,7 @@ import { LogOut, Moon, Sun, User, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAppStore } from "@/store/appStore";
+import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,8 @@ export function Header() {
           >
             <Search className="w-4 h-4" />
           </Button>
+
+          <OfflineQueueIndicator />
 
           <Button
             onClick={toggleTheme}
