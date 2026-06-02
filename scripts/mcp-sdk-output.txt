@@ -1,0 +1,3 @@
+=== STARTING SDK CONNECTION ===
+Initializing SSEClientTransport for URL: https://animalmind-n8n.fly.dev/mcp-server/http
+Connecting client to transport...

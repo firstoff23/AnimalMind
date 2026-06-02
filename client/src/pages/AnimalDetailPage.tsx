@@ -355,7 +355,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   };
 
   if (loadingAnimal || loadingBaseline || loadingStats30 || loadingStats7 || loadingHistory) {
-    return <AppShellSkeleton mode="content" />;
+    return <AppShellSkeleton mode="content" variant="detail" />;
   }
 
   if (!animal || !baseline) return null;

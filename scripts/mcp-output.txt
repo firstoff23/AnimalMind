@@ -1,0 +1,21 @@
+=== STARTING SSE CONNECTION ===
+Connecting to SSE stream at https://animalmind-n8n.fly.dev/mcp-server/http...
+[SSE] Status: 200 OK
+[SSE] Headers: {
+  "x-ratelimit-limit": "100",
+  "x-ratelimit-remaining": "93",
+  "date": "Mon, 01 Jun 2026 22:12:27 GMT",
+  "x-ratelimit-reset": "1780352134",
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "Content-Type, Authorization, X-Requested-With",
+  "access-control-allow-credentials": "true",
+  "access-control-max-age": "86400",
+  "cache-control": "no-cache, no-transform",
+  "connection": "keep-alive",
+  "content-type": "text/event-stream",
+  "transfer-encoding": "chunked",
+  "server": "Fly/b59e3505 (2026-05-27)",
+  "via": "1.1 fly.io",
+  "fly-request-id": "01KT2KXM9XZ9P9G220195JWC9F-lhr"
+}

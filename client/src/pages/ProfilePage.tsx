@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Plus, Check, Camera, Loader2, AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
 import { motion } from "framer-motion";
@@ -728,6 +728,10 @@ export default function ProfilePage() {
 
   const activeAnimal = animals.find((a) => a.isActive) ?? animals[0];
 
+  if (isLoading) {
+    return <AppShellSkeleton mode="content" variant="profile" />;
+  }
+
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto">
       {/* Header */}
@@ -759,17 +763,8 @@ export default function ProfilePage() {
         </Drawer.Portal>
       </Drawer.Root>
 
-      {/* Animal cards list - 4 States */}
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-4 w-32 bg-slate-800" />
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-            {[1, 2, 3].map((n) => (
-              <Skeleton key={n} className="flex-shrink-0 w-36 h-28 rounded-2xl bg-slate-800" />
-            ))}
-          </div>
-        </div>
-      ) : error ? (
+      {/* Animal cards list - 3 States */}
+      {error ? (
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
           <p className="text-sm text-foreground font-semibold">Não foi possível carregar a lista de animais.</p>

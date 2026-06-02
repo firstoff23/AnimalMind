@@ -199,7 +199,7 @@ export default function SettingsPage() {
   };
 
   if (settingsLoading) {
-    return <AppShellSkeleton mode="content" />;
+    return <AppShellSkeleton mode="content" variant="settings" />;
   }
 
   return (

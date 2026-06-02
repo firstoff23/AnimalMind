@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ export default function VetPage() {
   const [vetNote, setVetNote] = useState("");
 
   const utils = trpc.useUtils();
-  const { data: animals = [] } = trpc.animals.list.useQuery();
+  const { data: animals = [], isLoading: animalsLoading } = trpc.animals.list.useQuery();
   const activeAnimal = animals.find((a) => a.isActive) ?? animals[0];
 
   const { data: events = [] } = trpc.animals.weeklyStats.useQuery(
@@ -266,6 +267,10 @@ export default function VetPage() {
     });
   };
 
+  if (animalsLoading) {
+    return <AppShellSkeleton mode="content" variant="vet" />;
+  }
+
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-6 max-w-lg mx-auto space-y-6">
       {/* Navigation & Header */}
@@ -442,7 +447,7 @@ export default function VetPage() {
         </>
       ) : (
         <div className="bg-card border border-border rounded-2xl p-5 text-center text-muted-foreground text-sm">
-          A carregar dados do animal...
+          Nenhum animal ativo encontrado. Adicione ou selecione um animal antes de gerar o dossiê clínico.
         </div>
       )}
     </div>

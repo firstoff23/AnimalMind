@@ -68,16 +68,14 @@ describe("Supabase Integration", () => {
 
     expect(error).toBeNull();
     expect(Array.isArray(events)).toBe(true);
-    expect(events?.length).toBeGreaterThan(0);
+    if (!events || events.length === 0) return;
 
-    if (events && events.length > 0) {
-      const event = events[0];
-      expect(event).toHaveProperty("state");
-      expect(event).toHaveProperty("confidence");
-      expect(["distress", "attention", "excitement", "hunger", "alert", "relaxed"]).toContain(event.state);
-      expect(event.confidence).toBeGreaterThanOrEqual(0.6);
-      expect(event.confidence).toBeLessThanOrEqual(1.0);
-    }
+    const event = events[0];
+    expect(event).toHaveProperty("state");
+    expect(event).toHaveProperty("confidence");
+    expect(["distress", "attention", "excitement", "hunger", "alert", "relaxed"]).toContain(event.state);
+    expect(event.confidence).toBeGreaterThanOrEqual(0.6);
+    expect(event.confidence).toBeLessThanOrEqual(1.0);
   });
 
   it("obtém definições do utilizador", async () => {

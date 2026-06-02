@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -219,6 +219,24 @@ export default function DashboardPage() {
     };
   }, [events]);
 
+  if (animalsLoading) {
+    return (
+      <div
+        className="relative min-h-full overflow-x-hidden"
+        {...touchHandlers}
+      >
+        <div
+          style={{
+            transform: `translateY(${pullDistance}px)`,
+            transition: pullDistance === 0 ? "transform 0.2s ease-out" : "none",
+          }}
+        >
+          <AppShellSkeleton mode="content" variant="dashboard" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="relative overflow-x-hidden min-h-full"
@@ -259,17 +277,8 @@ export default function DashboardPage() {
 
       {activeAnimal && <AlertBanner animalId={activeAnimal.id} />}
 
-      {/* ─── 4 States: loading / error / empty / success ─── */}
-      {animalsLoading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-24 rounded-2xl bg-slate-800" />
-            <Skeleton className="h-24 rounded-2xl bg-slate-800" />
-          </div>
-          <Skeleton className="h-36 rounded-2xl bg-slate-800" />
-          <Skeleton className="h-48 rounded-2xl bg-slate-800" />
-        </div>
-      ) : animalsError ? (
+      {/* ─── 4 States: error / empty / success ─── */}
+      {animalsError ? (
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
           <p className="text-sm text-foreground font-semibold">Erro ao carregar dados do dashboard.</p>

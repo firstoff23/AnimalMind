@@ -63,117 +63,189 @@ O **AnimalMind** é uma aplicação web premium e interativa desenvolvida para m
 
 ---
 
-## 🛠️ Stack Tecnológica
-
-* **Frontend:** React 19, TypeScript, Tailwind CSS, Shadcn/UI, Wouter (Routing), Framer Motion, Recharts
-* **Node.js Gateway:** Node.js, Express, tRPC (v11) para comunicação tipo-segura (End-to-End Type Safety)
-* **FastAPI Backend:** Python 3, FastAPI, Uvicorn, TensorFlow Hub/YAMNet, NumPy, SciPy, Soundfile, FFmpeg para análise acústica e processamento de sinal em tempo real
-* **Bibliotecas Adicionais:** jsPDF para geração de relatórios de saúde PDF no cliente
-* **Base de Dados & Auth:** Supabase (Autenticação robusta com verificação de email, sessões, perfil de utilizador e base de dados baseada em PostgreSQL com lazy-initialization)
-* **Testes:** Vitest (Suite completa cobrindo integração do Supabase, lógica de negócios, componentes visuais e helpers de gestos)
-
----
-
 ## 🧩 Como foi construído
 
-O AnimalMind foi construído como uma aplicação React/PWA com backend TypeScript em Express + tRPC. O frontend comunica com o gateway Node.js através de `/api/trpc`, mantendo tipos partilhados entre cliente e servidor. O Supabase fornece autenticação, base de dados PostgreSQL e storage de áudio. A classificação acústica principal é delegada para um backend FastAPI separado em `ml_backend/`, preparado para correr num Hugging Face Space Docker em `0.0.0.0:7860`.
+O AnimalMind é uma aplicação **React/PWA** com um gateway **Node.js + Express + tRPC** e um backend de ML separado em **FastAPI**. O frontend fala com o gateway por `/api/trpc`, o gateway valida sessão e permissões, persiste dados no **Supabase**, envia áudio para classificação acústica e devolve resultados tipados ao cliente.
 
-O gateway Node.js mantém a aplicação resiliente: quando o backend ML não está configurado ou falha, a classificação cai para heurísticas locais/servidor para preservar a experiência do utilizador. O frontend adiciona PWA, modo offline básico, exportação CSV/PDF, notificações do browser e uma camada visual rica para gravação, histórico e dashboards.
+O desenho é deliberadamente resiliente: `FASTAPI_BACKEND_URL` pode apontar para o Hugging Face Space principal, mas o gateway mantém fallbacks conhecidos para Fly.dev e Hugging Face antes de devolver erro ao frontend. No browser, a app ainda consegue degradar para classificação local com TF.js quando o servidor ML está indisponível.
+
+### Arquitetura
 
 ```mermaid
-flowchart LR
-  user["Tutor no browser"] --> pwa["React PWA<br/>Wouter + Tailwind + tRPC client"]
-  pwa --> api["Vercel / Express API<br/>/api/trpc"]
-  pwa --> auth["Supabase Auth<br/>email verification + sessions"]
-  api --> db["Supabase PostgreSQL<br/>animals, events, family, health"]
-  api --> storage["Supabase Storage<br/>audio-recordings"]
-  api --> ml["Hugging Face Space<br/>FastAPI + YAMNet<br/>0.0.0.0:7860"]
-  ml --> api
-  api --> fallback["Heurísticas/fallback<br/>quando ML está indisponível"]
-  api --> pwa
-  pwa --> notifications["Browser Notification API"]
+flowchart TB
+  user["Tutor no browser/mobile"] --> pwa["React PWA<br/>Vite + Wouter + Tailwind"]
+  pwa --> trpcClient["tRPC React client<br/>React Query + SuperJSON"]
+  trpcClient --> gateway["Node.js Gateway<br/>Express + tRPC<br/>Vercel Functions"]
+
+  pwa --> browserApis["Browser APIs<br/>MediaRecorder, Notifications,<br/>PWA/Service Worker"]
+  pwa --> supabaseAuth["Supabase Auth<br/>email verification + sessions"]
+
+  gateway --> supabaseDb["Supabase PostgreSQL<br/>users, animals,<br/>classification_events,<br/>family, health"]
+  gateway --> supabaseStorage["Supabase Storage<br/>bucket audio-recordings"]
+  gateway --> mlPrimary["FASTAPI_BACKEND_URL<br/>Hugging Face Space<br/>FastAPI + YAMNet"]
+  gateway --> mlFallback["Fallback ML URLs<br/>Fly.dev + HF Space"]
+  gateway --> localFallback["Fallback server/client<br/>heurísticas + TF.js local"]
+
+  mlPrimary --> gateway
+  mlFallback --> gateway
+  gateway --> trpcClient
 ```
+
+### Stack técnica
+
+| Camada | Tecnologia |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, Wouter, Tailwind CSS, Radix/Shadcn UI, Framer Motion |
+| Estado e dados | tRPC v11, React Query, SuperJSON, Zustand, Nuqs |
+| Áudio e UI | MediaRecorder, Web Audio API, p5, Tone.js, Howler, Recharts |
+| Backend web | Node.js, Express, tRPC server, Zod, cookies de sessão |
+| ML backend | Python 3.11, FastAPI, Uvicorn, TensorFlow Hub/YAMNet, NumPy, SciPy, SoundFile, FFmpeg |
+| Dados/Auth/Storage | Supabase Auth, PostgreSQL, Storage |
+| Deploy | Vercel para frontend/gateway, Hugging Face Spaces Docker para `ml_backend/` |
+| Testes | Vitest, Playwright, TypeScript `tsc --noEmit` |
+| Relatórios | jsPDF, React PDF |
 
 ### Fluxo de classificação
 
 1. O tutor grava áudio no browser com `MediaRecorder`.
-2. O frontend envia a amostra para a mutation `classify.run` via tRPC.
-3. O gateway guarda o áudio no Supabase Storage e tenta classificar no backend FastAPI.
-4. O resultado é persistido em `classification_events` e regressa ao frontend com estado emocional, confiança, `eventId` e URL do áudio.
-5. A UI atualiza dashboards/histórico e pode emitir uma notificação local do browser.
+2. O frontend chama `classify.run` via tRPC.
+3. O gateway valida o utilizador, verifica o animal e constrói o payload de áudio.
+4. O gateway tenta classificar no backend configurado por `FASTAPI_BACKEND_URL`.
+5. Se esse backend falhar, tenta os fallbacks conhecidos antes de devolver erro ao cliente.
+6. O resultado é persistido em `classification_events`, o áudio é enviado para Supabase Storage e o frontend atualiza histórico, dashboard e notificações.
 
-### Deploy
+### Setup local
 
-* **Frontend + gateway:** Vercel, com build `pnpm build` e rewrites para `/api`.
-* **Backend ML:** Hugging Face Spaces com Docker, porta obrigatória `7860` e utilizador `1000`.
-* **Dados/Auth:** Supabase. O redirect de verificação de email deve permitir `https://animalmind.vercel.app/auth/callback`.
+Pré-requisitos:
 
----
+- Node.js compatível com o projeto e `pnpm`.
+- Python 3.11 para o backend ML.
+- FFmpeg instalado localmente se quiseres correr a classificação FastAPI fora do Docker.
+- Projeto Supabase com URL, anon key e service role key.
+- Opcional, mas recomendado para deploy: Vercel CLI com `npm i -g vercel`.
 
-## 🚀 Como Executar Localmente
+Instalar dependências:
 
-### 1. Instalar Dependências do Gateway Node.js
 ```bash
 pnpm install
 ```
 
-### 2. Configurar o Backend FastAPI (Python)
-Recomenda-se o uso de um ambiente virtual para instalar os requisitos de processamento de áudio:
-```bash
-cd ml_backend
-python -m venv .venv
-.venv\Scripts\activate  # No Windows
-# source .venv/bin/activate  # No macOS/Linux
-pip install -r requirements.txt
-```
+Criar `.env.local` na raiz. Não commitar segredos reais.
 
-Executar o servidor FastAPI localmente na porta 8000:
-```bash
-uvicorn app:app --reload --port 8000
-```
-
-### 3. Variáveis de Ambiente
-Crie um ficheiro `.env.local` e `.env.production.local` na pasta raiz do projeto. Adicione as chaves do Supabase e o URL do FastAPI:
 ```env
 VITE_SUPABASE_URL="https://seu-projeto.supabase.co"
 VITE_SUPABASE_ANON_KEY="sua-anon-key"
 SUPABASE_URL="https://seu-projeto.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
+JWT_SECRET="segredo-local-longo"
+OAUTH_SERVER_URL="http://localhost:3100"
 FASTAPI_BACKEND_URL="http://localhost:8000"
 ```
 
-Para produção, manter o valor atual até ao deploy no Hugging Face Spaces estar concluído e `/health` responder `200`. Só depois atualizar `FASTAPI_BACKEND_URL` na Vercel para a URL pública do Space.
+Para usar o Hugging Face Space já publicado em vez do backend local:
 
-> Nota: o Dockerfile do Hugging Face Space arranca o FastAPI em `0.0.0.0:7860`, como exigido pelo runtime Docker dos Spaces. O comando local acima pode continuar a usar `8000` para desenvolvimento.
+```env
+FASTAPI_BACKEND_URL="https://firstoff-animalmind-backend.hf.space"
+```
 
-### 4. Executar o Servidor de Desenvolvimento Node.js
-Retorne à raiz do projeto e execute:
+Arrancar o backend ML local:
+
+```bash
+cd ml_backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+Arrancar a app web/gateway noutra consola:
+
 ```bash
 pnpm run dev
 ```
-O frontend estará acessível em `http://localhost:5173`.
 
-### 5. Migrações da Base de Dados (Supabase Native Migrations)
-O projeto utiliza migrações nativas do Supabase localizadas em `supabase-migrations/` como única fonte de verdade.
-* Para aplicar migrações:
-  ```bash
-  pnpm db:push
-  ```
-* Não há suporte para Drizzle ORM (removido para simplificação e evitar duplicações).
+Comandos de validação:
 
-### 6. Correr Testes Unitários e de Integração
-```bash
-pnpm run test
-```
-
-### 7. Validar Tipagem do TypeScript
 ```bash
 pnpm run check
+pnpm test
+pnpm build
+pnpm e2e
 ```
 
-### 8. Compilar para Produção (Build)
+Os testes E2E autenticados usam variáveis opcionais:
+
+```env
+E2E_EMAIL="utilizador-teste@example.com"
+E2E_PASSWORD="password-teste"
+E2E_RUN_CLASSIFICATION=true
+```
+
+### Base de dados e migrações Supabase
+
+As migrações SQL mantidas no repositório estão em `supabase-migrations/`. Se estiveres a usar o Supabase Dashboard, aplica os ficheiros por ordem no **SQL Editor**.
+
+Para usar o Supabase CLI, primeiro autentica e liga o projeto:
+
 ```bash
-pnpm run build
+npx supabase login --token <SUPABASE_ACCESS_TOKEN>
+npx supabase link --project-ref <PROJECT_REF>
+```
+
+Depois aplica as migrações conforme a configuração local do Supabase CLI. Nota: a pasta gerada `supabase/.temp/` é metadata local do CLI e está ignorada no Git.
+
+### Deploy
+
+#### Frontend e gateway na Vercel
+
+1. Configurar variáveis de ambiente na Vercel:
+
+   ```env
+   VITE_SUPABASE_URL="https://seu-projeto.supabase.co"
+   VITE_SUPABASE_ANON_KEY="sua-anon-key"
+   SUPABASE_URL="https://seu-projeto.supabase.co"
+   SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
+   JWT_SECRET="segredo-producao-longo"
+   OAUTH_SERVER_URL="https://animalmind.vercel.app"
+   FASTAPI_BACKEND_URL="https://firstoff-animalmind-backend.hf.space"
+   ```
+
+2. Confirmar em Supabase Auth que o redirect de email permite:
+
+   ```text
+   https://animalmind.vercel.app/auth/callback
+   ```
+
+3. Fazer deploy pela integração GitHub/Vercel ou pela CLI:
+
+   ```bash
+   npm i -g vercel
+   vercel env pull .env.production.local
+   vercel deploy --prod
+   ```
+
+O projeto usa `vercel.json` com `buildCommand: "pnpm install && pnpm build"`, `outputDirectory: "dist/public"` e rewrites para `/api/:path*`.
+
+#### Backend ML no Hugging Face Spaces
+
+O diretório `ml_backend/` está preparado para Space Docker:
+
+- `python:3.11-slim`
+- `ffmpeg` e `libsndfile1`
+- `EXPOSE 7860`
+- `uvicorn app:app --host 0.0.0.0 --port 7860`
+- `USER 1000`
+
+No Hugging Face, cria/usa um Space Docker com o conteúdo de `ml_backend/`. Depois valida:
+
+```text
+https://firstoff-animalmind-backend.hf.space/health
+```
+
+Quando `/health` responder `200`, usa a raiz do Space como `FASTAPI_BACKEND_URL`, sem `/classify` no fim:
+
+```env
+FASTAPI_BACKEND_URL="https://firstoff-animalmind-backend.hf.space"
 ```
 
 ---

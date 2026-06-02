@@ -1,0 +1,10 @@
+=== STARTING WORKFLOW PUBLISH ===
+[Step 1] Sending POST initialize...
+[Step 1] Status: 200
+
+[Step 2] Sending POST tools/call for publish_workflow...
+[Step 2] Status: 200
+[Step 2] Body: event: message
+data: {"result":{"content":[{"type":"text","text":"{\"success\":true,\"workflowId\":\"0OoyE17cKT2GmgEf\",\"activeVersionId\":\"c18f5e16-de03-4860-b51d-816ad27d5af8\"}"}],"structuredContent":{"success":true,"workflowId":"0OoyE17cKT2GmgEf","activeVersionId":"c18f5e16-de03-4860-b51d-816ad27d5af8"}},"jsonrpc":"2.0","id":2}
+
+

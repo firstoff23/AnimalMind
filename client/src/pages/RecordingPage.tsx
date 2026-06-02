@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { GlowingButton } from "@/components/ui/GlowingButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
 import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
 import {
@@ -1617,10 +1618,8 @@ export default function RecordingPage() {
 
         {cameraState === "loading" && (
           <div className="flex flex-col items-center justify-center p-6 border border-border rounded-xl bg-secondary/5 text-center space-y-3">
-            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-muted-foreground font-medium">
-              {language === "pt" ? "A pedir permissão para a câmera…" : "Requesting camera permission..."}
-            </p>
+            <Skeleton className="aspect-[4/3] w-full max-w-[320px] rounded-xl bg-slate-800" />
+            <Skeleton className="h-3 w-56 rounded-lg bg-slate-800" />
           </div>
         )}
 

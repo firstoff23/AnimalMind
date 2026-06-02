@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PawPrint, BarChart3, AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Button } from "@/components/ui/button";
 import {
   BarChart,
@@ -139,17 +139,7 @@ export default function ComparisonPage() {
   };
 
   if (isLoadingAnimals || (animals.length > 0 && isLoadingEvents)) {
-    return (
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-64 bg-slate-800" />
-          <Skeleton className="h-4 w-48 bg-slate-800" />
-        </div>
-        <Skeleton className="h-28 rounded-2xl bg-slate-800" />
-        <Skeleton className="h-64 rounded-2xl bg-slate-800" />
-        <Skeleton className="h-64 rounded-2xl bg-slate-800" />
-      </div>
-    );
+    return <AppShellSkeleton mode="content" variant="comparison" />;
   }
 
   if (errorAnimals || errorEvents) {

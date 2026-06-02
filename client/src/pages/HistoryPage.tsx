@@ -4,6 +4,7 @@ import { useQueryState, parseAsInteger } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -1030,6 +1031,24 @@ export default function HistoryPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div
+        className="relative min-h-full overflow-x-hidden"
+        {...touchHandlers}
+      >
+        <div
+          style={{
+            transform: `translateY(${pullDistance}px)`,
+            transition: pullDistance === 0 ? "transform 0.2s ease-out" : "none",
+          }}
+        >
+          <AppShellSkeleton mode="content" variant="history" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="relative overflow-x-hidden min-h-full"
@@ -1323,14 +1342,14 @@ export default function HistoryPage() {
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             {isLoading ? (
               <div className="p-4 space-y-2">
-                {[1,2,3,4].map(n => (
+                {[1, 2, 3, 4].map((n) => (
                   <div key={n} className="flex items-center gap-3 py-3 border-b border-border/30 last:border-0">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 animate-pulse flex-shrink-0" />
+                    <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
                     <div className="flex-1 space-y-1">
-                      <div className="h-3 bg-slate-800 rounded animate-pulse w-24" />
-                      <div className="h-2 bg-slate-800 rounded animate-pulse w-36" />
+                      <Skeleton className="h-3 w-24 rounded" />
+                      <Skeleton className="h-2 w-36 rounded" />
                     </div>
-                    <div className="h-3 bg-slate-800 rounded animate-pulse w-10" />
+                    <Skeleton className="h-3 w-10 rounded" />
                   </div>
                 ))}
               </div>

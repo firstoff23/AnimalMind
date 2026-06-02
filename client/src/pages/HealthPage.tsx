@@ -5,7 +5,7 @@ import HealthBulletinTab from "@/components/HealthBulletinTab";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, PawPrint, Download, AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { toast } from "sonner";
 import { pdf } from "@react-pdf/renderer";
 import { HealthBulletinPDF } from "@/components/HealthBulletinPDF";
@@ -86,19 +86,7 @@ export default function HealthPage() {
   };
 
   if (isLoadingAnimals || (selectedAnimal && (isLoadingVaccines || isLoadingRecords))) {
-    return (
-      <div className="max-w-2xl mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-48 bg-slate-800" />
-            <Skeleton className="h-4 w-64 bg-slate-800" />
-          </div>
-          <Skeleton className="h-9 w-24 bg-slate-800" />
-        </div>
-        <Skeleton className="h-16 rounded-2xl bg-slate-800" />
-        <Skeleton className="h-64 rounded-2xl bg-slate-800" />
-      </div>
-    );
+    return <AppShellSkeleton mode="content" variant="health" />;
   }
 
   if (errorAnimals || errorVaccines || errorRecords) {

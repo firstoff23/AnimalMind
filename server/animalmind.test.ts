@@ -30,6 +30,7 @@ vi.mock("./db", () => ({
   }),
   updateEventFeedback: vi.fn().mockResolvedValue(undefined),
   getAllEventsForExport: vi.fn().mockResolvedValue([]),
+  uploadAudioToSupabase: vi.fn().mockResolvedValue("https://storage.example.test/events/test.wav"),
   getAnimalsByUser: vi.fn().mockResolvedValue([
     { id: 1, userId: 1, name: "Bobi", species: "dog", breed: "Labrador", age: 3, isActive: true, createdAt: new Date(), updatedAt: new Date() },
     { id: 2, userId: 1, name: "Mimi", species: "cat", breed: "Persa",    age: 5, isActive: false, createdAt: new Date(), updatedAt: new Date() },
@@ -137,10 +138,12 @@ function makeCtx(user: TrpcContext["user"] = dummyUser): TrpcContext {
 describe("classify.run", () => {
   const originalFastApiBackendUrl = process.env.FASTAPI_BACKEND_URL;
   const originalHfBackendUrl = process.env.HF_BACKEND_URL;
+  const originalViteApiUrl = process.env.VITE_API_URL;
 
   beforeEach(() => {
     process.env.FASTAPI_BACKEND_URL = originalFastApiBackendUrl;
     process.env.HF_BACKEND_URL = originalHfBackendUrl;
+    process.env.VITE_API_URL = originalViteApiUrl;
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
       const url = typeof input === "string" ? input : input.url;
@@ -163,6 +166,7 @@ describe("classify.run", () => {
   afterEach(() => {
     process.env.FASTAPI_BACKEND_URL = originalFastApiBackendUrl;
     process.env.HF_BACKEND_URL = originalHfBackendUrl;
+    process.env.VITE_API_URL = originalViteApiUrl;
   });
 
   it("retorna um resultado com os campos obrigatórios", async () => {
@@ -196,6 +200,7 @@ describe("classify.run", () => {
   it("falls back from a configured Railway backend to Fly before failing classification", async () => {
     process.env.FASTAPI_BACKEND_URL = "https://animalmind-production.up.railway.app";
     process.env.HF_BACKEND_URL = "";
+    process.env.VITE_API_URL = "";
     const calls: string[] = [];
     const mockFetch = vi.fn().mockImplementation((input: any) => {
       const url = typeof input === "string" ? input : input.url;
