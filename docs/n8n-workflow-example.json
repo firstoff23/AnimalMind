@@ -1,0 +1,149 @@
+{
+  "name": "AnimalMind - Classification Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "animalmind-classification",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-4000-9000-animalmindwebhook",
+      "name": "AnimalMind Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst secret = $env.N8N_WEBHOOK_SECRET;\nif (!secret) {\n  throw new Error('N8N_WEBHOOK_SECRET is not configured in n8n.');\n}\n\nconst body = $json.body ?? $json;\nconst headers = $json.headers ?? {};\nconst receivedSignature = headers['x-animalmind-signature'] ?? headers['X-AnimalMind-Signature'];\nconst rawBody = JSON.stringify(body);\nconst expectedSignature = 'sha256=' + crypto\n  .createHmac('sha256', secret)\n  .update(rawBody)\n  .digest('hex');\n\nconst valid = typeof receivedSignature === 'string'\n  && receivedSignature.length === expectedSignature.length\n  && crypto.timingSafeEqual(Buffer.from(receivedSignature), Buffer.from(expectedSignature));\n\nreturn [{\n  json: {\n    valid,\n    receivedSignature,\n    expectedSignature,\n    notification: {\n      userId: body.userId,\n      animalId: body.animalId,\n      animalName: body.animalName,\n      emotionalState: body.emotionalState,\n      confidence: body.confidence,\n      timestamp: body.timestamp,\n      title: `AnimalMind - ${body.animalName}`,\n      message: `${body.animalName} foi classificado como ${body.emotionalState} (${Math.round(Number(body.confidence) * 100)}% confiança).`\n    }\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0002-4000-9000-verifyhmac",
+      "name": "Verify HMAC Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.valid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0003-4000-9000-ifvalid",
+      "name": "Signature Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "animalmind@example.com",
+        "toEmail": "owner@example.com",
+        "subject": "={{ $json.notification.title }}",
+        "text": "={{ $json.notification.message + '\\n\\nUser ID: ' + $json.notification.userId + '\\nAnimal ID: ' + $json.notification.animalId + '\\nTimestamp: ' + $json.notification.timestamp }}"
+      },
+      "id": "a1b2c3d4-0004-4000-9000-sendemail",
+      "name": "Send Notification Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [960, 180],
+      "credentials": {
+        "smtp": {
+          "id": "replace-with-your-smtp-credential-id",
+          "name": "SMTP credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, message: 'Notification accepted' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a1b2c3d4-0005-4000-9000-responseok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 180]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, message: 'Invalid AnimalMind signature' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "a1b2c3d4-0006-4000-9000-responseinvalid",
+      "name": "Respond Invalid Signature",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [960, 420]
+    }
+  ],
+  "connections": {
+    "AnimalMind Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify HMAC Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify HMAC Signature": {
+      "main": [
+        [
+          {
+            "node": "Signature Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature Valid?": {
+      "main": [
+        [
+          {
+            "node": "Send Notification Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Invalid Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Notification Email": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

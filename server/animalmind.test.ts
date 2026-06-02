@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { getAllEventsForExport } from "./db";
+import { notifyN8N } from "./_core/notification";
 
 // ─── Mock DB ──────────────────────────────────────────────────────────────────
 
@@ -111,6 +112,10 @@ vi.mock("./db", () => ({
   removeAnimalShare: vi.fn().mockResolvedValue(true)
 }));
 
+vi.mock("./_core/notification", () => ({
+  notifyN8N: vi.fn().mockResolvedValue(true),
+}));
+
 // ─── Context factory ──────────────────────────────────────────────────────────
 
 const dummyUser = {
@@ -139,8 +144,10 @@ describe("classify.run", () => {
   const originalFastApiBackendUrl = process.env.FASTAPI_BACKEND_URL;
   const originalHfBackendUrl = process.env.HF_BACKEND_URL;
   const originalViteApiUrl = process.env.VITE_API_URL;
+  const notifyN8NMock = vi.mocked(notifyN8N);
 
   beforeEach(() => {
+    notifyN8NMock.mockClear();
     process.env.FASTAPI_BACKEND_URL = originalFastApiBackendUrl;
     process.env.HF_BACKEND_URL = originalHfBackendUrl;
     process.env.VITE_API_URL = originalViteApiUrl;
@@ -184,6 +191,24 @@ describe("classify.run", () => {
     expect(["distress","attention","excitement","hunger","alert","relaxed"]).toContain(result.state);
     expect(result.confidence).toBeGreaterThanOrEqual(0.6);
     expect(result.confidence).toBeLessThanOrEqual(1.0);
+  }, 10000);
+
+  it("dispara webhook n8n assinado após uma classificação bem-sucedida", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.classify.run({
+      animalId: 1,
+      audio: "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==",
+      audioMimeType: "audio/wav",
+    });
+
+    expect(notifyN8NMock).toHaveBeenCalledWith({
+      userId: 1,
+      animalId: 1,
+      animalName: "Bobi",
+      emotionalState: result.state,
+      confidence: result.confidence,
+      timestamp: expect.any(String),
+    });
   }, 10000);
 
   it("aceita animalId opcional", async () => {

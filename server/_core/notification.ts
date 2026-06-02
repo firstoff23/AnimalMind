@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { createHmac } from "node:crypto";
 import { ENV } from "./env";
 
 export type NotificationPayload = {
@@ -8,6 +9,7 @@ export type NotificationPayload = {
 
 const TITLE_MAX_LENGTH = 1200;
 const CONTENT_MAX_LENGTH = 20000;
+const N8N_WEBHOOK_TIMEOUT_MS = 5000;
 
 const trimValue = (value: string): string => value.trim();
 const isNonEmptyString = (value: unknown): value is string =>
@@ -113,32 +115,47 @@ export async function notifyOwner(
   }
 }
 
-export async function notifyN8N(payload: {
+export type N8NClassificationPayload = {
+  userId: number;
+  animalId: number;
   animalName: string;
-  species: string;
-  breed?: string | null;
-  state: string;
+  emotionalState: string;
   confidence: number;
-  audioUrl?: string | null;
-  posture?: string | null;
-}): Promise<boolean> {
+  timestamp: string;
+};
+
+export function createN8NSignature(body: string, secret: string): string {
+  const digest = createHmac("sha256", secret).update(body).digest("hex");
+  return `sha256=${digest}`;
+}
+
+export async function notifyN8N(payload: N8NClassificationPayload): Promise<boolean> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) {
     console.log("[n8n] Webhook notification skipped: N8N_WEBHOOK_URL is not configured.");
     return false;
   }
 
+  const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.warn("[n8n] Webhook notification skipped: N8N_WEBHOOK_SECRET is not configured.");
+    return false;
+  }
+
+  const body = JSON.stringify(payload);
+  const signature = createN8NSignature(body, webhookSecret);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), N8N_WEBHOOK_TIMEOUT_MS);
+
   try {
     const response = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-AnimalMind-Signature": signature,
       },
-      body: JSON.stringify({
-        event: "critical_emotional_state",
-        timestamp: new Date().toISOString(),
-        ...payload,
-      }),
+      body,
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -151,5 +168,7 @@ export async function notifyN8N(payload: {
   } catch (error) {
     console.error("[n8n] Error sending webhook notification:", error);
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }

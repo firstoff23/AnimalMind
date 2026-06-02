@@ -333,6 +333,7 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         const targetAnimalId = input.animalId || 1;
         await verifyAnimalOwner(targetAnimalId, userId, true);
+        const targetAnimal = await getAnimalById(targetAnimalId, userId);
 
         // Persist event
         const event = await insertEvent({
@@ -346,6 +347,10 @@ export const appRouter = router({
         });
 
         const eventId = (event as any)?.id;
+        const eventTimestamp =
+          (event as any)?.created_at ??
+          (event as any)?.createdAt ??
+          new Date().toISOString();
 
         // If audio data is provided, upload it to Supabase Storage and map it
         let audioUrl = null;
@@ -372,24 +377,17 @@ export const appRouter = router({
             await savePostureForEvent(eventId, input.posture);
           }
 
-          // Trigger n8n notification for critical states (distress, hunger)
-          if (result.state === "distress" || result.state === "hunger") {
-            try {
-              const animal = await getAnimalById(targetAnimalId, userId);
-              if (animal) {
-                await notifyN8N({
-                  animalName: animal.name,
-                  species: animal.species,
-                  breed: animal.breed,
-                  state: result.state,
-                  confidence: result.confidence,
-                  audioUrl: audioUrl,
-                  posture: input.posture || null,
-                });
-              }
-            } catch (err) {
-              console.error("[n8n] Failed to send critical state notification:", err);
-            }
+          try {
+            await notifyN8N({
+              userId,
+              animalId: targetAnimalId,
+              animalName: targetAnimal?.name ?? "Animal",
+              emotionalState: result.state,
+              confidence: result.confidence,
+              timestamp: new Date(eventTimestamp).toISOString(),
+            });
+          } catch (err) {
+            console.error("[n8n] Failed to send classification webhook:", err);
           }
         }
 

@@ -34,6 +34,12 @@ import HealthPage from "./pages/HealthPage";
 import ComparisonPage from "./pages/ComparisonPage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
+
+function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
+  useRealtimeNotifications(enabled);
+  return null;
+}
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -44,6 +50,8 @@ function Router() {
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Background Grid */}
       {isAuthenticated && <BackgroundGrid />}
+
+      <RealtimeNotificationsBridge enabled={isAuthenticated} />
 
       {/* Header — only shown when authenticated */}
       {isAuthenticated && <Header />}
