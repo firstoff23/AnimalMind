@@ -1,109 +1,83 @@
-import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
+import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Moon, Sun, User, Search } from "lucide-react";
-import { toast } from "sonner";
-import { useLanguage } from "@/hooks/useLanguage";
 import { useAppStore } from "@/store/appStore";
 import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export function Header() {
-  const { user, signOut, isAuthenticated } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast.success(t("header.logoutSuccess") !== "header.logoutSuccess" ? t("header.logoutSuccess") : "Desconectado com sucesso");
-      setLocation("/login");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao desconectar");
-    }
-  };
 
   if (!isAuthenticated) {
     return null;
   }
 
-  return (
-    <header className="bg-card border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">AnimalMind</h1>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <User className="w-4 h-4" />
-            <span className="text-sm">{user?.email}</span>
-          </div>
+  // Check if current page is one of the main tabs
+  const isRootPage = ["/dashboard", "/gravar", "/historico", "/perfil", "/definicoes"].includes(location);
 
+  const handleBack = () => {
+    if (location.startsWith("/animal/")) {
+      setLocation("/perfil");
+    } else if (location === "/comparison") {
+      setLocation("/historico");
+    } else if (location === "/family" || location.startsWith("/join/")) {
+      setLocation("/dashboard");
+    } else {
+      window.history.back();
+    }
+  };
+
+  // Compute page title dynamically
+  const getPageTitle = () => {
+    if (isRootPage) return "AnimalMind";
+    if (location.startsWith("/animal/")) return t("animalDetail.title") || "Detalhes";
+    if (location === "/comparison") return t("comparison.title") || "Comparação";
+    if (location === "/health") return t("health.title") || "Saúde";
+    if (location === "/family" || location.startsWith("/join/")) return t("dashboardPage.family") || "Modo Família";
+    return "AnimalMind";
+  };
+
+  return (
+    <header className="bg-card border-b border-border sticky top-0 z-50 px-4 py-3 h-14 flex items-center justify-between select-none">
+      {/* Left side actions (Back Button) */}
+      <div className="flex items-center w-1/4">
+        {!isRootPage && (
+          <Button
+            onClick={handleBack}
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground active-scale tap-highlight-none -ml-2 h-9 w-9"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        )}
+      </div>
+
+      {/* Centered Title */}
+      <div className="flex-1 text-center font-bold text-base text-foreground tracking-tight">
+        {getPageTitle()}
+      </div>
+
+      {/* Right side actions (Offline indicator, Search) */}
+      <div className="flex items-center justify-end gap-1.5 w-1/4">
+        <OfflineQueueIndicator />
+        {isRootPage && (
           <Button
             onClick={() => setCommandPaletteOpen(true)}
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground active-scale tap-highlight-none h-9 w-9"
             aria-label="Abrir pesquisa"
             title="Pesquisar (Ctrl+K)"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-5 h-5" />
           </Button>
-
-          <OfflineQueueIndicator />
-
-          <Button
-            onClick={toggleTheme}
-            variant="outline"
-            size="icon"
-            className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
-            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
-            title={theme === "dark" ? "Modo claro" : "Modo escuro"}
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                {t("header.logout")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Terminar sessão</AlertDialogTitle>
-                <AlertDialogDescription className="text-slate-400">
-                  Tem a certeza que deseja terminar a sua sessão? Terá de introduzir as suas credenciais novamente para aceder ao AnimalMind.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="border-slate-700 hover:bg-slate-800 text-white">
-                  Cancelar
-                </AlertDialogCancel>
-                <AlertDialogAction onClick={handleLogout} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                  Terminar Sessão
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        )}
       </div>
     </header>
   );

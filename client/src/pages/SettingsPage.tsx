@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -23,16 +24,24 @@ import {
   Loader2,
   Smartphone,
   Check,
+  Sun,
+  Moon,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Sensitivity = "low" | "medium" | "high";
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
+  const [, setLocation] = useLocation();
+  const { theme, toggleTheme, switchable } = useTheme();
+  const { signOut } = useAuth();
   const { data: dbUser, refetch: refetchUser } = trpc.auth.me.useQuery();
   const { data: settingsData, isLoading: settingsLoading } = trpc.settings.get.useQuery();
 
@@ -236,7 +245,7 @@ export default function SettingsPage() {
             <CardFooter className="pt-0">
               <Button
                 onClick={handleInstallClick}
-                className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs h-9"
+                className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs h-9 active-scale tap-highlight-none"
               >
                 {language === "pt" ? "Instalar Agora" : "Install Now"}
               </Button>
@@ -292,7 +301,7 @@ export default function SettingsPage() {
                 <Button
                   type="submit"
                   disabled={updateProfileMutation.isPending}
-                  className="w-full text-xs h-9"
+                  className="w-full text-xs h-9 active-scale tap-highlight-none"
                 >
                   {updateProfileMutation.isPending ? (
                     <>
@@ -328,7 +337,7 @@ export default function SettingsPage() {
                 setLanguage("pt");
                 toast.success("Idioma alterado para Português");
               }}
-              className="flex-1 text-xs h-9 font-semibold"
+              className="flex-1 text-xs h-9 font-semibold active-scale tap-highlight-none"
             >
               Português (PT)
             </Button>
@@ -338,13 +347,52 @@ export default function SettingsPage() {
                 setLanguage("en");
                 toast.success("Language changed to English");
               }}
-              className="flex-1 text-xs h-9 font-semibold"
+              className="flex-1 text-xs h-9 font-semibold active-scale tap-highlight-none"
             >
               English (EN)
             </Button>
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Tema */}
+      {switchable && toggleTheme && (
+        <motion.div variants={cardVariants}>
+          <Card className="bg-card border-border overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border bg-muted/30">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                {theme === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+                {language === "pt" ? "Tema Visual" : "Visual Theme"}
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                {language === "pt" ? "Selecione o esquema de cores da aplicação" : "Select the application's color scheme"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4 flex gap-4">
+              <Button
+                variant={theme === "light" ? "default" : "outline"}
+                onClick={() => {
+                  if (theme === "dark") toggleTheme();
+                }}
+                className="flex-1 text-xs h-9 font-semibold gap-2 active-scale tap-highlight-none"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                {language === "pt" ? "Claro" : "Light"}
+              </Button>
+              <Button
+                variant={theme === "dark" ? "default" : "outline"}
+                onClick={() => {
+                  if (theme === "light") toggleTheme();
+                }}
+                className="flex-1 text-xs h-9 font-semibold gap-2 active-scale tap-highlight-none"
+              >
+                <Moon className="w-3.5 h-3.5" />
+                {language === "pt" ? "Escuro" : "Dark"}
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Notificações */}
       <motion.div variants={cardVariants}>
@@ -426,7 +474,7 @@ export default function SettingsPage() {
                 key={s}
                 onClick={() => handleSensitivity(s)}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left",
+                  "w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left active-scale tap-highlight-none",
                   sensitivity === s
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-primary/40 bg-background/50"
@@ -543,7 +591,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleExportCsv}
               disabled={csvLoading}
-              className="w-full gap-2 text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-full gap-2 text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/90 active-scale tap-highlight-none"
             >
               {csvLoading ? (
                 <>
@@ -599,6 +647,45 @@ export default function SettingsPage() {
                 ? "Desenvolvido com carinho para fortalecer a ligação com os seus animais."
                 : "Developed with love to strengthen the connection with your animals."}
             </p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Sessão / Logout */}
+      <motion.div variants={cardVariants}>
+        <Card className="bg-card border-border overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border bg-muted/30">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground text-destructive">
+              <LogOut className="w-4 h-4 text-destructive" />
+              {language === "pt" ? "Sessão" : "Session"}
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              {language === "pt"
+                ? "Termine a sessão no seu dispositivo atual"
+                : "Sign out of your account on this device"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  await signOut();
+                  toast.success(
+                    language === "pt"
+                      ? "Sessão terminada com sucesso."
+                      : "Signed out successfully."
+                  );
+                  setLocation("/login");
+                } catch (err: any) {
+                  toast.error(err.message || "Erro ao sair");
+                }
+              }}
+              className="w-full gap-2 text-xs h-9 font-semibold active-scale tap-highlight-none"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              {language === "pt" ? "Terminar Sessão" : "Sign Out"}
+            </Button>
           </CardContent>
         </Card>
       </motion.div>

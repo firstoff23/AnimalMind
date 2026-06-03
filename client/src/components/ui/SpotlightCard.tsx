@@ -1,51 +1,36 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  spotlightColor?: string;
 }
 
 export function SpotlightCard({
   children,
   className,
-  spotlightColor = "rgba(99, 102, 241, 0.15)",
+  onClick,
   ...props
 }: SpotlightCardProps) {
-  const divRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState(0);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!divRef.current) return;
-
-    const rect = divRef.current.getBoundingClientRect();
-    setPosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
+  const isInteractive = !!onClick;
 
   return (
-    <div
-      ref={divRef}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setOpacity(1)}
-      onMouseLeave={() => setOpacity(0)}
+    <motion.div
+      whileTap={isInteractive ? { scale: 0.97 } : undefined}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      onClick={onClick}
       className={cn(
-        "relative rounded-2xl border border-border bg-card p-5 overflow-hidden transition-all duration-300",
+        "relative rounded-2xl border border-border bg-card p-5 overflow-hidden transition-all duration-300 tap-highlight-none",
+        isInteractive && "active:border-primary/40 active:ring-2 active:ring-primary/10 select-none cursor-pointer",
         className
       )}
-      {...props}
+      {...props as any}
     >
-      <div
-        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300"
-        style={{
-          opacity,
-          background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 80%)`,
-        }}
-      />
+      {/* Dynamic glow overlay only visible in active state to simulate touch pressure */}
+      {isInteractive && (
+        <div className="absolute inset-0 bg-primary/5 opacity-0 active:opacity-100 transition-opacity duration-150 pointer-events-none" />
+      )}
       <div className="relative z-10">{children}</div>
-    </div>
+    </motion.div>
   );
 }

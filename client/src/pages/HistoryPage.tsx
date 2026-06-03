@@ -1081,6 +1081,15 @@ export default function HistoryPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground">{t("historyPage.title")}</h1>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation("/comparison")}
+            className="gap-1.5 h-8 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/10 active-scale tap-highlight-none"
+          >
+            <ArrowUpDown size={14} className="rotate-90" />
+            {t("nav.comparison") || "Comparar"}
+          </Button>
           {isFiltered && (
             <Button
               variant="ghost"

@@ -7,6 +7,7 @@ import { PawPrint, Users, AlertCircle } from "lucide-react";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
 export default function FamilyDashboard({ params }: { params?: { code?: string } }) {
   const [, setLocation] = useLocation();
@@ -91,137 +92,155 @@ export default function FamilyDashboard({ params }: { params?: { code?: string }
 
 
   return (
-    <div className="min-h-full bg-slate-950 px-4 py-6 text-slate-100">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="flex flex-col gap-4 border-b border-slate-800 pb-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">
-              <Users size={16} />
-              Modo Família
-            </p>
-            <h1 className="mt-2 text-3xl font-bold">Gestão partilhada</h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-400">
-              Grupos familiares, convites, animais partilhados e notificações de atividade.
-            </p>
-          </div>
-          <Button onClick={() => setLocation("/dashboard")} variant="outline" className="border-slate-700">
-            Voltar ao dashboard
-          </Button>
-        </header>
+    <div className="page-enter max-w-lg mx-auto space-y-5 px-4 pt-6 pb-4 min-h-full text-slate-100">
+      {/* Intro info card (instead of duplicate header) */}
+      <div className="p-4 rounded-2xl bg-secondary/10 border border-border/60">
+        <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+          <Users size={14} />
+          Modo Família
+        </p>
+        <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+          Partilhe e faça a co-tutoria dos seus animais de estimação em tempo real com o seu grupo familiar doméstico.
+        </p>
+      </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+      {/* Creation and Joining Action Forms */}
+      <div className="space-y-4">
+        {/* Create Family Form */}
+        <SpotlightCard className="p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Criar família
+          </h3>
           <form
             onSubmit={(event) => {
               event.preventDefault();
               createFamilyMutation.mutate({ name: familyName });
             }}
-            className="rounded-lg border border-slate-800 bg-slate-900/70 p-4"
+            className="flex gap-2"
           >
-            <p className="text-sm font-semibold text-slate-100">Criar família</p>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={familyName}
-                onChange={(event) => setFamilyName(event.target.value)}
-                placeholder="Ex: Família Inácio"
-                className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500"
-              />
-              <Button
-                type="submit"
-                disabled={createFamilyMutation.isPending || familyName.trim().length === 0}
-                className="bg-emerald-500 text-white hover:bg-emerald-600"
-              >
-                Criar
-              </Button>
-            </div>
+            <input
+              value={familyName}
+              onChange={(event) => setFamilyName(event.target.value)}
+              placeholder="Ex: Família Inácio"
+              className="min-w-0 flex-1 rounded-xl border border-border bg-secondary/20 px-3 py-2 text-xs text-foreground outline-none focus:border-primary/50 transition-colors"
+            />
+            <Button
+              type="submit"
+              disabled={createFamilyMutation.isPending || familyName.trim().length === 0}
+              className="bg-primary hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold px-4 active-scale tap-highlight-none"
+            >
+              Criar
+            </Button>
           </form>
+        </SpotlightCard>
 
+        {/* Join Family Form */}
+        <SpotlightCard className="p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Juntar por convite
+          </h3>
           <form
             onSubmit={(event) => {
               event.preventDefault();
               joinMutation.mutate({ code: joinCode.toUpperCase() });
             }}
-            className="rounded-lg border border-slate-800 bg-slate-900/70 p-4"
+            className="flex gap-2"
           >
-            <p className="text-sm font-semibold text-slate-100">Juntar por convite</p>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={joinCode}
-                onChange={(event) => setJoinCode(event.target.value.toUpperCase().slice(0, 6))}
-                placeholder="ABC123"
-                className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm uppercase tracking-[0.2em] text-slate-100 outline-none focus:border-emerald-500"
-              />
-              <Button
-                type="submit"
-                disabled={joinMutation.isPending || joinCode.length !== 6}
-                className="bg-emerald-500 text-white hover:bg-emerald-600"
-              >
-                Entrar
-              </Button>
-            </div>
+            <input
+              value={joinCode}
+              onChange={(event) => setJoinCode(event.target.value.toUpperCase().slice(0, 6))}
+              placeholder="ABC123"
+              className="min-w-0 flex-1 rounded-xl border border-border bg-secondary/20 px-3 py-2 text-xs uppercase tracking-[0.2em] text-foreground outline-none focus:border-primary/50 transition-colors"
+            />
+            <Button
+              type="submit"
+              disabled={joinMutation.isPending || joinCode.length !== 6}
+              className="bg-primary hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold px-4 active-scale tap-highlight-none"
+            >
+              Entrar
+            </Button>
           </form>
-        </div>
+        </SpotlightCard>
+      </div>
 
-        <FamilyInvite />
+      <FamilyInvite />
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_1fr_1fr]">
-          <section className="rounded-lg border border-slate-800 bg-slate-900/70 p-4">
-            <h2 className="text-sm font-semibold text-slate-100">Membros</h2>
-            <div className="mt-3 space-y-2">
-              {membersQuery.data?.length ? (
-                membersQuery.data.map((member) => (
-                  <div key={`${member.familyId}-${member.userId}`} className="flex items-center gap-3 rounded-lg bg-slate-950 p-3">
-                    <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
-                      {(member.name || member.email || "?").slice(0, 1).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-100">{member.name || "Membro"}</p>
-                      <p className="truncate text-xs text-slate-500">{member.email || member.role}</p>
-                    </div>
+      {/* Lists Section (Members, Shared Animals, Notifications) */}
+      <div className="space-y-4">
+        {/* Members list */}
+        <SpotlightCard className="p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Membros da Família
+          </h3>
+          <div className="space-y-2">
+            {membersQuery.data?.length ? (
+              membersQuery.data.map((member) => (
+                <div key={`${member.familyId}-${member.userId}`} className="flex items-center gap-3 rounded-xl bg-secondary/10 border border-border/40 p-3">
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
+                    {(member.name || member.email || "?").slice(0, 1).toUpperCase()}
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400">Ainda não há família ativa.</p>
-              )}
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-slate-800 bg-slate-900/70 p-4">
-            <h2 className="text-sm font-semibold text-slate-100">Animais partilhados</h2>
-            <div className="mt-3 space-y-2">
-              {animalsQuery.data?.length ? (
-                animalsQuery.data.map((animal) => (
-                  <div key={`${animal.familyId}-${animal.id}`} className="rounded-lg bg-slate-950 p-3">
-                    <p className="flex items-center gap-2 text-sm font-medium text-slate-100">
-                      <PawPrint size={15} className="text-emerald-400" />
-                      {animal.name}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">{animal.species === "dog" ? "Cão" : "Gato"}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-foreground">{member.name || "Membro"}</p>
+                    <p className="truncate text-[10px] text-muted-foreground mt-0.5">{member.email || member.role}</p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400">Sem animais partilhados na família.</p>
-              )}
-            </div>
-          </section>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground py-2 text-center bg-secondary/10 border border-border/30 rounded-xl">
+                Ainda não tem nenhuma família ativa.
+              </p>
+            )}
+          </div>
+        </SpotlightCard>
 
-          <section className="rounded-lg border border-slate-800 bg-slate-900/70 p-4">
-            <h2 className="text-sm font-semibold text-slate-100">Notificações</h2>
-            <div className="mt-3 space-y-2">
-              {activityQuery.data?.length ? (
-                activityQuery.data.map((item) => (
-                  <div key={item.id} className="rounded-lg bg-slate-950 p-3">
-                    <p className="text-sm text-slate-200">{item.message}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {new Date(item.createdAt).toLocaleString("pt-PT")}
-                    </p>
+        {/* Shared Animals list */}
+        <SpotlightCard className="p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Animais partilhados
+          </h3>
+          <div className="space-y-2">
+            {animalsQuery.data?.length ? (
+              animalsQuery.data.map((animal) => (
+                <div key={`${animal.familyId}-${animal.id}`} className="rounded-xl bg-secondary/10 border border-border/40 p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <PawPrint size={15} className="text-emerald-400 shrink-0" />
+                    <p className="text-xs font-semibold text-foreground">{animal.name}</p>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400">Sem atividade recente de outros membros.</p>
-              )}
-            </div>
-          </section>
-        </div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    {animal.species === "dog" ? "Cão" : "Gato"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground py-2 text-center bg-secondary/10 border border-border/30 rounded-xl">
+                Sem animais partilhados na família.
+              </p>
+            )}
+          </div>
+        </SpotlightCard>
+
+        {/* Notifications/Recent Activity list */}
+        <SpotlightCard className="p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Notificações recentes
+          </h3>
+          <div className="space-y-2">
+            {activityQuery.data?.length ? (
+              activityQuery.data.map((item) => (
+                <div key={item.id} className="rounded-xl bg-secondary/10 border border-border/40 p-3 space-y-1">
+                  <p className="text-xs text-foreground leading-relaxed">{item.message}</p>
+                  <p className="text-[9px] text-muted-foreground">
+                    {new Date(item.createdAt).toLocaleString("pt-PT")}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground py-2 text-center bg-secondary/10 border border-border/30 rounded-xl">
+                Sem atividade recente de outros membros.
+              </p>
+            )}
+          </div>
+        </SpotlightCard>
       </div>
     </div>
   );

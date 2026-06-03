@@ -143,3 +143,17 @@
 .animate-success-pulse {
   animation: successPulse 0.4s ease-in-out;
 }
+
+/* ── Mobile Layout & Touch Utilities ────────────────────────────────────── */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-scale:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease-out;
+}

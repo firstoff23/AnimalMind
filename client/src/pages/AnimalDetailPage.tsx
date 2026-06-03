@@ -390,7 +390,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
           size="sm"
           onClick={handleExportPdf}
           data-testid="animal-detail-export-pdf"
-          className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+          className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 active-scale tap-highlight-none"
         >
           <Download size={15} /> {t("calibration.downloadPdf")}
         </Button>
@@ -447,7 +447,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "flex-1 py-2 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1",
+                "flex-1 py-2 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1 active-scale tap-highlight-none",
                 activeTab === tab
                   ? "bg-primary text-primary-foreground shadow"
                   : "text-muted-foreground hover:text-foreground"
@@ -708,7 +708,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                 <Button
                   variant="outline"
                   onClick={() => setLocation(`/historico?animalId=${animal.id}`)}
-                  className="w-full text-xs font-semibold border-primary/20 hover:bg-primary/10 text-primary h-10 rounded-xl"
+                  className="w-full text-xs font-semibold border-primary/20 hover:bg-primary/10 text-primary h-10 rounded-xl active-scale tap-highlight-none"
                 >
                   {t("calibration.viewFullHistory")}
                 </Button>
@@ -790,7 +790,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                   name="alertSensitivity"
                   defaultValue={baseline.alertSensitivity}
                   disabled={animal.permission === "read"}
-                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none"
+                  className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none active-scale tap-highlight-none"
                 >
                   <option value="low">{language === "pt" ? "Baixa (Apenas alertas críticos de angústia)" : "Low (Only critical distress alerts)"}</option>
                   <option value="medium">{language === "pt" ? "Média (Recomendado para cães/gatos no geral)" : "Medium (Recommended for general dogs/cats)"}</option>
@@ -815,6 +815,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                         name={`normalState_${s}`}
                         disabled={animal.permission === "read"}
                         defaultChecked={baseline.normalStates.includes(s)}
+                        className="active-scale tap-highlight-none"
                       />
                       <label
                         htmlFor={`normalState_${s}`}
@@ -832,7 +833,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
             {animal.permission !== "read" && (
               <Button
                 type="submit"
-                className="w-full bg-primary text-primary-foreground gap-2 mt-2"
+                className="w-full bg-primary text-primary-foreground gap-2 mt-2 active-scale tap-highlight-none"
                 disabled={updateBaselineMutation.isPending}
               >
                 <Save size={16} />
