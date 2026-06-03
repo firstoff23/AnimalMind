@@ -1875,12 +1875,17 @@ async function getUserSummary(userId: number) {
       .select("name, email")
       .eq("id", userId)
       .single();
+    // Derive a display name: prefer stored name, then email prefix, then generic
+    const derivedName =
+      (data?.name && data.name.trim().length > 0 ? data.name.trim() : null) ??
+      (data?.email ? data.email.split("@")[0] : null) ??
+      null;
     return {
-      name: data?.name ?? "Membro",
+      name: derivedName,
       email: data?.email ?? null,
     };
   } catch {
-    return { name: "Membro", email: null };
+    return { name: null, email: null };
   }
 }
 

@@ -3,11 +3,23 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import FamilyInvite from "@/components/FamilyInvite";
 import { trpc } from "@/lib/trpc";
-import { PawPrint, Users, AlertCircle } from "lucide-react";
+import { PawPrint, Users, AlertCircle, Crown, UserRound } from "lucide-react";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+
+// Maps raw role values from the DB to readable Portuguese labels
+function getRoleLabel(role: string): { label: string; className: string } {
+  switch (role) {
+    case "admin":
+      return { label: "Proprietário", className: "text-amber-400 bg-amber-400/10 border-amber-400/20" };
+    case "member":
+      return { label: "Membro", className: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" };
+    default:
+      return { label: "Convidado", className: "text-slate-400 bg-slate-400/10 border-slate-400/20" };
+  }
+}
 
 export default function FamilyDashboard({ params }: { params?: { code?: string } }) {
   const [, setLocation] = useLocation();
@@ -174,17 +186,48 @@ export default function FamilyDashboard({ params }: { params?: { code?: string }
           </h3>
           <div className="space-y-2">
             {membersQuery.data?.length ? (
-              membersQuery.data.map((member) => (
-                <div key={`${member.familyId}-${member.userId}`} className="flex items-center gap-3 rounded-xl bg-secondary/10 border border-border/40 p-3">
-                  <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
-                    {(member.name || member.email || "?").slice(0, 1).toUpperCase()}
+              membersQuery.data.map((member) => {
+                const roleInfo = getRoleLabel(member.role);
+                const displayName =
+                  (member.name && member.name.trim().length > 0 ? member.name.trim() : null) ??
+                  (member.email ? member.email.split("@")[0] : null) ??
+                  "Utilizador";
+                const avatarChar = displayName.slice(0, 1).toUpperCase();
+                const isOwner = member.role === "admin";
+                return (
+                  <div
+                    key={`${member.familyId}-${member.userId}`}
+                    className="flex items-center gap-3 rounded-xl bg-secondary/10 border border-border/40 p-3"
+                  >
+                    {/* Avatar */}
+                    <div
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${
+                        isOwner
+                          ? "bg-amber-500/15 text-amber-400"
+                          : "bg-emerald-500/15 text-emerald-400"
+                      }`}
+                    >
+                      {avatarChar}
+                    </div>
+
+                    {/* Name + email */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-foreground">{displayName}</p>
+                      {member.email && (
+                        <p className="truncate text-[10px] text-muted-foreground mt-0.5">{member.email}</p>
+                      )}
+                    </div>
+
+                    {/* Role badge */}
+                    <span
+                      className={`shrink-0 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${roleInfo.className}`}
+                    >
+                      {isOwner ? <Crown size={9} /> : <UserRound size={9} />}
+                      {roleInfo.label}
+                    </span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-foreground">{member.name || "Membro"}</p>
-                    <p className="truncate text-[10px] text-muted-foreground mt-0.5">{member.email || member.role}</p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="text-xs text-muted-foreground py-2 text-center bg-secondary/10 border border-border/30 rounded-xl">
                 Ainda não tem nenhuma família ativa.
