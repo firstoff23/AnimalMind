@@ -9,6 +9,7 @@ import {
   getFamilyAnimalsForUser,
   getFamilyMembersForUser,
   joinFamilyByInviteCode,
+  leaveFamilyForUser,
   shareAnimalWithFamily,
 } from "../db";
 
@@ -32,6 +33,14 @@ export const familyRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);
       return joinFamilyByInviteCode(userId, input.code);
+    }),
+
+  leave: protectedProcedure
+    .input(z.object({ familyId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await leaveFamilyForUser(userId, input.familyId);
+      return { success: true };
     }),
 
   createInvite: protectedProcedure

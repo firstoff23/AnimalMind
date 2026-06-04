@@ -5,7 +5,18 @@ import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { GlowingButton } from "@/components/ui/GlowingButton";
-import { Mic, Heart, BarChart3, Users, Languages, DownloadCloud, Sparkles } from "lucide-react";
+import {
+  Mic,
+  Heart,
+  BarChart3,
+  Users,
+  Languages,
+  Sparkles,
+  ShieldCheck,
+  Wifi,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
@@ -14,243 +25,405 @@ export default function LandingPage() {
   const { t, language, setLanguage } = useLanguage();
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden font-sans">
-      <BackgroundGrid className="opacity-40" />
+    <div
+      className="relative min-h-screen bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden font-sans"
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
+      <BackgroundGrid className="opacity-30" />
 
-      {/* Decorative top lights */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
-      <div className="absolute top-10 right-1/4 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none -z-10" />
+      {/* Ambient glows */}
+      <div className="pointer-events-none -z-10 fixed inset-0 overflow-hidden">
+        <div className="absolute top-[-10%] left-1/3 w-[600px] h-[600px] bg-indigo-500/8 rounded-full blur-[140px]" />
+        <div className="absolute top-[15%] right-[-5%] w-[400px] h-[400px] bg-emerald-500/8 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[20%] left-[-5%] w-[350px] h-[350px] bg-purple-500/6 rounded-full blur-[100px]" />
+      </div>
 
-      {/* Navbar/Header */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-900 z-10">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🐾</span>
-          <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-indigo-200 bg-clip-text text-transparent">
-            AnimalMind
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLanguage(language === "pt" ? "en" : "pt")}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5"
-          >
-            <Languages size={14} />
-            {language === "pt" ? "EN" : "PT"}
-          </Button>
-          
-          {isAuthenticated ? (
-            <GlowingButton onClick={() => setLocation("/dashboard")}>
-              {t("landing.dashboard") || "Painel de Controlo"}
-            </GlowingButton>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocation("/login")}
-              className="border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/10 font-semibold"
+      {/* ── NAVBAR ── */}
+      <header className="sticky top-0 z-20 w-full border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl" aria-hidden="true">🐾</span>
+            <span className="text-base font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
+              AnimalMind
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLanguage(language === "pt" ? "en" : "pt")}
+              aria-label="Mudar idioma"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-slate-800/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              {t("landing.login") || "Iniciar Sessão"}
-            </Button>
-          )}
+              <Languages size={13} aria-hidden="true" />
+              {language === "pt" ? "EN" : "PT"}
+            </button>
+            {isAuthenticated ? (
+              <GlowingButton
+                onClick={() => setLocation("/dashboard")}
+                className="text-xs px-4 py-2 h-auto"
+              >
+                {t("landing.dashboard") || "Painel"}
+              </GlowingButton>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation("/login")}
+                className="border-slate-700 text-slate-300 hover:bg-slate-800 text-xs h-8 rounded-lg"
+              >
+                {t("landing.login") || "Entrar"}
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-16 flex flex-col items-center justify-center text-center space-y-8 z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">
-          <Sparkles size={12} />
-          {t("landing.pwaAvailable") || "Disponível para instalar como PWA"}
-        </div>
-
-        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-4xl leading-tight">
-          {t("landing.title") || "Monitorize sinais de bem-estar do seu animal através de áudio e padrões comportamentais."}
-        </h1>
-        
-        <p className="text-base sm:text-xl text-slate-400 max-w-2xl leading-relaxed">
-          {t("landing.subtitle") || "Monitorização em tempo real do estado emocional e bem-estar do seu companheiro através de Inteligência Artificial acústica."}
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full sm:w-auto">
-          {isAuthenticated ? (
-            <GlowingButton onClick={() => setLocation("/dashboard")} className="px-8 py-6 text-base font-semibold w-full sm:w-auto">
-              {t("landing.dashboard") || "Aceder ao Painel"}
-            </GlowingButton>
-          ) : (
-            <>
-              <GlowingButton onClick={() => setLocation("/register")} className="px-8 py-6 text-base font-semibold w-full sm:w-auto">
-                {t("landing.getStarted") || "Começar Agora"}
-              </GlowingButton>
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/login")}
-                className="px-8 py-6 text-base font-semibold border-slate-800 hover:bg-slate-900 w-full sm:w-auto"
-              >
-                {t("landing.login") || "Já tenho conta"}
-              </Button>
-            </>
-          )}
-        </div>
-
-        <div className="max-w-2xl mx-auto p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-250 text-xs sm:text-sm flex flex-col gap-2 text-left">
-          <div className="flex items-center gap-2 font-bold text-amber-400">
-            <span className="text-base">⚠️</span>
-            <span>Honestidade Científica & Limitações</span>
+      {/* ── HERO ── */}
+      <main id="main-content" className="flex-1">
+        <section className="w-full max-w-5xl mx-auto px-5 pt-16 pb-20 flex flex-col items-center text-center gap-6">
+          {/* Pill badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+            <Sparkles size={11} aria-hidden="true" />
+            {t("landing.pwaAvailable") || "Disponível como PWA · Instalar no telemóvel"}
           </div>
-          <p className="leading-relaxed">
-            O **AnimalMind** utiliza o modelo **YAMNet** (um classificador genérico de eventos de áudio) para estimar estados emocionais como aproximações comportamentais. Os resultados apresentados devem ser interpretados como meros <strong>sinais ou indícios</strong>, e nunca como um diagnóstico. Esta aplicação <strong>não substitui uma avaliação veterinária profissional</strong>.
+
+          {/* Headline */}
+          <h1
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-3xl"
+            style={{ textWrap: "balance" } as React.CSSProperties}
+          >
+            Compreenda o seu{" "}
+            <span className="bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent">
+              animal
+            </span>{" "}
+            através do som.
+          </h1>
+
+          {/* Sub-headline */}
+          <p
+            className="text-base sm:text-lg text-slate-400 max-w-xl leading-relaxed"
+            style={{ textWrap: "pretty" } as React.CSSProperties}
+          >
+            {t("landing.subtitle") ||
+              "Monitorização em tempo real do estado emocional do seu companheiro com IA acústica — offline, privado e sempre consigo."}
           </p>
-        </div>
 
-        {/* How It Works Section */}
-        <section className="w-full pt-20 pb-12 space-y-12">
-          <h2 className="text-2xl sm:text-3xl font-bold">
-            {t("landing.howItWorks") || "Como Funciona"}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-            <div className="space-y-3 bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-slate-800 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                <Mic size={20} />
-              </div>
-              <h3 className="font-bold text-lg">{t("landing.step1Title") || "1. Grave o Som"}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {t("landing.step1Desc") || "Grave os latidos, miados ou outros sons do seu animal diretamente na aplicação."}
-              </p>
-            </div>
+          {/* CTA row */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full sm:w-auto">
+            {isAuthenticated ? (
+              <GlowingButton
+                onClick={() => setLocation("/dashboard")}
+                className="px-8 py-3 text-sm font-semibold w-full sm:w-auto rounded-xl"
+              >
+                <span className="flex items-center gap-2">
+                  {t("landing.dashboard") || "Abrir Painel"}{" "}
+                  <ArrowRight size={15} aria-hidden="true" />
+                </span>
+              </GlowingButton>
+            ) : (
+              <>
+                <GlowingButton
+                  onClick={() => setLocation("/register")}
+                  className="px-8 py-3 text-sm font-semibold w-full sm:w-auto rounded-xl"
+                >
+                  <span className="flex items-center gap-2">
+                    {t("landing.getStarted") || "Começar gratuitamente"}{" "}
+                    <ArrowRight size={15} aria-hidden="true" />
+                  </span>
+                </GlowingButton>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/login")}
+                  className="px-8 py-3 text-sm font-semibold border-slate-700 hover:bg-slate-800/60 w-full sm:w-auto rounded-xl h-auto"
+                >
+                  {t("landing.login") || "Já tenho conta"}
+                </Button>
+              </>
+            )}
+          </div>
 
-            <div className="space-y-3 bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-slate-800 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                <Sparkles size={20} />
-              </div>
-              <h3 className="font-bold text-lg">{t("landing.step2Title") || "2. Análise de IA"}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {t("landing.step2Desc") || "Os nossos modelos avançados classificam o estado emocional em tempo real com base no som."}
-              </p>
-            </div>
-
-            <div className="space-y-3 bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-slate-800 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                <BarChart3 size={20} />
-              </div>
-              <h3 className="font-bold text-lg">{t("landing.step3Title") || "3. Acompanhe a Evolução"}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {t("landing.step3Desc") || "Visualize relatórios, tendências de bem-estar e partilhe o perfil com a sua família."}
-              </p>
-            </div>
+          {/* Trust pills */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            {[
+              { icon: ShieldCheck, label: "100% privado" },
+              { icon: Wifi, label: "Funciona offline" },
+              { icon: CheckCircle2, label: "Gratuito para começar" },
+            ].map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-900/60 border border-slate-800 rounded-full px-3 py-1"
+              >
+                <Icon size={11} className="text-emerald-400" aria-hidden="true" />
+                {label}
+              </span>
+            ))}
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="w-full py-12 space-y-12">
-          <h2 className="text-2xl sm:text-3xl font-bold">
-            {t("landing.features") || "Funcionalidades Premium"}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <SpotlightCard className="flex flex-col text-left p-6 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                <Heart size={20} />
-              </div>
-              <h3 className="font-bold text-lg">{t("landing.feat1Title") || "Inteligência Acústica"}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {t("landing.feat1Desc") || "Classificação refinada entre 6 estados emocionais: angústia, excitação, alerta, fome, atenção e relaxamento."}
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard className="flex flex-col text-left p-6 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                <Sparkles size={20} />
-              </div>
-              <h3 className="font-bold text-lg">{t("landing.feat2Title") || "Evolução e Alertas"}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {t("landing.feat2Desc") || "Identificação automática de desvios no comportamento típico (baseline) e alertas preventivos de bem-estar."}
-              </p>
-            </SpotlightCard>
-
-            <SpotlightCard className="flex flex-col text-left p-6 space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
-                <Users size={20} />
-              </div>
-              <h3 className="font-bold text-lg">{t("landing.feat3Title") || "Partilha Familiar"}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {t("landing.feat3Desc") || "Convide co-tutores para gerir as tarefas de saúde e acompanhar o estado do animal em tempo real."}
-              </p>
-            </SpotlightCard>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section className="w-full py-16 space-y-12 border-t border-slate-900/65 mt-12">
-          <div className="text-center space-y-3">
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              Perguntas Frequentes (FAQ)
+        {/* ── HOW IT WORKS ── */}
+        <section className="w-full max-w-5xl mx-auto px-5 py-16 space-y-10">
+          <div className="text-center space-y-2">
+            <h2
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              {t("landing.howItWorks") || "Como Funciona"}
             </h2>
-            <p className="text-sm text-slate-400 max-w-xl mx-auto">
-              Esclareça as suas dúvidas sobre o funcionamento e privacidade da AnimalMind.
+            <p className="text-sm text-slate-400 max-w-md mx-auto">
+              Três passos simples para compreender melhor o seu animal.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left max-w-4xl mx-auto">
-            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
-              <h3 className="font-bold text-base text-slate-200">Como funciona a classificação acústica?</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Utilizamos modelos de redes neuronais avançados para analisar as frequências, tom e intensidade das vocalizações gravadas do seu animal, estimando o seu estado emocional de forma científica.
-              </p>
-            </div>
-            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
-              <h3 className="font-bold text-base text-slate-200">A classificação é 100% precisa?</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Não. A nossa plataforma fornece estimativas indicativas com base em padrões sonoros. Não substitui um diagnóstico médico efetuado por um médico veterinário.
-              </p>
-            </div>
-            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
-              <h3 className="font-bold text-base text-slate-200">Como é protegida a minha privacidade?</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Os ficheiros de áudio são guardados num armazenamento totalmente privado no Supabase e acedidos via URLs assinadas e temporárias. Pode apagar os seus registos a qualquer momento.
-              </p>
-            </div>
-            <div className="space-y-2 bg-slate-900/20 border border-slate-900/80 rounded-xl p-5 hover:border-slate-800/80 transition-all duration-300">
-              <h3 className="font-bold text-base text-slate-200">O que é a baseline do animal?</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                A baseline é o perfil de comportamento habitual do seu animal. A nossa IA calcula as suas reações habituais para detetar mudanças anómalas que possam indicar desconforto ou stresse.
-              </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
+            {[
+              {
+                step: "01",
+                icon: Mic,
+                color: "indigo",
+                title: t("landing.step1Title") || "Grave o Som",
+                desc:
+                  t("landing.step1Desc") ||
+                  "Grave os latidos, miados ou outros sons do seu animal diretamente na aplicação, em 3 segundos.",
+              },
+              {
+                step: "02",
+                icon: Sparkles,
+                color: "purple",
+                title: t("landing.step2Title") || "Análise por IA",
+                desc:
+                  t("landing.step2Desc") ||
+                  "Modelos de redes neuronais classificam o estado emocional em tempo real — mesmo sem internet.",
+              },
+              {
+                step: "03",
+                icon: BarChart3,
+                color: "emerald",
+                title: t("landing.step3Title") || "Acompanhe a Evolução",
+                desc:
+                  t("landing.step3Desc") ||
+                  "Visualize relatórios, tendências de bem-estar e partilhe o perfil com a sua família.",
+              },
+            ].map(({ step, icon: Icon, color, title, desc }) => (
+              <div
+                key={step}
+                className={cn(
+                  "relative space-y-4 rounded-2xl p-6 border transition-colors",
+                  "bg-slate-900/40 border-slate-800/80 hover:border-slate-700/80"
+                )}
+              >
+                <div className="flex items-start justify-between">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center",
+                      color === "indigo" && "bg-indigo-500/10 text-indigo-400",
+                      color === "purple" && "bg-purple-500/10 text-purple-400",
+                      color === "emerald" && "bg-emerald-500/10 text-emerald-400"
+                    )}
+                  >
+                    <Icon size={20} aria-hidden="true" />
+                  </div>
+                  <span className="text-4xl font-black text-slate-800 select-none">
+                    {step}
+                  </span>
+                </div>
+                <h3 className="font-bold text-base">{title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FEATURES ── */}
+        <section className="w-full max-w-5xl mx-auto px-5 py-10 space-y-10">
+          <div className="text-center space-y-2">
+            <h2
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              {t("landing.features") || "Funcionalidades Premium"}
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                icon: Heart,
+                color: "rose",
+                title: t("landing.feat1Title") || "Inteligência Acústica",
+                desc:
+                  t("landing.feat1Desc") ||
+                  "Classificação entre 6 estados emocionais: angústia, excitação, alerta, fome, atenção e relaxamento.",
+              },
+              {
+                icon: Sparkles,
+                color: "amber",
+                title: t("landing.feat2Title") || "Evolução e Alertas",
+                desc:
+                  t("landing.feat2Desc") ||
+                  "Identificação automática de desvios no comportamento típico e alertas preventivos de bem-estar.",
+              },
+              {
+                icon: Users,
+                color: "cyan",
+                title: t("landing.feat3Title") || "Partilha Familiar",
+                desc:
+                  t("landing.feat3Desc") ||
+                  "Convide co-tutores para gerir as tarefas de saúde e acompanhar o estado do animal em tempo real.",
+              },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <SpotlightCard
+                key={title}
+                className="flex flex-col text-left p-6 space-y-3"
+              >
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    color === "rose" && "bg-rose-500/10 text-rose-400",
+                    color === "amber" && "bg-amber-500/10 text-amber-400",
+                    color === "cyan" && "bg-cyan-500/10 text-cyan-400"
+                  )}
+                >
+                  <Icon size={20} aria-hidden="true" />
+                </div>
+                <h3 className="font-bold text-base">{title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
+              </SpotlightCard>
+            ))}
+          </div>
+        </section>
+
+        {/* ── SCIENTIFIC HONESTY ── */}
+        <section className="w-full max-w-3xl mx-auto px-5 py-10">
+          <div className="p-5 rounded-2xl bg-amber-500/8 border border-amber-500/20">
+            <div className="flex items-start gap-3">
+              <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">⚠️</span>
+              <div className="space-y-1.5">
+                <h3 className="font-bold text-sm text-amber-400">
+                  Honestidade Científica &amp; Limitações
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  O <strong className="text-slate-300">AnimalMind</strong> utiliza o modelo{" "}
+                  <strong className="text-slate-300">YAMNet</strong> (classificador genérico
+                  de eventos de áudio) para estimar estados emocionais como aproximações
+                  comportamentais. Os resultados devem ser interpretados como{" "}
+                  <strong className="text-slate-300">sinais ou indícios</strong> — nunca
+                  como diagnóstico. Esta aplicação{" "}
+                  <strong className="text-slate-300">
+                    não substitui avaliação veterinária profissional
+                  </strong>
+                  .
+                </p>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* ── FAQ ── */}
+        <section className="w-full max-w-4xl mx-auto px-5 py-16 space-y-10 border-t border-slate-800/50">
+          <div className="text-center space-y-2">
+            <h2
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              Perguntas Frequentes
+            </h2>
+            <p className="text-sm text-slate-400 max-w-md mx-auto">
+              Esclareça as suas dúvidas sobre o funcionamento e privacidade do AnimalMind.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+            {[
+              {
+                q: "Como funciona a classificação acústica?",
+                a: "Utilizamos redes neuronais para analisar frequências, tom e intensidade das vocalizações, estimando o estado emocional do animal de forma científica.",
+              },
+              {
+                q: "A classificação é 100% precisa?",
+                a: "Não. A plataforma fornece estimativas indicativas com base em padrões sonoros. Não substitui um diagnóstico efetuado por médico veterinário.",
+              },
+              {
+                q: "Como é protegida a minha privacidade?",
+                a: "Os ficheiros de áudio são guardados em armazenamento totalmente privado no Supabase e acedidos via URLs assinadas e temporárias. Pode apagar os registos a qualquer momento.",
+              },
+              {
+                q: "O que é a baseline do animal?",
+                a: "A baseline é o perfil de comportamento habitual do seu animal. A nossa IA calcula as reações normais para detetar mudanças que possam indicar desconforto ou stresse.",
+              },
+            ].map(({ q, a }) => (
+              <div
+                key={q}
+                className="space-y-2 bg-slate-900/30 border border-slate-800/80 rounded-xl p-5 hover:border-slate-700/80 transition-colors"
+              >
+                <h3 className="font-bold text-sm text-slate-200">{q}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FINAL CTA ── */}
+        {!isAuthenticated && (
+          <section className="w-full max-w-2xl mx-auto px-5 py-16 text-center space-y-6">
+            <h2
+              className="text-2xl sm:text-3xl font-bold"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              Pronto para conhecer melhor o seu animal?
+            </h2>
+            <p className="text-sm text-slate-400">
+              Gratuito, sem cartão de crédito. Instale como app no seu telemóvel.
+            </p>
+            <GlowingButton
+              onClick={() => setLocation("/register")}
+              className="px-10 py-3.5 text-sm font-semibold rounded-xl mx-auto"
+            >
+              <span className="flex items-center gap-2">
+                Começar agora <ArrowRight size={15} aria-hidden="true" />
+              </span>
+            </GlowingButton>
+          </section>
+        )}
       </main>
 
-      {/* Footer */}
-      <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+      {/* ── FOOTER ── */}
+      <footer className="w-full border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             <p>© {new Date().getFullYear()} AnimalMind. Todos os direitos reservados.</p>
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => setLocation("/privacidade")}
-                className="hover:text-indigo-450 transition-colors font-medium text-slate-400 hover:text-indigo-400"
+                className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
               >
                 Política de Privacidade
               </button>
-              <span>·</span>
-              <a 
-                href="mailto:suporte@animalmind.local"
-                className="hover:text-indigo-450 transition-colors font-medium text-slate-400 hover:text-indigo-400"
+              <span aria-hidden="true">·</span>
+              <a
+                href="mailto:suporte@animalmind.app"
+                className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
               >
-                Contacto de Suporte
+                Suporte
               </a>
             </div>
           </div>
-          
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLanguage("pt")}
-              className={cn("hover:text-slate-300 transition-colors", language === "pt" && "text-indigo-400 font-semibold")}
+              aria-pressed={language === "pt"}
+              className={cn(
+                "hover:text-slate-300 transition-colors focus-visible:outline-none focus-visible:underline",
+                language === "pt" && "text-indigo-400 font-semibold"
+              )}
             >
               Português
             </button>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <button
               onClick={() => setLanguage("en")}
-              className={cn("hover:text-slate-300 transition-colors", language === "en" && "text-indigo-400 font-semibold")}
+              aria-pressed={language === "en"}
+              className={cn(
+                "hover:text-slate-300 transition-colors focus-visible:outline-none focus-visible:underline",
+                language === "en" && "text-indigo-400 font-semibold"
+              )}
             >
               English
             </button>

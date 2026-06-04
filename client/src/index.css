@@ -144,6 +144,33 @@
   animation: successPulse 0.4s ease-in-out;
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up,
+  .animate-fade-in,
+  .animate-shake,
+  .animate-success-pulse,
+  .page-enter {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* ── Mobile Layout & Touch Utilities ────────────────────────────────────── */
 .touch-target {
   min-height: 48px;

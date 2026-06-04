@@ -1949,6 +1949,56 @@ export async function getFamilyMembersForUser(userId: number): Promise<FamilyMem
   return members;
 }
 
+export async function leaveFamilyForUser(
+  userId: number,
+  familyId: number
+): Promise<void> {
+  const supabase = getSupabase();
+
+  // Verify user is actually a member of this family
+  const { data: membership, error: memberError } = await supabase
+    .from("family_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("family_id", familyId)
+    .single();
+
+  if (memberError || !membership) {
+    throw new Error("Não és membro desta família.");
+  }
+
+  // If the user is the admin, check if there are other members
+  if (membership.role === "admin") {
+    const { data: allMembers, error: countError } = await supabase
+      .from("family_members")
+      .select("user_id")
+      .eq("family_id", familyId);
+
+    if (countError) throw countError;
+
+    if (allMembers && allMembers.length > 1) {
+      throw new Error(
+        "És o proprietário desta família. Transfere a propriedade para outro membro antes de sair, ou remove os restantes membros primeiro."
+      );
+    }
+
+    // Only member — delete the whole family
+    await supabase.from("family_members").delete().eq("family_id", familyId);
+    await supabase.from("families").delete().eq("id", familyId);
+    return;
+  }
+
+  // Regular member — just remove themselves
+  const { error } = await supabase
+    .from("family_members")
+    .delete()
+    .eq("user_id", userId)
+    .eq("family_id", familyId);
+
+  if (error) throw error;
+}
+
+
 export async function createFamilyInviteForUser(
   userId: number,
   familyId?: number
