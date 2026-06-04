@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
 import type { InsertUser, User } from "../shared/dbTypes";
+import { STATE_LABELS, type EmotionalState } from "../shared/types";
 import fs from "fs";
 import path from "path";
 
@@ -1286,40 +1287,32 @@ export async function savePostureForEvent(eventId: number, posture: string): Pro
   return posture;
 }
 
-// Vet Shares
-export async function shareReportWithVet(
-  animalId: number,
-  data: { name: string; email: string; note: string; ownerId?: number }
-): Promise<boolean> {
-  if (!data.ownerId) {
-    throw new Error("Dono do animal é obrigatório para partilha.");
-  }
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("vet_shares")
-    .upsert(
-      [
-        {
-          animal_id: animalId,
-          owner_id: data.ownerId,
-          vet_email: data.email.toLowerCase(),
-          vet_name: data.name,
-          owner_note: data.note,
-          shared_at: new Date().toISOString(),
-        },
-      ],
-      { onConflict: "animal_id,vet_email" }
-    );
+// ─── Veterinary mode persistence ─────────────────────────────────────────────
 
-  if (error) throw error;
-  return true;
-}
+export type VetCaseStatus = "stable" | "monitor" | "requires_attention";
+export type VetAlertSeverity = "info" | "warning" | "critical";
+export type VetAlertType =
+  | "repeated_distress"
+  | "low_confidence"
+  | "negative_trend"
+  | "no_recent_analysis";
 
 export interface VetAnimalFilters {
   species?: string;
   state?: string;
   dateFrom?: string;
   dateTo?: string;
+}
+
+export interface VetClinicalAlert {
+  id: string;
+  animalId: number;
+  type: VetAlertType;
+  severity: VetAlertSeverity;
+  title: string;
+  description: string;
+  detectedAt: string;
+  source: "computed" | "stored";
 }
 
 export interface VetSharedAnimal {
@@ -1336,25 +1329,61 @@ export interface VetSharedAnimal {
   lastState: string | null;
   lastConfidence: number | null;
   lastEventAt: string | null;
+  caseStatus: VetCaseStatus;
+  permission: "read" | "write";
+  accessStatus: "pending" | "active" | "revoked";
+  alertCount: number;
+  alertLevel: VetAlertSeverity | "none";
+  overallStatus: "estável" | "monitorizar" | "requer atenção";
+  recentEventsCount: number;
+  alerts: VetClinicalAlert[];
 }
 
-function getVetClinicalNotesKey(vetUserId: number, animalId: number) {
-  return `${vetUserId}:${animalId}`;
+export interface VetNote {
+  id: number;
+  animalId: number;
+  vetUserId: number;
+  note: string;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
-async function getUserEmail(userId: number): Promise<string | null> {
-  try {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from("users")
-      .select("email")
-      .eq("id", userId)
-      .single();
-    if (error) return null;
-    return data?.email ?? null;
-  } catch {
-    return null;
-  }
+interface VetAccessRow {
+  source: "vet_pet_access" | "vet_shares";
+  animalId: number;
+  ownerId: number | null;
+  vetUserId: number | null;
+  vetEmail: string;
+  vetName: string | null;
+  vetCode: string | null;
+  ownerNote: string;
+  sharedAt: string;
+  caseStatus: VetCaseStatus;
+  permission: "read" | "write";
+  status: "pending" | "active" | "revoked";
+  revokedAt: string | null;
+}
+
+function isMissingRelationError(error: any) {
+  const message = String(error?.message ?? "");
+  return (
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    /relation .* does not exist|could not find the table|schema cache/i.test(message)
+  );
+}
+
+function normalizeCaseStatus(status: unknown): VetCaseStatus {
+  return status === "stable" || status === "requires_attention" ? status : "monitor";
+}
+
+function normalizePermission(permission: unknown): "read" | "write" {
+  return permission === "write" ? "write" : "read";
+}
+
+function normalizeAccessStatus(status: unknown): "pending" | "active" | "revoked" {
+  if (status === "pending" || status === "revoked") return status;
+  return "active";
 }
 
 async function getAnimalOwnerSummary(ownerId: number | null) {
@@ -1373,6 +1402,80 @@ async function getAnimalOwnerSummary(ownerId: number | null) {
   } catch {
     return { ownerName: "Tutor", ownerEmail: null };
   }
+}
+
+async function getUserSummaryByEmail(email: string): Promise<{ id: number; name: string | null; email: string | null } | null> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, name, email")
+      .eq("email", email.toLowerCase())
+      .single();
+    if (error) return null;
+    return data ? { id: Number(data.id), name: data.name ?? null, email: data.email ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveVetTarget(data: {
+  email?: string | null;
+  name?: string | null;
+  vetCode?: string | null;
+}) {
+  const supabase = getSupabase();
+  const normalizedEmail = data.email?.trim().toLowerCase() || null;
+  let target: { id: number | null; email: string | null; name: string | null; vetCode: string | null } = {
+    id: null,
+    email: normalizedEmail,
+    name: data.name?.trim() || null,
+    vetCode: data.vetCode?.trim() || null,
+  };
+
+  if (target.vetCode) {
+    try {
+      const { data: profile, error } = await supabase
+        .from("vet_profiles")
+        .select("user_id, display_name, vet_code")
+        .eq("vet_code", target.vetCode)
+        .single();
+      if (error && !isMissingRelationError(error)) throw error;
+      if (profile?.user_id) {
+        const { data: user } = await supabase
+          .from("users")
+          .select("id, name, email")
+          .eq("id", profile.user_id)
+          .single();
+        target = {
+          id: Number(profile.user_id),
+          email: user?.email?.toLowerCase() ?? target.email,
+          name: target.name ?? profile.display_name ?? user?.name ?? null,
+          vetCode: profile.vet_code ?? target.vetCode,
+        };
+      }
+    } catch (error) {
+      if (!isMissingRelationError(error)) throw error;
+    }
+  }
+
+  if (!target.id && target.email) {
+    const user = await getUserSummaryByEmail(target.email);
+    if (user) {
+      target = {
+        ...target,
+        id: user.id,
+        email: user.email?.toLowerCase() ?? target.email,
+        name: target.name ?? user.name,
+      };
+    }
+  }
+
+  if (!target.email) {
+    throw new Error("Email ou código de veterinário obrigatório para partilhar o animal.");
+  }
+
+  return target;
 }
 
 async function getLatestEventSummaryForAnimal(animalId: number) {
@@ -1395,6 +1498,183 @@ async function getLatestEventSummaryForAnimal(animalId: number) {
   }
 }
 
+async function getVetEventsForAnimal(animalId: number, days = 30, limit?: number) {
+  const supabase = getSupabase();
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  let query = supabase
+    .from("classification_events")
+    .select("*")
+    .eq("animal_id", animalId)
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: false });
+
+  if (limit) query = query.limit(limit);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+function daysSince(value: string | null) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  return Math.floor((Date.now() - new Date(value).getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function computeClinicalAlerts(
+  animalId: number,
+  events: any[],
+  lastEventAt: string | null
+): VetClinicalAlert[] {
+  const now = new Date().toISOString();
+  const recent = [...events].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  const lastSevenDays = recent.filter((event) => daysSince(event.created_at) <= 7);
+  const stressStates = new Set(["distress", "alert"]);
+  const negativeStates = new Set(["distress", "alert", "hunger"]);
+  const alerts: VetClinicalAlert[] = [];
+
+  const repeatedStress = lastSevenDays.filter((event) => stressStates.has(event.state)).length;
+  if (repeatedStress >= 3) {
+    alerts.push({
+      id: `computed-${animalId}-repeated-distress`,
+      animalId,
+      type: "repeated_distress",
+      severity: repeatedStress >= 5 ? "critical" : "warning",
+      title: "Estados de stress repetidos",
+      description: `${repeatedStress} classificações recentes indicam angústia ou alerta. Recomenda-se avaliação do contexto e monitorização próxima.`,
+      detectedAt: now,
+      source: "computed",
+    });
+  }
+
+  const lowConfidenceCount = recent.slice(0, 10).filter((event) => Number(event.confidence) < 0.65).length;
+  if (lowConfidenceCount >= 3) {
+    alerts.push({
+      id: `computed-${animalId}-low-confidence`,
+      animalId,
+      type: "low_confidence",
+      severity: "info",
+      title: "Confiança baixa recorrente",
+      description: "Várias análises recentes tiveram confiança abaixo de 65%. Pode ser necessário rever qualidade de gravação ou contexto ambiental.",
+      detectedAt: now,
+      source: "computed",
+    });
+  }
+
+  const lastFiveNegative = recent.slice(0, 5).filter((event) => negativeStates.has(event.state)).length;
+  const previousFiveNegative = recent.slice(5, 10).filter((event) => negativeStates.has(event.state)).length;
+  if (lastFiveNegative >= 3 && lastFiveNegative - previousFiveNegative >= 2) {
+    alerts.push({
+      id: `computed-${animalId}-negative-trend`,
+      animalId,
+      type: "negative_trend",
+      severity: "warning",
+      title: "Tendência negativa recente",
+      description: "As últimas classificações mostram mais estados de alerta, fome ou angústia do que o período anterior.",
+      detectedAt: now,
+      source: "computed",
+    });
+  }
+
+  const inactiveDays = daysSince(lastEventAt);
+  if (inactiveDays >= 14) {
+    alerts.push({
+      id: `computed-${animalId}-no-recent-analysis`,
+      animalId,
+      type: "no_recent_analysis",
+      severity: inactiveDays >= 30 ? "warning" : "info",
+      title: "Sem análises recentes",
+      description: `Não há novas análises há ${Number.isFinite(inactiveDays) ? inactiveDays : "vários"} dias. Confirme se o acompanhamento continua ativo.`,
+      detectedAt: now,
+      source: "computed",
+    });
+  }
+
+  return alerts;
+}
+
+function getAlertLevel(alerts: VetClinicalAlert[]): VetAlertSeverity | "none" {
+  if (alerts.some((alert) => alert.severity === "critical")) return "critical";
+  if (alerts.some((alert) => alert.severity === "warning")) return "warning";
+  if (alerts.length > 0) return "info";
+  return "none";
+}
+
+function getOverallStatus(caseStatus: VetCaseStatus, alerts: VetClinicalAlert[]) {
+  if (caseStatus === "requires_attention" || alerts.some((alert) => alert.severity === "critical")) {
+    return "requer atenção" as const;
+  }
+  if (caseStatus === "monitor" || alerts.some((alert) => alert.severity === "warning")) {
+    return "monitorizar" as const;
+  }
+  return "estável" as const;
+}
+
+function mapVetAccessRow(row: any, source: VetAccessRow["source"]): VetAccessRow {
+  return {
+    source,
+    animalId: Number(row.animal_id),
+    ownerId: row.owner_id ? Number(row.owner_id) : null,
+    vetUserId: row.vet_user_id ? Number(row.vet_user_id) : null,
+    vetEmail: String(row.vet_email ?? "").toLowerCase(),
+    vetName: row.vet_name ?? null,
+    vetCode: row.vet_code ?? null,
+    ownerNote: row.owner_note ?? "",
+    sharedAt: row.shared_at ?? row.created_at ?? new Date().toISOString(),
+    caseStatus: normalizeCaseStatus(row.case_status),
+    permission: normalizePermission(row.permission),
+    status: normalizeAccessStatus(row.status),
+    revokedAt: row.revoked_at ?? null,
+  };
+}
+
+async function getVetAccessRowsFromTable(
+  table: "vet_pet_access" | "vet_shares",
+  vetUserId: number,
+  normalizedEmail: string | null
+): Promise<VetAccessRow[]> {
+  const supabase = getSupabase();
+  let query = supabase
+    .from(table)
+    .select("*")
+    .order("shared_at", { ascending: false });
+
+  if (normalizedEmail) {
+    query = query.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`);
+  } else {
+    query = query.eq("vet_user_id", vetUserId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    if (isMissingRelationError(error)) return [];
+    throw error;
+  }
+
+  return (data || [])
+    .map((row: any) => mapVetAccessRow(row, table))
+    .filter((row: VetAccessRow) => row.status !== "revoked" && !row.revokedAt);
+}
+
+async function getVetAccessRows(vetUserId: number, vetEmail: string | null) {
+  const normalizedEmail = vetEmail?.toLowerCase() ?? null;
+  const rows = [
+    ...(await getVetAccessRowsFromTable("vet_pet_access", vetUserId, normalizedEmail)),
+    ...(await getVetAccessRowsFromTable("vet_shares", vetUserId, normalizedEmail)),
+  ];
+  const unique = new Map<string, VetAccessRow>();
+  for (const row of rows) {
+    const key = `${row.animalId}:${row.vetEmail}`;
+    if (!unique.has(key) || row.source === "vet_pet_access") {
+      unique.set(key, row);
+    }
+  }
+  return Array.from(unique.values());
+}
+
 function filterVetAnimals(animals: VetSharedAnimal[], filters: VetAnimalFilters = {}) {
   return animals.filter((animal) => {
     if (filters.species && filters.species !== "all" && animal.species !== filters.species) {
@@ -1413,55 +1693,159 @@ function filterVetAnimals(animals: VetSharedAnimal[], filters: VetAnimalFilters 
   });
 }
 
+export async function linkPetWithVet(
+  ownerId: number,
+  animalId: number,
+  data: { name?: string | null; email?: string | null; vetCode?: string | null; note?: string | null }
+) {
+  const supabase = getSupabase();
+  const target = await resolveVetTarget({
+    email: data.email,
+    name: data.name,
+    vetCode: data.vetCode,
+  });
+  const now = new Date().toISOString();
+  const accessPayload = {
+    animal_id: animalId,
+    owner_id: ownerId,
+    vet_user_id: target.id,
+    vet_email: target.email,
+    vet_name: target.name,
+    vet_code: target.vetCode,
+    owner_note: data.note ?? "",
+    permission: "read",
+    status: "active",
+    updated_at: now,
+    shared_at: now,
+  };
+
+  const { error: accessError } = await supabase
+    .from("vet_pet_access")
+    .upsert([accessPayload], { onConflict: "animal_id,vet_email" });
+  if (accessError && !isMissingRelationError(accessError)) throw accessError;
+
+  const { error: legacyError } = await supabase
+    .from("vet_shares")
+    .upsert(
+      [
+        {
+          animal_id: animalId,
+          owner_id: ownerId,
+          vet_user_id: target.id,
+          vet_email: target.email,
+          vet_name: target.name,
+          owner_note: data.note ?? "",
+          shared_at: now,
+        },
+      ],
+      { onConflict: "animal_id,vet_email" }
+    );
+  if (legacyError && !isMissingRelationError(legacyError)) throw legacyError;
+
+  return {
+    success: true,
+    vetEmail: target.email,
+    vetUserId: target.id,
+    vetCode: target.vetCode,
+  };
+}
+
+export async function shareReportWithVet(
+  animalId: number,
+  data: { name: string; email: string; note: string; ownerId?: number }
+): Promise<boolean> {
+  if (!data.ownerId) {
+    throw new Error("Dono do animal é obrigatório para partilha.");
+  }
+  await linkPetWithVet(data.ownerId, animalId, {
+    name: data.name,
+    email: data.email,
+    note: data.note,
+  });
+  return true;
+}
+
 export async function getVetSharedAnimals(
   vetUserId: number,
   vetEmail: string | null,
   filters: VetAnimalFilters = {}
 ): Promise<VetSharedAnimal[]> {
-  const normalizedEmail = vetEmail?.toLowerCase() ?? null;
   const supabase = getSupabase();
-
-  let query = supabase
-    .from("vet_shares")
-    .select("*")
-    .order("shared_at", { ascending: false });
-
-  if (normalizedEmail) {
-    query = query.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`);
-  } else {
-    query = query.eq("vet_user_id", vetUserId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
+  const shares = await getVetAccessRows(vetUserId, vetEmail);
   const result: VetSharedAnimal[] = [];
-  for (const share of data || []) {
+
+  for (const share of shares) {
     const { data: animal } = await supabase
       .from("animals")
       .select("*")
-      .eq("id", share.animal_id)
+      .eq("id", share.animalId)
       .single();
     if (!animal) continue;
 
-    const owner = await getAnimalOwnerSummary(Number(share.owner_id));
-    const latest = await getLatestEventSummaryForAnimal(Number(share.animal_id));
+    const owner = await getAnimalOwnerSummary(share.ownerId);
+    const latest = await getLatestEventSummaryForAnimal(share.animalId);
+    const recentEvents = await getVetEventsForAnimal(share.animalId, 30, 20).catch(() => []);
+    const alerts = computeClinicalAlerts(share.animalId, recentEvents, latest.lastEventAt);
+    const alertLevel = getAlertLevel(alerts);
+
     result.push({
       id: Number(animal.id),
       name: animal.name,
       species: animal.species,
       breed: animal.breed ?? null,
       age: animal.age ?? null,
-      ownerId: Number(share.owner_id),
+      ownerId: share.ownerId,
       ownerName: owner.ownerName,
       ownerEmail: owner.ownerEmail,
-      sharedAt: share.shared_at,
-      ownerNote: share.owner_note ?? "",
+      sharedAt: share.sharedAt,
+      ownerNote: share.ownerNote,
+      caseStatus: share.caseStatus,
+      permission: share.permission,
+      accessStatus: share.status,
+      alertCount: alerts.length,
+      alertLevel,
+      overallStatus: getOverallStatus(share.caseStatus, alerts),
+      recentEventsCount: recentEvents.length,
+      alerts,
       ...latest,
     });
   }
 
   return filterVetAnimals(result, filters);
+}
+
+export async function getVetDashboardData(vetUserId: number, vetEmail: string | null) {
+  const animals = await getVetSharedAnimals(vetUserId, vetEmail);
+  const alerts = animals.flatMap((animal) => animal.alerts);
+  const priorityAlerts = alerts
+    .filter((alert) => alert.severity !== "info")
+    .sort((a, b) => {
+      const severityRank: Record<VetAlertSeverity, number> = { critical: 0, warning: 1, info: 2 };
+      return severityRank[a.severity] - severityRank[b.severity];
+    });
+
+  return {
+    summary: {
+      animalsFollowed: animals.length,
+      reportsReceived: animals.reduce((total, animal) => total + animal.recentEventsCount, 0),
+      recentAlerts: alerts.length,
+      casesRequiringAttention: animals.filter((animal) => animal.overallStatus === "requer atenção").length,
+    },
+    animals: animals.slice(0, 6),
+    recentActivity: animals
+      .filter((animal) => animal.lastEventAt)
+      .sort((a, b) => new Date(b.lastEventAt || 0).getTime() - new Date(a.lastEventAt || 0).getTime())
+      .slice(0, 6)
+      .map((animal) => ({
+        animalId: animal.id,
+        animalName: animal.name,
+        ownerName: animal.ownerName,
+        state: animal.lastState,
+        confidence: animal.lastConfidence,
+        createdAt: animal.lastEventAt,
+      })),
+    priorityAlerts: priorityAlerts.slice(0, 6),
+  };
 }
 
 export async function getVetReportData(
@@ -1476,20 +1860,9 @@ export async function getVetReportData(
     throw new Error("Animal não partilhado com este veterinário");
   }
 
-  const since = new Date();
-  since.setDate(since.getDate() - days);
-  const supabase = getSupabase();
-
   let events: any[] = [];
   try {
-    const { data, error } = await supabase
-      .from("classification_events")
-      .select("*")
-      .eq("animal_id", animalId)
-      .gte("created_at", since.toISOString())
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    events = data || [];
+    events = await getVetEventsForAnimal(animalId, days);
   } catch (error) {
     console.error("[Vet] Could not load report events:", error);
   }
@@ -1505,24 +1878,123 @@ export async function getVetReportData(
       confidence: Number(event.confidence),
       state: event.state,
     }));
-
-  return {
-    animal,
-    periodDays: days,
-    events: events.map((event) => ({
+  const mappedEvents = await Promise.all(
+    events.map(async (event) => ({
       id: Number(event.id),
       createdAt: event.created_at,
       state: event.state,
+      stateLabel: STATE_LABELS[event.state as EmotionalState] ?? event.state,
       confidence: Number(event.confidence),
       emoji: event.emoji ?? "",
       modelUsed: event.model_used ?? "",
       durationSeconds: 3,
       notes: event.notes || "",
-    })),
+      audioUrl: await getSignedAudioUrl(event.audio_url),
+    }))
+  );
+
+  return {
+    animal,
+    periodDays: days,
+    events: mappedEvents,
     trend,
     clinicalNotes,
     generatedAt: new Date().toISOString(),
   };
+}
+
+function mapVetNote(row: any, vetUserId: number, animalId: number, fallbackNote = ""): VetNote {
+  return {
+    id: row?.id ? Number(row.id) : Date.now(),
+    animalId: row?.animal_id ? Number(row.animal_id) : animalId,
+    vetUserId: row?.vet_user_id ? Number(row.vet_user_id) : vetUserId,
+    note: row?.note ?? fallbackNote,
+    createdAt: row?.created_at ?? new Date().toISOString(),
+    updatedAt: row?.updated_at ?? null,
+  };
+}
+
+export async function getVetNotes(vetUserId: number, animalId: number): Promise<VetNote[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("vet_notes")
+    .select("*")
+    .eq("vet_user_id", vetUserId)
+    .eq("animal_id", animalId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    if (isMissingRelationError(error)) return [];
+    throw error;
+  }
+
+  return (data || []).map((row: any) => mapVetNote(row, vetUserId, animalId));
+}
+
+export async function addVetNote(vetUserId: number, animalId: number, note: string): Promise<VetNote> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("vet_notes")
+    .insert([
+      {
+        vet_user_id: vetUserId,
+        animal_id: animalId,
+        note,
+        visibility: "internal",
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    if (isMissingRelationError(error)) {
+      return mapVetNote(null, vetUserId, animalId, note);
+    }
+    throw error;
+  }
+
+  return mapVetNote(data, vetUserId, animalId, note);
+}
+
+export async function setVetCaseStatus(
+  vetUserId: number,
+  vetEmail: string | null,
+  animalId: number,
+  status: VetCaseStatus
+) {
+  const animal = (await getVetSharedAnimals(vetUserId, vetEmail)).find((item) => item.id === animalId);
+  if (!animal) {
+    throw new Error("Animal não partilhado com este veterinário");
+  }
+
+  const supabase = getSupabase();
+  const normalizedEmail = vetEmail?.toLowerCase() ?? null;
+  const updates = {
+    case_status: status,
+    updated_at: new Date().toISOString(),
+  };
+
+  let accessQuery = supabase
+    .from("vet_pet_access")
+    .update(updates)
+    .eq("animal_id", animalId);
+  accessQuery = normalizedEmail
+    ? accessQuery.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`)
+    : accessQuery.eq("vet_user_id", vetUserId);
+  const { error: accessError } = await accessQuery;
+  if (accessError && !isMissingRelationError(accessError)) throw accessError;
+
+  let legacyQuery = supabase
+    .from("vet_shares")
+    .update(updates)
+    .eq("animal_id", animalId);
+  legacyQuery = normalizedEmail
+    ? legacyQuery.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`)
+    : legacyQuery.eq("vet_user_id", vetUserId);
+  const { error: legacyError } = await legacyQuery;
+  if (legacyError && !isMissingRelationError(legacyError)) throw legacyError;
+
+  return { success: true, caseStatus: status };
 }
 
 export async function getVetClinicalNotes(vetUserId: number, animalId: number): Promise<string> {
@@ -1533,7 +2005,10 @@ export async function getVetClinicalNotes(vetUserId: number, animalId: number): 
     .eq("vet_user_id", vetUserId)
     .eq("animal_id", animalId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) {
+    if (isMissingRelationError(error)) return "";
+    throw error;
+  }
   return data?.notes ?? "";
 }
 
@@ -1556,8 +2031,53 @@ export async function saveVetClinicalNotes(
       ],
       { onConflict: "animal_id,vet_user_id" }
     );
-  if (error) throw error;
+  if (error && !isMissingRelationError(error)) throw error;
   return notes;
+}
+
+export async function getVetPetDetail(
+  vetUserId: number,
+  vetEmail: string | null,
+  animalId: number,
+  days = 30
+) {
+  const report = await getVetReportData(vetUserId, vetEmail, animalId, days);
+  const notes = await getVetNotes(vetUserId, animalId);
+  const alerts = computeClinicalAlerts(
+    animalId,
+    report.events.map((event) => ({
+      state: event.state,
+      confidence: event.confidence,
+      created_at: event.createdAt,
+    })),
+    report.animal.lastEventAt
+  );
+
+  return {
+    animal: report.animal,
+    owner: {
+      id: report.animal.ownerId,
+      name: report.animal.ownerName,
+      email: report.animal.ownerEmail,
+    },
+    recentEvents: report.events.slice(0, 10),
+    recordings: report.events.filter((event) => event.audioUrl).slice(0, 8),
+    reports: [
+      {
+        id: `behavior-${days}d`,
+        title: `Relatório comportamental ${days} dias`,
+        generatedAt: report.generatedAt,
+        eventCount: report.events.length,
+        periodDays: days,
+      },
+    ],
+    trend: report.trend,
+    clinicalNotes: report.clinicalNotes,
+    notes,
+    alerts,
+    caseStatus: report.animal.caseStatus,
+    generatedAt: report.generatedAt,
+  };
 }
 
 // ─── Family sharing persistence ──────────────────────────────────────────────

@@ -2,11 +2,17 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
+  addVetNote,
   getDemoUserId,
+  getVetDashboardData,
+  getVetPetDetail,
   getVetReportData,
   getVetSharedAnimals,
+  linkPetWithVet,
   saveVetClinicalNotes,
+  setVetCaseStatus,
   shareReportWithVet,
+  type VetCaseStatus,
   verifyAnimalOwner,
 } from "../db";
 
@@ -18,26 +24,113 @@ async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> 
 }
 
 function requireVetRole(ctxUser: { role?: string | null } | null) {
-  if (!ctxUser || !["vet", "admin"].includes(String(ctxUser.role))) {
+  if (
+    !ctxUser ||
+    !["vet", "veterinarian", "clinic_admin", "admin"].includes(String(ctxUser.role))
+  ) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Acesso restrito a utilizadores com role vet.",
+      message: "Acesso restrito a utilizadores com role veterinária.",
     });
   }
 }
 
+const animalFiltersSchema = z
+  .object({
+    species: z.string().optional(),
+    state: z.string().optional(),
+    dateFrom: z.string().optional(),
+    dateTo: z.string().optional(),
+  })
+  .optional();
+
+const caseStatusSchema = z.enum(["stable", "monitor", "requires_attention"]);
+
 export const vetRouter = router({
-  getAnimals: protectedProcedure
+  getDashboard: protectedProcedure.query(async ({ ctx }) => {
+    requireVetRole(ctx.user);
+    const vetUserId = await effectiveUserId(ctx.user);
+    return getVetDashboardData(vetUserId, ctx.user?.email ?? null);
+  }),
+
+  listSharedPets: protectedProcedure.input(animalFiltersSchema).query(async ({ ctx, input }) => {
+    requireVetRole(ctx.user);
+    const vetUserId = await effectiveUserId(ctx.user);
+    return getVetSharedAnimals(vetUserId, ctx.user?.email ?? null, input ?? {});
+  }),
+
+  getPetDetail: protectedProcedure
+    .input(
+      z.object({
+        animalId: z.number().int().positive(),
+        days: z.number().int().min(7).max(90).default(30),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      requireVetRole(ctx.user);
+      const vetUserId = await effectiveUserId(ctx.user);
+      return getVetPetDetail(vetUserId, ctx.user?.email ?? null, input.animalId, input.days);
+    }),
+
+  addNote: protectedProcedure
+    .input(
+      z.object({
+        animalId: z.number().int().positive(),
+        note: z.string().trim().min(2).max(5000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireVetRole(ctx.user);
+      const vetUserId = await effectiveUserId(ctx.user);
+      return addVetNote(vetUserId, input.animalId, input.note);
+    }),
+
+  setCaseStatus: protectedProcedure
+    .input(
+      z.object({
+        animalId: z.number().int().positive(),
+        status: caseStatusSchema,
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireVetRole(ctx.user);
+      const vetUserId = await effectiveUserId(ctx.user);
+      return setVetCaseStatus(
+        vetUserId,
+        ctx.user?.email ?? null,
+        input.animalId,
+        input.status as VetCaseStatus
+      );
+    }),
+
+  linkPet: protectedProcedure
     .input(
       z
         .object({
-          species: z.string().optional(),
-          state: z.string().optional(),
-          dateFrom: z.string().optional(),
-          dateTo: z.string().optional(),
+          animalId: z.number().int().positive(),
+          vetEmail: z.string().trim().email().optional(),
+          vetCode: z.string().trim().min(3).max(32).optional(),
+          vetName: z.string().trim().min(1).max(160).optional(),
+          note: z.string().trim().max(1000).optional(),
         })
-        .optional()
+        .refine((value) => value.vetEmail || value.vetCode, {
+          message: "Indique o email ou código do veterinário.",
+          path: ["vetEmail"],
+        })
     )
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await verifyAnimalOwner(input.animalId, userId);
+      return linkPetWithVet(userId, input.animalId, {
+        email: input.vetEmail,
+        vetCode: input.vetCode,
+        name: input.vetName,
+        note: input.note,
+      });
+    }),
+
+  getAnimals: protectedProcedure
+    .input(animalFiltersSchema)
     .query(async ({ ctx, input }) => {
       requireVetRole(ctx.user);
       const vetUserId = await effectiveUserId(ctx.user);

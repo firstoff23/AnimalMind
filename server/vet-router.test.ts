@@ -19,6 +19,7 @@ vi.mock("@supabase/supabase-js", () => {
             lastEqValue = val;
             return builder;
           }),
+          gte: vi.fn().mockReturnThis(),
           or: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
           single: vi.fn().mockImplementation(() => {
@@ -77,7 +78,7 @@ vi.mock("@supabase/supabase-js", () => {
 function createMockContext(
   id: number,
   email: string,
-  role: "owner" | "vet" | "admin" | "user"
+  role: "owner" | "vet" | "veterinarian" | "clinic_admin" | "admin" | "user"
 ): TrpcContext {
   return {
     user: {

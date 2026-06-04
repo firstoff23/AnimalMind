@@ -29,7 +29,8 @@ import AuthCallbackPage from "./pages/AuthCallbackPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import AnimalDetailPage from "./pages/AnimalDetailPage";
 import VetPage from "./pages/VetPage";
-import VetDashboard from "./pages/VetDashboard";
+import VetDashboardPage from "./pages/VetDashboardPage";
+import VetPetDetailPage from "./pages/VetPetDetailPage";
 import FamilyDashboard from "./pages/FamilyDashboard";
 import HealthPage from "./pages/HealthPage";
 import ComparisonPage from "./pages/ComparisonPage";
@@ -83,7 +84,8 @@ function Router() {
           <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />
           <Route path="/user-profile" component={(props) => <ProtectedRoute component={UserProfilePage} {...props} />} />
           <Route path="/veterinario" component={(props) => <ProtectedRoute component={VetPage} {...props} />} />
-          <Route path="/vet" component={(props) => <ProtectedRoute component={VetDashboard} {...props} />} />
+          <Route path="/vet/animal/:id" component={(props) => <ProtectedRoute component={VetPetDetailPage} {...props} />} />
+          <Route path="/vet" component={(props) => <ProtectedRoute component={VetDashboardPage} {...props} />} />
           <Route path="/family" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
           <Route path="/join/:code" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
           <Route path="/comparison" component={(props) => <ProtectedRoute component={ComparisonPage} {...props} />} />

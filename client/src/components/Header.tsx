@@ -22,6 +22,10 @@ export function Header() {
   const handleBack = () => {
     if (location.startsWith("/animal/")) {
       setLocation("/perfil");
+    } else if (location.startsWith("/vet/animal/")) {
+      setLocation("/vet");
+    } else if (location === "/vet") {
+      setLocation("/dashboard");
     } else if (location === "/comparison") {
       setLocation("/historico");
     } else if (location === "/family" || location.startsWith("/join/")) {
@@ -35,6 +39,8 @@ export function Header() {
   const getPageTitle = () => {
     if (isRootPage) return "AnimalMind";
     if (location.startsWith("/animal/")) return t("animalDetail.title") || "Detalhes";
+    if (location.startsWith("/vet/animal/")) return "Paciente";
+    if (location === "/vet") return "Modo Veterinário";
     if (location === "/comparison") return t("comparison.title") || "Comparação";
     if (location === "/health") return t("health.title") || "Saúde";
     if (location === "/family" || location.startsWith("/join/")) return t("dashboardPage.family") || "Modo Família";

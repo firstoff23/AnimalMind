@@ -27,6 +27,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -34,6 +35,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { getVeterinaryRoleLabel, isVeterinaryRole } from "@/lib/roles";
 
 type Sensitivity = "low" | "medium" | "high";
 
@@ -44,6 +46,8 @@ export default function SettingsPage() {
   const { signOut } = useAuth();
   const { data: dbUser, refetch: refetchUser } = trpc.auth.me.useQuery();
   const { data: settingsData, isLoading: settingsLoading } = trpc.settings.get.useQuery();
+  const canAccessVetMode = isVeterinaryRole(dbUser?.role);
+  const veterinaryRoleLabel = getVeterinaryRoleLabel(dbUser?.role);
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -250,6 +254,39 @@ export default function SettingsPage() {
                 {language === "pt" ? "Instalar Agora" : "Install Now"}
               </Button>
             </CardFooter>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Modo Veterinário */}
+      {canAccessVetMode && (
+        <motion.div variants={cardVariants}>
+          <Card className="overflow-hidden border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-card to-cyan-500/10">
+            <CardHeader className="pb-3 border-b border-emerald-500/10 bg-emerald-500/5">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <Stethoscope className="w-4 h-4 text-emerald-400" />
+                {language === "pt" ? "Modo Veterinário" : "Veterinary Mode"}
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                {language === "pt"
+                  ? `Entrada profissional ativa para ${veterinaryRoleLabel.toLowerCase()}.`
+                  : `Professional access enabled for ${veterinaryRoleLabel.toLowerCase()}.`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <p className="mb-3 text-[11px] leading-relaxed text-muted-foreground">
+                {language === "pt"
+                  ? "Acompanhe animais partilhados por tutores, consulte relatórios e registe notas clínicas internas."
+                  : "Track animals shared by guardians, review reports, and save internal clinical notes."}
+              </p>
+              <Button
+                onClick={() => setLocation("/vet")}
+                className="w-full gap-2 bg-emerald-500 text-white hover:bg-emerald-600 text-xs h-9 active-scale tap-highlight-none"
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                {language === "pt" ? "Abrir Modo Veterinário" : "Open Veterinary Mode"}
+              </Button>
+            </CardContent>
           </Card>
         </motion.div>
       )}

@@ -282,10 +282,10 @@ export default function VetPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            Modo Veterinário <Activity size={18} className="text-emerald-400" />
+            Partilha Veterinária <Activity size={18} className="text-emerald-400" />
           </h1>
           <p className="text-xs text-muted-foreground">
-            Dossiê clínico, estatísticas de comportamento e partilha profissional
+            Dossiê clínico, estatísticas de comportamento e partilha com o médico veterinário
           </p>
         </div>
       </div>
@@ -440,7 +440,7 @@ export default function VetPage() {
                 disabled={shareMutation.isPending}
                 className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 font-semibold text-white shadow-md rounded-xl text-xs h-10 mt-1"
               >
-                {shareMutation.isPending ? "A enviar..." : "Partilhar Relatório Ficheiro"}
+                {shareMutation.isPending ? "A enviar..." : "Partilhar relatório"}
               </Button>
             </form>
           </div>

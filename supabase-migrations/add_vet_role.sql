@@ -2,7 +2,7 @@
 -- Aplicar manualmente no Supabase SQL Editor.
 
 ALTER TABLE public.users
-  ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'owner';
+  ADD COLUMN IF NOT EXISTS role VARCHAR(30) NOT NULL DEFAULT 'owner';
 
 UPDATE public.users
 SET role = 'owner'
@@ -16,7 +16,7 @@ ALTER TABLE public.users
 
 ALTER TABLE public.users
   ADD CONSTRAINT users_role_check
-  CHECK (role IN ('owner', 'vet', 'admin'));
+  CHECK (role IN ('owner', 'user', 'vet', 'veterinarian', 'clinic_admin', 'admin'));
 
 CREATE SCHEMA IF NOT EXISTS private;
 
@@ -53,7 +53,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT COALESCE(private.current_app_user_role() IN ('vet', 'admin'), FALSE)
+  SELECT COALESCE(private.current_app_user_role() IN ('vet', 'veterinarian', 'clinic_admin', 'admin'), FALSE)
 $$;
 
 REVOKE ALL ON FUNCTION private.current_app_user_id() FROM PUBLIC;
