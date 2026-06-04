@@ -17,7 +17,7 @@ export function Header() {
   }
 
   // Check if current page is one of the main tabs
-  const isRootPage = ["/dashboard", "/gravar", "/historico", "/perfil", "/definicoes"].includes(location);
+  const isRootPage = ["/dashboard", "/gravar", "/historico", "/perfil", "/mindi", "/definicoes"].includes(location);
 
   const handleBack = () => {
     if (location.startsWith("/animal/")) {

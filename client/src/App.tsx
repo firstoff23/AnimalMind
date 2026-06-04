@@ -18,6 +18,7 @@ import RecordingPage from "./pages/RecordingPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryPage from "./pages/HistoryPage";
 import DashboardPage from "./pages/DashboardPage";
+import MindiPage from "./pages/MindiPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -78,6 +79,7 @@ function Router() {
           <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />
           <Route path="/historico" component={(props) => <ProtectedRoute component={HistoryPage} {...props} />} />
           <Route path="/dashboard" component={(props) => <ProtectedRoute component={DashboardPage} {...props} />} />
+          <Route path="/mindi" component={(props) => <ProtectedRoute component={MindiPage} {...props} />} />
           <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />
           <Route path="/user-profile" component={(props) => <ProtectedRoute component={UserProfilePage} {...props} />} />
           <Route path="/veterinario" component={(props) => <ProtectedRoute component={VetPage} {...props} />} />

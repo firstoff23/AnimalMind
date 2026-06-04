@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { streamText, type ModelMessage } from "ai";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { notifyN8N } from "./_core/notification";
@@ -66,7 +67,7 @@ import {
   deleteLicensing,
 } from "./db";
 import { checkRateLimit } from "./_core/rateLimiter";
-import type { EmotionalState, ModelUsed } from "../shared/types";
+import { STATE_LABELS, type EmotionalState, type ModelUsed } from "../shared/types";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -235,11 +236,168 @@ function mapDbEvent(e: any) {
   };
 }
 
+const MINDI_DEFAULT_MODEL = "google/gemini-3.5-flash";
+const MINDI_BASE_PROMPT =
+  "És a Mindi, assistente de bem-estar animal do AnimalMind. Tens acesso ao perfil do animal [nome, espécie, raça] e ao histórico de classificações recentes. Responde sempre em português de Portugal. Sê precisa, empática e recomenda sempre consulta veterinária para situações de saúde sérias. Nunca substituas um diagnóstico médico.";
+
+const SPECIES_LABELS: Record<string, string> = {
+  dog: "cão",
+  cat: "gato",
+};
+
+function formatAnimalContext(animal: any | null) {
+  if (!animal) {
+    return "Nenhum animal selecionado.";
+  }
+
+  return [
+    `Nome: ${animal.name ?? "Sem nome"}`,
+    `Espécie: ${SPECIES_LABELS[animal.species] ?? animal.species ?? "desconhecida"}`,
+    `Raça: ${animal.breed || "indefinida/desconhecida"}`,
+    `Idade: ${typeof animal.age === "number" ? `${animal.age} anos` : "desconhecida"}`,
+  ].join("\n");
+}
+
+function formatRecentClassifications(events: ReturnType<typeof mapDbEvent>[]) {
+  if (events.length === 0) {
+    return "Sem classificações recentes registadas para este animal.";
+  }
+
+  return events
+    .slice(0, 5)
+    .map((event, index) => {
+      const state = event.state as EmotionalState;
+      const stateLabel = STATE_LABELS[state] ?? event.state;
+      const confidence = Number.isFinite(event.confidence)
+        ? `${Math.round(event.confidence * 100)}%`
+        : "sem confiança";
+      return `${index + 1}. ${stateLabel} (${confidence}) em ${event.createdAt.toISOString()}`;
+    })
+    .join("\n");
+}
+
+function buildMindiSystemPrompt(
+  animal: any | null,
+  events: ReturnType<typeof mapDbEvent>[]
+) {
+  return `${MINDI_BASE_PROMPT}
+
+Contexto automático do AnimalMind:
+${formatAnimalContext(animal)}
+
+Últimas 5 classificações do histórico:
+${formatRecentClassifications(events)}
+
+Regras de resposta:
+- Mantém as respostas práticas, curtas e acionáveis.
+- Se houver sinais de dor, apatia, dificuldade respiratória, vómitos persistentes, convulsões, trauma, intoxicação ou recusa prolongada de alimento/água, recomenda consulta veterinária com urgência.
+- Não inventes medições, diagnósticos ou tratamentos que não estejam no contexto.`;
+}
+
+function buildFallbackMindiResponse(
+  message: string,
+  animal: any | null,
+  events: ReturnType<typeof mapDbEvent>[]
+) {
+  const animalName = animal?.name ? animal.name : "o teu animal";
+  const recent = events[0];
+  const recentState = recent
+    ? ` A última classificação registada foi ${STATE_LABELS[recent.state as EmotionalState] ?? recent.state}.`
+    : "";
+  const normalized = message.toLocaleLowerCase("pt-PT");
+
+  if (normalized.includes("não come") || normalized.includes("nao come") || normalized.includes("comer")) {
+    return `${animalName} pode estar a recusar comida por stress, alteração de rotina, desconforto oral, náusea ou dor.${recentState} Observa também água, energia, vómitos, diarreia e sinais de dor. Se não comer durante 24 horas, se for gato, sénior, cachorro, ou se houver apatia/vómitos/dificuldade respiratória, contacta um médico veterinário.`;
+  }
+
+  if (normalized.includes("stress") || normalized.includes("ansiedade")) {
+    return `Para sinais de stress em ${animalName}, procura vocalizações fora do habitual, respiração rápida, esconder-se, lamber-se em excesso, postura tensa, agressividade súbita ou perda de apetite.${recentState} Reduz estímulos, mantém uma rotina previsível e cria uma zona calma. Se os sinais forem intensos ou persistentes, marca avaliação veterinária.`;
+  }
+
+  if (normalized.includes("aliment")) {
+    return `Para alimentação, mantém horários consistentes, água sempre disponível e mudanças graduais de ração ao longo de 7 a 10 dias. Ajusta a dose à idade, peso, espécie e nível de atividade de ${animalName}. Se houver perda de peso, vómitos, diarreia ou recusa alimentar, confirma com o veterinário.`;
+  }
+
+  if (normalized.includes("veterin")) {
+    return `Deves ir ao veterinário se ${animalName} tiver dificuldade em respirar, convulsões, trauma, intoxicação, dor evidente, apatia marcada, vómitos persistentes, diarreia com sangue, desidratação, ou recusa de comida/água prolongada.${recentState} Em situações graves, não esperes por nova classificação da app.`;
+  }
+
+  return `Com base no perfil de ${animalName} e no histórico recente, posso ajudar-te a interpretar sinais de comportamento, alimentação e bem-estar.${recentState} Diz-me o que observaste, há quanto tempo acontece e se existem sinais físicos como dor, vómitos, diarreia, apatia ou dificuldade respiratória. Para sintomas sérios, a avaliação veterinária é indispensável.`;
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
   system: systemRouter,
   family: familyRouter,
+
+  chat: router({
+    send: protectedProcedure
+      .input(
+        z.object({
+          animalId: z.number().optional(),
+          message: z.string().min(1).max(1200),
+          history: z
+            .array(
+              z.object({
+                role: z.enum(["user", "assistant"]),
+                content: z.string().min(1).max(4000),
+              })
+            )
+            .max(10)
+            .optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        checkRateLimit(ctx, "chat.send", 25);
+        const userId = await effectiveUserId(ctx.user);
+        const animal = input.animalId
+          ? await getAnimalById(input.animalId, userId)
+          : await getActiveAnimal(userId);
+
+        if (input.animalId && !animal) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Animal não encontrado ou sem acesso para este utilizador.",
+          });
+        }
+
+        const recentResult = animal
+          ? await getEventsForAnimalPaginated(animal.id, userId, 1, 5)
+          : { events: await getRecentEvents(userId, 5), total: 0 };
+        const recentEvents = recentResult.events.map(mapDbEvent);
+        const system = buildMindiSystemPrompt(animal, recentEvents);
+        const model = process.env.MINDI_AI_MODEL || MINDI_DEFAULT_MODEL;
+        const messages: ModelMessage[] = [
+          ...(input.history ?? []).map((item) => ({
+            role: item.role,
+            content: item.content,
+          })),
+          { role: "user", content: input.message },
+        ];
+
+        try {
+          const result = streamText({
+            model,
+            system,
+            messages,
+          });
+          const reply = (await result.text).trim();
+          return {
+            reply: reply || buildFallbackMindiResponse(input.message, animal, recentEvents),
+            model,
+            fallback: !reply,
+          };
+        } catch (err) {
+          console.warn("[Mindi] AI generation failed, returning fallback response:", err);
+          return {
+            reply: buildFallbackMindiResponse(input.message, animal, recentEvents),
+            model,
+            fallback: true,
+          };
+        }
+      }),
+  }),
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
