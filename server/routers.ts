@@ -148,7 +148,7 @@ function resolveMlBackendUrls() {
   ];
 
   const seen = new Set<string>();
-  return candidates
+  const normalized = candidates
     .filter((url): url is string => Boolean(url?.trim()))
     .map((url) => url.trim().replace(/\/+$/, ""))
     .filter((url) => {
@@ -156,6 +156,12 @@ function resolveMlBackendUrls() {
       seen.add(url);
       return true;
     });
+
+  // Group into fast and slow candidates (deprioritize hf.space URLs to the end to prevent Vercel timeouts)
+  const fast = normalized.filter((url) => !url.includes("hf.space"));
+  const slow = normalized.filter((url) => url.includes("hf.space"));
+
+  return [...fast, ...slow];
 }
 
 /** Attempt to run vision detections against primary/fallback ML backend. */
