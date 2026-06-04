@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, CircleAlert, Loader2, LogIn } from "lucide-react";
 import { requireSupabase } from "@/contexts/AuthContext";
+import { AuthInlineNote, AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
 
 type CallbackStatus = "loading" | "success" | "error";
 
@@ -91,47 +91,42 @@ export default function AuthCallbackPage() {
   const isSuccess = status === "success";
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-10 text-white">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-xl items-center justify-center">
-        <Card className="w-full overflow-hidden border-slate-800 bg-slate-900 shadow-2xl shadow-emerald-950/20">
-          <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-sky-400 to-lime-300" />
-          <CardHeader className="space-y-4 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-400/30">
-              {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin text-sky-300" />
-              ) : isSuccess ? (
-                <CheckCircle2 className="h-9 w-9 text-emerald-300" />
-              ) : (
-                <CircleAlert className="h-9 w-9 text-amber-300" />
-              )}
-            </div>
-            <div className="space-y-2">
-              <CardTitle className="text-2xl text-white">
-                {isSuccess ? "Email confirmado" : isLoading ? "A verificar email" : "Link inválido"}
-              </CardTitle>
-              <CardDescription className="text-base leading-relaxed text-slate-300">
-                {message}
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isSuccess && (
-              <p className="text-center text-sm text-slate-400">
-                Vamos levar-te para o login automaticamente dentro de instantes.
-              </p>
-            )}
+    <AuthShell
+      title={isSuccess ? "Email confirmado" : isLoading ? "A verificar email" : "Link inválido"}
+      subtitle={
+        isSuccess
+          ? "A confirmação foi concluída dentro da experiência AnimalMind."
+          : isLoading
+            ? "Estamos a validar o link de confirmação em segurança."
+            : "Não conseguimos validar este link."
+      }
+      eyebrow="Confirmação segura"
+      compact
+    >
+      <div className="space-y-4">
+        <AuthInlineNote
+          icon={isLoading ? Loader2 : isSuccess ? CheckCircle2 : CircleAlert}
+          tone={isSuccess ? "success" : isLoading ? "neutral" : "warning"}
+          title={isSuccess ? "Verificação concluída" : isLoading ? "A confirmar sessão" : "Confirmação falhou"}
+          description={message}
+        />
 
-            <Button
-              onClick={() => setLocation("/login")}
-              disabled={isLoading}
-              className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Ir para login
-            </Button>
-          </CardContent>
-        </Card>
+        {isSuccess && (
+          <p className="text-center text-xs leading-relaxed text-muted-foreground">
+            Vamos levar-te para o login automaticamente dentro de instantes.
+          </p>
+        )}
+
+        <Button
+          type="button"
+          onClick={() => setLocation("/login")}
+          disabled={isLoading}
+          className="h-11 w-full rounded-2xl text-sm font-semibold"
+        >
+          <LogIn size={16} />
+          Ir para login
+        </Button>
       </div>
-    </div>
+    </AuthShell>
   );
 }

@@ -1,11 +1,15 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Check, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  AuthShell,
+  AuthSubmitButton,
+  AuthTextField,
+  authIcons,
+} from "@/components/auth/AuthShell";
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const { user, signIn } = useAuth();
@@ -13,10 +17,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
   const [emailBlurred, setEmailBlurred] = useState(false);
   const [passwordBlurred, setPasswordBlurred] = useState(false);
-  const [shake, setShake] = useState(false);
   const [apiError, setApiError] = useState("");
 
   useEffect(() => {
@@ -25,179 +27,105 @@ export default function LoginPage() {
     }
   }, [user]);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const isEmailValid = emailRegex.test(email);
+  const normalizedEmail = email.trim();
+  const isEmailValid = emailRegex.test(normalizedEmail);
   const isPasswordValid = password.length > 0;
   const isFormValid = isEmailValid && isPasswordValid;
 
-  const emailError = emailBlurred && !isEmailValid
-    ? "Este email não é válido. O formato do endereço de email está incorreto. Verifica se escreveste corretamente (ex: nome@exemplo.com)."
-    : "";
+  const emailError =
+    emailBlurred && !isEmailValid
+      ? "Introduza um email válido, por exemplo nome@exemplo.com."
+      : "";
+  const passwordError =
+    apiError ||
+    (passwordBlurred && !isPasswordValid ? "Introduza a palavra-passe da sua conta." : "");
 
-  const passwordError = passwordBlurred && !isPasswordValid
-    ? "A palavra-passe está vazia. É necessário introduzir a palavra-passe para autenticar a sua identidade. Escreva a sua palavra-passe no campo abaixo."
-    : "";
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isFormValid) {
-      setShake(true);
-      setTimeout(() => setShake(false), 400);
-      return;
-    }
-    setLoading(true);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setEmailBlurred(true);
+    setPasswordBlurred(true);
     setApiError("");
 
+    if (!isFormValid) return;
+
+    setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(normalizedEmail, password);
       toast.success("Bem-vindo de volta!");
       setLocation("/dashboard");
-    } catch (error: any) {
-      setShake(true);
-      setTimeout(() => setShake(false), 400);
-      setApiError(
-        "Não foi possível iniciar a sessão. As credenciais introduzidas não coincidem com os nossos registos. Por favor, verifique se escreveu o email e a palavra-passe corretamente e tente de novo."
-      );
+    } catch {
+      setApiError("Email ou palavra-passe incorretos. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <Card className={`w-full max-w-md bg-slate-900 border-slate-800 transition-transform ${shake ? "animate-shake" : ""}`}>
-        <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl text-white">AnimalMind</CardTitle>
-          <CardDescription className="text-slate-400">
-            Faça login na sua conta
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {apiError && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-3 flex gap-2 text-xs leading-relaxed animate-shake">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{apiError}</span>
-              </div>
-            )}
+    <AuthShell
+      mode="login"
+      title="Entrar no AnimalMind"
+      subtitle="Aceda ao histórico, gravações e perfil dos seus animais com uma sessão segura."
+      showOAuth
+      footer={
+        <div className="space-y-3 text-center text-sm">
+          <button
+            type="button"
+            onClick={() => setLocation("/forgot-password")}
+            className="font-semibold text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            Esqueceu a palavra-passe?
+          </button>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Ao continuar, mantém o mesmo acesso seguro usado em toda a app.
+          </p>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <AuthTextField
+          id="login-email"
+          label="Email"
+          icon={authIcons.email}
+          type="email"
+          placeholder="alex@exemplo.com"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setApiError("");
+          }}
+          onBlur={() => setEmailBlurred(true)}
+          autoComplete="username"
+          inputMode="email"
+          disabled={loading}
+          error={emailError}
+          success={isEmailValid ? "Válido" : undefined}
+        />
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-slate-300">Email</label>
-                {isEmailValid && (
-                  <span className="text-emerald-400 text-xs flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> Válido
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <Input
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setApiError("");
-                  }}
-                  onBlur={() => setEmailBlurred(true)}
-                  required
-                  disabled={loading}
-                  autoComplete="username"
-                  className={`bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 pr-10 ${
-                    emailError ? "border-red-500 focus-visible:ring-red-500/50" : ""
-                  } ${isEmailValid ? "border-emerald-500/50 focus-visible:ring-emerald-500/50" : ""}`}
-                />
-                {isEmailValid && (
-                  <Check className="w-4 h-4 text-emerald-400 absolute right-3 top-1/2 -translate-y-1/2" />
-                )}
-              </div>
-              {emailError && (
-                <p className="text-xs text-red-400 font-medium leading-relaxed mt-1 flex gap-1 items-start">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>{emailError}</span>
-                </p>
-              )}
-            </div>
+        <AuthTextField
+          id="login-password"
+          label="Palavra-passe"
+          icon={authIcons.password}
+          type="password"
+          placeholder="A sua palavra-passe"
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setApiError("");
+          }}
+          onBlur={() => setPasswordBlurred(true)}
+          autoComplete="current-password"
+          disabled={loading}
+          error={passwordError}
+          success={isPasswordValid && !apiError ? "Preenchida" : undefined}
+        />
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-slate-300">Palavra-passe</label>
-                {isPasswordValid && (
-                  <span className="text-emerald-400 text-xs flex items-center gap-1">
-                    <Check className="w-3.5 h-3.5" /> Preenchida
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setApiError("");
-                  }}
-                  onBlur={() => setPasswordBlurred(true)}
-                  required
-                  disabled={loading}
-                  className={`bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 pr-10 ${
-                    passwordError ? "border-red-500 focus-visible:ring-red-500/50" : ""
-                  } ${isPasswordValid ? "border-emerald-500/50 focus-visible:ring-emerald-500/50" : ""}`}
-                  autoComplete="current-password"
-                />
-                {isPasswordValid && (
-                  <Check className="w-4 h-4 text-emerald-400 absolute right-3 top-1/2 -translate-y-1/2" />
-                )}
-              </div>
-              {passwordError && (
-                <p className="text-xs text-red-400 font-medium leading-relaxed mt-1 flex gap-1 items-start">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>{passwordError}</span>
-                </p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading || !isFormValid}
-              className={`w-full text-white font-semibold rounded-xl h-10 transition-all ${
-                isFormValid
-                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-950/20 active:scale-[0.98]"
-                  : "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50"
-              }`}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  A fazer login...
-                </>
-              ) : (
-                "Entrar"
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-6 space-y-3">
-            <p className="text-sm text-slate-400 text-center">
-              Não tem conta?{" "}
-              <button
-                onClick={() => setLocation("/register")}
-                className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors"
-              >
-                Criar conta
-              </button>
-            </p>
-            <p className="text-sm text-slate-400 text-center">
-              <button
-                onClick={() => setLocation("/forgot-password")}
-                className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors"
-              >
-                Esqueceu a palavra-passe?
-              </button>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        <AuthSubmitButton
+          loading={loading}
+          loadingLabel="A entrar..."
+        >
+          Entrar
+        </AuthSubmitButton>
+      </form>
+    </AuthShell>
   );
 }

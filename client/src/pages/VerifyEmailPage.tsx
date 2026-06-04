@@ -1,80 +1,88 @@
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MailCheck } from "lucide-react";
 import { toast } from "sonner";
-import { Loader2, Mail } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthInlineNote, AuthShell } from "@/components/auth/AuthShell";
+import { Button } from "@/components/ui/button";
 
 export default function VerifyEmailPage() {
   const { user, resendVerificationEmail } = useAuth();
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [resent, setResent] = useState(false);
+  const [error, setError] = useState("");
 
-  if (!user) {
-    setLocation("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      setLocation("/login");
+    }
+  }, [setLocation, user]);
+
+  if (!user) return null;
 
   const handleResend = async () => {
     setLoading(true);
+    setError("");
     try {
       await resendVerificationEmail(user.email || "");
       setResent(true);
-      toast.success("Email de verificação reenviado!");
+      toast.success("Email de verificação reenviado.");
       setTimeout(() => setResent(false), 3000);
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao reenviar email");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao reenviar email.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-900 border-slate-800">
-        <CardHeader className="space-y-2 text-center">
-          <div className="flex justify-center mb-4">
-            <Mail className="w-12 h-12 text-emerald-500" />
-          </div>
-          <CardTitle className="text-2xl text-white">Verifique o Seu Email</CardTitle>
-          <CardDescription className="text-slate-400">
-            Enviámos um link de verificação para <strong>{user.email}</strong>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-slate-300">
-            Clique no link no email para verificar a sua conta. Se não recebeu o email, verifique
-            a pasta de spam.
+    <AuthShell
+      title="Verifique o email"
+      subtitle="Confirme a sua conta para concluir o acesso ao AnimalMind."
+      eyebrow="Confirmação de conta"
+      compact
+    >
+      <div className="space-y-4">
+        <AuthInlineNote
+          icon={MailCheck}
+          tone="success"
+          title="Link de confirmação enviado"
+          description={
+            <>
+              Enviámos um link para <strong>{user.email}</strong>. Abra o email e confirme a conta antes de iniciar sessão.
+            </>
+          }
+        />
+
+        {error && (
+          <p className="rounded-2xl border border-destructive/25 bg-destructive/10 p-3 text-xs font-medium leading-relaxed text-destructive">
+            {error}
           </p>
+        )}
 
-          <Button
-            onClick={handleResend}
-            disabled={loading || resent}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                A reenviar...
-              </>
-            ) : resent ? (
-              "Email reenviado! Verifique a sua caixa de entrada"
-            ) : (
-              "Reenviar Email de Verificação"
-            )}
-          </Button>
+        <Button
+          type="button"
+          onClick={handleResend}
+          disabled={loading || resent}
+          className="h-11 w-full rounded-2xl text-sm font-semibold"
+        >
+          {loading
+            ? "A reenviar..."
+            : resent
+              ? "Email reenviado"
+              : "Reenviar email de verificação"}
+        </Button>
 
-          <Button
-            onClick={() => setLocation("/")}
-            variant="outline"
-            className="w-full border-slate-700 text-slate-300 hover:bg-slate-800"
-          >
-            Continuar para a Aplicação
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+        <Button
+          type="button"
+          onClick={() => setLocation("/login")}
+          variant="outline"
+          className="h-11 w-full rounded-2xl border-border bg-secondary/40 text-sm font-semibold"
+        >
+          Ir para login
+        </Button>
+      </div>
+    </AuthShell>
   );
 }
