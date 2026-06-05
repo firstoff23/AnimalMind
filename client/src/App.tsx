@@ -9,6 +9,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { SelfHealingProvider } from "./contexts/SelfHealingContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { BottomNav } from "./components/BottomNav";
 import { Header } from "./components/Header";
@@ -125,24 +126,26 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <LanguageProvider>
-          <ThemeProvider defaultTheme="dark" switchable>
-            <TooltipProvider>
-              <Toaster
-                theme="dark"
-                position="bottom-center"
-                toastOptions={{
-                  style: {
-                    background: "oklch(0.12 0.012 264)",
-                    border: "1px solid oklch(0.22 0.012 264)",
-                    color: "oklch(0.97 0.003 264)",
-                  },
-                }}
-              />
-              <Router />
-            </TooltipProvider>
-          </ThemeProvider>
-        </LanguageProvider>
+        <SelfHealingProvider>
+          <LanguageProvider>
+            <ThemeProvider defaultTheme="dark" switchable>
+              <TooltipProvider>
+                <Toaster
+                  theme="dark"
+                  position="bottom-center"
+                  toastOptions={{
+                    style: {
+                      background: "oklch(0.12 0.012 264)",
+                      border: "1px solid oklch(0.22 0.012 264)",
+                      color: "oklch(0.97 0.003 264)",
+                    },
+                  }}
+                />
+                <Router />
+              </TooltipProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </SelfHealingProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

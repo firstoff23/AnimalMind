@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
-import type { InsertUser, User } from "../shared/dbTypes";
+import type { InsertUser, User, AppError, AppHealingAction, AppHealthState } from "../shared/dbTypes";
 import { STATE_LABELS, type EmotionalState } from "../shared/types";
 import fs from "fs";
 import path from "path";
@@ -1516,6 +1516,274 @@ async function getVetEventsForAnimal(animalId: number, days = 30, limit?: number
   if (error) throw error;
   return data || [];
 }
+
+// ─── Self-Healing & Learning System Operations ───────────────────────────────
+
+function mapDbError(e: any): AppError {
+  return {
+    id: Number(e.id),
+    userId: e.user_id ? Number(e.user_id) : null,
+    errorMessage: e.error_message,
+    errorStack: e.error_stack ?? null,
+    errorCode: e.error_code ?? null,
+    severity: e.severity ?? "error",
+    component: e.component ?? "unknown",
+    context: e.context ?? null,
+    isResolved: e.is_resolved ?? false,
+    createdAt: new Date(e.created_at),
+    resolvedAt: e.resolved_at ? new Date(e.resolved_at) : null,
+  };
+}
+
+function mapDbHealingAction(a: any): AppHealingAction {
+  return {
+    id: Number(a.id),
+    errorId: a.error_id ? Number(a.error_id) : null,
+    userId: Number(a.user_id),
+    actionType: a.action_type,
+    actionDetails: a.action_details ?? null,
+    status: a.status ?? "pending",
+    resultMessage: a.result_message ?? null,
+    createdAt: new Date(a.created_at),
+    completedAt: a.completed_at ? new Date(a.completed_at) : null,
+  };
+}
+
+function mapDbHealthState(h: any): AppHealthState {
+  return {
+    id: Number(h.id),
+    userId: Number(h.user_id),
+    status: h.status ?? "healthy",
+    lastCheckedAt: new Date(h.last_checked_at),
+    latencyMs: h.latency_ms !== null ? Number(h.latency_ms) : null,
+    cpuUsage: h.cpu_usage !== null ? Number(h.cpu_usage) : null,
+    memoryUsage: h.memory_usage !== null ? Number(h.memory_usage) : null,
+    servicesStatus: h.services_status ?? null,
+    createdAt: new Date(h.created_at),
+    updatedAt: new Date(h.updated_at),
+  };
+}
+
+// Check if user has admin privileges
+export async function isUserAdmin(userId: number): Promise<boolean> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", userId)
+    .single();
+  if (error) return false;
+  return data?.role === "admin";
+}
+
+// Log a new system error
+export async function logAppError(data: {
+  userId?: number | null;
+  errorMessage: string;
+  errorStack?: string | null;
+  errorCode?: string | null;
+  severity?: "info" | "warning" | "error" | "critical";
+  component?: string;
+  context?: any;
+}): Promise<AppError> {
+  const supabase = getSupabase();
+  const payload = {
+    user_id: data.userId ?? null,
+    error_message: data.errorMessage,
+    error_stack: data.errorStack ?? null,
+    error_code: data.errorCode ?? null,
+    severity: data.severity ?? "error",
+    component: data.component ?? "unknown",
+    context: data.context ?? null,
+    is_resolved: false,
+  };
+
+  const { data: result, error } = await supabase
+    .from("app_errors")
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapDbError(result);
+}
+
+// Retrieve recent errors (scoped to owner unless they are admin)
+export async function getRecentAppErrors(
+  userId: number,
+  limit = 50,
+  includeResolved = false
+): Promise<AppError[]> {
+  const supabase = getSupabase();
+  const isAdmin = await isUserAdmin(userId);
+
+  let query = supabase.from("app_errors").select("*");
+
+  if (!isAdmin) {
+    query = query.eq("user_id", userId);
+  }
+
+  if (!includeResolved) {
+    query = query.eq("is_resolved", false);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []).map(mapDbError);
+}
+
+// Log a healing action execution
+export async function logHealingAction(data: {
+  errorId?: number | null;
+  userId: number;
+  actionType: string;
+  actionDetails?: string | null;
+  status?: "pending" | "running" | "success" | "failed";
+  resultMessage?: string | null;
+}): Promise<AppHealingAction> {
+  const supabase = getSupabase();
+  const payload = {
+    error_id: data.errorId ?? null,
+    user_id: data.userId,
+    action_type: data.actionType,
+    action_details: data.actionDetails ?? null,
+    status: data.status ?? "pending",
+    result_message: data.resultMessage ?? null,
+  };
+
+  const { data: result, error } = await supabase
+    .from("app_healing_actions")
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapDbHealingAction(result);
+}
+
+// Update status of an ongoing healing action
+export async function updateHealingAction(
+  actionId: number,
+  data: {
+    status: "success" | "failed";
+    resultMessage?: string | null;
+  }
+): Promise<AppHealingAction> {
+  const supabase = getSupabase();
+  const payload = {
+    status: data.status,
+    result_message: data.resultMessage ?? null,
+    completed_at: new Date().toISOString(),
+  };
+
+  const { data: result, error } = await supabase
+    .from("app_healing_actions")
+    .update(payload)
+    .eq("id", actionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapDbHealingAction(result);
+}
+
+// Get history of healing actions (scoped to owner unless they are admin)
+export async function getHealingHistory(
+  userId: number,
+  limit = 50
+): Promise<AppHealingAction[]> {
+  const supabase = getSupabase();
+  const isAdmin = await isUserAdmin(userId);
+
+  let query = supabase.from("app_healing_actions").select("*");
+
+  if (!isAdmin) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data || []).map(mapDbHealingAction);
+}
+
+// Get the latest recorded health state (scoped to owner unless they are admin)
+export async function getLatestHealthState(
+  userId: number
+): Promise<AppHealthState | null> {
+  const supabase = getSupabase();
+  const isAdmin = await isUserAdmin(userId);
+
+  let query = supabase.from("app_health_state").select("*");
+
+  if (!isAdmin) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error && error.code !== "PGRST116") throw error;
+  return data ? mapDbHealthState(data) : null;
+}
+
+// Update health metrics
+export async function updateHealthState(data: {
+  userId: number;
+  status: "healthy" | "degraded" | "unhealthy";
+  latencyMs?: number | null;
+  cpuUsage?: number | null;
+  memoryUsage?: number | null;
+  servicesStatus?: any;
+}): Promise<AppHealthState> {
+  const supabase = getSupabase();
+  const payload = {
+    user_id: data.userId,
+    status: data.status,
+    latency_ms: data.latencyMs ?? null,
+    cpu_usage: data.cpuUsage ?? null,
+    memory_usage: data.memoryUsage ?? null,
+    services_status: data.servicesStatus ?? null,
+    last_checked_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data: result, error } = await supabase
+    .from("app_health_state")
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapDbHealthState(result);
+}
+
+// Clean old records by invoking the admin RPC
+export async function clearHealingAndErrorHistory(
+  userId: number,
+  olderThanDays = 30
+): Promise<void> {
+  const supabase = getSupabase();
+  const isAdmin = await isUserAdmin(userId);
+
+  if (!isAdmin) {
+    throw new Error("Não autorizado: apenas administradores podem limpar o histórico de autocura.");
+  }
+
+  const { error } = await supabase.rpc("clear_app_error_history", {
+    older_than_days: olderThanDays,
+  });
+
+  if (error) throw error;
+}
+
 
 function daysSince(value: string | null) {
   if (!value) return Number.POSITIVE_INFINITY;

@@ -10,6 +10,7 @@ import { familyRouter } from "./routers/family";
 import { vetRouter } from "./routers/vet";
 import { healthRouter } from "./routers/health";
 import { trendsRouter } from "./routers/trends";
+import { healingRouter } from "./routers/healing";
 import {
   addAnimal,
   updateAnimal,
@@ -1179,6 +1180,7 @@ export const appRouter = router({
   vet: vetRouter,
   health: healthRouter,
   trends: trendsRouter,
+  healing: healingRouter,
 });
 
 export type AppRouter = typeof appRouter;

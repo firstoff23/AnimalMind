@@ -13,3 +13,43 @@ export interface User {
 }
 
 export type InsertUser = Partial<User> & { openId: string };
+
+export interface AppError {
+  id: number;
+  userId: number | null;
+  errorMessage: string;
+  errorStack: string | null;
+  errorCode: string | null;
+  severity: "info" | "warning" | "error" | "critical";
+  component: string;
+  context: any | null;
+  isResolved: boolean;
+  createdAt: Date;
+  resolvedAt: Date | null;
+}
+
+export interface AppHealingAction {
+  id: number;
+  errorId: number | null;
+  userId: number;
+  actionType: string;
+  actionDetails: string | null;
+  status: "pending" | "running" | "success" | "failed";
+  resultMessage: string | null;
+  createdAt: Date;
+  completedAt: Date | null;
+}
+
+export interface AppHealthState {
+  id: number;
+  userId: number;
+  status: "healthy" | "degraded" | "unhealthy";
+  lastCheckedAt: Date;
+  latencyMs: number | null;
+  cpuUsage: number | null;
+  memoryUsage: number | null;
+  servicesStatus: any | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
