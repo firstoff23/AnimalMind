@@ -103,6 +103,165 @@
 /* ── Mobile viewport fix ───────────────────────────────────── */
 .mobile-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
+/* ── Mobile bottom navigation ───────────────────────────────── */
+.bottom-nav-shell {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  display: none;
+  overflow: hidden;
+  border-top: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background: color-mix(in oklab, var(--card) 95%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  user-select: none;
+}
+
+.bottom-nav-scroll {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  width: 100%;
+  max-width: 36rem;
+  height: 4.5rem;
+  margin-inline: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.375rem max(0.5rem, env(safe-area-inset-left, 0px)) 0.5rem;
+}
+
+.bottom-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.bottom-nav-tab {
+  position: relative;
+  flex: 0 0 72px;
+  min-width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 0;
+  border-radius: 1.15rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.bottom-nav-tab::before {
+  content: "";
+  position: absolute;
+  top: 0.25rem;
+  left: 50%;
+  width: 1.5rem;
+  height: 0.1875rem;
+  border-radius: 999px;
+  background: var(--primary);
+  opacity: 0;
+  transform: translateX(-50%) scaleX(0.65);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.bottom-nav-tab:active {
+  color: var(--foreground);
+}
+
+.bottom-nav-tab.is-active {
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+
+.bottom-nav-tab.is-active::before {
+  opacity: 1;
+  transform: translateX(-50%) scaleX(1);
+}
+
+.bottom-nav-tab.is-record {
+  flex-basis: 78px;
+  min-width: 78px;
+  color: var(--primary);
+  background: transparent;
+}
+
+.bottom-nav-tab.is-record::before {
+  display: none;
+}
+
+.bottom-nav-icon {
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.bottom-nav-icon.is-active {
+  transform: scale(1.1);
+  color: var(--primary);
+}
+
+.bottom-nav-record-icon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-top: -1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--primary);
+  background: #0f172a;
+  box-shadow: 0 12px 28px color-mix(in oklab, var(--primary) 20%, transparent);
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.bottom-nav-record-icon.is-active,
+.bottom-nav-tab.is-record:active .bottom-nav-record-icon {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.04);
+}
+
+.bottom-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.625rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+  opacity: 0.68;
+  transition: opacity 180ms ease, color 180ms ease;
+}
+
+.bottom-nav-label.is-record {
+  margin-top: -0.125rem;
+}
+
+.bottom-nav-label.is-active {
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .bottom-nav-shell {
+    display: block;
+  }
+}
+
 /* ── Smooth page transitions ───────────────────────────────── */
 .page-enter { animation: pageEnter 220ms cubic-bezier(0.23, 1, 0.32, 1) both; }
 @keyframes pageEnter {
