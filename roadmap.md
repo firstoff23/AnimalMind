@@ -40,3 +40,11 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
   - Co-tutoria para partilha de perfis de animais em tempo real.
 - [ ] **10. Submissão às lojas**
   - Empacotamento do frontend (ex: Capacitor/PWA) e publicação na Google Play Store e Apple App Store.
+
+### 📋 Prioridade 4 — Próximas Features (Planeado pós-produção 2026-06-08)
+- [ ] **11. Dicionário de Alimentos**
+  - Risco baixo, valor alto. Consulta rápida de alimentos permitidos, proibidos ou moderados para cães e gatos.
+- [ ] **12. Registo de Sintomas (Symptom Logger) & Exportação PDF**
+  - Painel para registar vômitos, letargia, coceira, etc., com geração de PDF formatado para veterinários.
+- [ ] **13. Calendário Preventivo de Saúde**
+  - Gestão e alertas para vacinação, desparasitação interna/externa e consultas.
