@@ -5,6 +5,7 @@ import { useAppStore } from "@/store/appStore";
 import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
+import { Logo } from "@/components/ui/Logo";
 
 export function Header() {
   const [location, setLocation] = useLocation();
@@ -65,8 +66,9 @@ export function Header() {
       </div>
 
       {/* Centered Title */}
-      <div className="flex-1 text-center font-bold text-base text-foreground tracking-tight">
-        {getPageTitle()}
+      <div className="flex-1 flex items-center justify-center gap-1.5 font-bold text-base text-foreground tracking-tight font-satoshi">
+        {isRootPage && <Logo className="text-primary size-5" />}
+        <span>{getPageTitle()}</span>
       </div>
 
       {/* Right side actions (Offline indicator, Search) */}

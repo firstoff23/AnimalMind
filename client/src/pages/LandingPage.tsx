@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Logo } from "@/components/ui/Logo";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { GlowingButton } from "@/components/ui/GlowingButton";
 import {
@@ -41,8 +42,8 @@ export default function LandingPage() {
       {/* ── NAVBAR ── */}
       <header className="sticky top-0 z-20 w-full border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl" aria-hidden="true">🐾</span>
+          <div className="flex items-center gap-2 font-satoshi">
+            <Logo size={20} className="text-primary" />
             <span className="text-base font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
               AnimalMind
             </span>

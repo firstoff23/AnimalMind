@@ -68,7 +68,7 @@ const STATES: EmotionalState[] = [
 export default function AnimalDetailPage({ params }: { params: { id: string } }) {
   const animalId = parseInt(params.id);
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"stats" | "bulletin" | "baseline" | "share">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "history" | "bulletin" | "share">("stats");
   const { t, language } = useLanguage();
   const [editingNotesEventId, setEditingNotesEventId] = useState<number | null>(null);
   const [tempNotes, setTempNotes] = useState("");
@@ -372,6 +372,109 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
     return !isNormal || isThreatState;
   });
 
+  const renderHistoryTimeline = () => (
+    <div className="bg-[var(--color-surface)] border border-border rounded-[1.5rem] p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-foreground">
+            {language === "pt" ? "Timeline de análises" : "Analysis timeline"}
+          </h3>
+          <p className="text-[11px] text-muted-foreground">
+            {language === "pt" ? "Eventos recentes com confiança, áudio e notas." : "Recent events with confidence, audio and notes."}
+          </p>
+        </div>
+        <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary">
+          {historyRes?.events.length ?? 0}
+        </Badge>
+      </div>
+
+      {!historyRes || historyRes.events.length === 0 ? (
+        <div className="py-10 text-center text-xs text-muted-foreground">
+          {t("calibration.noRegistriesForAnimal")}
+        </div>
+      ) : (
+        <div className="relative space-y-4 pl-5 before:absolute before:left-2 before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
+          {historyRes.events.map((ev) => {
+            const state = ev.state as EmotionalState;
+            const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
+            const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
+            const isNormal = baseline.normalStates.includes(ev.state) && !isRareForAnimal;
+            const isThreat = ev.state === "distress" || ev.state === "alert";
+            const isAlert = !isNormal || isThreat;
+
+            return (
+              <div key={ev.id} className="relative rounded-2xl border border-border/80 bg-background/45 p-3">
+                <span
+                  className="absolute -left-[1.1rem] top-4 h-4 w-4 rounded-full border-2 border-background"
+                  style={{ backgroundColor: STATE_COLORS[state] }}
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-xl">{STATE_EMOJIS[state]}</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {t("states." + state) || ev.state}
+                      </span>
+                      <Badge variant="outline" className="rounded-full border-border text-[10px] text-muted-foreground">
+                        {Math.round(Number(ev.confidence) * 100)}%
+                      </Badge>
+                      {isAlert && (
+                        <Badge className="rounded-full bg-rose-500/15 text-[10px] text-rose-300">
+                          {t("calibration.alertBadge")}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {new Date(ev.createdAt).toLocaleString(language === "pt" ? "pt-PT" : "en-US")}
+                    </p>
+                    {ev.notes && (
+                      <p className="mt-2 line-clamp-2 text-[11px] text-cyan-300">
+                        "{ev.notes}"
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {ev.audioUrl && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handlePlayToggle(ev.id, ev.audioUrl!)}
+                        className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
+                        aria-label={language === "pt" ? "Reproduzir áudio" : "Play audio"}
+                      >
+                        {playingAudioId === ev.id ? <Pause size={14} /> : <Play size={14} />}
+                      </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingNotesEventId(ev.id);
+                        setTempNotes(ev.notes || "");
+                      }}
+                      className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      aria-label={language === "pt" ? "Editar notas" : "Edit notes"}
+                    >
+                      <MessageSquare size={14} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Button
+        variant="outline"
+        onClick={() => setLocation(`/historico?animalId=${animal.id}`)}
+        className="w-full rounded-xl border-primary/20 text-xs font-semibold text-primary hover:bg-primary/10 active-scale tap-highlight-none"
+      >
+        {t("calibration.viewFullHistory")}
+      </Button>
+    </div>
+  );
+
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-20 max-w-xl mx-auto space-y-6">
       {/* Header and Back navigation */}
@@ -397,29 +500,51 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       </div>
 
       {/* Animal Identity Header */}
-      <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 text-slate-900 opacity-20 text-8xl pointer-events-none select-none font-bold">
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/15 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)]">
+        <div className="absolute right-0 top-0 translate-x-10 -translate-y-8 text-[7rem] font-black text-white/[0.03] pointer-events-none select-none">
           {animal.species === "dog" ? "DOG" : "CAT"}
         </div>
+        <div className="absolute -left-12 bottom-0 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" />
 
-        <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden z-10">
-          <LazyAnimal3DModel
-            species={animal.species}
-            emotion={currentEmotion}
-            photoUrl={animal.photoUrl}
-            name={animal.name}
-          />
-        </div>
-        <div className="z-10">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-foreground">{animal.name}</h1>
-            <Badge className="bg-emerald-500/10 text-emerald-500 border-none capitalize text-[10px] px-2 py-0.5">
-              {animal.species === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
-            </Badge>
+        <div className="relative grid gap-5 sm:grid-cols-[150px_1fr] sm:items-center">
+          <div className="mx-auto h-36 w-36 overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/25 sm:mx-0">
+            <LazyAnimal3DModel
+              species={animal.species}
+              emotion={currentEmotion}
+              photoUrl={animal.photoUrl}
+              name={animal.name}
+            />
           </div>
-          <p className="text-sm text-muted-foreground">
-            {animal.breed || t("calibration.noBreedDefined")} • {animal.age !== null ? `${animal.age} ${language === "pt" ? "anos" : "years"}` : t("calibration.unknownAge")}
-          </p>
+          <div className="space-y-4 text-center sm:text-left">
+            <div>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <h1 className="text-3xl font-bold text-foreground">{animal.name}</h1>
+                <Badge className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] text-emerald-300">
+                  {animal.species === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {animal.breed || t("calibration.noBreedDefined")} • {animal.age !== null ? `${animal.age} ${language === "pt" ? "anos" : "years"}` : t("calibration.unknownAge")}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <p className="text-[10px] uppercase text-muted-foreground">{language === "pt" ? "30 dias" : "30 days"}</p>
+                <p className="mt-1 text-lg font-bold text-foreground">{stats30?.totalCount ?? 0}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <p className="text-[10px] uppercase text-muted-foreground">{language === "pt" ? "Alertas" : "Alerts"}</p>
+                <p className="mt-1 text-lg font-bold text-amber-300">{anomalyAlerts.length}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <p className="text-[10px] uppercase text-muted-foreground">{language === "pt" ? "Estado" : "State"}</p>
+                <p className="mt-1 truncate text-sm font-bold text-emerald-300">
+                  {dominantStateWeekly ? t("states." + dominantStateWeekly) : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -439,8 +564,8 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       )}
 
       {/* Glassmorphic Tab switcher */}
-      <div className="flex bg-secondary/60 p-1 rounded-xl border border-border/80">
-        {(["stats", "bulletin", "baseline", "share"] as const)
+      <div className="flex overflow-x-auto bg-secondary/60 p-1 rounded-xl border border-border/80">
+        {(["stats", "history", "bulletin", "share"] as const)
           .filter((tab) => tab !== "share" || !animal.isShared)
           .map((tab) => (
             <button
@@ -454,13 +579,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               )}
             >
               {tab === "stats" && <Activity size={13} />}
+              {tab === "history" && <History size={13} />}
               {tab === "bulletin" && <FileText size={13} />}
-              {tab === "baseline" && <Settings size={13} />}
               {tab === "share" && <Users size={13} />}
-              {tab === "stats" && t("nav.dashboard")}
-              {tab === "bulletin" && t("bulletin.tabTitle")}
-              {tab === "baseline" && (language === "pt" ? "Calibrar" : "Calibrate")}
-              {tab === "share" && (language === "pt" ? "Co-tutores" : "Co-tutors")}
+              {tab === "stats" && (language === "pt" ? "Resumo" : "Summary")}
+              {tab === "history" && (language === "pt" ? "Histórico" : "History")}
+              {tab === "bulletin" && (language === "pt" ? "Saúde" : "Health")}
+              {tab === "share" && (language === "pt" ? "Partilha" : "Sharing")}
             </button>
           ))}
       </div>
@@ -717,6 +842,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
           </div>
         )}
 
+        {/* HISTORY TAB */}
+        {activeTab === "history" && (
+          <div className="page-enter">
+            {renderHistoryTimeline()}
+          </div>
+        )}
+
         {/* BULLETIN TAB (HEALTH BULLETIN) */}
         {activeTab === "bulletin" && (
           <div className="page-enter">
@@ -730,7 +862,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
         )}
 
         {/* BASELINE TAB (CALIBRATION) */}
-        {activeTab === "baseline" && (
+        {activeTab === "bulletin" && (
           <form onSubmit={handleBaselineSubmit} className="bg-card border border-border rounded-2xl p-5 space-y-5 page-enter">
             <div>
               <div className="flex justify-between items-start">

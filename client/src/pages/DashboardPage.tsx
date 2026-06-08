@@ -1,6 +1,8 @@
 import { useMemo, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -8,7 +10,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useMotionValue, animate } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, PawPrint, Loader2 } from "lucide-react";
+import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/lib/utils";
 import { AlertBanner } from "@/components/AlertBanner";
@@ -36,6 +38,42 @@ const STATES: EmotionalState[] = [
   "alert",
   "relaxed",
 ];
+
+const formatDashboardTimestamp = (value: Date | string, locale: string) =>
+  new Date(value).toLocaleString(locale, {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+function getHealthBadge(state?: EmotionalState | string | null) {
+  if (!state) {
+    return {
+      label: "Sem dados",
+      className: "border-slate-700/70 bg-slate-800/70 text-slate-300",
+    };
+  }
+
+  if (state === "distress" || state === "alert") {
+    return {
+      label: "Atenção",
+      className: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+    };
+  }
+
+  if (state === "hunger" || state === "attention") {
+    return {
+      label: "Monitorizar",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    };
+  }
+
+  return {
+    label: "Estável",
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  };
+}
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 
@@ -219,6 +257,15 @@ export default function DashboardPage() {
     };
   }, [events]);
 
+  const latestEvent = useMemo(() => {
+    return [...events].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )[0] ?? null;
+  }, [events]);
+
+  const activeAnimalHealth = getHealthBadge(latestEvent?.state);
+  const locale = language === "pt" ? "pt-PT" : "en-US";
+
   if (animalsLoading) {
     return (
       <div
@@ -266,16 +313,138 @@ export default function DashboardPage() {
         }}
       >
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">{t("dashboardPage.title")}</h1>
-        {activeAnimal && (
-          <p className="text-sm text-muted-foreground">
-            {activeAnimal.species === "dog" ? "🐕" : "🐈"} {activeAnimal.name} · {t("dashboardPage.last7Days")}
-          </p>
-        )}
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/15 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)]">
+        <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="absolute -bottom-12 left-4 h-28 w-28 rounded-full bg-amber-500/10 blur-3xl" />
+
+        <div className="relative space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase text-emerald-300">
+                AnimalMind
+              </p>
+              <h1 className="mt-1 text-2xl font-bold text-foreground">
+                {t("dashboardPage.title")}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {activeAnimal
+                  ? `${activeAnimal.species === "dog" ? "Cão" : "Gato"} ativo: ${activeAnimal.name}`
+                  : language === "pt"
+                  ? "Comece por adicionar o seu primeiro animal."
+                  : "Start by adding your first animal."}
+              </p>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn("rounded-full px-3 py-1 text-[11px] font-semibold", activeAnimalHealth.className)}
+            >
+              <ShieldCheck className="h-3 w-3" />
+              {activeAnimalHealth.label}
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+            <Link to="/gravar">
+              <Button className="h-auto w-full justify-between rounded-2xl bg-[var(--color-primary)] px-4 py-4 text-left text-white shadow-[var(--shadow-glow)] hover:bg-emerald-500 active-scale tap-highlight-none">
+                <span className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/20">
+                    <Mic className="h-5 w-5" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-bold">
+                      {language === "pt" ? "Gravar agora" : "Record now"}
+                    </span>
+                    <span className="block text-[11px] font-medium text-white/75">
+                      {language === "pt" ? "Classificação em segundos" : "Classification in seconds"}
+                    </span>
+                  </span>
+                </span>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5 text-amber-300" />
+                {language === "pt" ? "Última gravação" : "Last recording"}
+              </div>
+              <p className="mt-2 text-sm font-semibold text-foreground">
+                {latestEvent
+                  ? `${STATE_EMOJIS[latestEvent.state as EmotionalState]} ${t("states." + (latestEvent.state as EmotionalState))}`
+                  : language === "pt"
+                  ? "Sem gravações ainda"
+                  : "No recordings yet"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {latestEvent
+                  ? formatDashboardTimestamp(latestEvent.createdAt, locale)
+                  : language === "pt"
+                  ? "A primeira análise aparece aqui."
+                  : "The first analysis appears here."}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {activeAnimal && <AlertBanner animalId={activeAnimal.id} />}
+
+      {!animalsLoading && !animalsError && animals.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase text-muted-foreground">
+              {language === "pt" ? "Animais acompanhados" : "Tracked animals"}
+            </h2>
+            <span className="text-[11px] text-muted-foreground">
+              {animals.length}
+            </span>
+          </div>
+          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
+            {animals.map((a) => {
+              const isActiveAnimal = a.id === activeAnimal?.id;
+              const status = getHealthBadge(isActiveAnimal ? latestEvent?.state : null);
+              const photoUrl = "photoUrl" in a && typeof a.photoUrl === "string" ? a.photoUrl : undefined;
+              return (
+                <Link key={a.id} to={`/animal/${a.id}`}>
+                  <div
+                    className={cn(
+                      "min-w-[210px] rounded-2xl border p-3 transition-all active-scale tap-highlight-none",
+                      isActiveAnimal
+                        ? "border-emerald-500/35 bg-emerald-500/10 shadow-[var(--shadow-glow)]"
+                        : "border-border/70 bg-[var(--color-surface)]"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border border-white/10 bg-black/20">
+                        <AvatarImage src={photoUrl} alt={a.name} />
+                        <AvatarFallback className="bg-emerald-500/10 text-lg">
+                          {a.species === "dog" ? "🐕" : "🐈"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-foreground">{a.name}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {a.breed || (language === "pt" ? "Raça não definida" : "Breed not set")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <Badge
+                        variant="outline"
+                        className={cn("rounded-full text-[10px] font-semibold", status.className)}
+                      >
+                        <HeartPulse className="h-3 w-3" />
+                        {status.label}
+                      </Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ─── 4 States: error / empty / success ─── */}
       {animalsError ? (

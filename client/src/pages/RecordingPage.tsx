@@ -18,7 +18,19 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Mic, MicOff, ThumbsUp, ThumbsDown, Clock, Infinity as InfinityIcon, AlertCircle } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  ThumbsUp,
+  ThumbsDown,
+  Clock,
+  Infinity as InfinityIcon,
+  AlertCircle,
+  Camera,
+  Video,
+  VideoOff,
+  Volume2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -257,6 +269,93 @@ function HistoryItem({ event }: { event: { state: string; confidence: number; em
         </p>
       </div>
     </div>
+  );
+}
+
+function LiveWaveformBars({
+  active,
+  level,
+  waveform,
+}: {
+  active: boolean;
+  level: number;
+  waveform: number[];
+}) {
+  const bars = waveform.length > 0
+    ? waveform.slice(0, 18)
+    : Array.from({ length: 18 }, (_, index) => Math.sin(index * 0.9));
+
+  return (
+    <div className="flex h-16 w-full items-end justify-center gap-1.5 px-2" aria-hidden="true">
+      {bars.map((sample, index) => {
+        const normalized = Math.min(1, Math.max(0.14, Math.abs(sample) + level * 0.65));
+        return (
+          <span
+            key={`${index}-${sample.toFixed(2)}`}
+            className={cn(
+              "w-1.5 rounded-full bg-emerald-400/80 transition-all duration-150",
+              active && "animate-pulse"
+            )}
+            style={{
+              height: `${Math.round(18 + normalized * 44)}px`,
+              opacity: active ? 0.45 + normalized * 0.55 : 0.22,
+              animationDelay: `${index * 45}ms`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function CameraStateBadge({
+  state,
+  language,
+}: {
+  state: CameraState;
+  language: "pt" | "en";
+}) {
+  const stateMap: Record<CameraState, { label: string; className: string; icon: typeof Camera }> = {
+    idle: {
+      label: language === "pt" ? "Câmara desligada" : "Camera off",
+      className: "border-slate-700 bg-slate-800/70 text-slate-300",
+      icon: VideoOff,
+    },
+    loading: {
+      label: language === "pt" ? "A pedir acesso" : "Requesting access",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+      icon: Camera,
+    },
+    allowed: {
+      label: language === "pt" ? "Câmara ativa" : "Camera active",
+      className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+      icon: Video,
+    },
+    denied: {
+      label: language === "pt" ? "Permissão negada" : "Permission denied",
+      className: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+      icon: VideoOff,
+    },
+    not_found: {
+      label: language === "pt" ? "Sem câmara" : "No camera",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+      icon: VideoOff,
+    },
+    error: {
+      label: language === "pt" ? "Erro de câmara" : "Camera error",
+      className: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+      icon: AlertCircle,
+    },
+  };
+
+  const config = stateMap[state];
+  const Icon = config.icon;
+
+  return (
+    <Badge variant="outline" className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", config.className)}>
+      <Icon className="h-3 w-3" />
+      {config.label}
+    </Badge>
   );
 }
 
@@ -1574,7 +1673,46 @@ export default function RecordingPage() {
       )}
 
       {/* Recording button (Primary Action: Placed Prominently) */}
-      <div className="flex flex-col items-center gap-4 bg-card/30 border border-border/40 rounded-2xl p-6 shadow-sm">
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/15 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)]">
+        <div className="absolute inset-x-8 top-10 h-32 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="flex w-full items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase text-emerald-300">
+                {language === "pt" ? "Gravação acústica" : "Acoustic recording"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {language === "pt" ? "Toque para 3 segundos ou mantenha para auto" : "Tap for 3 seconds or hold for auto"}
+              </p>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[10px] font-semibold",
+                recordState === "recording"
+                  ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                  : recordState === "processing"
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+              )}
+            >
+              <Volume2 className="h-3 w-3" />
+              {recordState === "idle"
+                ? language === "pt" ? "Pronto" : "Ready"
+                : recordState === "recording"
+                ? language === "pt" ? "A gravar" : "Recording"
+                : recordState === "processing"
+                ? language === "pt" ? "A processar" : "Processing"
+                : language === "pt" ? "A ligar" : "Connecting"}
+            </Badge>
+          </div>
+
+          <LiveWaveformBars
+            active={recordState === "recording" || isLiveAudioStreaming}
+            level={liveAudioLevel}
+            waveform={liveWaveform}
+          />
+
         {/* Instruction text above button */}
         <div className="min-h-[2.5rem] flex flex-col items-center justify-center">
           {isAutoMode ? (
@@ -1605,6 +1743,18 @@ export default function RecordingPage() {
           )}
         </div>
 
+        <div className="relative flex items-center justify-center">
+          <div
+            className={cn(
+              "absolute h-48 w-48 rounded-full border transition-all duration-300",
+              recordState === "recording"
+                ? "border-rose-400/30 bg-rose-500/5"
+                : "border-emerald-400/20 bg-emerald-500/5"
+            )}
+            style={{
+              transform: `scale(${1 + Math.min(0.18, liveAudioLevel * 0.18)})`,
+            }}
+          />
         <GlowingButton
           data-testid="record-button"
           onPointerDown={handlePointerDown}
@@ -1634,6 +1784,20 @@ export default function RecordingPage() {
         >
           {renderButtonContent()}
         </GlowingButton>
+        </div>
+
+        <div className="w-full rounded-2xl border border-white/10 bg-black/20 p-3">
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase text-muted-foreground">
+            <span>{language === "pt" ? "Nível de áudio" : "Audio level"}</span>
+            <span className="text-emerald-300">{Math.round(liveAudioLevel * 100)}%</span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full rounded-full bg-[var(--color-primary)] transition-all duration-150"
+              style={{ width: `${Math.min(100, Math.round(liveAudioLevel * 100))}%` }}
+            />
+          </div>
+        </div>
 
         <p className="text-xs text-muted-foreground text-center h-4">
           {isAutoMode && recordState === "idle" && t("recordingPage.nextAcusticSoon")}
@@ -1659,6 +1823,7 @@ export default function RecordingPage() {
             emotion={result ? result.state : "neutral"}
           />
         )}
+        </div>
       </div>
 
       {/* Result card */}
@@ -1690,20 +1855,25 @@ export default function RecordingPage() {
       )}
 
       {/* Módulo de Visão Computacional (YOLO) */}
-      <div className="bg-card border border-border rounded-2xl p-4 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="bg-[var(--color-surface)] border border-border rounded-[1.5rem] p-4 space-y-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-emerald-400 text-lg">📷</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-300">
+              <Camera className="h-4 w-4" />
+            </span>
             <div className="text-left">
-              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              <p className="text-xs font-semibold uppercase text-foreground">
                 {t("recordingPage.cameraTitle")}
               </p>
               <p className="text-[10px] text-muted-foreground">
                 {t("recordingPage.cameraDesc")}
               </p>
+              <div className="mt-2">
+                <CameraStateBadge state={cameraState} language={language} />
+              </div>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2">
             {cameraState === "allowed" && (
               <Button
                 variant="outline"

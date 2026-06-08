@@ -47,8 +47,23 @@ import { useSelfHealing } from "@/contexts/SelfHealingContext";
 
 type Sensitivity = "low" | "medium" | "high";
 
-function CrashingComponent() {
+function CrashingComponent(): null {
   throw new Error("Erro Simulado de UI: Falha crítica na renderização do componente de teste.");
+}
+
+function SettingsSectionLabel({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="space-y-1 pt-2">
+      <p className="text-xs font-semibold uppercase text-primary">{title}</p>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">{description}</p>
+    </div>
+  );
 }
 
 export default function SettingsPage() {
@@ -323,6 +338,11 @@ export default function SettingsPage() {
         </motion.div>
       )}
 
+      <SettingsSectionLabel
+        title={language === "pt" ? "Conta" : "Account"}
+        description={language === "pt" ? "Dados pessoais, idioma e aparência da app." : "Personal data, language and app appearance."}
+      />
+
       {/* Perfil do Utilizador */}
       <motion.div variants={cardVariants}>
         <Card className="bg-card border-border overflow-hidden">
@@ -463,6 +483,11 @@ export default function SettingsPage() {
         </motion.div>
       )}
 
+      <SettingsSectionLabel
+        title={language === "pt" ? "Alertas" : "Alerts"}
+        description={language === "pt" ? "Preferências de notificação e sensibilidade clínica." : "Notification preferences and clinical sensitivity."}
+      />
+
       {/* Notificações */}
       <motion.div variants={cardVariants}>
         <Card className="bg-card border-border overflow-hidden">
@@ -577,6 +602,11 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      <SettingsSectionLabel
+        title={language === "pt" ? "Privacidade" : "Privacy"}
+        description={language === "pt" ? "Controle de dados, histórico local e diagnóstico técnico." : "Data controls, local history and technical diagnostics."}
+      />
 
       {/* Privacidade */}
       <motion.div variants={cardVariants}>

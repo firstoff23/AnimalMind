@@ -1,5 +1,7 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./styles/design-tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -28,6 +30,15 @@
   --color-ring: var(--ring);
   --color-emerald: #10b981;
   --color-emerald-dim: #059669;
+  
+  --font-satoshi: var(--font-satoshi);
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-primary: var(--color-primary);
+  --color-warning: var(--color-warning);
+  --transition-default: var(--transition-default);
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
 }
 
 :root {
@@ -53,24 +64,24 @@
 }
 
 .dark {
-  --background:        oklch(0.09 0.012 264);
+  --background:        #0a0a0b;
   --foreground:        oklch(0.97 0.003 264);
-  --card:              oklch(0.12 0.012 264);
+  --card:              #111113;
   --card-foreground:   oklch(0.97 0.003 264);
-  --popover:           oklch(0.12 0.012 264);
+  --popover:           #111113;
   --popover-foreground:oklch(0.97 0.003 264);
-  --primary:           oklch(0.70 0.17 162);
-  --primary-foreground:oklch(0.09 0.012 264);
-  --secondary:         oklch(0.17 0.012 264);
+  --primary:           #22c55e;
+  --primary-foreground:#0a0a0b;
+  --secondary:         #1c1c1f;
   --secondary-foreground:oklch(0.97 0.003 264);
-  --muted:             oklch(0.17 0.012 264);
+  --muted:             #1c1c1f;
   --muted-foreground:  oklch(0.55 0.012 264);
-  --accent:            oklch(0.17 0.012 264);
+  --accent:            #1c1c1f;
   --accent-foreground: oklch(0.97 0.003 264);
   --destructive:       oklch(0.60 0.22 27);
-  --border:            oklch(0.22 0.012 264);
-  --input:             oklch(0.22 0.012 264);
-  --ring:              oklch(0.70 0.17 162);
+  --border:            #1f1f23;
+  --input:             #1f1f23;
+  --ring:              #22c55e;
 }
 
 @layer base {
@@ -79,7 +90,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-satoshi), 'Inter', system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 }
@@ -183,4 +194,10 @@
 .active-scale:active {
   transform: scale(0.96);
   transition: transform 0.1s ease-out;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }

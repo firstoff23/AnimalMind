@@ -1,28 +1,25 @@
 import { useLocation } from "wouter";
-import { Mic, PawPrint, History, BarChart2, MessageCircle, Settings } from "lucide-react";
+import { Mic, PawPrint, BarChart2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
 
-const NAV_ITEMS = [
-  { path: "/dashboard",  icon: BarChart2,  key: "dashboard" },
-  { path: "/historico",  icon: History,    key: "history" },
-  { path: "/gravar",     icon: Mic,        key: "recording", isCenter: true },
-  { path: "/perfil",     icon: PawPrint,   key: "profile" },
-  { path: "/mindi",      icon: MessageCircle, key: "mindi" },
-  { path: "/definicoes", icon: Settings,   key: "settings" },
-];
-
 export function BottomNav() {
   const [location, navigate] = useLocation();
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+
+  const NAV_ITEMS = [
+    { path: "/dashboard",    icon: BarChart2, label: language === "pt" ? "Dashboard" : "Dashboard" },
+    { path: "/gravar",       icon: Mic,        label: language === "pt" ? "Gravar" : "Record", isCenter: true },
+    { path: "/perfil",       icon: PawPrint,   label: language === "pt" ? "Animais" : "Pets" },
+    { path: "/user-profile", icon: User,       label: language === "pt" ? "Perfil" : "Profile" },
+  ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border/80 mobile-safe-bottom select-none">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card/95 backdrop-blur-md border-t border-border/80 mobile-safe-bottom select-none">
       <div className="flex items-stretch justify-around max-w-lg mx-auto px-2 h-16">
-        {NAV_ITEMS.map(({ path, icon: Icon, key, isCenter }) => {
+        {NAV_ITEMS.map(({ path, icon: Icon, label, isCenter }) => {
           const active = location === path;
-          const label = t(`nav.${key}`);
           return (
             <motion.button
               key={path}
