@@ -933,7 +933,7 @@ export default function SettingsPage() {
               {csvLoading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  {language === "pt" ? "A preparar ficheiro…" : "Preparing file..."}
+                  {language === "pt" ? "A preparar ficheiro…" : "Preparing file…"}
                 </>
               ) : (
                 <>

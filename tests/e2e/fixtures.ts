@@ -210,6 +210,17 @@ function procedureData(procedure: string, input: any) {
       return mockBaseline;
     case "animals.getBeliefState":
       return mockBeliefState;
+    case "trends.getWeeklyTrend":
+      return {
+        trend: "stable",
+        percentageChange: 0,
+        dailyScores: [{ date: "01/06", score: 92 }],
+        message: "Bobi manteve um padrão estável nesta semana.",
+      };
+    case "trends.getPatterns":
+      return {
+        patterns: ["Maior relaxamento após rotina consistente"],
+      };
     case "animals.getPendingInvitations":
     case "animals.listShares":
     case "family.getMembers":
@@ -360,6 +371,49 @@ async function installBrowserMocks(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem("animalmind-onboarding-seen", "true");
     localStorage.setItem("theme", "dark");
+    indexedDB.deleteDatabase("animalmind-offline-queue");
+    indexedDB.deleteDatabase("animalmind-offline-queue-meta");
+
+    class MockWebSocket extends EventTarget {
+      static CONNECTING = 0;
+      static OPEN = 1;
+      static CLOSING = 2;
+      static CLOSED = 3;
+
+      binaryType: BinaryType = "blob";
+      extensions = "";
+      onclose: ((event: CloseEvent) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      onopen: ((event: Event) => void) | null = null;
+      protocol = "";
+      readyState = MockWebSocket.OPEN;
+      url: string;
+
+      constructor(url: string | URL) {
+        super();
+        this.url = String(url);
+        window.setTimeout(() => {
+          const event = new Event("open");
+          this.dispatchEvent(event);
+          this.onopen?.(event);
+        }, 0);
+      }
+
+      close() {
+        this.readyState = MockWebSocket.CLOSED;
+        const event = new CloseEvent("close");
+        this.dispatchEvent(event);
+        this.onclose?.(event);
+      }
+
+      send() {}
+    }
+
+    Object.defineProperty(window, "WebSocket", {
+      configurable: true,
+      value: MockWebSocket,
+    });
 
     Object.defineProperty(window, "Notification", {
       configurable: true,
@@ -444,8 +498,8 @@ export const test = base.extend({
 
 export async function loginAsMockUser(page: Page) {
   await page.goto("/login");
-  await page.getByPlaceholder("seu@email.com").fill(mockUserEmail);
-  await page.getByPlaceholder("••••••••").fill(mockUserPassword);
+  await page.locator("#login-email").fill(mockUserEmail);
+  await page.locator("#login-password").fill(mockUserPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }

@@ -54,8 +54,20 @@ export function TrendCard({ animalId }: TrendCardProps) {
     );
   }
 
-  const { trend: direction, percentageChange, dailyScores, message } = trend;
-  const patternList = patterns?.patterns || [];
+  const direction =
+    trend.trend === "up" || trend.trend === "down" || trend.trend === "stable"
+      ? trend.trend
+      : "stable";
+  const percentageChange =
+    typeof trend.percentageChange === "number" ? trend.percentageChange : 0;
+  const dailyScores = Array.isArray(trend.dailyScores) ? trend.dailyScores : [];
+  const message =
+    typeof trend.message === "string" && trend.message.trim().length > 0
+      ? trend.message
+      : language === "pt"
+        ? "Ainda não há dados suficientes para calcular uma tendência fiável."
+        : "There is not enough data yet to calculate a reliable trend.";
+  const patternList = Array.isArray(patterns?.patterns) ? patterns.patterns : [];
 
   return (
     <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-sm overflow-hidden">

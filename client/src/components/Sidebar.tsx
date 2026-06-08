@@ -79,6 +79,15 @@ export function Sidebar() {
           variant="ghost"
           size="icon"
           className="size-8 absolute -right-4 top-4 bg-card border border-border/50 rounded-full hover:bg-muted/80 z-50 text-muted-foreground shadow-sm shadow-black/30 hover:text-primary active-scale"
+          aria-label={
+            collapsed
+              ? language === "pt"
+                ? "Expandir navegação"
+                : "Expand navigation"
+              : language === "pt"
+                ? "Recolher navegação"
+                : "Collapse navigation"
+          }
         >
           {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
         </Button>
@@ -92,6 +101,9 @@ export function Sidebar() {
             <button
               key={path}
               onClick={() => navigate(path)}
+              aria-label={label}
+              aria-current={active ? "page" : undefined}
+              title={collapsed ? label : undefined}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-[150ms] ease-[cubic-bezier(0.16,1,0.3,1)] text-left active-scale font-satoshi text-xs font-semibold relative overflow-hidden group",
                 active
@@ -157,6 +169,7 @@ export function Sidebar() {
               size="icon"
               className="size-8 shrink-0 text-muted-foreground hover:text-rose-400 active-scale"
               title={language === "pt" ? "Sair" : "Sign Out"}
+              aria-label={language === "pt" ? "Terminar sessão" : "Sign out"}
             >
               <LogOut size={14} />
             </Button>
@@ -171,6 +184,7 @@ export function Sidebar() {
             size="icon"
             className="w-full h-8 text-muted-foreground hover:text-rose-400 active-scale mt-1"
             title={language === "pt" ? "Sair" : "Sign Out"}
+            aria-label={language === "pt" ? "Terminar sessão" : "Sign out"}
           >
             <LogOut size={14} />
           </Button>

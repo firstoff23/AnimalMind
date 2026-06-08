@@ -203,11 +203,17 @@ function ResultCard({
 
       {/* Notes / Dictation section */}
       <div className="space-y-2 pt-3 border-t border-border">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+        <label
+          htmlFor="recording-observation-note"
+          className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block"
+        >
           {t("recordingPage.observationNote")}
         </label>
         <div className="flex gap-2">
           <textarea
+            id="recording-observation-note"
+            name="recording-observation-note"
+            autoComplete="off"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={t("recordingPage.observationPlaceholder")}
@@ -225,6 +231,7 @@ function ResultCard({
                 : "hover:text-cyan-400 hover:border-cyan-500/20"
             )}
             title={t("recordingPage.dictateNote")}
+            aria-label={t("recordingPage.dictateNote")}
           >
             <Mic size={16} className={cn(isListening && "scale-110")} />
           </Button>
@@ -1969,10 +1976,16 @@ export default function RecordingPage() {
             </p>
 
             <div className="flex items-center justify-between gap-3 bg-secondary/30 p-2.5 rounded-xl border border-border/40">
-              <span className="text-xs font-medium text-muted-foreground">
+              <label
+                htmlFor="recording-simulated-posture"
+                className="text-xs font-medium text-muted-foreground"
+              >
                 {t("recordingPage.simulatedPosture")}
-              </span>
+              </label>
               <select
+                id="recording-simulated-posture"
+                name="recording-simulated-posture"
+                aria-label={t("recordingPage.simulatedPosture")}
                 value={detectedPosture}
                 onChange={(e) => setDetectedPosture(e.target.value)}
                 className="bg-card text-xs font-semibold text-foreground border border-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500/50 active-scale tap-highlight-none"

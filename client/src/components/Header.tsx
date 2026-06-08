@@ -10,7 +10,7 @@ import { Logo } from "@/components/ui/Logo";
 export function Header() {
   const [location, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
 
   if (!isAuthenticated) {
@@ -38,13 +38,20 @@ export function Header() {
 
   // Compute page title dynamically
   const getPageTitle = () => {
+    const translatedOr = (key: string, fallbackPt: string, fallbackEn: string) => {
+      const translated = t(key);
+      return translated && translated !== key ? translated : language === "pt" ? fallbackPt : fallbackEn;
+    };
+
     if (isRootPage) return "AnimalMind";
-    if (location.startsWith("/animal/")) return t("animalDetail.title") || "Detalhes";
+    if (location.startsWith("/animal/")) return translatedOr("animalDetail.title", "Detalhes", "Details");
     if (location.startsWith("/vet/animal/")) return "Paciente";
     if (location === "/vet") return "Modo Veterinário";
-    if (location === "/comparison") return t("comparison.title") || "Comparação";
-    if (location === "/health") return t("health.title") || "Saúde";
-    if (location === "/family" || location.startsWith("/join/")) return t("dashboardPage.family") || "Modo Família";
+    if (location === "/comparison") return translatedOr("comparison.title", "Comparação", "Comparison");
+    if (location === "/health") return translatedOr("health.title", "Saúde", "Health");
+    if (location === "/family" || location.startsWith("/join/")) {
+      return translatedOr("dashboardPage.family", "Modo Família", "Family Mode");
+    }
     return "AnimalMind";
   };
 

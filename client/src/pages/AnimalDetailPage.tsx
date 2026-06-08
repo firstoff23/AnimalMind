@@ -778,6 +778,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                               variant="ghost"
                               onClick={() => handlePlayToggle(ev.id, ev.audioUrl!)}
                               className="h-8 w-8 rounded-full hover:bg-secondary text-primary"
+                              aria-label={language === "pt" ? "Reproduzir áudio" : "Play audio"}
                             >
                               {playingAudioId === ev.id ? <Pause size={14} /> : <Play size={14} />}
                             </Button>
@@ -794,6 +795,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                               "h-8 w-8 rounded-full hover:bg-secondary",
                               ev.notes ? "text-primary" : "text-muted-foreground"
                             )}
+                            aria-label={language === "pt" ? "Editar notas" : "Edit notes"}
                           >
                             <MessageSquare size={14} />
                           </Button>
@@ -803,6 +805,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                             <button
                               disabled={feedbackMutation.isPending}
                               onClick={() => feedbackMutation.mutate({ eventId: ev.id, feedback: "correct" })}
+                              aria-label={language === "pt" ? "Marcar como correto" : "Mark as correct"}
                               className={cn(
                                 "p-1 rounded transition-all",
                                 ev.feedback === "correct" ? "bg-emerald-500/20 text-emerald-500" : "text-muted-foreground hover:text-foreground"
@@ -813,6 +816,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                             <button
                               disabled={feedbackMutation.isPending}
                               onClick={() => feedbackMutation.mutate({ eventId: ev.id, feedback: "incorrect" })}
+                              aria-label={language === "pt" ? "Marcar como incorreto" : "Mark as incorrect"}
                               className={cn(
                                 "p-1 rounded transition-all",
                                 ev.feedback === "incorrect" ? "bg-rose-500/20 text-rose-500" : "text-muted-foreground hover:text-foreground"
@@ -998,6 +1002,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
           <div className="space-y-4 pt-1">
             <textarea
+              aria-label={t("calibration.observationNotes")}
+              name="animal-event-notes"
+              autoComplete="off"
               className="w-full bg-secondary border border-border rounded-xl p-3 text-xs text-foreground focus:ring-1 focus:ring-primary focus:outline-none min-h-[100px] resize-none"
               value={tempNotes}
               onChange={(e) => setTempNotes(e.target.value)}

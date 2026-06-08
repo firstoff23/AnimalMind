@@ -5,6 +5,7 @@ export const OFFLINE_QUEUE_CHANGED_EVENT = "animalmind:offline-queue-changed";
 export const OFFLINE_QUEUE_CHANNEL = "animalmind-offline-queue";
 
 const DB_NAME = "animalmind-offline-queue";
+const META_DB_NAME = "animalmind-offline-queue-meta";
 const RECORDINGS_STORE = "recordings";
 const META_STORE = "metadata";
 const AUTH_KEY = "supabase-auth";
@@ -12,7 +13,7 @@ const BASE_BACKOFF_MS = 2_000;
 export const MAX_OFFLINE_QUEUE_ATTEMPTS = 3;
 
 const recordingsStore = createStore(DB_NAME, RECORDINGS_STORE);
-const metaStore = createStore(DB_NAME, META_STORE);
+const metaStore = createStore(META_DB_NAME, META_STORE);
 
 export type QueuedClassificationPayload = {
   animalId?: number;
