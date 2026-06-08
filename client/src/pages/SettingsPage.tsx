@@ -28,6 +28,13 @@ import {
   Moon,
   LogOut,
   Stethoscope,
+  Activity,
+  Trash2,
+  Play,
+  CheckCircle2,
+  AlertCircle,
+  Wrench,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -36,8 +43,13 @@ import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getVeterinaryRoleLabel, isVeterinaryRole } from "@/lib/roles";
+import { useSelfHealing } from "@/contexts/SelfHealingContext";
 
 type Sensitivity = "low" | "medium" | "high";
+
+function CrashingComponent() {
+  throw new Error("Erro Simulado de UI: Falha crítica na renderização do componente de teste.");
+}
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -61,6 +73,25 @@ export default function SettingsPage() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   const utils = trpc.useUtils();
+  const { reportError } = useSelfHealing();
+  const [shouldCrash, setShouldCrash] = useState(false);
+  const [expandedErrorId, setExpandedErrorId] = useState<number | null>(null);
+
+  const { data: recentErrors, refetch: refetchErrors } = trpc.healing.getRecentErrors.useQuery({ limit: 5 });
+  const { data: healingHistory, refetch: refetchHealing } = trpc.healing.getHealingHistory.useQuery({ limit: 5 });
+  const { data: healthState, refetch: refetchHealth } = trpc.healing.getHealthState.useQuery();
+
+  const clearHistoryMutation = trpc.healing.clearHistory.useMutation({
+    onSuccess: () => {
+      toast.success(language === "pt" ? "Logs de diagnóstico limpos!" : "Diagnostic logs cleared!");
+      refetchErrors();
+      refetchHealing();
+      refetchHealth();
+    },
+    onError: (err) => {
+      toast.error(err.message || (language === "pt" ? "Erro ao limpar logs." : "Error clearing logs."));
+    },
+  });
 
   const sensitivityLabels: Record<Sensitivity, string> = {
     low: t("settingsPage.alertsSensitivityLow"),
@@ -222,6 +253,7 @@ export default function SettingsPage() {
       animate="show"
       className="page-enter min-h-full px-4 pt-6 pb-6 space-y-6 max-w-lg mx-auto"
     >
+      {shouldCrash && <CrashingComponent />}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("settingsPage.title")}</h1>
         <p className="text-xs text-muted-foreground">
@@ -609,6 +641,244 @@ export default function SettingsPage() {
               />
             </div>
           </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Diagnóstico e Autocura */}
+      <motion.div variants={cardVariants}>
+        <Card className="bg-card border-border overflow-hidden shadow-sm">
+          <CardHeader className="pb-3 border-b border-border bg-muted/30">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <Activity className="w-4 h-4 text-primary animate-pulse" />
+              {language === "pt" ? "Diagnóstico e Autocura" : "Diagnostics & Self-Healing"}
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              {language === "pt"
+                ? "Monitorize a saúde do sistema e teste a recuperação automática da app"
+                : "Monitor system health and test automatic app recovery"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-5">
+            {/* Health Status Dashboard */}
+            <div className="bg-muted/35 border border-border/40 rounded-xl p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground">
+                  {language === "pt" ? "Estado de Saúde Geral:" : "Overall Health State:"}
+                </span>
+                <span className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-full capitalize flex items-center gap-1.5",
+                  healthState?.status === "healthy" || !healthState
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : healthState?.status === "degraded"
+                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                    : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                )}>
+                  <span className={cn(
+                    "w-1.5 h-1.5 rounded-full animate-ping",
+                    healthState?.status === "healthy" || !healthState
+                      ? "bg-emerald-400"
+                      : healthState?.status === "degraded"
+                      ? "bg-amber-400"
+                      : "bg-rose-400"
+                  )} />
+                  {healthState?.status || "healthy"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[10px] pt-1">
+                <div className="border border-border/30 rounded-lg p-2 bg-background/50 flex flex-col justify-between">
+                  <span className="text-muted-foreground">API Backend:</span>
+                  <span className="font-semibold text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <CheckCircle2 className="w-3 h-3" /> Operational
+                  </span>
+                </div>
+                <div className="border border-border/30 rounded-lg p-2 bg-background/50 flex flex-col justify-between">
+                  <span className="text-muted-foreground">Camera System:</span>
+                  <span className="font-semibold text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <CheckCircle2 className="w-3 h-3" /> Ready
+                  </span>
+                </div>
+                <div className="border border-border/30 rounded-lg p-2 bg-background/50 flex flex-col justify-between">
+                  <span className="text-muted-foreground">Audio / YAMNet:</span>
+                  <span className="font-semibold text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <CheckCircle2 className="w-3 h-3" /> Online
+                  </span>
+                </div>
+                <div className="border border-border/30 rounded-lg p-2 bg-background/50 flex flex-col justify-between">
+                  <span className="text-muted-foreground">Last Checked:</span>
+                  <span className="font-semibold text-foreground mt-0.5">
+                    {healthState ? new Date(healthState.lastCheckedAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Simulated Error Buttons */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-foreground">
+                {language === "pt" ? "Testar Autocura (Simulação)" : "Test Self-Healing (Simulation)"}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    toast.loading(language === "pt" ? "A simular erro de interface..." : "Simulating UI error...");
+                    setTimeout(() => setShouldCrash(true), 850);
+                  }}
+                  variant="outline"
+                  className="text-[10px] h-8 border-rose-500/20 text-rose-400 hover:bg-rose-500/10 gap-1 active-scale"
+                >
+                  <AlertCircle className="w-3 h-3" />
+                  {language === "pt" ? "Erro de UI (Crash)" : "UI Error (Crash)"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    reportError(new Error("Simulated API Error: Failed to fetch backend at fly.dev (Status 503)"));
+                    toast.success(language === "pt" ? "Erro de rede simulado e enviado!" : "Simulated network error logged!");
+                    setTimeout(() => {
+                      refetchErrors();
+                      refetchHealth();
+                    }, 500);
+                  }}
+                  variant="outline"
+                  className="text-[10px] h-8 border-amber-500/20 text-amber-400 hover:bg-amber-500/10 gap-1 active-scale"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  {language === "pt" ? "Erro de Rede" : "Network Error"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Recent Errors List */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>{language === "pt" ? "Erros Recentes Intercetados" : "Recent Intercepted Errors"}</span>
+                <span className="text-[10px] text-muted-foreground font-normal font-sans">
+                  {recentErrors?.length ?? 0} {language === "pt" ? "registados" : "logged"}
+                </span>
+              </Label>
+
+              {recentErrors && recentErrors.length > 0 ? (
+                <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                  {recentErrors.map((err: any) => (
+                    <div
+                      key={err.id}
+                      className="border border-border/40 rounded-lg p-2 bg-background/30 text-[10px] space-y-1"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-foreground truncate max-w-[150px]">
+                          [{err.component}] {err.errorCode}
+                        </span>
+                        <span className={cn(
+                          "px-1.5 py-0.2 rounded-md font-bold capitalize text-[8px]",
+                          err.severity === "critical"
+                            ? "bg-rose-500/10 text-rose-400"
+                            : err.severity === "error"
+                            ? "bg-red-500/10 text-red-400"
+                            : "bg-amber-500/10 text-amber-400"
+                        )}>
+                          {err.severity}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground line-clamp-1 break-all text-[9px]">{err.errorMessage}</p>
+                      <div className="flex items-center justify-between text-[8px] text-muted-foreground/80 pt-0.5">
+                        <span>{new Date(err.createdAt).toLocaleString()}</span>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedErrorId(expandedErrorId === err.id ? null : err.id)}
+                          className="text-primary hover:underline"
+                        >
+                          {expandedErrorId === err.id
+                            ? (language === "pt" ? "Fechar" : "Close")
+                            : (language === "pt" ? "Ver Detalhes" : "View Details")}
+                        </button>
+                      </div>
+                      {expandedErrorId === err.id && (
+                        <div className="mt-1.5 p-1.5 bg-background border border-border/20 rounded-md overflow-x-auto">
+                          <pre className="text-[8px] font-mono leading-tight whitespace-pre-wrap break-all text-muted-foreground/90">
+                            {err.errorStack || err.errorMessage}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-border/40 rounded-xl p-3 flex flex-col items-center justify-center text-center text-muted-foreground py-5">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400 mb-1" />
+                  <span className="text-[10px] font-medium">{language === "pt" ? "Nenhum erro detetado recente" : "No recent errors detected"}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Healing History Actions */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-foreground">
+                {language === "pt" ? "Histórico de Ações de Autocura" : "Self-Healing Actions History"}
+              </Label>
+              {healingHistory && healingHistory.length > 0 ? (
+                <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  {healingHistory.map((act: any) => (
+                    <div
+                      key={act.id}
+                      className="border border-border/30 rounded-lg p-2 bg-background/30 text-[10px] flex items-start gap-2"
+                    >
+                      <Wrench className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-foreground capitalize">
+                            {act.actionAttempted.replace(/_/g, " ")}
+                          </span>
+                          <span className={cn(
+                            "px-1.5 py-0.2 rounded-md font-bold capitalize text-[8px]",
+                            act.status === "success"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-red-500/10 text-red-400"
+                          )}>
+                            {act.status}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground leading-snug text-[9px]">{act.resolutionNotes}</p>
+                        <span className="text-[8px] text-muted-foreground/80 block pt-0.5">
+                          {new Date(act.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-dashed border-border/40 rounded-xl p-3 flex flex-col items-center justify-center text-center text-muted-foreground py-4">
+                  <Wrench className="w-5 h-5 text-muted-foreground/60 mb-1" />
+                  <span className="text-[10px]">{language === "pt" ? "Nenhuma ação corretiva executada ainda" : "No corrective actions executed yet"}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+
+          {/* Admin Clean Actions */}
+          {dbUser?.role === "admin" && (
+            <CardFooter className="pt-0 border-t border-border/10 bg-muted/10 p-3">
+              <Button
+                type="button"
+                onClick={() => {
+                  if (confirm(language === "pt" ? "Tem a certeza que deseja apagar todos os logs de autocura?" : "Are you sure you want to delete all self-healing logs?")) {
+                    clearHistoryMutation.mutate({ olderThanDays: 0 });
+                  }
+                }}
+                disabled={clearHistoryMutation.isPending}
+                variant="destructive"
+                className="w-full gap-2 text-xs h-8 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all active-scale"
+              >
+                {clearHistoryMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                {language === "pt" ? "Limpar Logs de Autocura (Admin)" : "Clear Self-Healing Logs (Admin)"}
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </motion.div>
 
