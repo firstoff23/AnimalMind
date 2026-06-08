@@ -53,3 +53,25 @@ export interface AppHealthState {
   updatedAt: Date;
 }
 
+export type SeverityType = "safe" | "caution" | "dangerous" | "toxic";
+
+export interface Food {
+  id: string;
+  name: string;
+  aliases: string[] | null;
+  safeFor: string[] | null;
+  dangerousFor: string[] | null;
+  toxicFor: string[] | null;
+  severity: SeverityType;
+  reason: string;
+  symptoms: string[] | null;
+  whatToDo: string | null;
+  sources: string[] | null;
+  createdAt: Date | null;
+}
+
+export interface FoodResult extends Food {
+  computedSeverity: SeverityType;
+}
+
+

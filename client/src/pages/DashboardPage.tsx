@@ -10,7 +10,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useMotionValue, animate } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck } from "lucide-react";
+import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck, Apple } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/lib/utils";
 import { AlertBanner } from "@/components/AlertBanner";
@@ -385,6 +385,22 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-3 select-none">
+        <Link to="/alimentos">
+          <Button variant="outline" className="w-full h-12 rounded-2xl justify-start gap-2.5 border-border/60 hover:bg-muted/40 text-xs font-semibold px-4 active-scale tap-highlight-none">
+            <Apple className="h-4.5 w-4.5 text-emerald-400" />
+            <span>{language === "pt" ? "Alimentos" : "Foods"}</span>
+          </Button>
+        </Link>
+        <Link to="/historico">
+          <Button variant="outline" className="w-full h-12 rounded-2xl justify-start gap-2.5 border-border/60 hover:bg-muted/40 text-xs font-semibold px-4 active-scale tap-highlight-none">
+            <Clock3 className="h-4.5 w-4.5 text-indigo-400" />
+            <span>{language === "pt" ? "Histórico" : "History"}</span>
+          </Button>
+        </Link>
       </div>
 
       {activeAnimal && <AlertBanner animalId={activeAnimal.id} />}

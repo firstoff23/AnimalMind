@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Apple,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export function Sidebar() {
     { path: "/perfil", icon: PawPrint, label: language === "pt" ? "Animais" : "Pets" },
     { path: "/historico", icon: History, label: language === "pt" ? "Histórico" : "History" },
     { path: "/mindi", icon: MessageCircle, label: "Mindi" },
+    { path: "/alimentos", icon: Apple, label: language === "pt" ? "Alimentos" : "Foods" },
     { path: "/definicoes", icon: Settings, label: language === "pt" ? "Definições" : "Settings" },
   ];
 

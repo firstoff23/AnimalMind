@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { ENV } from "./_core/env";
-import type { InsertUser, User, AppError, AppHealingAction, AppHealthState } from "../shared/dbTypes";
+import type { InsertUser, User, AppError, AppHealingAction, AppHealthState, Food, FoodResult, SeverityType } from "../shared/dbTypes";
 import { STATE_LABELS, type EmotionalState } from "../shared/types";
 import fs from "fs";
 import path from "path";
@@ -1516,6 +1516,92 @@ async function getVetEventsForAnimal(animalId: number, days = 30, limit?: number
   if (error) throw error;
   return data || [];
 }
+
+// ─── Food dictionary operations ──────────────────────────────────────────────
+
+export function mapDbFood(f: any): Food {
+  if (!f) return null as any;
+  return {
+    id: f.id,
+    name: f.name,
+    aliases: f.aliases ?? [],
+    safeFor: f.safe_for ?? [],
+    dangerousFor: f.dangerous_for ?? [],
+    toxicFor: f.toxic_for ?? [],
+    severity: f.severity,
+    reason: f.reason,
+    symptoms: f.symptoms ?? [],
+    whatToDo: f.what_to_do ?? null,
+    sources: f.sources ?? [],
+    createdAt: f.created_at ? new Date(f.created_at) : null,
+  };
+}
+
+export function computeFoodSeverity(food: Food, species?: string): SeverityType {
+  if (!species) return food.severity;
+  const spec = species.toLowerCase().trim();
+  if (food.toxicFor && food.toxicFor.map(s => s.toLowerCase().trim()).includes(spec)) {
+    return "toxic";
+  }
+  if (food.dangerousFor && food.dangerousFor.map(s => s.toLowerCase().trim()).includes(spec)) {
+    return "dangerous";
+  }
+  if (food.safeFor && food.safeFor.map(s => s.toLowerCase().trim()).includes(spec)) {
+    return "safe";
+  }
+  return food.severity;
+}
+
+export async function getFoods(species?: string): Promise<FoodResult[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("foods")
+    .select("*")
+    .order("name", { ascending: true });
+    
+  if (error) throw error;
+  
+  return (data || []).map(f => {
+    const food = mapDbFood(f);
+    const computedSeverity = computeFoodSeverity(food, species);
+    return { ...food, computedSeverity };
+  });
+}
+
+export async function getFoodById(id: string, species?: string): Promise<FoodResult> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("foods")
+    .select("*")
+    .eq("id", id)
+    .single();
+    
+  if (error) throw error;
+  if (!data) throw new Error(`Food not found with id: ${id}`);
+  
+  const food = mapDbFood(data);
+  const computedSeverity = computeFoodSeverity(food, species);
+  return { ...food, computedSeverity };
+}
+
+export async function searchFoods(query: string, species: string): Promise<FoodResult[]> {
+  const allFoods = await getFoods();
+  const q = query.toLowerCase().trim();
+  const spec = species.toLowerCase().trim();
+  
+  return allFoods
+    .map(food => {
+      const computedSeverity = computeFoodSeverity(food, spec);
+      return { ...food, computedSeverity };
+    })
+    .filter(food => {
+      if (!q) return true;
+      const nameMatch = food.name.toLowerCase().includes(q);
+      const aliasMatch = food.aliases && food.aliases.some(alias => alias.toLowerCase().includes(q));
+      return nameMatch || aliasMatch;
+    });
+}
+
 
 // ─── Self-Healing & Learning System Operations ───────────────────────────────
 
