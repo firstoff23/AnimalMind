@@ -15,6 +15,7 @@ import { BottomNav } from "./components/BottomNav";
 import { Sidebar } from "./components/Sidebar";
 import { cn } from "@/lib/utils";
 import { Header } from "./components/Header";
+import { MobileOnlyGate } from "./components/MobileOnlyGate";
 import { OnboardingDialog } from "./components/OnboardingDialog";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import RecordingPage from "./pages/RecordingPage";
@@ -133,28 +134,30 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <SelfHealingProvider>
-          <LanguageProvider>
-            <ThemeProvider defaultTheme="dark" switchable>
-              <TooltipProvider>
-                <Toaster
-                  theme="dark"
-                  position="bottom-center"
-                  toastOptions={{
-                    style: {
-                      background: "oklch(0.12 0.012 264)",
-                      border: "1px solid oklch(0.22 0.012 264)",
-                      color: "oklch(0.97 0.003 264)",
-                    },
-                  }}
-                />
-                <Router />
-              </TooltipProvider>
-            </ThemeProvider>
-          </LanguageProvider>
-        </SelfHealingProvider>
-      </AuthProvider>
+      <MobileOnlyGate>
+        <AuthProvider>
+          <SelfHealingProvider>
+            <LanguageProvider>
+              <ThemeProvider defaultTheme="dark" switchable>
+                <TooltipProvider>
+                  <Toaster
+                    theme="dark"
+                    position="bottom-center"
+                    toastOptions={{
+                      style: {
+                        background: "oklch(0.12 0.012 264)",
+                        border: "1px solid oklch(0.22 0.012 264)",
+                        color: "oklch(0.97 0.003 264)",
+                      },
+                    }}
+                  />
+                  <Router />
+                </TooltipProvider>
+              </ThemeProvider>
+            </LanguageProvider>
+          </SelfHealingProvider>
+        </AuthProvider>
+      </MobileOnlyGate>
     </ErrorBoundary>
   );
 }
