@@ -42,3 +42,37 @@ Working directory: C:\Users\Alexandre\Documents\AnimalMind
 - [ ] TypeScript check (`pnpm run check`) completes with 0 errors.
 - [ ] All vitest unit tests run and pass without failures.
 - [ ] Production build (`pnpm run build`) finishes successfully.
+
+## Follow-up — 2026-06-09T02:47:06Z
+
+Verify and fix Android (Capacitor) network connectivity issues for the AnimalMind application.
+
+Working directory: D:\AnimalMind
+Integrity mode: development
+
+## Requirements
+
+### R1. Capacitor Server URL Configuration
+- Ensure `capacitor.config.ts` includes `server.url` correctly configured to point to `https://animalmind.vercel.app` so that the app loads assets and pages from the web backend or acts as an SPC portal.
+
+### R2. Network Security Config
+- Create/modify `android/app/src/main/res/xml/network_security_config.xml` to allow cleartext or HTTPS connection to `animalmind.vercel.app` and subdomains.
+
+### R3. AndroidManifest Configuration
+- Ensure `AndroidManifest.xml` has `android.permission.INTERNET`.
+- Ensure `<application>` tag contains `android:networkSecurityConfig="@xml/network_security_config"`.
+
+### R4. Absolute tRPC and Supabase Client URLs
+- Verify that `client/src/main.tsx` and Supabase client initialization use absolute URLs (e.g. `https://animalmind.vercel.app/api/trpc` and `https://yuzqxrmtbqlnalpjehno.supabase.co`) under Capacitor.
+
+### R5. Logcat Verification
+- Use `adb logcat` (running in debug mode) to check for and capture any remaining connectivity issues, exceptions, or errors under the tag `AnimalMind`, `Error`, or `Exception`.
+
+## Acceptance Criteria
+
+### Security & Connectivity
+- [ ] `capacitor.config.ts` has `server.url` set to `https://animalmind.vercel.app`.
+- [ ] `android/app/src/main/res/xml/network_security_config.xml` successfully permits connections to `animalmind.vercel.app`.
+- [ ] `AndroidManifest.xml` has the INTERNET permission and references `@xml/network_security_config`.
+- [ ] tRPC queries and mutations run without network exceptions in the Android app.
+- [ ] Logcat output shows no active networking/CORS errors for `AnimalMind` or `animalmind.vercel.app`.

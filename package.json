@@ -19,6 +19,9 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1053.0",
     "@aws-sdk/s3-request-presigner": "^3.1053.0",
+    "@capacitor-community/sqlite": "^8.1.0",
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@hookform/resolvers": "^5.2.2",
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/pose": "^0.5.1675469404",
@@ -114,6 +117,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.15",

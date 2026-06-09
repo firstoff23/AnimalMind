@@ -1,4 +1,11 @@
 import { createStore, del, entries, get, set } from "idb-keyval";
+import { blobToBase64 } from "@/lib/blobEncoding";
+import {
+  deleteNativePendingRecording,
+  getNativePendingRecordings,
+  saveNativePendingRecording,
+  updateNativePendingRecording,
+} from "@/lib/nativeOfflineQueue";
 
 export const OFFLINE_QUEUE_SYNC_TAG = "pending-recordings";
 export const OFFLINE_QUEUE_CHANGED_EVENT = "animalmind:offline-queue-changed";
@@ -105,21 +112,6 @@ export function isBrowserOffline() {
   return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
-export async function blobToBase64(blob: Blob) {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  const chunkSize = 0x8000;
-  let binary = "";
-
-  for (let index = 0; index < bytes.length; index += chunkSize) {
-    const chunk = bytes.subarray(index, index + chunkSize);
-    for (let chunkIndex = 0; chunkIndex < chunk.length; chunkIndex += 1) {
-      binary += String.fromCharCode(chunk[chunkIndex]);
-    }
-  }
-
-  return btoa(binary);
-}
-
 export async function enqueuePendingRecording(input: QueueRecordingInput) {
   const timestamp = input.timestamp ?? Date.now();
   const recording: PendingRecording = {
@@ -131,7 +123,11 @@ export async function enqueuePendingRecording(input: QueueRecordingInput) {
     status: "pending",
   };
 
-  await set(recording.id, recording, recordingsStore);
+  const savedNative = await saveNativePendingRecording(recording);
+  if (!savedNative) {
+    await set(recording.id, recording, recordingsStore);
+  }
+
   emitQueueChanged();
   await registerPendingRecordingsSync();
 
@@ -139,6 +135,11 @@ export async function enqueuePendingRecording(input: QueueRecordingInput) {
 }
 
 export async function getPendingRecordings() {
+  const nativeRecordings = await getNativePendingRecordings();
+  if (nativeRecordings) {
+    return nativeRecordings;
+  }
+
   const rows = await entries<string, PendingRecording>(recordingsStore);
   return rows
     .map(([, recording]) => recording)
@@ -221,25 +222,29 @@ export async function processPendingQueue(
         spectralEnergy: recording.spectralEnergy,
         tonalBrightness: recording.tonalBrightness,
       });
-      await del(recording.id, recordingsStore);
+      const deletedNative = await deleteNativePendingRecording(recording.id);
+      if (!deletedNative) {
+        await del(recording.id, recordingsStore);
+      }
       processed += 1;
     } catch (error) {
       const attempts = recording.attempts + 1;
       const status: PendingRecordingStatus =
         attempts >= MAX_OFFLINE_QUEUE_ATTEMPTS ? "failed" : "pending";
 
-      await set(
-        recording.id,
-        {
-          ...recording,
-          attempts,
-          status,
-          nextAttemptAt:
-            status === "pending" ? getNextAttemptAt(attempts, now) : Number.POSITIVE_INFINITY,
-          lastError: getErrorMessage(error),
-        } satisfies PendingRecording,
-        recordingsStore
-      );
+      const nextRecording = {
+        ...recording,
+        attempts,
+        status,
+        nextAttemptAt:
+          status === "pending" ? getNextAttemptAt(attempts, now) : Number.POSITIVE_INFINITY,
+        lastError: getErrorMessage(error),
+      } satisfies PendingRecording;
+
+      const updatedNative = await updateNativePendingRecording(nextRecording);
+      if (!updatedNative) {
+        await set(recording.id, nextRecording, recordingsStore);
+      }
       failed += 1;
     }
   }

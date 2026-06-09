@@ -10,6 +10,30 @@ import { serveStatic } from "./_core/serveStatic";
 const app = express();
 
 app.use((req, res, next) => {
+  const allowedOrigins = [
+    "https://animalmind.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "https://localhost"
+  ];
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else if (!origin) {
+    // Allow non-CORS requests (like direct curl or backend calls) to pass through without origin header validation
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+    return;
+  }
+  next();
+});
+
+app.use((req, res, next) => {
   console.log(`[Request] Method: ${req.method}, URL: ${req.url}, Path: ${req.path}`);
   next();
 });

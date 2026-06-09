@@ -2,6 +2,7 @@
 import { registerSW } from "virtual:pwa-register";
 registerSW({ immediate: true });
 
+import { Capacitor } from "@capacitor/core";
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -25,6 +26,11 @@ if (analyticsEndpoint && analyticsWebsiteId) {
 }
 
 const queryClient = new QueryClient();
+const trpcUrl = import.meta.env.VITE_TRPC_URL ?? (
+  Capacitor.isNativePlatform()
+    ? "https://animalmind.vercel.app/api/trpc"
+    : "/api/trpc"
+);
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -56,7 +62,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: trpcUrl,
       transformer: superjson,
       async headers() {
         if (supabase) {
