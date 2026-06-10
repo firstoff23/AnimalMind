@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
@@ -7,12 +8,25 @@ import {
   getHealthRecords,
   addHealthRecord,
   deleteHealthRecord,
+  getDemoUserId,
+  verifyAnimalOwner,
+  getVaccineById,
+  getHealthRecordById,
 } from "../db";
+
+async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+  if (ctxUser) return ctxUser.id;
+  const demoId = await getDemoUserId();
+  if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
+  return demoId;
+}
 
 export const healthRouter = router({
   getVaccines: protectedProcedure
     .input(z.object({ animalId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await verifyAnimalOwner(input.animalId, userId);
       return getVaccines(input.animalId);
     }),
 
@@ -28,19 +42,32 @@ export const healthRouter = router({
         nextDueDate: z.string().nullable().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await verifyAnimalOwner(input.animalId, userId, true);
       return addVaccine(input);
     }),
 
   deleteVaccine: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const vaccine = await getVaccineById(input.id);
+      if (!vaccine) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Vacina não encontrada",
+        });
+      }
+      await verifyAnimalOwner(vaccine.animalId, userId, true);
       return deleteVaccine(input.id);
     }),
 
   getHealthRecords: protectedProcedure
     .input(z.object({ animalId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await verifyAnimalOwner(input.animalId, userId);
       return getHealthRecords(input.animalId);
     }),
 
@@ -66,13 +93,24 @@ export const healthRouter = router({
         nextDueDate: z.string().nullable().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await verifyAnimalOwner(input.animalId, userId, true);
       return addHealthRecord(input);
     }),
 
   deleteHealthRecord: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const record = await getHealthRecordById(input.id);
+      if (!record) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Registo de saúde não encontrado",
+        });
+      }
+      await verifyAnimalOwner(record.animalId, userId, true);
       return deleteHealthRecord(input.id);
     }),
 });

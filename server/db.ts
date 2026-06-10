@@ -3400,6 +3400,17 @@ export async function addVaccine(data: {
   return mapDbVaccine(result);
 }
 
+export async function getVaccineById(id: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("vaccines")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapDbVaccine(data) : null;
+}
+
 export async function deleteVaccine(id: number) {
   const supabase = getSupabase();
   const { error } = await supabase
@@ -3473,6 +3484,17 @@ export async function addHealthRecord(data: {
     .single();
   if (error) throw error;
   return mapDbHealthRecord(result);
+}
+
+export async function getHealthRecordById(id: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("health_records")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapDbHealthRecord(data) : null;
 }
 
 export async function deleteHealthRecord(id: number) {

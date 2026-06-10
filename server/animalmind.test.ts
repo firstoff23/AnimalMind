@@ -30,6 +30,7 @@ vi.mock("./db", () => ({
     total: 0,
   }),
   updateEventFeedback: vi.fn().mockResolvedValue(undefined),
+  updateEventAudio: vi.fn().mockResolvedValue(undefined),
   getAllEventsForExport: vi.fn().mockResolvedValue([]),
   uploadAudioToSupabase: vi.fn().mockResolvedValue("https://storage.example.test/events/test.wav"),
   getAnimalsByUser: vi.fn().mockResolvedValue([
