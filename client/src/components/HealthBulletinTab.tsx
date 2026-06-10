@@ -62,10 +62,10 @@ export default function HealthBulletinTab({
   });
 
   // Dialog / Modal Form Visibility
-  const [activeForm, setActiveForm] = useState<"vaccine" | "deworming" | "test" | "treatment" | "license" | null>(null);
+  const [activeForm, setActiveForm] = useState<"vaccine" | "deworming" | "test" | "treatment" | "license" | "symptom" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
-    type: "vaccine" | "deworming" | "test" | "treatment" | "license";
+    type: "vaccine" | "deworming" | "test" | "treatment" | "license" | "symptom";
   } | null>(null);
 
   // Input states for vaccine
@@ -109,6 +109,15 @@ export default function HealthBulletinTab({
     expiryDate: "",
     issuingAuthority: "Junta de Freguesia",
     category: "companion" as "companion" | "dangerous" | "potentially_dangerous" | "hunting" | "guard" | "other",
+    notes: "",
+  });
+
+  // Input states for symptoms
+  const [symptomForm, setSymptomForm] = useState({
+    symptomName: "vomiting",
+    customSymptomName: "",
+    severity: "low" as "low" | "medium" | "high",
+    date: new Date().toISOString().split("T")[0],
     notes: "",
   });
 
@@ -245,6 +254,28 @@ export default function HealthBulletinTab({
     isPending: deleteHealthRecordMutation.isPending,
   };
 
+  const addSymptomMutation = {
+    mutate: (data: { animalId: number; symptomName: string; severity: string; date: string; notes?: string | null }) => {
+      addHealthRecordMutation.mutate({
+        animalId: data.animalId,
+        recordType: "notes",
+        date: data.date,
+        product: data.symptomName,
+        result: data.severity,
+        category: "symptom",
+        notes: data.notes,
+      });
+    },
+    isPending: addHealthRecordMutation.isPending,
+  };
+
+  const deleteSymptomMutation = {
+    mutate: (data: { id: number; animalId: number }) => {
+      deleteHealthRecordMutation.mutate({ id: data.id });
+    },
+    isPending: deleteHealthRecordMutation.isPending,
+  };
+
   // Handler for physical features form
   const handlePhysicalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,11 +342,22 @@ export default function HealthBulletinTab({
       notes: r.notes,
     }));
 
+  const symptoms = (healthRecords || [])
+    .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "notes" && r.category === "symptom")
+    .map(r => ({
+      id: r.id,
+      symptomName: r.product || "",
+      severity: r.result || "low",
+      date: r.date,
+      notes: r.notes || "",
+    }));
+
   const activeVaccinations = (vaccinations || []).filter((v): v is NonNullable<typeof v> => v !== null);
   const activeDewormings = (dewormings || []).filter((d): d is NonNullable<typeof d> => d !== null);
   const activeTests = (tests || []).filter((t): t is NonNullable<typeof t> => t !== null);
   const activeTreatments = (treatments || []).filter((t): t is NonNullable<typeof t> => t !== null);
   const activeLicenses = (licenses || []).filter((l): l is NonNullable<typeof l> => l !== null);
+  const activeSymptoms = (symptoms || []).filter((s): s is NonNullable<typeof s> => s !== null);
 
   const rabiesVaccinations = activeVaccinations.filter(v => v.vaccineType === "rabies");
   const otherVaccinations = activeVaccinations.filter(v => v.vaccineType === "other");
@@ -1326,6 +1368,195 @@ export default function HealthBulletinTab({
           </div>
         )}
       </div>
+
+      {/* ─── 7. REGISTO DE SINTOMAS ─────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <button
+          onClick={() => toggleSection("symptoms")}
+          className="w-full px-5 py-4 flex items-center justify-between font-semibold text-foreground text-sm hover:bg-muted/10 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-rose-500" />
+            <span>{t("bulletin.symptomsTitle")}</span>
+          </div>
+          {expandedSection === "symptoms" ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {expandedSection === "symptoms" && (
+          <div className="px-5 pb-5 pt-1 border-t border-border/40 space-y-4">
+            {activeSymptoms.length > 0 ? (
+              <div className="space-y-3">
+                {activeSymptoms.map(s => {
+                  const displaySymptom = s.symptomName.startsWith("Outro: ")
+                    ? s.symptomName.replace("Outro: ", "")
+                    : (t(`bulletin.symptom${s.symptomName.charAt(0).toUpperCase() + s.symptomName.slice(1)}`) !== `bulletin.symptom${s.symptomName.charAt(0).toUpperCase() + s.symptomName.slice(1)}`
+                      ? t(`bulletin.symptom${s.symptomName.charAt(0).toUpperCase() + s.symptomName.slice(1)}`)
+                      : s.symptomName);
+
+                  return (
+                    <div key={s.id} className="flex justify-between items-start text-xs border-b border-border/30 pb-2 last:border-none last:pb-0">
+                      <div className="space-y-0.5">
+                        <p className="font-semibold text-foreground">
+                          {displaySymptom}
+                          <Badge
+                            variant="outline"
+                            className={`ml-2 text-[9px] ${
+                              s.severity === "high"
+                                ? "border-red-500/20 text-red-400 bg-red-950/10"
+                                : s.severity === "medium"
+                                ? "border-amber-500/20 text-amber-400 bg-amber-950/10"
+                                : "border-emerald-500/20 text-emerald-400 bg-emerald-950/10"
+                            }`}
+                          >
+                            {s.severity === "high" ? t("bulletin.severityHigh") : s.severity === "medium" ? t("bulletin.severityMedium") : t("bulletin.severityLow")}
+                          </Badge>
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {t("common.date")}: {s.date}
+                        </p>
+                        {s.notes && (
+                          <p className="text-[10px] text-muted-foreground italic mt-1 bg-secondary/20 px-2 py-1 rounded">
+                            {t("common.notes")}: {s.notes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {!animal.isShared && (
+                          <button
+                            onClick={() => setDeleteTarget({ id: s.id, type: "symptom" })}
+                            className="text-muted-foreground hover:text-rose-500 transition-colors p-1"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">{t("bulletin.noSymptoms")}</p>
+            )}
+
+            {!animal.isShared && (
+              <Button
+                onClick={() => {
+                  setActiveForm(activeForm === "symptom" ? null : "symptom");
+                  setSymptomForm({
+                    symptomName: "vomiting",
+                    customSymptomName: "",
+                    severity: "low",
+                    date: new Date().toISOString().split("T")[0],
+                    notes: "",
+                  });
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full gap-1 text-xs h-8 rounded-xl"
+              >
+                <Plus size={14} /> {t("bulletin.addSymptom")}
+              </Button>
+            )}
+
+            {activeForm === "symptom" && (
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  const nameToSubmit = symptomForm.symptomName === "other"
+                    ? `Outro: ${symptomForm.customSymptomName}`
+                    : symptomForm.symptomName;
+
+                  addSymptomMutation.mutate({
+                    animalId,
+                    symptomName: nameToSubmit,
+                    severity: symptomForm.severity,
+                    date: symptomForm.date,
+                    notes: symptomForm.notes || null,
+                  });
+                }}
+                className="bg-secondary/40 border border-border/60 p-4 rounded-xl space-y-3 page-enter"
+              >
+                <div className="space-y-1">
+                  <Label className="text-[11px]">{t("bulletin.symptomName")}</Label>
+                  <select
+                    value={symptomForm.symptomName}
+                    onChange={e => setSymptomForm({ ...symptomForm, symptomName: e.target.value })}
+                    className="w-full text-xs h-8 rounded-md bg-background border border-border px-2 text-foreground focus:outline-none"
+                  >
+                    <option value="vomiting">{t("bulletin.symptomVomiting")}</option>
+                    <option value="lethargy">{t("bulletin.symptomLethargy")}</option>
+                    <option value="itching">{t("bulletin.symptomItching")}</option>
+                    <option value="lossOfAppetite">{t("bulletin.symptomLossOfAppetite")}</option>
+                    <option value="diarrhea">{t("bulletin.symptomDiarrhea")}</option>
+                    <option value="coughing">{t("bulletin.symptomCoughing")}</option>
+                    <option value="fever">{t("bulletin.symptomFever")}</option>
+                    <option value="other">{t("bulletin.symptomOther")}</option>
+                  </select>
+                </div>
+
+                {symptomForm.symptomName === "other" && (
+                  <div className="space-y-1">
+                    <Label className="text-[11px]">Sintoma Personalizado</Label>
+                    <Input
+                      type="text"
+                      placeholder="Descreva o sintoma..."
+                      value={symptomForm.customSymptomName}
+                      onChange={e => setSymptomForm({ ...symptomForm, customSymptomName: e.target.value })}
+                      className="text-xs h-8 bg-background border-border"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px]">{t("common.date")}</Label>
+                    <Input
+                      type="date"
+                      value={symptomForm.date}
+                      onChange={e => setSymptomForm({ ...symptomForm, date: e.target.value })}
+                      className="text-xs h-8 bg-background border-border"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px]">{t("bulletin.severity")}</Label>
+                    <select
+                      value={symptomForm.severity}
+                      onChange={e => setSymptomForm({ ...symptomForm, severity: e.target.value as any })}
+                      className="w-full text-xs h-8 rounded-md bg-background border border-border px-2 text-foreground focus:outline-none"
+                    >
+                      <option value="low">{t("bulletin.severityLow")}</option>
+                      <option value="medium">{t("bulletin.severityMedium")}</option>
+                      <option value="high">{t("bulletin.severityHigh")}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[11px]">{t("common.notes")}</Label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: após comer ração, dura há 2 dias..."
+                    value={symptomForm.notes}
+                    onChange={e => setSymptomForm({ ...symptomForm, notes: e.target.value })}
+                    className="text-xs h-8 bg-background border-border"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={addSymptomMutation.isPending}
+                  className="w-full text-xs h-8"
+                >
+                  {addSymptomMutation.isPending ? t("common.loading") : t("common.confirm")}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* ─── AlertDialog de confirmação de eliminação ───────────────────── */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
@@ -1352,6 +1583,7 @@ export default function HealthBulletinTab({
                 else if (type === "test") deleteTestMutation.mutate({ id, animalId });
                 else if (type === "treatment") deleteTreatmentMutation.mutate({ id, animalId });
                 else if (type === "license") deleteLicenseMutation.mutate({ id, animalId });
+                else if (type === "symptom") deleteSymptomMutation.mutate({ id, animalId });
                 setDeleteTarget(null);
               }}
               className="bg-rose-600 hover:bg-rose-700 text-white"

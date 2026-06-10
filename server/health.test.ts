@@ -152,6 +152,22 @@ describe("healthRouter security", () => {
       expect(addHealthRecord).toHaveBeenCalledWith(payload);
     });
 
+    it("allows adding a symptom health record as notes recordType and category symptom", async () => {
+      const caller = appRouter.createCaller(makeCtx());
+      const payload = {
+        animalId: 1,
+        recordType: "notes" as const,
+        date: "2026-06-10",
+        product: "vomiting",
+        result: "medium",
+        category: "symptom",
+        notes: "Ocorrência pós refeição",
+      };
+      await caller.health.addHealthRecord(payload);
+      expect(verifyAnimalOwner).toHaveBeenCalledWith(1, 1, true);
+      expect(addHealthRecord).toHaveBeenCalledWith(payload);
+    });
+
     it("denies adding health record for non-owned animal", async () => {
       const caller = appRouter.createCaller(makeCtx());
       const payload = {

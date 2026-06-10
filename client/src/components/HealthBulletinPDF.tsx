@@ -119,6 +119,7 @@ interface HealthBulletinPDFProps {
   vaccinations: any[];
   dewormings: any[];
   treatments: any[];
+  symptoms?: any[];
 }
 
 export function HealthBulletinPDF({
@@ -126,7 +127,31 @@ export function HealthBulletinPDF({
   vaccinations = [],
   dewormings = [],
   treatments = [],
+  symptoms = [],
 }: HealthBulletinPDFProps) {
+  const getSymptomLabel = (name: string) => {
+    if (name.startsWith("Outro: ")) return name.replace("Outro: ", "");
+    const map: Record<string, string> = {
+      vomiting: "Vómitos",
+      lethargy: "Letargia",
+      itching: "Coceira / Prurido",
+      lossOfAppetite: "Perda de Apetite",
+      diarrhea: "Diarreia",
+      coughing: "Tosse",
+      fever: "Febre",
+      other: "Outro",
+    };
+    return map[name] || name;
+  };
+
+  const getSeverityLabel = (severity: string) => {
+    const map: Record<string, string> = {
+      low: "Leve",
+      medium: "Moderado",
+      high: "Grave",
+    };
+    return map[severity] || severity;
+  };
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -304,6 +329,47 @@ export function HealthBulletinPDF({
                 </View>
                 <View style={[styles.tableCol, { width: "40%" }]}>
                   <Text style={styles.tableCell}>{t.notes || "—"}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Symptoms Logger Table */}
+        <Text style={styles.sectionTitle}>Registo de Sintomas (Symptom Logger)</Text>
+        {symptoms.length === 0 ? (
+          <Text style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 15 }}>
+            Nenhum registo de sintoma encontrado.
+          </Text>
+        ) : (
+          <View style={styles.table}>
+            <View style={styles.tableRow}>
+              <View style={[styles.tableColHeader, { width: "25%" }]}>
+                <Text style={styles.tableCellHeader}>Sintoma</Text>
+              </View>
+              <View style={[styles.tableColHeader, { width: "15%" }]}>
+                <Text style={styles.tableCellHeader}>Gravidade</Text>
+              </View>
+              <View style={[styles.tableColHeader, { width: "20%" }]}>
+                <Text style={styles.tableCellHeader}>Data</Text>
+              </View>
+              <View style={[styles.tableColHeader, { width: "40%" }]}>
+                <Text style={styles.tableCellHeader}>Notas</Text>
+              </View>
+            </View>
+            {symptoms.map((s, i) => (
+              <View key={i} style={styles.tableRow}>
+                <View style={[styles.tableCol, { width: "25%" }]}>
+                  <Text style={styles.tableCell}>{getSymptomLabel(s.symptomName)}</Text>
+                </View>
+                <View style={[styles.tableCol, { width: "15%" }]}>
+                  <Text style={styles.tableCell}>{getSeverityLabel(s.severity)}</Text>
+                </View>
+                <View style={[styles.tableCol, { width: "20%" }]}>
+                  <Text style={styles.tableCell}>{s.date || "—"}</Text>
+                </View>
+                <View style={[styles.tableCol, { width: "40%" }]}>
+                  <Text style={styles.tableCell}>{s.notes || "—"}</Text>
                 </View>
               </View>
             ))}

@@ -59,12 +59,23 @@ export default function HealthPage() {
 
       const activeVaccinations = (vaccinations || []).filter((v): v is NonNullable<typeof v> => v !== null);
 
+      const symptoms = (healthRecords || [])
+        .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "notes" && r.category === "symptom")
+        .map(r => ({
+          id: r.id,
+          symptomName: r.product || "",
+          severity: r.result || "low",
+          date: r.date,
+          notes: r.notes || "",
+        }));
+
       const docBlob = await pdf(
         <HealthBulletinPDF
           animal={selectedAnimal}
           vaccinations={activeVaccinations}
           dewormings={dewormings}
           treatments={treatments}
+          symptoms={symptoms}
         />
       ).toBlob();
 
