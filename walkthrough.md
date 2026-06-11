@@ -183,3 +183,21 @@ Com a aplicação bem-sucedida do ficheiro de migração `20260605_self_healing_
 * **Testes Unitários**: Executamos a suite de testes locais e todos os **103 testes** passaram com sucesso.
 * **Build de Produção**: `pnpm run build` gerou com sucesso todos os assets estáticos do frontend e o bundle de produção do servidor NodeJS sem falhas de compilação ou lints.
 * **Publicação**: As alterações foram commitadas e empurradas com sucesso para a branch principal (`git push origin main`).
+
+---
+
+## 🔍 14. Auditoria Visual UI/UX & Validação E2E (Fase de Verificação Completa) ✅
+
+Efetuámos uma auditoria completa de todas as páginas da aplicação para validar a responsividade, alinhamentos, tamanhos de toque (mínimo 44x44px), acessibilidade e ausência de erros na consola do browser.
+
+### Resultados da Auditoria:
+* **Filtros e Layout do Dicionário de Alimentos**: Confirmada a segmentação visual clara entre *Alimentos Seguros* (verde emerald) e *Alimentos Perigosos* (vermelho/rosa rose) em ecrãs mobile e desktop. A seleção de espécies limita-se corretamente a Cão e Gato, com os alimentos comuns a aparecer em ambos os filtros e os exclusivos nos respetivos.
+* **Perfil do Animal nas Definições**: Carrossel horizontal e formulário de edição direta de peso (com a nova coluna persistida no Supabase), idade, raça e nome a funcionar sem anomalias estéticas.
+* **Navegação & Redirecionamentos**: Confirmação visual de que o separador `/perfil` foi inteiramente removido dos menus e que redireciona o utilizador com sucesso para `/definicoes`.
+* **Resoluções e Responsividade**: Validação em viewports mobile (375x812) e desktop (1280x800).
+* **Captura de Ecrãs**: Todos os screenshots antes e depois da auditoria foram capturados e guardados no diretório de artifacts com os sufixos `_mobile` e `_desktop` para análise e persistência.
+
+### Validação Técnica E2E:
+* **Playwright E2E Tests**: Executámos toda a suite de integração (`pnpm run e2e`), com **6/6 testes a passar** com sucesso (auth-callback, desktop-warning, history, login, pdf-export e recording).
+* **Vitest Unit Tests**: Todos os **103/103 testes** do backend e lógica local passam com sucesso.
+* **TypeScript & Build**: `pnpm run check` (0 erros de tipo) e `pnpm run build` compilam a 100%.
