@@ -33,7 +33,6 @@ export function Sidebar() {
   const navItems = [
     { path: "/dashboard", icon: BarChart2, label: language === "pt" ? "Dashboard" : "Dashboard" },
     { path: "/gravar", icon: Mic, label: language === "pt" ? "Gravar" : "Record" },
-    { path: "/perfil", icon: PawPrint, label: language === "pt" ? "Animais" : "Pets" },
     { path: "/historico", icon: History, label: language === "pt" ? "Histórico" : "History" },
     { path: "/mindi", icon: MessageCircle, label: "Mindi" },
     { path: "/alimentos", icon: Apple, label: language === "pt" ? "Alimentos" : "Foods" },

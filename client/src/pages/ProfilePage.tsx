@@ -141,7 +141,7 @@ function WeeklyChart({ animalId }: { animalId: number }) {
 
 // ─── Add Animal Form ──────────────────────────────────────────────────────────
 
-function AddAnimalForm({ onClose }: { onClose: () => void }) {
+export function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
   const [name, setName] = useState("");
   const [species, setSpecies] = useState<"dog" | "cat">("dog");

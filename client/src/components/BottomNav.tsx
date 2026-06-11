@@ -12,10 +12,8 @@ export function BottomNav() {
     { path: "/dashboard",    icon: BarChart2, label: language === "pt" ? "Dashboard" : "Dashboard" },
     { path: "/alimentos",    icon: Apple,     label: language === "pt" ? "Alimentos" : "Foods" },
     { path: "/gravar",       icon: Mic,        label: language === "pt" ? "Gravar" : "Record", isCenter: true },
-    { path: "/perfil",       icon: PawPrint,   label: language === "pt" ? "Animais" : "Pets" },
     { path: "/historico",    icon: History,    label: language === "pt" ? "Histórico" : "History" },
     { path: "/mindi",        icon: MessageCircle, label: "Mindi" },
-    { path: "/user-profile", icon: User,       label: language === "pt" ? "Perfil" : "Profile" },
     { path: "/definicoes",   icon: Settings,   label: language === "pt" ? "Definições" : "Settings" },
   ];
 

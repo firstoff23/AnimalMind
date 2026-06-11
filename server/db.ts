@@ -136,6 +136,7 @@ export function mapDbAnimal(a: any) {
     height: a.height ?? null,
     tail: a.tail ?? null,
     specialMarkings: a.special_markings ?? null,
+    weight: a.weight ?? null,
     createdAt: a.created_at ? new Date(a.created_at) : null,
     updatedAt: a.updated_at ? new Date(a.updated_at) : null,
   };
@@ -151,6 +152,7 @@ const optionalAnimalColumns = new Set([
   "height",
   "tail",
   "special_markings",
+  "weight",
 ]);
 
 function getMissingAnimalColumn(error: any): string | null {
@@ -207,6 +209,7 @@ export async function addAnimal(data: {
   height?: string | null;
   tail?: string | null;
   specialMarkings?: string | null;
+  weight?: string | null;
 }) {
   const supabase = getSupabase();
   const insertPayload: Record<string, any> = {
@@ -224,6 +227,7 @@ export async function addAnimal(data: {
     height: data.height,
     tail: data.tail,
     special_markings: data.specialMarkings,
+    weight: data.weight,
     is_active: false,
   };
 
@@ -310,6 +314,7 @@ export async function updateAnimal(
     height?: string | null;
     tail?: string | null;
     specialMarkings?: string | null;
+    weight?: string | null;
   }
 ) {
   const supabase = getSupabase();
@@ -327,6 +332,7 @@ export async function updateAnimal(
   if (data.height !== undefined) updatePayload.height = data.height;
   if (data.tail !== undefined) updatePayload.tail = data.tail;
   if (data.specialMarkings !== undefined) updatePayload.special_markings = data.specialMarkings;
+  if (data.weight !== undefined) updatePayload.weight = data.weight;
 
   let result: any = null;
   let error: any = null;
@@ -1561,11 +1567,23 @@ export async function getFoods(species?: string): Promise<FoodResult[]> {
     
   if (error) throw error;
   
-  return (data || []).map(f => {
+  let results = (data || []).map(f => {
     const food = mapDbFood(f);
     const computedSeverity = computeFoodSeverity(food, species);
     return { ...food, computedSeverity };
   });
+
+  if (species) {
+    const spec = species.toLowerCase().trim();
+    results = results.filter(food => {
+      const isSafe = food.safeFor && food.safeFor.map(s => s.toLowerCase().trim()).includes(spec);
+      const isDangerous = food.dangerousFor && food.dangerousFor.map(s => s.toLowerCase().trim()).includes(spec);
+      const isToxic = food.toxicFor && food.toxicFor.map(s => s.toLowerCase().trim()).includes(spec);
+      return isSafe || isDangerous || isToxic;
+    });
+  }
+
+  return results;
 }
 
 export async function getFoodById(id: string, species?: string): Promise<FoodResult> {
@@ -1585,21 +1603,15 @@ export async function getFoodById(id: string, species?: string): Promise<FoodRes
 }
 
 export async function searchFoods(query: string, species: string): Promise<FoodResult[]> {
-  const allFoods = await getFoods();
+  const allFoods = await getFoods(species);
   const q = query.toLowerCase().trim();
-  const spec = species.toLowerCase().trim();
   
-  return allFoods
-    .map(food => {
-      const computedSeverity = computeFoodSeverity(food, spec);
-      return { ...food, computedSeverity };
-    })
-    .filter(food => {
-      if (!q) return true;
-      const nameMatch = food.name.toLowerCase().includes(q);
-      const aliasMatch = food.aliases && food.aliases.some(alias => alias.toLowerCase().includes(q));
-      return nameMatch || aliasMatch;
-    });
+  return allFoods.filter(food => {
+    if (!q) return true;
+    const nameMatch = food.name.toLowerCase().includes(q);
+    const aliasMatch = food.aliases && food.aliases.some(alias => alias.toLowerCase().includes(q));
+    return nameMatch || aliasMatch;
+  });
 }
 
 

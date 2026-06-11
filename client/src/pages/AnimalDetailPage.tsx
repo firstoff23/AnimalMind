@@ -85,7 +85,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     if (animalError) {
       toast.error(language === "pt" ? "Animal não encontrado ou não autorizado." : "Animal not found or not authorized.");
-      setLocation("/perfil");
+      setLocation("/definicoes");
     }
   }, [animalError, setLocation, language]);
 

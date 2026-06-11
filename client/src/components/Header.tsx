@@ -18,11 +18,11 @@ export function Header() {
   }
 
   // Check if current page is one of the main tabs
-  const isRootPage = ["/dashboard", "/gravar", "/historico", "/perfil", "/mindi", "/definicoes"].includes(location);
+  const isRootPage = ["/dashboard", "/alimentos", "/gravar", "/historico", "/mindi", "/definicoes"].includes(location);
 
   const handleBack = () => {
     if (location.startsWith("/animal/")) {
-      setLocation("/perfil");
+      setLocation("/definicoes");
     } else if (location.startsWith("/vet/animal/")) {
       setLocation("/vet");
     } else if (location === "/vet") {

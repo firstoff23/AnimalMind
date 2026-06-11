@@ -6,7 +6,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { useAppStore } from "@/store/appStore";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SelfHealingProvider } from "./contexts/SelfHealingContext";
@@ -85,7 +85,7 @@ function Router() {
 
             {/* Protected routes */}
             <Route path="/gravar" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
-            <Route path="/perfil" component={(props) => <ProtectedRoute component={ProfilePage} {...props} />} />
+            <Route path="/perfil" component={() => <Redirect to="/definicoes" />} />
             <Route path="/health" component={(props) => <ProtectedRoute component={HealthPage} {...props} />} />
             <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />
             <Route path="/historico" component={(props) => <ProtectedRoute component={HistoryPage} {...props} />} />
@@ -93,7 +93,7 @@ function Router() {
             <Route path="/mindi" component={(props) => <ProtectedRoute component={MindiPage} {...props} />} />
             <Route path="/alimentos" component={(props) => <ProtectedRoute component={FoodSearchPage} {...props} />} />
             <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />
-            <Route path="/user-profile" component={(props) => <ProtectedRoute component={UserProfilePage} {...props} />} />
+            <Route path="/user-profile" component={() => <Redirect to="/definicoes" />} />
             <Route path="/veterinario" component={(props) => <ProtectedRoute component={VetPage} {...props} />} />
             <Route path="/vet/animal/:id" component={(props) => <ProtectedRoute component={VetPetDetailPage} {...props} />} />
             <Route path="/vet" component={(props) => <ProtectedRoute component={VetDashboardPage} {...props} />} />

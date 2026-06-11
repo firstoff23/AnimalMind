@@ -622,6 +622,7 @@ export const appRouter = router({
           height: z.string().max(50).optional().nullable(),
           tail: z.string().max(50).optional().nullable(),
           specialMarkings: z.string().optional().nullable(),
+          weight: z.string().max(50).optional().nullable(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -646,6 +647,7 @@ export const appRouter = router({
           height: z.string().max(50).optional().nullable(),
           tail: z.string().max(50).optional().nullable(),
           specialMarkings: z.string().optional().nullable(),
+          weight: z.string().max(50).optional().nullable(),
         })
       )
       .mutation(async ({ ctx, input }) => {

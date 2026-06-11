@@ -498,7 +498,7 @@ export default function DashboardPage() {
                 <h4 className="text-sm font-bold text-slate-200">Adicionar o Seu Primeiro Animal</h4>
                 <p className="text-[11px] text-indigo-300">Crie o perfil com espécie, raça e idade do seu companheiro.</p>
               </div>
-              <Link to="/perfil">
+              <Link to="/definicoes">
                 <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs px-3.5 shadow-md">
                   Criar Perfil
                 </Button>

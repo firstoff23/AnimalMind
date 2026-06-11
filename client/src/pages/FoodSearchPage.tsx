@@ -12,7 +12,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { motion, AnimatePresence } from "framer-motion";
 
-type SpeciesKey = "dog" | "cat" | "bird" | "rabbit";
+type SpeciesKey = "dog" | "cat";
 
 const SUGGESTIONS = ["Cenoura", "Chocolate", "Uva", "Leite", "Abacate", "Frango"];
 
@@ -27,8 +27,10 @@ export default function FoodSearchPage() {
   useEffect(() => {
     if (activeAnimal?.species) {
       const sp = activeAnimal.species.toLowerCase();
-      if (sp === "dog" || sp === "cat" || sp === "bird" || sp === "rabbit") {
+      if (sp === "dog" || sp === "cat") {
         setSelectedSpecies(sp as SpeciesKey);
+      } else {
+        setSelectedSpecies("dog");
       }
     }
   }, [activeAnimal]);
@@ -79,8 +81,6 @@ export default function FoodSearchPage() {
   const speciesList = [
     { key: "dog" as const, label: language === "pt" ? "Cão" : "Dog", emoji: "🐕" },
     { key: "cat" as const, label: language === "pt" ? "Gato" : "Cat", emoji: "🐈" },
-    { key: "rabbit" as const, label: language === "pt" ? "Coelho" : "Rabbit", emoji: "🐇" },
-    { key: "bird" as const, label: language === "pt" ? "Ave" : "Bird", emoji: "🦜" },
   ];
 
   if (isLoading && foods.length === 0) {
@@ -136,7 +136,7 @@ export default function FoodSearchPage() {
 
       {/* Species Selection Tabs */}
       <section className="mb-6">
-        <div className="grid grid-cols-4 gap-2 bg-secondary/35 p-1 rounded-2xl border border-border/40">
+        <div className="grid grid-cols-2 gap-2 bg-secondary/35 p-1 rounded-2xl border border-border/40">
           {speciesList.map((sp) => {
             const active = selectedSpecies === sp.key;
             return (
@@ -144,7 +144,7 @@ export default function FoodSearchPage() {
                 key={sp.key}
                 onClick={() => setSelectedSpecies(sp.key)}
                 className={cn(
-                  "flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-1 rounded-xl text-xs font-bold transition-all duration-[150ms] ease-out select-none",
+                  "flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-[150ms] ease-out select-none",
                   active
                     ? "bg-primary text-primary-foreground shadow-md scale-100"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
@@ -159,98 +159,170 @@ export default function FoodSearchPage() {
       </section>
 
       {/* Results List */}
-      <section className="flex-1 flex flex-col gap-4">
+      <section className="flex-1 flex flex-col gap-6">
         {foods.length > 0 ? (
-          <AnimatePresence mode="popLayout">
-            {foods.map((food) => {
-              const config = getSeverityConfig(food.computedSeverity);
-              const Icon = config.icon;
-              const isUnsafe = food.computedSeverity !== "safe";
-
-              return (
-                <motion.div
-                  key={food.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Card
-                    className={cn(
-                      "overflow-hidden border border-border/30 bg-card/75 backdrop-blur-sm shadow-sm transition-all duration-300 rounded-2xl",
-                      config.glowClass
-                    )}
-                  >
-                    <div className="p-4.5 space-y-4">
-                      {/* Name and Badge */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-base text-foreground tracking-tight flex items-center gap-2">
-                            {food.name}
-                          </h3>
-                          {food.aliases && food.aliases.length > 0 && (
-                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                              {language === "pt" ? "Nomes comuns: " : "Common names: "}
-                              {food.aliases.join(", ")}
-                            </p>
-                          )}
-                        </div>
-                        <Badge
-                          variant={config.variant}
-                          className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-bold border flex items-center gap-1 shrink-0 uppercase tracking-wide", config.colorClass)}
-                        >
-                          <Icon className="h-3 w-3 shrink-0" />
-                          {config.badge}
-                        </Badge>
-                      </div>
-
-                      {/* Reason */}
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {food.reason}
-                      </p>
-
-                      {/* Symptoms Accordion */}
-                      {food.symptoms && food.symptoms.length > 0 && (
-                        <Accordion type="single" collapsible className="border-t border-border/30 pt-2">
-                          <AccordionItem value="symptoms" className="border-0">
-                            <AccordionTrigger className="py-2 text-xs font-semibold text-muted-foreground hover:no-underline hover:text-foreground">
-                              {language === "pt" ? "Sintomas clínicos comuns" : "Common clinical symptoms"}
-                            </AccordionTrigger>
-                            <AccordionContent className="pt-1.5 pb-1">
-                              <div className="flex flex-wrap gap-1.5">
-                                {food.symptoms.map((symptom, i) => (
+          <div className="space-y-6">
+            {/* Safe Foods */}
+            {foods.some(f => f.computedSeverity === "safe") && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-500/80 flex items-center gap-1.5 px-1">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  {language === "pt" ? "Alimentos Seguros" : "Safe Foods"}
+                </h2>
+                <div className="flex flex-col gap-3 p-3.5 rounded-2xl border border-emerald-500/10 bg-emerald-500/[0.02]">
+                  <AnimatePresence mode="popLayout">
+                    {foods
+                      .filter(f => f.computedSeverity === "safe")
+                      .map((food) => {
+                        const config = getSeverityConfig(food.computedSeverity);
+                        const Icon = config.icon;
+                        return (
+                          <motion.div
+                            key={food.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Card
+                              className={cn(
+                                "overflow-hidden border border-border/30 bg-card/75 backdrop-blur-sm shadow-sm transition-all duration-300 rounded-2xl",
+                                config.glowClass
+                              )}
+                            >
+                              <div className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h3 className="font-bold text-sm text-foreground tracking-tight flex items-center gap-2">
+                                      {food.name}
+                                    </h3>
+                                    {food.aliases && food.aliases.length > 0 && (
+                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                        {language === "pt" ? "Nomes comuns: " : "Common names: "}
+                                        {food.aliases.join(", ")}
+                                      </p>
+                                    )}
+                                  </div>
                                   <Badge
-                                    key={i}
-                                    variant="outline"
-                                    className="bg-black/10 border-border/50 text-[10px] text-foreground font-medium py-0.5 px-2 rounded-lg"
+                                    variant={config.variant}
+                                    className={cn("rounded-full px-2 py-0.5 text-[9px] font-bold border flex items-center gap-1 shrink-0 uppercase tracking-wide", config.colorClass)}
                                   >
-                                    {symptom}
+                                    <Icon className="h-2.5 w-2.5 shrink-0" />
+                                    {config.badge}
                                   </Badge>
-                                ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {food.reason}
+                                </p>
                               </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      )}
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
 
-                      {/* Immediate action highlight */}
-                      {isUnsafe && food.whatToDo && (
-                        <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-start gap-2.5">
-                          <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-                          <div className="text-xs text-rose-300 leading-relaxed font-medium">
-                            <p className="font-bold text-[11px] uppercase tracking-wider text-rose-400 mb-0.5">
-                              {language === "pt" ? "O que fazer" : "What to do"}
-                            </p>
-                            {food.whatToDo}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+            {/* Dangerous Foods */}
+            {foods.some(f => f.computedSeverity !== "safe") && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-rose-500/80 flex items-center gap-1.5 px-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {language === "pt" ? "Alimentos Perigosos ou com Atenção" : "Dangerous or Caution Foods"}
+                </h2>
+                <div className="flex flex-col gap-3 p-3.5 rounded-2xl border border-rose-500/10 bg-rose-500/[0.02]">
+                  <AnimatePresence mode="popLayout">
+                    {foods
+                      .filter(f => f.computedSeverity !== "safe")
+                      .map((food) => {
+                        const config = getSeverityConfig(food.computedSeverity);
+                        const Icon = config.icon;
+                        const isUnsafe = food.computedSeverity !== "safe";
+                        return (
+                          <motion.div
+                            key={food.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Card
+                              className={cn(
+                                "overflow-hidden border border-border/30 bg-card/75 backdrop-blur-sm shadow-sm transition-all duration-300 rounded-2xl",
+                                config.glowClass
+                              )}
+                            >
+                              <div className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h3 className="font-bold text-sm text-foreground tracking-tight flex items-center gap-2">
+                                      {food.name}
+                                    </h3>
+                                    {food.aliases && food.aliases.length > 0 && (
+                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                        {language === "pt" ? "Nomes comuns: " : "Common names: "}
+                                        {food.aliases.join(", ")}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Badge
+                                    variant={config.variant}
+                                    className={cn("rounded-full px-2 py-0.5 text-[9px] font-bold border flex items-center gap-1 shrink-0 uppercase tracking-wide", config.colorClass)}
+                                  >
+                                    <Icon className="h-2.5 w-2.5 shrink-0" />
+                                    {config.badge}
+                                  </Badge>
+                                </div>
+
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {food.reason}
+                                </p>
+
+                                {food.symptoms && food.symptoms.length > 0 && (
+                                  <Accordion type="single" collapsible className="border-t border-border/30 pt-2">
+                                    <AccordionItem value="symptoms" className="border-0">
+                                      <AccordionTrigger className="py-2 text-[11px] font-semibold text-muted-foreground hover:no-underline hover:text-foreground">
+                                        {language === "pt" ? "Sintomas clínicos comuns" : "Common clinical symptoms"}
+                                      </AccordionTrigger>
+                                      <AccordionContent className="pt-1.5 pb-1">
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {food.symptoms.map((symptom, i) => (
+                                            <Badge
+                                              key={i}
+                                              variant="outline"
+                                              className="bg-black/10 border-border/50 text-[9px] text-foreground font-medium py-0.5 px-2 rounded-lg"
+                                            >
+                                              {symptom}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  </Accordion>
+                                )}
+
+                                {isUnsafe && food.whatToDo && (
+                                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-start gap-2.5">
+                                    <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                                    <div className="text-xs text-rose-300 leading-relaxed font-medium">
+                                      <p className="font-bold text-[10px] uppercase tracking-wider text-rose-400 mb-0.5">
+                                        {language === "pt" ? "O que fazer" : "What to do"}
+                                      </p>
+                                      {food.whatToDo}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </Card>
+                          </motion.div>
+                        );
+                      })}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <EmptyState
             title={language === "pt" ? "Nenhum alimento encontrado" : "No food found"}
