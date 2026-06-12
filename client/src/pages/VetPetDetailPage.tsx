@@ -191,32 +191,22 @@ export default function VetPetDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className="page-enter mx-auto flex min-h-full w-full max-w-lg flex-col gap-5 px-4 pb-24 pt-6">
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/vet")}
-          className="gap-1.5 text-muted-foreground"
-        >
-          <ArrowLeft size={15} />
-          Modo Veterinário
-        </Button>
-        <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-          <Stethoscope size={12} />
-          Caso clínico
-        </Badge>
-      </div>
-
       <section className="relative overflow-hidden rounded-3xl border border-border bg-card/90 p-5">
-        <div className="absolute right-0 top-0 translate-x-6 -translate-y-8 text-8xl font-bold text-primary/5">
-          {animal.species === "dog" ? "DOG" : "CAT"}
+        <div className="absolute right-[-20px] top-[-20px] text-primary/5 pointer-events-none select-none rotate-12">
+          <PawPrint size={140} />
         </div>
         <div className="relative flex items-start gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-border bg-secondary">
             <PawPrint size={28} className="text-muted-foreground" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-2xl font-bold text-foreground">{animal.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h1 className="truncate text-2xl font-bold text-foreground">{animal.name}</h1>
+              <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-[10px] h-5 py-0 px-2">
+                <Stethoscope size={10} className="mr-1 inline" />
+                Caso clínico
+              </Badge>
+            </div>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {speciesLabel(animal.species)} · {animal.breed || "Raça indefinida"} · {animal.age ?? "?"} anos
             </p>

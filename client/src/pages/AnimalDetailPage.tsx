@@ -29,6 +29,7 @@ import {
   ThumbsDown,
   Sparkles,
   Users,
+  PawPrint,
 } from "lucide-react";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
@@ -476,18 +477,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   );
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-20 max-w-xl mx-auto space-y-6">
-      {/* Header and Back navigation */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/perfil")}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft size={16} /> {t("common.back")}
-        </Button>
-
+    <div className="page-enter min-h-full px-4 pt-4 pb-20 max-w-xl mx-auto space-y-6">
+      {/* Actions header bar */}
+      <div className="flex items-center justify-end">
         <Button
           variant="outline"
           size="sm"
@@ -501,8 +493,8 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
       {/* Animal Identity Header */}
       <div className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/15 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)]">
-        <div className="absolute right-0 top-0 translate-x-10 -translate-y-8 text-[7rem] font-black text-white/[0.03] pointer-events-none select-none">
-          {animal.species === "dog" ? "DOG" : "CAT"}
+        <div className="absolute right-[-20px] top-[-20px] text-white/[0.03] pointer-events-none select-none rotate-12">
+          <PawPrint size={140} />
         </div>
         <div className="absolute -left-12 bottom-0 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" />
 

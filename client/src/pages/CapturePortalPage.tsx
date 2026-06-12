@@ -49,76 +49,68 @@ export default function CapturePortalPage() {
         {/* Audio Card */}
         <motion.div
           variants={cardVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.015 }}
+          whileTap={{ scale: 0.985 }}
           onClick={() => setLocation("/gravar")}
           className="cursor-pointer"
         >
-          <Card className="bg-card hover:bg-card/90 border-border overflow-hidden shadow-lg transition-all duration-300 relative group h-44 flex flex-col justify-between p-2">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-300" />
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-bold flex items-center gap-2.5 text-foreground">
-                <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                  <Mic size={22} />
-                </div>
-                {language === "pt" ? "Gravar Áudio" : "Record Audio"}
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                {language === "pt"
-                  ? "Registe vocalizações, miados ou ladridos para analisar a acústica e traduzir o sentimento."
-                  : "Record vocalizations, meows, or barks to analyze acoustics and translate the feeling."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 flex justify-end">
-              <span className="text-[11px] font-bold text-primary group-hover:underline flex items-center gap-1">
-                {language === "pt" ? "Iniciar gravador" : "Start recorder"}
-              </span>
-            </CardContent>
+          <Card className="bg-card hover:bg-card/90 border-primary/20 overflow-hidden shadow-lg transition-all duration-300 relative group h-52 flex flex-col justify-between p-4 rounded-3xl">
+            <div className="absolute top-0 right-0 w-36 h-36 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/15 transition-all duration-300" />
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                <Mic size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">
+                  {language === "pt" ? "Gravar Áudio" : "Record Audio"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  {language === "pt"
+                    ? "Grave vocalizações do animal para tradução acústica imediata."
+                    : "Record vocalizations for immediate acoustic analysis."}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button size="sm" className="h-8 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
+                {language === "pt" ? "Gravar agora" : "Record now"}
+              </Button>
+            </div>
           </Card>
         </motion.div>
 
         {/* Camera Card */}
         <motion.div
           variants={cardVariants}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.015 }}
+          whileTap={{ scale: 0.985 }}
           onClick={() => setLocation("/camera")}
           className="cursor-pointer"
         >
-          <Card className="bg-card hover:bg-card/90 border-border overflow-hidden shadow-lg transition-all duration-300 relative group h-44 flex flex-col justify-between p-2">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all duration-300" />
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-bold flex items-center gap-2.5 text-foreground">
-                <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
-                  <Camera size={22} />
-                </div>
-                {language === "pt" ? "Câmara Visão" : "Vision Camera"}
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                {language === "pt"
-                  ? "Ative a câmara e utilize inteligência artificial (YOLOv8) para analisar a postura e linguagem corporal."
-                  : "Activate camera and use artificial intelligence (YOLOv8) to analyze posture and body language."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 flex justify-end">
-              <span className="text-[11px] font-bold text-indigo-400 group-hover:underline flex items-center gap-1">
-                {language === "pt" ? "Abrir câmara 📷" : "Open camera 📷"}
+          <Card className="bg-card hover:bg-card/90 border-border overflow-hidden shadow-md transition-all duration-300 relative group h-32 flex items-center justify-between p-4 rounded-xl">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all duration-300" />
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-11 h-11 shrink-0 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+                <Camera size={20} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-foreground truncate">
+                  {language === "pt" ? "Câmara Visão" : "Vision Camera"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed truncate">
+                  {language === "pt"
+                    ? "Analise a postura e linguagem corporal em tempo real."
+                    : "Analyze posture and body language in real time."}
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 pl-2">
+              <span className="text-xs font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors whitespace-nowrap">
+                {language === "pt" ? "Analisar" : "Analyze"} &rarr;
               </span>
-            </CardContent>
+            </div>
           </Card>
         </motion.div>
-      </div>
-
-      <div className="flex justify-center pt-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/dashboard")}
-          className="text-xs text-muted-foreground hover:text-foreground gap-1.5"
-        >
-          <ArrowLeft size={14} />
-          {language === "pt" ? "Voltar ao Dashboard" : "Back to Dashboard"}
-        </Button>
       </div>
     </motion.div>
   );

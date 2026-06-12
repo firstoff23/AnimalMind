@@ -234,25 +234,7 @@ export default function CameraPage() {
   };
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-6 max-w-lg mx-auto flex flex-col justify-between h-[calc(100vh-4rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            stopCamera();
-            setLocation("/capturar");
-          }}
-          className="text-muted-foreground hover:text-foreground active-scale"
-        >
-          <ArrowLeft size={18} />
-        </Button>
-        <h1 className="text-base font-bold text-foreground">
-          {language === "pt" ? "Câmara Visão" : "Vision Camera"}
-        </h1>
-        <div className="w-9 h-9" /> {/* Spacer */}
-      </div>
+    <div className="page-enter min-h-full px-4 pt-4 pb-6 max-w-lg mx-auto flex flex-col justify-between h-[calc(100vh-4.5rem)]">
 
       {/* Main View Area */}
       <div className="flex-1 flex flex-col justify-center my-4 relative rounded-3xl overflow-hidden bg-slate-950 border border-border/40 shadow-inner min-h-[300px]">

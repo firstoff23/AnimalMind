@@ -18,11 +18,11 @@ export function Header() {
   }
 
   // Check if current page is one of the main tabs
-  const isRootPage = ["/dashboard", "/alimentos", "/gravar", "/historico", "/mindi", "/definicoes"].includes(location);
+  const isRootPage = ["/dashboard", "/perfil", "/capturar", "/alimentos", "/historico", "/definicoes"].includes(location);
 
   const handleBack = () => {
     if (location.startsWith("/animal/")) {
-      setLocation("/definicoes");
+      setLocation("/perfil");
     } else if (location.startsWith("/vet/animal/")) {
       setLocation("/vet");
     } else if (location === "/vet") {
@@ -43,7 +43,15 @@ export function Header() {
       return translated && translated !== key ? translated : language === "pt" ? fallbackPt : fallbackEn;
     };
 
-    if (isRootPage) return "AnimalMind";
+    if (location === "/dashboard") return "AnimalMind";
+    if (location === "/perfil") return language === "pt" ? "Animais" : "Pets";
+    if (location === "/capturar") return language === "pt" ? "Capturar" : "Capture";
+    if (location === "/alimentos") return language === "pt" ? "Alimentos" : "Food Dictionary";
+    if (location === "/historico") return language === "pt" ? "Histórico" : "History";
+    if (location === "/definicoes") return language === "pt" ? "Definições" : "Settings";
+    if (location === "/gravar") return language === "pt" ? "Gravar Áudio" : "Record Audio";
+    if (location === "/camera") return language === "pt" ? "Câmara Visão" : "Vision Camera";
+    if (location === "/mindi") return "Mindi AI Chat";
     if (location.startsWith("/animal/")) return translatedOr("animalDetail.title", "Detalhes", "Details");
     if (location.startsWith("/vet/animal/")) return "Paciente";
     if (location === "/vet") return "Modo Veterinário";

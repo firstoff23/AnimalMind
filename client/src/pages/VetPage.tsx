@@ -274,22 +274,14 @@ export default function VetPage() {
   }
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-6 max-w-lg mx-auto space-y-6">
-      {/* Navigation & Header */}
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full shrink-0">
-            <ChevronLeft size={20} />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            Partilha Veterinária <Activity size={18} className="text-emerald-400" />
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Dossiê clínico, estatísticas de comportamento e partilha com o médico veterinário
-          </p>
-        </div>
+    <div className="page-enter min-h-full px-4 pt-4 pb-6 max-w-lg mx-auto space-y-6">
+      <div>
+        <h1 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          Partilha Veterinária <Activity size={16} className="text-emerald-400" />
+        </h1>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Dossiê clínico, estatísticas de comportamento e partilha com o médico veterinário
+        </p>
       </div>
 
       {activeAnimal ? (

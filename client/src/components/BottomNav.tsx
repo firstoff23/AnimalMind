@@ -42,7 +42,7 @@ export function BottomNav() {
                   "bottom-nav-record-icon",
                   active && "is-active"
                 )}>
-                  <Icon size={20} strokeWidth={2.5} />
+                  <Icon size={20} strokeWidth={2.0} />
                 </div>
               ) : (
                 <Icon
@@ -51,7 +51,7 @@ export function BottomNav() {
                     "bottom-nav-icon",
                     active && "is-active"
                   )}
-                  strokeWidth={active ? 2.5 : 1.8}
+                  strokeWidth={2.0}
                 />
               )}
 

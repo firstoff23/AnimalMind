@@ -196,34 +196,18 @@ export default function VetDashboardPage() {
   return (
     <div className="page-enter mx-auto flex min-h-full w-full max-w-lg flex-col gap-5 px-4 pb-24 pt-6">
       <header className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-              <Stethoscope size={12} />
-              {roleLabel}
-            </Badge>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Modo Veterinário</h1>
-            <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-              Acompanhe animais, análises e relatórios partilhados
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLocation("/dashboard")}
-            className="h-9 rounded-xl border-border text-xs"
-          >
-            Sair
-          </Button>
-        </div>
-
         <div className="rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/12 via-card to-cyan-500/8 p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
               <HeartPulse size={21} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Clínica comportamental AnimalMind</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-foreground">Clínica comportamental AnimalMind</p>
+                <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[9px] py-0 px-2 h-4 uppercase font-bold tracking-wider">
+                  {roleLabel}
+                </Badge>
+              </div>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
                 Casos partilhados por tutores, sinais recentes e notas internas num único fluxo.
               </p>

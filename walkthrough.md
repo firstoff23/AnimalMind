@@ -266,4 +266,44 @@ Nesta fase final de polimento e consistência visual, removemos todos os emojis 
 * Corrigimos o script de auditoria [run_audit_screenshots.js](file:///C:/Users/Alexandre/Documents/AnimalMind/scratch/run_audit_screenshots.js) para simular com sucesso uma sessão autenticada do Supabase no `localStorage` do browser e para simular `window.matchMedia` bypassando o `MobileOnlyGate`.
 * Capturámos com sucesso novas imagens de ecrã para todas as rotas (Dashboard, Histórico, Alimentos, Definições, Gravação e Detalhe de Animal) sem qualquer emoji visível, mostrando os novos componentes e ícones de design premium.
 
+---
+
+## 🎨 9. Ronda 3.5: Polimento Visual e Unificação de Cabeçalhos (Round 3.5 Polish) ✅
+
+Nesta ronda, focámo-nos na unificação do cabeçalho da aplicação, remoção de duplicados locais, diferenciação visual no portal de captura, melhorias no menu de navegação inferior para evitar scrolling horizontal a 390px, e eliminação de texto decorativo nos fundos das páginas de detalhes.
+
+### 1. Eliminação de Texto Decorativo "DOG" / "CAT"
+* Substituímos os textos decorativos em segundo plano nas páginas de detalhes de animais e de veterinário ([AnimalDetailPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/AnimalDetailPage.tsx) e [VetPetDetailPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/VetPetDetailPage.tsx)) por um ícone de pata neutro estilizado e rodado `<PawPrint size={140} />` com opacidade ultra reduzida.
+
+### 2. Redesenho da Secção "Sobre" em Definições (`SettingsPage.tsx`)
+* Redesenhámos por completo a secção de informações institucionais, removendo emojis e introduzindo o logótipo oficial do projeto em SVG ([Logo.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/components/ui/Logo.tsx)).
+* Adicionámos uma grelha limpa com a versão (`v1.0.0 (offline-ready)`) e os modelos locais de IA (YAMNet, YOLOv8, ResNet), além de dois botões premium com bordas e preenchimento adequados ligando diretamente aos Termos e Políticas de Privacidade em `/privacidade` (usando os ícones `Shield` e `FileText`).
+
+### 3. Padronização de Cabeçalhos Globais
+* **Navegação Sem Setas**: Mapeámos as 6 rotas principais (`/dashboard`, `/perfil`, `/capturar`, `/alimentos`, `/historico`, `/definicoes`) em [Header.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/components/Header.tsx) para ocultar automaticamente o botão/seta de voltar. As páginas secundárias exibem a seta de voltar normalmente.
+* **Títulos Dinâmicos**: O `Header` agora renderiza títulos amigáveis localizados em português/inglês para cada rota (ex: "Animais", "Capturar", "Câmara Visão") em vez do genérico "AnimalMind".
+* **Eliminação de Cabeçalhos Locais Duplicados**: Removemos cabeçalhos e botões redundantes que estavam implementados localmente em [CameraPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/CameraPage.tsx), [VetPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/VetPage.tsx) e [VetDashboardPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/VetDashboardPage.tsx).
+
+### 4. Otimização do Portal de Captura (`/capturar`)
+* **Layout Assimétrico e Diferenciado**: Redesenhámos a página [CapturePortalPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/CapturePortalPage.tsx):
+  - O cartão de **Gravar Áudio** é agora um bloco vertical de destaque (`h-52`) com um botão CTA direto "Gravar agora".
+  - O cartão de **Câmara Visão** é um bloco horizontal secundário compacto (`h-32`) com o CTA direto "Analisar →".
+* **Textos Curtos**: Assegurámos que todas as descrições dos cartões ocupam exatamente uma única linha para manter o aspeto premium e focado.
+* **Remoção de Elementos Desnecessários**: Eliminámos emojis nos botões e o botão redundante "Voltar ao Dashboard", guiando o utilizador a navegar naturalmente pelos menus.
+
+### 5. Reestruturação do Menu de Navegação Inferior (BottomNav)
+* **Visual Consistente**: Unificámos o `strokeWidth` dos ícones no [BottomNav.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/components/BottomNav.tsx) para exatamente `2.0` em todos os estados.
+* **Otimização Layout 390px (Mobile-First)**: Reescrevemos as classes de estilo em [index.css](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/index.css):
+  - Mudámos o comportamento dos itens para `flex: 1 1 0%` sem largura mínima estrita, permitindo que caibam perfeitamente em ecrãs estreitos como viewports de 390px sem causar scrolling horizontal na barra.
+  - Removemos o destaque de fundo arredondado (highlight blocky) que aparecia na tab ativa, mantendo apenas a mudança de cor do ícone e da legenda.
+  - Alinhámos verticalmente todas as legendas à base inferior (bottom baseline).
+  - Posicionámos o ícone de Gravação central de forma absoluta (`position: absolute`, `left: 50%`, `transform: translateX(-50%)`), garantindo que o botão flutuante permaneça sempre perfeitamente centrado e estável.
+
+### 6. Verificação Técnica Completa
+* **Compilação TypeScript**: O comando `pnpm run check` conclui com 0 erros de compilação.
+* **Testes Unitários**: A suite completa de testes unitários (`pnpm test`) correu e passou com 100% de sucesso (**103/103 testes**).
+* **Build de Produção**: O comando `pnpm run build` gerou o bundle de produção estático e o do servidor com sucesso.
+* **Registo de Ecrãs (Screenshots)**: Tiramos e atualizámos novos screenshots demonstrando o aspeto final polido da aplicação.
+
+
 

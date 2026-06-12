@@ -38,7 +38,9 @@ import {
   RefreshCw,
   Camera,
   PawPrint,
+  FileText,
 } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -962,37 +964,53 @@ export default function SettingsPage() {
               {t("settingsPage.about")}
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <PawPrint size={20} className="text-primary" />
+          <CardContent className="pt-5 space-y-4">
+            <div className="flex flex-col items-center text-center p-4 rounded-2xl bg-muted/30 border border-border/30">
+              <Logo className="w-12 h-12 text-primary" />
+              <p className="text-lg font-bold text-foreground mt-2 tracking-tight">AnimalMind</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">
+                {language === "pt"
+                  ? "Análise avançada e monitorização do bem-estar e inteligência emocional animal."
+                  : "Advanced analysis and monitoring of animal well-being and emotional intelligence."}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-muted/40 rounded-xl p-3 border border-border/40">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t("settingsPage.version")}</p>
+                <p className="font-semibold text-foreground mt-1">v1.0.0 (offline-ready)</p>
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">AnimalMind</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {language === "pt"
-                    ? "Mapeamento de inteligência emocional animal em tempo real"
-                    : "Real-time emotional animal intelligence mapping"}
-                </p>
+              <div className="bg-muted/40 rounded-xl p-3 border border-border/40">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{language === "pt" ? "Modelos Locais" : "Local Models"}</p>
+                <p className="font-semibold text-foreground mt-1">YAMNet · YOLOv8 · ResNet</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[10px] mt-2">
-              <div className="bg-muted/50 rounded-xl p-3 border border-border/40">
-                <p className="text-muted-foreground">{t("settingsPage.version")}</p>
-                <p className="font-semibold text-foreground mt-0.5">v1.0.0 (offline enabled)</p>
-              </div>
-              <div className="bg-muted/50 rounded-xl p-3 border border-border/40">
-                <p className="text-muted-foreground">{language === "pt" ? "Modelos Locais" : "Local Models"}</p>
-                <p className="font-semibold text-foreground mt-0.5">YAMNet · YOLOv8 · ResNet</p>
+            <div className="pt-2 border-t border-border/50 flex flex-col gap-2">
+              <p className="text-[11px] font-semibold text-foreground px-1 mb-1">
+                {language === "pt" ? "Documentos e Políticas" : "Documents & Policies"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation("/privacidade")}
+                  className="h-9 rounded-xl border-border/60 hover:bg-muted text-xs justify-start gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Shield size={14} className="text-primary" />
+                  {language === "pt" ? "Privacidade" : "Privacidade"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation("/privacidade")}
+                  className="h-9 rounded-xl border-border/60 hover:bg-muted text-xs justify-start gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <FileText size={14} className="text-indigo-400" />
+                  {language === "pt" ? "Termos de Uso" : "Terms of Use"}
+                </Button>
               </div>
             </div>
-
-            <p className="text-[10px] text-muted-foreground text-center pt-2 italic">
-              {language === "pt"
-                ? "Desenvolvido com carinho para fortalecer a ligação com os seus animais."
-                : "Developed with love to strengthen the connection with your animals."}
-            </p>
           </CardContent>
         </Card>
       </motion.div>
