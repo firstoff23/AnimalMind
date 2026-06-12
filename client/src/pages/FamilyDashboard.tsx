@@ -149,7 +149,7 @@ export default function FamilyDashboard({
   const createFamilyMutation = trpc.family.create.useMutation({
     onSuccess: () => {
       setFamilyName("");
-      toast.success("Família criada com sucesso! 🎉");
+      toast.success("Família criada com sucesso!");
       utils.family.getMembers.invalidate();
     },
     onError: (error) => toast.error(error.message),
@@ -157,7 +157,7 @@ export default function FamilyDashboard({
 
   const joinMutation = trpc.family.join.useMutation({
     onSuccess: () => {
-      toast.success("Entraste na família! 🐾");
+      toast.success("Entraste na família!");
       utils.family.getMembers.invalidate();
       utils.family.getAnimals.invalidate();
       setLocation("/family");

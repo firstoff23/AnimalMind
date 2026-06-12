@@ -27,7 +27,7 @@ import {
   Line,
   Cell,
 } from "recharts";
-import { STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
+import { STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 
 const STATES: EmotionalState[] = [
@@ -209,7 +209,7 @@ export default function DashboardPage() {
       name: t("states." + s),
       value: counts[s],
       state: s,
-      emoji: STATE_EMOJIS[s],
+      color: STATE_COLORS[s],
     }));
   }, [events, t]);
 
@@ -370,7 +370,7 @@ export default function DashboardPage() {
               </div>
               <p className="mt-2 text-sm font-semibold text-foreground">
                 {latestEvent
-                  ? `${STATE_EMOJIS[latestEvent.state as EmotionalState]} ${t("states." + (latestEvent.state as EmotionalState))}`
+                  ? t("states." + (latestEvent.state as EmotionalState))
                   : language === "pt"
                   ? "Sem gravações ainda"
                   : "No recordings yet"}
@@ -434,7 +434,7 @@ export default function DashboardPage() {
                       <Avatar className="h-12 w-12 border border-white/10 bg-black/20">
                         <AvatarImage src={photoUrl} alt={a.name} />
                         <AvatarFallback className="bg-emerald-500/10 text-lg">
-                          {a.species === "dog" ? "🐕" : "🐈"}
+                          <PawPrint size={18} className="text-emerald-500/60" />
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
@@ -644,7 +644,10 @@ export default function DashboardPage() {
                   : "border-border text-muted-foreground"
               }`}
             >
-              <span>{a.species === "dog" ? "🐕" : "🐈"} {a.name}</span>
+              <span className="inline-flex items-center gap-1">
+                <PawPrint size={11} className="flex-shrink-0" />
+                {a.name}
+              </span>
               {a.isShared && (
                 <span className="text-[8px] bg-cyan-950 text-cyan-400 border border-cyan-500/20 px-1 py-0.5 rounded-full uppercase font-semibold">
                   {language === "pt" ? "Co-tutor" : "Co-guardian"}
@@ -673,7 +676,9 @@ export default function DashboardPage() {
                 {t("dashboardPage.dominantToday")}
               </p>
               <div className="flex items-center gap-3">
-                <span className="text-4xl">{STATE_EMOJIS[todayStats.state]}</span>
+                <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: STATE_COLORS[todayStats.state] + "33", border: `2px solid ${STATE_COLORS[todayStats.state]}55` }}>
+                  <div className="w-full h-full rounded-full" style={{ backgroundColor: STATE_COLORS[todayStats.state] + "88" }} />
+                </div>
                 <div>
                   <p
                     className="text-lg font-bold"
@@ -708,7 +713,9 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {dominantBelief && (
                   <div className="bg-secondary/20 p-3 rounded-xl border border-border/30 flex items-center gap-3">
-                    <span className="text-3xl">{STATE_EMOJIS[dominantBelief.state as EmotionalState]}</span>
+                    <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: STATE_COLORS[dominantBelief.state as EmotionalState] + "22", border: `2px solid ${STATE_COLORS[dominantBelief.state as EmotionalState]}44` }}>
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: STATE_COLORS[dominantBelief.state as EmotionalState] }} />
+                    </div>
                     <div>
                       <p className="text-xs text-muted-foreground">{t("dashboardPage.stableMoodEstimated")}</p>
                       <p className="text-sm font-bold" style={{ color: STATE_COLORS[dominantBelief.state as EmotionalState] }}>
@@ -724,8 +731,8 @@ export default function DashboardPage() {
                     return (
                       <div key={s} className="space-y-1">
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <span>{STATE_EMOJIS[s]}</span>
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                            <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATE_COLORS[s] }} />
                             <span className="truncate">{t("states." + s)}</span>
                           </span>
                           <span className="font-semibold text-foreground">{Math.round(val * 100)}%</span>
@@ -780,10 +787,14 @@ export default function DashboardPage() {
                 <BarChart data={barData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.012 264)" vertical={false} />
                   <XAxis
-                    dataKey="emoji"
-                    tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 16 }}
+                    dataKey="name"
+                    tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 9 }}
                     axisLine={false}
                     tickLine={false}
+                    interval={0}
+                    angle={-25}
+                    textAnchor="end"
+                    height={36}
                   />
                   <YAxis
                     tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 10 }}
@@ -854,7 +865,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-2">
               {STATES.map((s) => (
                 <div key={s} className="flex items-center gap-2">
-                  <span className="text-lg">{STATE_EMOJIS[s]}</span>
+                  <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: STATE_COLORS[s] }} />
                   <span className="text-sm" style={{ color: STATE_COLORS[s] }}>
                     {t("states." + s)}
                   </span>

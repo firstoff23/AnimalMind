@@ -32,13 +32,13 @@ const PERIOD_OPTIONS = [
 
 const ALL_STATES: EmotionalState[] = ["relaxed", "attention", "excitement", "hunger", "alert", "distress"];
 
-const STATE_EMOJIS: Record<EmotionalState, string> = {
-  relaxed: "⚪",
-  attention: "🟡",
-  excitement: "🟢",
-  hunger: "🟠",
-  alert: "🔵",
-  distress: "🔴",
+const STATE_DOT_COLORS: Record<EmotionalState, string> = {
+  relaxed: "#94a3b8",
+  attention: "#eab308",
+  excitement: "#22c55e",
+  hunger: "#f97316",
+  alert: "#3b82f6",
+  distress: "#ef4444",
 };
 
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
@@ -104,7 +104,7 @@ export default function ComparisonPage() {
   const barData = ALL_STATES.map((state) => {
     const entry: Record<string, any> = {
       state: (language === "pt" ? t(`states.${state}` as any) : state) || state,
-      emoji: STATE_EMOJIS[state],
+      dotColor: STATE_DOT_COLORS[state],
     };
     activeAnimals.forEach((a) => {
       entry[a.name] = stateCounts[a.id]?.[state] ?? 0;
@@ -365,8 +365,13 @@ export default function ComparisonPage() {
                 {ALL_STATES.map((state) => (
                   <tr key={state} className="border-b border-border/30 last:border-0">
                     <td className="py-2 pr-3 text-foreground font-medium">
-                      {STATE_EMOJIS[state]}{" "}
-                      {(language === "pt" ? t(`states.${state}` as any) : state) || state}
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: STATE_DOT_COLORS[state] }}
+                        />
+                        {(language === "pt" ? t(`states.${state}` as any) : state) || state}
+                      </span>
                     </td>
                     {activeAnimals.map((a, i) => (
                       <td

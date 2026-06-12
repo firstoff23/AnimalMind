@@ -37,6 +37,7 @@ import {
   Wrench,
   RefreshCw,
   Camera,
+  PawPrint,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -963,7 +964,9 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="pt-4 space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">🐾</span>
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <PawPrint size={20} className="text-primary" />
+              </div>
               <div>
                 <p className="text-sm font-bold text-foreground">AnimalMind</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">

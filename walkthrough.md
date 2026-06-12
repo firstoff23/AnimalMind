@@ -239,3 +239,31 @@ Implementámos uma lógica visual unificada de carregamento para a foto do anima
 
 Estes componentes e ecrãs podem ser consultados diretamente nos ficheiros `client/src/pages/ProfilePage.tsx`, `client/src/pages/CapturePortalPage.tsx`, `client/src/pages/CameraPage.tsx` e `client/src/pages/RecordingPage.tsx`.
 
+---
+
+## 🎨 8. Ronda 3: Remoção Completa de Emojis & Polimento de Interface ✅
+
+Nesta fase final de polimento e consistência visual, removemos todos os emojis hardcoded que eram utilizados como placeholders, ícones ou indicadores de estado, substituindo-os por elementos de design modernos e ícones SVG/Lucide de alta fidelidade:
+
+### 1. Substituição de Emojis por Componentes & Ícones SVG
+* **Indicadores de Estado (Dashboard e Comparação)**: Os círculos de cores que representam os estados emocionais (🔴, 🟡, 🟢, 🟠, 🔵, ⚪) foram eliminados. Em seu lugar, implementámos círculos estilizados nativos via CSS/SVG usando `STATE_COLORS`, garantindo um visual profissional, polido e consistente em todo o painel e tabelas.
+* **Ícones de Espécies e Interface**: Os emojis `🐕` e `🐈` utilizados em carrosséis, tabs de alimentos, avatares de fallback e modais foram substituídos pelo ícone oficial `<PawPrint />`.
+* **Outros Emojis da UI**:
+  - Feedback de classificação `👍` / `👎` substituído por `<ThumbsUp />` e `<ThumbsDown />`.
+  - Notas de eventos `📝` substituído pelo ícone `<FileText />`.
+  - Estados vazios `🔍` / `🎙️` substituídos por `<Search />` e `<PawPrint />` animados.
+  - Toasts e alertas foram limpos de caracteres emoji redundantes.
+
+### 2. Resolução de Erros JSX e Compilação
+* Corrigimos um erro de balanceamento de tags HTML/JSX no ficheiro [DashboardPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/DashboardPage.tsx) nos cartões de estado dominante e de crença consolidada POMDP. Os elementos de texto foram colocados novamente dentro do wrapper `<div>` correspondente, resolvendo a quebra do parser do compilador TypeScript.
+
+### 3. Suite de Testes & Build
+* **TypeScript Check**: O comando `pnpm run check` conclui com **0 erros de compilação**.
+* **Vitest Unit Tests**: Todos os **103/103 testes** de lógica e base de dados passam com 100% de sucesso.
+* **Production Build**: A compilação final da aplicação (`pnpm run build`) termina com sucesso tanto para os assets estáticos do cliente como para o bundle de servidor.
+
+### 4. Auditoria Visual & Capturas de Ecrã
+* Corrigimos o script de auditoria [run_audit_screenshots.js](file:///C:/Users/Alexandre/Documents/AnimalMind/scratch/run_audit_screenshots.js) para simular com sucesso uma sessão autenticada do Supabase no `localStorage` do browser e para simular `window.matchMedia` bypassando o `MobileOnlyGate`.
+* Capturámos com sucesso novas imagens de ecrã para todas as rotas (Dashboard, Histórico, Alimentos, Definições, Gravação e Detalhe de Animal) sem qualquer emoji visível, mostrando os novos componentes e ícones de design premium.
+
+

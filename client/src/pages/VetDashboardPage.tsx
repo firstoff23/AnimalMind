@@ -333,7 +333,7 @@ export default function VetDashboardPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{animal.species === "dog" ? "🐕" : "🐈"}</span>
+                          <PawPrint size={16} className="text-muted-foreground flex-shrink-0" />
                           <p className="truncate text-sm font-bold text-foreground">{animal.name}</p>
                         </div>
                         <p className="mt-1 text-[11px] text-muted-foreground">
@@ -473,8 +473,8 @@ export default function VetDashboardPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-2xl">
-                        {animal.species === "dog" ? "🐕" : "🐈"}
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary">
+                        <PawPrint size={22} className="text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-foreground">{animal.name}</p>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, PawPrint } from "lucide-react";
 import type { EmotionalState } from "../../../shared/types";
 
 // Dynamic import of the R3F Canvas component
@@ -85,9 +85,9 @@ export default function LazyAnimal3DModel({
 
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-900/40 rounded-2xl select-none">
-        <span className="text-7xl animate-pulse">
-          {species === "dog" ? "🐕" : "🐈"}
-        </span>
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+          <PawPrint size={36} className="text-primary/60" />
+        </div>
         <span className="text-xs text-muted-foreground">
           {species === "dog" ? "Cão" : "Gato"}
         </span>

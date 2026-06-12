@@ -18,10 +18,18 @@
 - [x] Registar a rota `/alimentos` protegida no `client/src/App.tsx`
 - [x] Adicionar atalho para alimentos na página principal do `client/src/pages/DashboardPage.tsx`
 
-## 4. Testes e Validação
-- [x] Criar e executar testes unitários para a funcionalidade de alimentos em `server/foods.test.ts`
-- [x] Executar check de tipos do TypeScript (`pnpm run check`)
-- [x] Executar suite de testes unitários (`pnpm test`)
-- [x] Executar build de produção (`pnpm run build`)
-- [x] Efetuar Git commit e push das alterações
+## Fase 2: Verificação de Build
 
+- [x] Executar `pnpm run check` para validação TypeScript
+- [x] Executar `pnpm test` para conformidade da suite de testes
+- [x] Executar `pnpm run build` para build limpo
+
+## Fase 3: Auditoria Visual (Chrome DevTools)
+
+- [x] Screenshot `/dashboard` mobile + desktop
+- [x] Screenshot `/perfil` mobile
+- [x] Screenshot `/historico` mobile
+- [x] Screenshot `/alimentos` mobile
+- [x] Screenshot `/definicoes` mobile
+- [x] Verificar que zero emojis são visíveis
+- [x] Atualizar `walkthrough.md`

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Plus, Check, Camera, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Check, Camera, Loader2, AlertCircle, PawPrint } from "lucide-react";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { toast } from "sonner";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -65,7 +65,9 @@ function AnimalCard({
           : "border-border bg-card hover:border-primary/50"
       )}
     >
-      <div className="text-3xl mb-2">{animal.species === "dog" ? "🐕" : "🐈"}</div>
+      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+        <PawPrint size={20} className="text-primary" />
+      </div>
       <p className="font-semibold text-sm text-foreground truncate">{animal.name}</p>
       <p className="text-xs text-muted-foreground truncate">{animal.breed ?? "—"}</p>
       {animal.age !== null && (
@@ -702,7 +704,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       : "border-border text-muted-foreground hover:border-primary/50"
                   )}
                 >
-                  {s === "dog" ? `🐕 ${t("profilePage.speciesDog")}` : `🐈 ${t("profilePage.speciesCat")}`}
+              {s === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
                 </button>
               ))}
             </div>
@@ -935,7 +937,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       : "border-border text-muted-foreground hover:border-primary/50"
                   )}
                 >
-                  {s === "dog" ? `🐕 ${t("profilePage.speciesDog")}` : `🐈 ${t("profilePage.speciesCat")}`}
+              {s === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
                 </button>
               ))}
             </div>
@@ -1372,7 +1374,7 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
                   : "border-border text-muted-foreground hover:border-primary/50"
               )}
             >
-              {s === "dog" ? `🐕 ${t("profilePage.speciesDog")}` : `🐈 ${t("profilePage.speciesCat")}`}
+              {s === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
             </button>
           ))}
         </div>
@@ -1692,9 +1694,11 @@ export default function ProfilePage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 bg-secondary/10 border border-dashed border-border rounded-2xl p-6">
-          <span className="text-5xl">🐾</span>
+          <div className="w-14 h-14 rounded-full bg-secondary/60 flex items-center justify-center">
+            <PawPrint size={28} className="text-muted-foreground" />
+          </div>
           <p className="text-muted-foreground text-sm font-medium">
-            Ainda não tens animais. Adiciona o teu primeiro companheiro! 🐾
+            Ainda não tens animais. Adiciona o teu primeiro companheiro!
           </p>
           <Button
             size="sm"
@@ -1721,9 +1725,9 @@ export default function ProfilePage() {
         <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-4xl">
-                {activeAnimal.species === "dog" ? "🐕" : "🐈"}
-              </span>
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <PawPrint size={22} className="text-primary" />
+              </div>
               <div>
                 <p className="font-bold text-foreground">{activeAnimal.name}</p>
                 <p className="text-sm text-muted-foreground">

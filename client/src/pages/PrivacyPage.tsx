@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
-import { ArrowLeft, ShieldCheck, Database, Trash2, Mic, FileText } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Database, Trash2, Mic, FileText, PawPrint } from "lucide-react";
 
 export default function PrivacyPage() {
   const [, setLocation] = useLocation();
@@ -18,7 +18,9 @@ export default function PrivacyPage() {
       {/* Header */}
       <header className="w-full max-w-4xl mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-900 z-10">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setLocation("/")}>
-          <span className="text-2xl">🐾</span>
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+            <PawPrint size={18} className="text-indigo-400" />
+          </div>
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-indigo-200 bg-clip-text text-transparent">
             AnimalMind
           </span>

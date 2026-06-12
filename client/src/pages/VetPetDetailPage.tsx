@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Stethoscope,
   UserRound,
+  PawPrint,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -211,8 +212,8 @@ export default function VetPetDetailPage({ params }: { params: { id: string } })
           {animal.species === "dog" ? "DOG" : "CAT"}
         </div>
         <div className="relative flex items-start gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-border bg-secondary text-4xl">
-            {animal.species === "dog" ? "🐕" : "🐈"}
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-border bg-secondary">
+            <PawPrint size={28} className="text-muted-foreground" />
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-2xl font-bold text-foreground">{animal.name}</h1>

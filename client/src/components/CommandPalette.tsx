@@ -91,7 +91,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     onSelect={() => navigateTo(`/animal/${animal.id}`)}
                     className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-foreground hover:bg-secondary cursor-pointer"
                   >
-                    <span className="text-base">{animal.species === "dog" ? "🐕" : "🐈"}</span>
+                    <PawPrint size={16} className="text-muted-foreground flex-shrink-0" />
                     <span className="flex-1 truncate">{animal.name}</span>
                     <span className="text-xs text-muted-foreground truncate">{animal.breed || "—"}</span>
                   </Command.Item>

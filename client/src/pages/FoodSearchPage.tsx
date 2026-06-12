@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Search, Apple, AlertCircle, ShieldAlert, CheckCircle, Info, X, HelpCircle } from "lucide-react";
+import { Search, Apple, AlertCircle, ShieldAlert, CheckCircle, Info, X, HelpCircle, PawPrint } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/hooks/useLanguage";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
@@ -79,8 +79,8 @@ export default function FoodSearchPage() {
   };
 
   const speciesList = [
-    { key: "dog" as const, label: language === "pt" ? "Cão" : "Dog", emoji: "🐕" },
-    { key: "cat" as const, label: language === "pt" ? "Gato" : "Cat", emoji: "🐈" },
+    { key: "dog" as const, label: language === "pt" ? "Cão" : "Dog" },
+    { key: "cat" as const, label: language === "pt" ? "Gato" : "Cat" },
   ];
 
   if (isLoading && foods.length === 0) {
@@ -150,7 +150,7 @@ export default function FoodSearchPage() {
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/20"
                 )}
               >
-                <span>{sp.emoji}</span>
+                <PawPrint size={14} className="flex-shrink-0" />
                 <span className="truncate">{sp.label}</span>
               </button>
             );

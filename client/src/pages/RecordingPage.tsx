@@ -860,7 +860,7 @@ export default function RecordingPage() {
         <h1 className="text-2xl font-bold text-foreground">AnimalMind</h1>
         {activeAnimal ? (
           <p className="text-sm text-muted-foreground">
-            {activeAnimal.species === "dog" ? "🐕" : "🐈"} {activeAnimal.name}
+            {activeAnimal.name}
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">{t("header.noAnimal")}</p>

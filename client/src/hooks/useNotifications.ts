@@ -96,13 +96,11 @@ export function useNotifications() {
       lastNotifTime[key] = now;
 
       const label = STATE_LABELS[state];
-      const emoji = state === "distress" ? "🔴" : "🟠";
-      const message = `${emoji} ${animalName} está a mostrar sinais de ${label.toLowerCase()} (${Math.round(confidence * 100)}% confiança)`;
+      const message = `${animalName} está a mostrar sinais de ${label.toLowerCase()} (${Math.round(confidence * 100)}% confiança)`;
 
       // In-app toast
       toast.warning(message, {
         duration: 6000,
-        icon: emoji,
       });
 
       // Browser push notification

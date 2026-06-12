@@ -256,7 +256,11 @@ function EventRow({
             </span>
             {event.feedback && (
               <span className="text-xs">
-                {event.feedback === "correct" ? "👍" : "👎"}
+                {event.feedback === "correct" ? (
+                  <ThumbsUp size={12} className="text-emerald-400 inline" aria-label="Correct" />
+                ) : (
+                  <ThumbsDown size={12} className="text-red-400 inline" aria-label="Incorrect" />
+                )}
               </span>
             )}
           </div>
@@ -273,8 +277,9 @@ function EventRow({
             })}
           </p>
           {event.notes && (
-            <p className="text-[11px] text-cyan-400 italic mt-0.5 truncate max-w-[260px]">
-              📝 "{event.notes}"
+            <p className="text-[11px] text-cyan-400 italic mt-0.5 truncate max-w-[260px] flex items-center gap-1">
+              <FileText size={10} className="flex-shrink-0" />
+              <span className="truncate">&ldquo;{event.notes}&rdquo;</span>
             </p>
           )}
         </div>
@@ -404,7 +409,9 @@ function EmptyState({ filtered }: { filtered: boolean }) {
   const { t } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-      <span className="text-5xl">{filtered ? "🔍" : "🎙️"}</span>
+      <div className="w-16 h-16 rounded-full bg-secondary/60 flex items-center justify-center">
+        {filtered ? <Search size={28} className="text-muted-foreground" /> : <PawPrint size={28} className="text-muted-foreground" />}
+      </div>
       <p className="font-semibold text-foreground">
         {filtered ? t("historyPage.clear").replace("Limpar", "Sem resultados").replace("Clear", "No results") : t("historyPage.noEvents").replace("Nenhum evento registado para os filtros selecionados.", "Sem histórico ainda").replace("No events recorded for the selected filters.", "No history yet")}
       </p>
@@ -763,12 +770,12 @@ export default function HistoryPage() {
 
   const formatYAxis = (val: number) => {
     const statesByValue = [
-      `🔴 ${t("states.distress")}`,
-      `🔵 ${t("states.alert")}`,
-      `🟠 ${t("states.hunger")}`,
-      `🟡 ${t("states.attention")}`,
-      `🟢 ${t("states.excitement")}`,
-      `⚪ ${t("states.relaxed")}`,
+      t("states.distress"),
+      t("states.alert"),
+      t("states.hunger"),
+      t("states.attention"),
+      t("states.excitement"),
+      t("states.relaxed"),
     ];
     return statesByValue[val] || "";
   };
@@ -1207,7 +1214,10 @@ export default function HistoryPage() {
                 </SelectItem>
                 {animals.map((animal) => (
                   <SelectItem key={animal.id} value={String(animal.id)}>
-                    {animal.species === "dog" ? "🐕" : "🐈"} {animal.name}
+                    <span className="inline-flex items-center gap-1.5">
+                      <PawPrint size={12} />
+                      {animal.name}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1307,8 +1317,9 @@ export default function HistoryPage() {
       {(isFiltered || animalIdFilter) && (
         <div className="flex flex-wrap gap-1.5">
           {animalIdFilter && (
-            <Badge variant="secondary" className="text-xs gap-1">
-              🐾 {filterAnimal?.name ?? `#${animalIdFilter}`}
+            <Badge variant="secondary" className="text-xs gap-1 inline-flex items-center">
+              <PawPrint size={10} />
+              {filterAnimal?.name ?? `#${animalIdFilter}`}
               <button
                 onClick={() => setLocation("/historico")}
                 className="ml-1 text-muted-foreground hover:text-foreground cursor-pointer"

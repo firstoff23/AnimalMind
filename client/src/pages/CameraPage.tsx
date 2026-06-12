@@ -400,7 +400,7 @@ export default function CameraPage() {
                   {activeAnimal && (
                     <div className="absolute top-3 left-3">
                       <Badge className="bg-black/60 text-[10px] py-1 border border-white/10 uppercase tracking-wider font-semibold">
-                        {activeAnimal.species === "dog" ? "🐕 Cão" : "🐈 Gato"}: {activeAnimal.name}
+                        {activeAnimal.species === "dog" ? "Cão" : "Gato"}: {activeAnimal.name}
                       </Badge>
                     </div>
                   )}

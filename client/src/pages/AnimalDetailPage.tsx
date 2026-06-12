@@ -764,7 +764,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                             </span>
                             {ev.notes && (
                               <p className="text-[10px] text-cyan-400 italic mt-1 max-w-[200px] truncate">
-                                📝 "{ev.notes}"
+                                &ldquo;{ev.notes}&rdquo;
                               </p>
                             )}
                           </div>

@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Clock,
   Sparkles,
+  PawPrint,
 } from "lucide-react";
 import { STATE_LABELS, STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
@@ -27,6 +28,7 @@ interface ActiveAnimal {
   species: "dog" | "cat";
   breed?: string;
   age?: number;
+  isActive?: boolean;
 }
 
 export default function VetPage() {
@@ -295,7 +297,9 @@ export default function VetPage() {
           {/* Active animal banner */}
           <div className="bg-gradient-to-tr from-emerald-950/20 to-secondary/30 border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{activeAnimal.species === "dog" ? "🐕" : "🐈"}</span>
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <PawPrint size={22} className="text-emerald-400" />
+              </div>
               <div>
                 <p className="text-sm font-bold text-foreground">{activeAnimal.name}</p>
                 <p className="text-xs text-muted-foreground">

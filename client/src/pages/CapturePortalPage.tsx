@@ -71,7 +71,7 @@ export default function CapturePortalPage() {
             </CardHeader>
             <CardContent className="pt-0 flex justify-end">
               <span className="text-[11px] font-bold text-primary group-hover:underline flex items-center gap-1">
-                {language === "pt" ? "Iniciar gravador 🎙️" : "Start recorder 🎙️"}
+                {language === "pt" ? "Iniciar gravador" : "Start recorder"}
               </span>
             </CardContent>
           </Card>
