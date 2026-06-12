@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Camera, PawPrint, BarChart2, Apple, History, Settings } from "lucide-react";
+import { Camera, PawPrint, BarChart2, Apple, History, Settings, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -12,6 +12,7 @@ export function BottomNav() {
     { path: "/dashboard",    icon: BarChart2, label: language === "pt" ? "Dashboard" : "Dashboard" },
     { path: "/perfil",       icon: PawPrint,  label: language === "pt" ? "Animais" : "Pets" },
     { path: "/capturar",     icon: Camera,    label: language === "pt" ? "Capturar" : "Capture", isCenter: true },
+    { path: "/mindi",        icon: MessageCircle, label: "Mindi" },
     { path: "/alimentos",    icon: Apple,     label: language === "pt" ? "Alimentos" : "Foods" },
     { path: "/historico",    icon: History,    label: language === "pt" ? "Histórico" : "History" },
     { path: "/definicoes",   icon: Settings,   label: language === "pt" ? "Definições" : "Settings" },

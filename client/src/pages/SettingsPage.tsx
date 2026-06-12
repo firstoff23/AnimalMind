@@ -23,7 +23,6 @@ import {
   User,
   Shield,
   Loader2,
-  Smartphone,
   Check,
   Sun,
   Moon,
@@ -89,8 +88,6 @@ export default function SettingsPage() {
   const [sensitivity, setSensitivity] = useState<Sensitivity>("medium");
   const [shareDiagnosticData, setShareDiagnosticData] = useState(true);
   const [localHistoryOnly, setLocalHistoryOnly] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
 
   // Diagnostics and errors state
 
@@ -142,24 +139,6 @@ export default function SettingsPage() {
       setSensitivity(settingsData.alertSensitivity as Sensitivity);
     }
   }, [settingsData]);
-
-  // Check if already installed / listen to install prompt
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true);
-    }
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    };
-  }, []);
 
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
@@ -225,22 +204,6 @@ export default function SettingsPage() {
     );
   };
 
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setDeferredPrompt(null);
-        setIsInstalled(true);
-        toast.success(
-          language === "pt"
-            ? "Obrigado por instalar o AnimalMind!"
-            : "Thank you for installing AnimalMind!"
-        );
-      }
-    }
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -284,33 +247,6 @@ export default function SettingsPage() {
             : "Manage your preferences and personal information for AnimalMind"}
         </p>
       </div>
-
-      {/* PWA Install Banner */}
-      {deferredPrompt && !isInstalled && (
-        <motion.div variants={cardVariants}>
-          <Card className="bg-primary/10 border-primary/20 overflow-hidden shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
-                <Smartphone className="w-4 h-4" />
-                {language === "pt" ? "Instalar Aplicação" : "Install App"}
-              </CardTitle>
-              <CardDescription className="text-xs text-foreground/80 mt-0.5">
-                {language === "pt"
-                  ? "Instale o AnimalMind no seu dispositivo móvel ou computer para acesso rápido offline e notificações nativas."
-                  : "Install AnimalMind on your mobile device or computer for fast offline access and native notifications."}
-              </CardDescription>
-            </CardHeader>
-            <CardFooter className="pt-0">
-              <Button
-                onClick={handleInstallClick}
-                className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/95 text-xs h-9 active-scale tap-highlight-none"
-              >
-                {language === "pt" ? "Instalar Agora" : "Install Now"}
-              </Button>
-            </CardFooter>
-          </Card>
-        </motion.div>
-      )}
 
       {/* Modo Veterinário */}
       {canAccessVetMode && (

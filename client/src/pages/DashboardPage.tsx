@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,7 +10,8 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useMotionValue, animate } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck, Apple } from "lucide-react";
+import { getCachedData, setCachedData, CACHE_KEYS } from "@/lib/offlineCache";
+import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck, Apple, Mail } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/lib/utils";
 import { AlertBanner } from "@/components/AlertBanner";
@@ -126,7 +127,32 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { data: animals = [], isLoading: animalsLoading, error: animalsError, refetch: refetchAnimals } = trpc.animals.list.useQuery(undefined, { enabled: isAuthenticated });
-  const activeAnimal = animals.find((a) => a.isActive) ?? animals[0];
+  
+  const [cachedAnimals, setCachedAnimals] = useState<any[]>([]);
+  const [cachedEvents, setCachedEvents] = useState<any[]>([]);
+  const [cachedBeliefState, setCachedBeliefState] = useState<any>(null);
+
+  useEffect(() => {
+    getCachedData<any[]>(CACHE_KEYS.ANIMALS_LIST).then((data) => {
+      if (data) setCachedAnimals(data);
+    });
+    getCachedData<any[]>(CACHE_KEYS.EVENTS_HISTORY).then((data) => {
+      if (data) setCachedEvents(data);
+    });
+    getCachedData<any>("belief-state").then((data) => {
+      if (data) setCachedBeliefState(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (animals && animals.length > 0) {
+      setCachedAnimals(animals);
+      void setCachedData(CACHE_KEYS.ANIMALS_LIST, animals);
+    }
+  }, [animals]);
+
+  const displayAnimals = animals && animals.length > 0 ? animals : cachedAnimals;
+  const activeAnimal = displayAnimals.find((a) => a.isActive) ?? displayAnimals[0];
 
   const utils = trpc.useUtils();
   const { data: invitations = [], refetch: refetchInvitations } = trpc.animals.getPendingInvitations.useQuery(
@@ -171,6 +197,23 @@ export default function DashboardPage() {
     { enabled: !!activeAnimal }
   );
 
+  useEffect(() => {
+    if (events && events.length > 0) {
+      setCachedEvents(events);
+      void setCachedData(CACHE_KEYS.EVENTS_HISTORY, events);
+    }
+  }, [events]);
+
+  useEffect(() => {
+    if (beliefState) {
+      setCachedBeliefState(beliefState);
+      void setCachedData("belief-state", beliefState);
+    }
+  }, [beliefState]);
+
+  const displayEvents = events && events.length > 0 ? events : cachedEvents;
+  const displayBeliefState = beliefState || cachedBeliefState;
+
   const handleRefresh = async () => {
     await Promise.all([
       refetchAnimals(),
@@ -183,8 +226,8 @@ export default function DashboardPage() {
   const { pullDistance, isRefreshing, touchHandlers } = usePullToRefresh(handleRefresh);
 
   const dominantBelief = useMemo(() => {
-    if (!beliefState) return null;
-    const { relaxed, excitement, distress, hunger, alert, attention } = beliefState;
+    if (!displayBeliefState) return null;
+    const { relaxed, excitement, distress, hunger, alert, attention } = displayBeliefState;
     const statesList = [
       { state: "relaxed", val: relaxed },
       { state: "excitement", val: excitement },
@@ -194,7 +237,7 @@ export default function DashboardPage() {
       { state: "attention", val: attention },
     ];
     return statesList.sort((a, b) => b.val - a.val)[0];
-  }, [beliefState]);
+  }, [displayBeliefState]);
 
   // ── Bar chart: state distribution ─────────────────────────────────────────
   const barData = useMemo(() => {
@@ -202,7 +245,7 @@ export default function DashboardPage() {
       distress: 0, attention: 0, excitement: 0,
       hunger: 0, alert: 0, relaxed: 0,
     };
-    for (const e of events) {
+    for (const e of displayEvents) {
       if (e.state in counts) counts[e.state as EmotionalState]++;
     }
     return STATES.map((s) => ({
@@ -211,12 +254,12 @@ export default function DashboardPage() {
       state: s,
       color: STATE_COLORS[s],
     }));
-  }, [events, t]);
+  }, [displayEvents, t]);
 
-  // ── Line chart: daily average confidence ──────────────────────────────────
+  // ── Line chart: daily average daily confidence ──────────────────────────────
   const lineData = useMemo(() => {
     const byDay: Record<string, { sum: number; count: number }> = {};
-    for (const e of events) {
+    for (const e of displayEvents) {
       const day = new Date(e.createdAt).toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
         weekday: "short",
       });
@@ -228,12 +271,12 @@ export default function DashboardPage() {
       day,
       avg: Math.round((sum / count) * 100) / 100,
     }));
-  }, [events, language]);
+  }, [displayEvents, language]);
 
   // ── Dominant state today ───────────────────────────────────────────────────
   const todayStats = useMemo(() => {
     const today = new Date();
-    const todayEvents = events.filter((e) => {
+    const todayEvents = displayEvents.filter((e) => {
       const d = new Date(e.createdAt);
       return (
         d.getDate() === today.getDate() &&
@@ -255,13 +298,13 @@ export default function DashboardPage() {
       pct: Math.round((count / todayEvents.length) * 100),
       total: todayEvents.length,
     };
-  }, [events]);
+  }, [displayEvents]);
 
   const latestEvent = useMemo(() => {
-    return [...events].sort(
+    return [...displayEvents].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )[0] ?? null;
-  }, [events]);
+  }, [displayEvents]);
 
   const activeAnimalHealth = getHealthBadge(latestEvent?.state);
   const locale = language === "pt" ? "pt-PT" : "en-US";
@@ -405,18 +448,18 @@ export default function DashboardPage() {
 
       {activeAnimal && <AlertBanner animalId={activeAnimal.id} />}
 
-      {!animalsLoading && !animalsError && animals.length > 0 && (
+      {!animalsLoading && !animalsError && displayAnimals.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase text-muted-foreground">
               {language === "pt" ? "Animais acompanhados" : "Tracked animals"}
             </h2>
             <span className="text-[11px] text-muted-foreground">
-              {animals.length}
+              {displayAnimals.length}
             </span>
           </div>
           <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
-            {animals.map((a) => {
+            {displayAnimals.map((a) => {
               const isActiveAnimal = a.id === activeAnimal?.id;
               const status = getHealthBadge(isActiveAnimal ? latestEvent?.state : null);
               const photoUrl = "photoUrl" in a && typeof a.photoUrl === "string" ? a.photoUrl : undefined;
@@ -431,7 +474,7 @@ export default function DashboardPage() {
                     )}
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12 border border-white/10 bg-black/20">
+                       <Avatar className="h-12 w-12 border border-white/10 bg-black/20">
                         <AvatarImage src={photoUrl} alt={a.name} />
                         <AvatarFallback className="bg-emerald-500/10 text-lg">
                           <PawPrint size={18} className="text-emerald-500/60" />
@@ -474,7 +517,7 @@ export default function DashboardPage() {
             Tentar novamente
           </Button>
         </div>
-      ) : animals.length === 0 ? (
+      ) : displayAnimals.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-8 bg-slate-900/30 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm max-w-lg mx-auto">
           <div className="relative">
             <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse" />
@@ -561,7 +604,7 @@ export default function DashboardPage() {
               className="bg-gradient-to-r from-cyan-950/40 to-secondary/40 border border-cyan-500/20 rounded-2xl p-4 flex flex-col gap-3 page-enter"
             >
               <div className="flex items-start gap-3">
-                <span className="text-2xl">📩</span>
+                <Mail className="w-5 h-5 text-cyan-400 mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <h4 className="text-xs font-semibold text-cyan-400 uppercase tracking-wide">
                     {t("dashboardPage.invitationTitle")}

@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Header } from "./components/Header";
 import { MobileOnlyGate } from "./components/MobileOnlyGate";
 import { OnboardingDialog } from "./components/OnboardingDialog";
+import { OfflineActionsSyncer } from "./components/OfflineActionsSyncer";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import RecordingPage from "./pages/RecordingPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -112,6 +113,7 @@ function Router() {
         </main>
 
         {isAuthenticated && <OnboardingDialog />}
+        {isAuthenticated && <OfflineActionsSyncer />}
         {isAuthenticated && <BottomNav />}
 
         {/* Global Command Palette */}

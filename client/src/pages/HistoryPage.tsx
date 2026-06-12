@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type PointerEvent } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQueryState, parseAsInteger } from "nuqs";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ import {
   ArrowUpDown,
   Search,
   Loader2,
+  Mic,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -406,7 +407,7 @@ function RawEventDialog({
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyState({ filtered }: { filtered: boolean }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
       <div className="w-16 h-16 rounded-full bg-secondary/60 flex items-center justify-center">
@@ -420,6 +421,14 @@ function EmptyState({ filtered }: { filtered: boolean }) {
           ? t("historyPage.noEvents").replace("Nenhum evento registado para os filtros selecionados.", "Tente ajustar os filtros para encontrar registos.").replace("No events recorded for the selected filters.", "Try adjusting the filters to find records.")
           : t("recordingPage.tapForSingle").replace("Toque para uma gravação única de 3 segundos", "Grave o som do seu animal para ver o histórico de classificações aqui.").replace("Tap for a single 3-second recording", "Record your pet's sound to see classification history here.")}
       </p>
+      {!filtered && (
+        <Link href="/capturar">
+          <Button variant="outline" size="sm" className="mt-3 gap-2 border-primary/30 hover:bg-primary/10">
+            <Mic size={16} className="text-primary animate-pulse" />
+            <span>{language === "pt" ? "Fazer gravação" : "Record audio"}</span>
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }

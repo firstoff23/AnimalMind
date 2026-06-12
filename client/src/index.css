@@ -127,7 +127,7 @@
   height: 4.5rem;
   margin-inline: auto;
   overflow: visible;
-  padding-inline: 0.5rem;
+  padding-inline: 0.25rem;
 }
 
 .bottom-nav-scroll::-webkit-scrollbar {
@@ -142,7 +142,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
   height: 100%;
   border: 0;
   background: transparent;
@@ -157,7 +157,7 @@
   position: absolute;
   top: 0.125rem;
   left: 50%;
-  width: 1.5rem;
+  width: 1.25rem;
   height: 0.1875rem;
   border-radius: 999px;
   background: var(--primary);
@@ -194,12 +194,12 @@
 }
 
 .bottom-nav-icon {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
   transition: transform 180ms ease, color 180ms ease;
 }
 
 .bottom-nav-icon.is-active {
-  transform: scale(1.1);
+  transform: scale(1.05);
   color: var(--primary);
 }
 
@@ -210,8 +210,8 @@
   transform: translateX(-50%);
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--primary);
@@ -237,10 +237,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   line-height: 1;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: -0.015em;
   opacity: 0.68;
   transition: opacity 180ms ease, color 180ms ease;
 }

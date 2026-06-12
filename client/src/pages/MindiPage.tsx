@@ -91,6 +91,25 @@ function getContextSummary(
   return `${animal.name} · ${species} · ${breed} · ${age}. ${recent}`;
 }
 
+function buildClientFallbackResponse(message: string, animalName?: string): string {
+  const name = animalName || "o teu animal";
+  const normalized = message.toLocaleLowerCase("pt-PT");
+
+  if (normalized.includes("não come") || normalized.includes("nao come") || normalized.includes("comer")) {
+    return `${name} pode estar a recusar comida por stress, alteração de rotina, desconforto oral, náusea ou dor. Observa também água, energia, vómitos, diarreia e sinais de dor. Se não comer durante 24 horas, contacta um médico veterinário.`;
+  }
+  if (normalized.includes("stress") || normalized.includes("ansiedade")) {
+    return `Para sinais de stress em ${name}, procura vocalizações fora do habitual, respiração rápida, esconder-se, lamber-se em excesso, postura tensa. Reduz estímulos e mantém uma rotina previsível. Se os sinais forem intensos, marca avaliação veterinária.`;
+  }
+  if (normalized.includes("aliment") || normalized.includes("nutrição")) {
+    return `Para alimentação, mantém horários consistentes, água sempre disponível e mudanças graduais de ração ao longo de 7 a 10 dias. Ajusta a dose à idade, peso, espécie e nível de atividade de ${name}.`;
+  }
+  if (normalized.includes("veterin")) {
+    return `Deves ir ao veterinário se ${name} tiver dificuldade em respirar, convulsões, trauma, intoxicação, dor evidente, apatia marcada, vómitos persistentes, diarreia com sangue, ou recusa de comida/água prolongada. Em situações graves, não esperes.`;
+  }
+  return `Posso ajudar-te com comportamento, saúde, nutrição e bem-estar de ${name}. Diz-me o que observaste, há quanto tempo acontece e se existem sinais físicos como dor, vómitos, diarreia, apatia ou dificuldade respiratória. Para sintomas sérios, a avaliação veterinária é indispensável.`;
+}
+
 export default function MindiPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -188,6 +207,13 @@ export default function MindiPage() {
     ]);
     setInput("");
 
+    // Offline: use client-side fallback immediately
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const offlineReply = buildClientFallbackResponse(content, activeAnimal?.name);
+      setTimeout(() => revealAssistantMessage(assistantId, offlineReply), 150);
+      return;
+    }
+
     try {
       const response = await sendMutation.mutateAsync({
         animalId: activeAnimal?.id,
@@ -198,18 +224,10 @@ export default function MindiPage() {
     } catch (error) {
       console.error("[Mindi] Chat request failed:", error);
       setIsRevealing(false);
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === assistantId
-            ? {
-                ...message,
-                content:
-                  "Não consegui responder agora. Tenta novamente dentro de momentos. Se for uma situação urgente, contacta um médico veterinário.",
-              }
-            : message
-        )
-      );
-      toast.error("A Mindi não conseguiu responder.");
+      // Network failure fallback
+      const fallbackReply = buildClientFallbackResponse(content, activeAnimal?.name);
+      revealAssistantMessage(assistantId, fallbackReply);
+      toast.error("Resposta gerada localmente (modo offline).");
     }
   };
 
@@ -219,7 +237,7 @@ export default function MindiPage() {
   };
 
   if (animalLoading) {
-    return <AppShellSkeleton mode="content" variant="content" />;
+    return <AppShellSkeleton mode="content" variant="mindi" />;
   }
 
   return (

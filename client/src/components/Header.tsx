@@ -1,24 +1,39 @@
 import { useLocation } from "wouter";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/appStore";
 import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Logo } from "@/components/ui/Logo";
+import { useEffect, useState } from "react";
 
 export function Header() {
   const [location, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
   const { t, language } = useLanguage();
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   if (!isAuthenticated) {
     return null;
   }
 
   // Check if current page is one of the main tabs
-  const isRootPage = ["/dashboard", "/perfil", "/capturar", "/alimentos", "/historico", "/definicoes"].includes(location);
+  const isRootPage = ["/dashboard", "/perfil", "/capturar", "/mindi", "/alimentos", "/historico", "/definicoes"].includes(location);
 
   const handleBack = () => {
     if (location.startsWith("/animal/")) {
@@ -84,6 +99,12 @@ export function Header() {
       <div className="flex-1 flex items-center justify-center gap-1.5 font-bold text-base text-foreground tracking-tight font-satoshi">
         {isRootPage && <Logo className="text-primary size-5" />}
         <span>{getPageTitle()}</span>
+        {!isOnline && (
+          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/15 text-destructive border border-destructive/25 uppercase tracking-wider shrink-0 animate-pulse" title="Modo Offline">
+            <WifiOff className="h-2.5 w-2.5" />
+            Offline
+          </span>
+        )}
       </div>
 
       {/* Right side actions (Offline indicator, Search) */}

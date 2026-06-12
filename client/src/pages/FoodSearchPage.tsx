@@ -160,7 +160,23 @@ export default function FoodSearchPage() {
 
       {/* Results List */}
       <section className="flex-1 flex flex-col gap-6">
-        {foods.length > 0 ? (
+        {!query.trim() ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+              <Search size={28} className="animate-pulse text-primary" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="font-bold text-foreground text-sm">
+                {language === "pt" ? "Pesquisa um alimento" : "Search for a food"}
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                {language === "pt"
+                  ? "Insere o nome de um alimento para verificar se é seguro para o teu cão ou gato."
+                  : "Type the name of a food to verify if it is safe for your dog or cat."}
+              </p>
+            </div>
+          </div>
+        ) : foods.length > 0 ? (
           <div className="space-y-6">
             {/* Safe Foods */}
             {foods.some(f => f.computedSeverity === "safe") && (

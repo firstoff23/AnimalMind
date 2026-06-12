@@ -84,7 +84,7 @@ export default function LandingPage() {
           {/* Pill badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
             <Sparkles size={11} aria-hidden="true" />
-            {t("landing.pwaAvailable") || "Disponível como PWA · Instalar no telemóvel"}
+            {language === "pt" ? "Inteligência Artificial · AnimalMind" : "Powered by AI · AnimalMind"}
           </div>
 
           {/* Headline */}

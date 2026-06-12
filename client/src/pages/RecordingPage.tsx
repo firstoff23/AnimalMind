@@ -35,6 +35,7 @@ import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAppStore } from "@/store/appStore";
+import { useHaptic } from "@/hooks/useHaptic";
 
 type RecordState = "idle" | "requesting" | "recording" | "review" | "uploading" | "processing" | "success" | "error";
 
@@ -356,6 +357,7 @@ export default function RecordingPage() {
   const { enqueue, pendingCount } = useOfflineQueue({ autoProcess: false });
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
+  const { triggerStartRecording, triggerStopRecording, triggerSaveSuccess, triggerCriticalError } = useHaptic();
 
   useEffect(() => {
     setRecording(recordState === "recording");
@@ -375,10 +377,12 @@ export default function RecordingPage() {
         setRecordState("error");
         setErrorMessage(language === "pt" ? "Erro ao aceder ao microfone." : "Error accessing microphone.");
       }
+      triggerCriticalError();
       setIsAutoMode(false);
       isAutoModeRef.current = false;
       return;
     }
+    triggerStartRecording();
     setRecordState("recording");
   };
 
@@ -453,6 +457,7 @@ export default function RecordingPage() {
       setRecordState("idle");
       scheduleAutoRecording(1500);
     } else {
+      triggerSaveSuccess();
       setRecordState("success");
     }
   };
@@ -769,6 +774,7 @@ export default function RecordingPage() {
     }
 
     if (recordState === "recording" || recordState === "requesting" || recordState === "processing") {
+      triggerStopRecording();
       stopLiveAudio();
       setRecordState("idle");
       return;
