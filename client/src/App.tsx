@@ -41,6 +41,8 @@ import HealthPage from "./pages/HealthPage";
 import ComparisonPage from "./pages/ComparisonPage";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import CapturePortalPage from "./pages/CapturePortalPage";
+import CameraPage from "./pages/CameraPage";
 import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
 
 function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
@@ -85,7 +87,9 @@ function Router() {
 
             {/* Protected routes */}
             <Route path="/gravar" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
-            <Route path="/perfil" component={() => <Redirect to="/definicoes" />} />
+            <Route path="/capturar" component={(props) => <ProtectedRoute component={CapturePortalPage} {...props} />} />
+            <Route path="/camera" component={(props) => <ProtectedRoute component={CameraPage} {...props} />} />
+            <Route path="/perfil" component={(props) => <ProtectedRoute component={ProfilePage} {...props} />} />
             <Route path="/health" component={(props) => <ProtectedRoute component={HealthPage} {...props} />} />
             <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />
             <Route path="/historico" component={(props) => <ProtectedRoute component={HistoryPage} {...props} />} />

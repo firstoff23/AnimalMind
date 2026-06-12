@@ -76,3 +76,60 @@ Integrity mode: development
 - [ ] `AndroidManifest.xml` has the INTERNET permission and references `@xml/network_security_config`.
 - [ ] tRPC queries and mutations run without network exceptions in the Android app.
 - [ ] Logcat output shows no active networking/CORS errors for `AnimalMind` or `animalmind.vercel.app`.
+
+## Follow-up — 2026-06-12T00:32:34Z
+
+Implement Round 2 improvements for AnimalMind, including restoring the animal profile page, separating the voice recorder and camera, adding animal creation options (manual, microchip, OCR placeholder), and standardizing upload and error states globally.
+
+Working directory: C:\Users\Alexandre\Documents\AnimalMind
+Integrity mode: demo
+
+## Requirements
+
+### R1. Restoring Animal Profile to /perfil & User Profile to /definicoes
+- Restore the `/perfil` route to point directly to `ProfilePage.tsx` (the dedicated Animal Profile screen). Remove the redirect to `/definicoes`.
+- Put back the `PawPrint` ("Animais") navigation tab in `BottomNav.tsx` and `Sidebar.tsx` pointing to `/perfil`.
+- Integrate editing/management of the active animal's profile (name, breed, weight, age, photoUrl) inside `ProfilePage.tsx` (e.g. via an "Editar" button and drawer).
+- Remove all animal profile list selection and animal profile editing sections from `SettingsPage.tsx`.
+- Retain the User Profile (Full Name, Email Address, Save Profile, Log Out) inside `SettingsPage.tsx`.
+- Ensure `/user-profile` redirects to `/definicoes`.
+
+### R2. Separate Voice Recorder and Camera (Entry screen: /capturar)
+- Replace `/gravar` with `/capturar` (Capture) in the main navigation menus (`BottomNav.tsx` and `Sidebar.tsx`).
+- `/capturar` is a single entry page showing two large cards: 🎙️ "Gravar Áudio" (which navigates to `/gravar`) and 📷 "Câmara" (which navigates to a new route `/camera`).
+- The `/gravar` route must only contain the Voice Recorder (no camera features).
+- The `/camera` route must only contain the Camera capture features.
+- Request microphone / camera permissions only at the moment of use, not on page load.
+- Voice Recorder page must display a timer and an audio level wave/bar indicator.
+- Camera page must show a large live camera preview.
+- Include a "Review" screen (hear/see, retry, confirm or delete) before saving or sending for both audio and camera.
+- Expose clear upload lifecycle states: Idle → A enviar → A processar → Concluído / Erro.
+
+### R3. Animal Profile Creation Options
+- Integrate 3 options when adding a new animal:
+  - **Opção A: Manual**: Existing drawer form.
+  - **Opção B: Número de microchip**: Field to enter a 15-digit microchip number, validate length/format, and store it in the database.
+  - **Opção C: Importar do Boletim (OCR)**: Display "Fotografar boletim" button, show placeholder/badge "Em breve". In the UI, show preview of the uploaded file, explicit "A processar OCR..." state, error fallback, and retry/manual fill options.
+
+### R4. Standardized Upload States and Error Messages
+- For all media upload zones (animal photo, bulletin image, audio):
+  - **Idle**: Instructions, size limit (20MB), accepted formats.
+  - **Uploading**: Progress bar with percentage.
+  - **Processing**: Clear text (e.g., "A analisar...", "A transcrever...").
+  - **Success**: Final preview, check indicator, and next step.
+  - **Error**: specific errors with recovery actions:
+    - Invalid type: "Formato não suportado. Usa JPG, PNG ou PDF."
+    - Size limit exceeded: "Ficheiro demasiado grande. Máximo 20 MB."
+    - Network error: "Ligação interrompida. Tentar novamente."
+    - OCR/processing: "Não foi possível analisar o ficheiro. Tenta novamente ou preenche manualmente."
+    - Permissions denied: specific error with a button to open settings.
+- Implement accessibility features: `aria-live="polite"`, text + icons for errors, WCAG AA contrast.
+
+## Acceptance Criteria
+
+### Verification & Quality Guardrails
+- [ ] TypeScript check (`pnpm run check`) completes with 0 errors.
+- [ ] All unit tests (`pnpm test`) pass without failures.
+- [ ] Production build (`pnpm run build`) finishes successfully.
+- [ ] Walkthrough documentation updated in `walkthrough.md` with descriptions and references to screenshots.
+- [ ] All code modifications committed and pushed to `main`.

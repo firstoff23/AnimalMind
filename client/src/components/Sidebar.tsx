@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart2,
-  Mic,
+  Camera,
   PawPrint,
   History,
   MessageCircle,
@@ -32,7 +32,8 @@ export function Sidebar() {
 
   const navItems = [
     { path: "/dashboard", icon: BarChart2, label: language === "pt" ? "Dashboard" : "Dashboard" },
-    { path: "/gravar", icon: Mic, label: language === "pt" ? "Gravar" : "Record" },
+    { path: "/perfil", icon: PawPrint, label: language === "pt" ? "Animais" : "Pets" },
+    { path: "/capturar", icon: Camera, label: language === "pt" ? "Capturar" : "Capture" },
     { path: "/historico", icon: History, label: language === "pt" ? "Histórico" : "History" },
     { path: "/mindi", icon: MessageCircle, label: "Mindi" },
     { path: "/alimentos", icon: Apple, label: language === "pt" ? "Alimentos" : "Foods" },
@@ -139,28 +140,34 @@ export function Sidebar() {
       {/* User profile bottom bar */}
       <div className="p-3 border-t border-border/40 bg-muted/20 flex flex-col gap-2">
         <div className={cn("flex items-center gap-3", collapsed ? "justify-center" : "px-1.5")}>
-          <Avatar className="size-8.5 border border-border/50 shrink-0">
-            <AvatarImage src={undefined} />
-            <AvatarFallback className="bg-muted text-muted-foreground" />
-          </Avatar>
-          
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-[11px] font-bold text-foreground truncate leading-none">
-                  {dbUser?.name || "Tutor"}
-                </p>
-                <p className="text-[9px] text-muted-foreground truncate mt-0.5 leading-none">
-                  {dbUser?.email || "tutor@animalmind.app"}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div
+            onClick={() => navigate("/perfil")}
+            className="flex items-center gap-3 cursor-pointer group/avatar min-w-0 flex-1 justify-center md:justify-start"
+            title={language === "pt" ? "Ver Perfis de Animais" : "View Pet Profiles"}
+          >
+            <Avatar className="size-8.5 border border-border/50 shrink-0 group-hover/avatar:border-primary/50 transition-colors">
+              <AvatarImage src={undefined} />
+              <AvatarFallback className="bg-muted text-muted-foreground" />
+            </Avatar>
+            
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -8 }}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <p className="text-[11px] font-bold text-foreground group-hover/avatar:text-primary transition-colors truncate leading-none">
+                    {dbUser?.name || "Tutor"}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground truncate mt-0.5 leading-none">
+                    {dbUser?.email || "tutor@animalmind.app"}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {!collapsed && (
             <Button

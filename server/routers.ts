@@ -597,6 +597,68 @@ export const appRouter = router({
         }
         return data as { species: string; confidence: number };
       }),
+
+    saveVisionEvent: protectedProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          posture: z.string(),
+          species: z.string().optional().nullable(),
+          image: z.string().optional(), // base64 JPEG
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        let state: "relaxed" | "distress" | "attention" | "hunger" | "alert" | "excitement" = "relaxed";
+        let emoji = "😌";
+        const p = input.posture.toLowerCase();
+        
+        if (p.includes("sleep") || p.includes("lie") || p.includes("lying") || p.includes("sitting") || p.includes("sit")) {
+          state = "relaxed";
+          emoji = "😌";
+        } else if (p.includes("stand") || p.includes("standing") || p.includes("walk") || p.includes("run")) {
+          state = "alert";
+          emoji = "👀";
+        } else if (p.includes("play") || p.includes("jump") || p.includes("excited")) {
+          state = "excitement";
+          emoji = "🤪";
+        } else if (p.includes("beg") || p.includes("begging") || p.includes("food")) {
+          state = "hunger";
+          emoji = "😋";
+        } else if (p.includes("cower") || p.includes("fear") || p.includes("hide") || p.includes("distress")) {
+          state = "distress";
+          emoji = "😰";
+        } else if (p.includes("bark") || p.includes("growl") || p.includes("attention")) {
+          state = "attention";
+          emoji = "🥺";
+        }
+
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        const targetAnimal = await getAnimalById(input.animalId, userId);
+
+        const event = await insertEvent({
+          userId,
+          animalId: input.animalId,
+          state,
+          confidence: 0.90,
+          emoji,
+          modelUsed: "YOLOv8-Vision",
+          cached: false,
+        });
+
+        const eventId = (event as any)?.id;
+        if (eventId) {
+          await savePostureForEvent(eventId, input.posture);
+          await updateBeliefStateForAnimal(input.animalId, state, 0.90, eventId);
+          try {
+            await recalculateAnimalBehaviorBaseline(input.animalId, userId);
+          } catch (err) {
+            console.error("[Baseline] Failed to recalculate behavior baseline:", err);
+          }
+        }
+
+        return { state, confidence: 0.90, emoji, model_used: "YOLOv8-Vision", eventId };
+      }),
   }),
 
   // ── Animals ─────────────────────────────────────────────────────────────────

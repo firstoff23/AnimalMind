@@ -201,3 +201,41 @@ Efetuámos uma auditoria completa de todas as páginas da aplicação para valid
 * **Playwright E2E Tests**: Executámos toda a suite de integração (`pnpm run e2e`), com **6/6 testes a passar** com sucesso (auth-callback, desktop-warning, history, login, pdf-export e recording).
 * **Vitest Unit Tests**: Todos os **103/103 testes** do backend e lógica local passam com sucesso.
 * **TypeScript & Build**: `pnpm run check` (0 erros de tipo) e `pnpm run build` compilam a 100%.
+
+---
+
+## 🌟 7. Melhorias da Ronda 2 (Round 2 Improvements) ✅
+
+Nesta atualização, foram implementadas melhorias de robustez, usabilidade e conformidade visual para a Ronda 2:
+
+### 1. Restauração e Integração da Página de Perfil (`/perfil`)
+* A página de perfil foi totalmente restaurada para a rota `/perfil` (mapeada para `ProfilePage.tsx`), eliminando o redirecionamento cego para as definições.
+* **Menus de Navegação Atualizados**: Tanto a barra inferior mobile (`BottomNav.tsx`) como a barra lateral de desktop (`Sidebar.tsx`) foram atualizados para incluir e apontar para `/perfil` ("Animais") e para `/capturar` ("Capturar"), substituindo atalhos antigos.
+* O clique no utilizador ou avatar no fundo da barra lateral desktop redireciona agora intuitivamente para a página `/perfil` de forma amigável.
+
+### 2. Separação de Fluxos de Captura: Gravador de Voz (`/gravar`) e Câmara (`/camera`)
+* **Portal de Captura (`/capturar`)**: Criámos um ecrã de entrada moderno e responsivo (`CapturePortalPage.tsx`) que permite ao utilizador selecionar de forma simples e intuitiva o modo de captura pretendido:
+  - **Gravar Áudio (`/gravar`)**: Para vocalizações e análise acústica.
+  - **Câmara Visão (`/camera`)**: Para análise de postura e linguagem corporal com YOLOv8.
+* **Separadores Independentes**: O gravador de áudio e a câmara foram dissociados para ecrãs e fluxos dedicados (`RecordingPage.tsx` e `CameraPage.tsx`), garantindo um design limpo e focado em cada funcionalidade nativa de hardware.
+
+### 3. Novas Opções de Criação de Perfil de Animal
+Ao adicionar um animal, o utilizador dispõe agora de três métodos organizados em separadores dinâmicos no formulário de criação:
+1. **Manual**: Preenchimento convencional de todos os campos.
+2. **Microchip**: Permite a criação simplificada e rápida fornecendo apenas o Nome e o Número de Microchip (validado estritamente para 15 dígitos numéricos).
+3. **Boletim (OCR)**: Importação simulada através do carregamento do boletim de vacinas, com estado de processamento realista e mensagens de orientação.
+
+### 4. Zonas de Carregamento de Media Padronizadas (Upload Zones)
+Implementámos uma lógica visual unificada de carregamento para a foto do animal, boletim (OCR) e gravação de áudio, com suporte para 5 estados bem definidos:
+* **Inativo (Idle)**: Estado inicial com zona tracejada, instrução de formato/tamanho (máx. 20 MB, JPG/PNG/PDF) e ícone chamativo.
+* **A enviar (Uploading)**: Mostra uma barra de progresso em tempo real (`Progress`) com a percentagem de progresso de upload simulada.
+* **A processar/analisar (Processing)**: Renderiza um indicador de carregamento (`Loader2`) animado sinalizando a análise ou processamento de IA/OCR.
+* **Sucesso (Success)**: Exibe a imagem carregada em tamanho pequeno (ou ícone de documento no caso de PDF), nome do ficheiro e um badge verde de sucesso com opções para "Substituir" ou "Remover".
+* **Erro (Error)**: Apresenta um aviso visual a vermelho com a respetiva mensagem de erro em português de Portugal. Tratamento inteligente de erros com mensagens específicas e botão para "Tentar novamente":
+  - Formato não suportado: `"Formato não suportado. Usa JPG, PNG ou PDF."`
+  - Tamanho excedido: `"Ficheiro demasiado grande. Máximo 20 MB."`
+  - Falha de rede: `"Ligação interrompida. Tentar novamente."`
+  - Permissão negada: Mostra botão para aceder às "Definições" do browser.
+
+Estes componentes e ecrãs podem ser consultados diretamente nos ficheiros `client/src/pages/ProfilePage.tsx`, `client/src/pages/CapturePortalPage.tsx`, `client/src/pages/CameraPage.tsx` e `client/src/pages/RecordingPage.tsx`.
+
