@@ -61,6 +61,10 @@
   ],
   "rewrites": [
     {
+      "source": "/manifest.json",
+      "destination": "/manifest.webmanifest"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/[...all].js"
     },
