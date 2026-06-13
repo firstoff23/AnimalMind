@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.animalmind.app",
+      "sha256_cert_fingerprints": [
+        "AB:3E:63:D5:9D:69:2E:5D:B4:4A:C7:21:B9:51:94:E5:89:EB:A6:DD:F7:65:9D:55:C7:74:8E:38:DF:21:99:08"
+      ]
+    }
+  }
+]
