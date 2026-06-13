@@ -307,3 +307,42 @@ Nesta ronda, focámo-nos na unificação do cabeçalho da aplicação, remoção
 
 
 
+## 📦 10. Ronda 5: TWA, Play Store e Assets de Lançamento (Round 5 TWA & Play Store) ✅
+
+Nesta ronda final, empacotámos a aplicação PWA do AnimalMind como uma Trusted Web Activity (TWA) oficial para Android, gerámos o pacote de lançamento assinado de produção e estruturámos a presença de loja para a Google Play Store.
+
+### 1. Inicialização e Configuração do Projeto TWA
+* **Estrutura**: Criámos o diretório dedicado `android/twa/` e inicializámos o projeto utilizando o Bubblewrap:
+  - `bubblewrap init --manifest https://animalmind.vercel.app/manifest.webmanifest`
+* **Parâmetros de Projeto**:
+  - **Nome e Short Name**: `AnimalMind`
+  - **Package ID / Application ID**: `com.animalmind.app`
+  - **Host**: `animalmind.vercel.app`
+  - **Start Path**: `/`
+  - **Status Bar Color**: `#22C55E`
+  - **Splash Screen Color**: `#0A0A0B`
+  - **Ícones**: Associados automaticamente a `/icons/icon-512x512.png` (com suporte para maskable adaptive icons).
+
+### 2. Compilação e Assinatura Digital do Pacote (.aab)
+* **Compilação Gradle**: Compilámos o projeto através do Gradle Wrapper diretamente, especificando a versão JDK 17 instalada no Bubblewrap e apontando o `ANDROID_HOME` para o SDK local do Bubblewrap. O build gerou com sucesso o pacote não assinado em `app/build/outputs/bundle/release/app-release.aab`.
+* **Assinatura Digital**: Assinámos o pacote de lançamento com o certificado de produção gerado anteriormente (`animalmind-release.jks`) com o alias `animalmind`, utilizando o utilitário `jarsigner`:
+  - `jarsigner -keystore ..\animalmind-release.jks -storepass animalmindpwd app-release.aab animalmind`
+* **Armazenamento de Builds**: Criámos o diretório `android/builds/` e copiámos o pacote assinado final como `animalmind-v1.0.0.aab`.
+
+### 3. Metadados e Presença de Loja
+* Criámos o ficheiro de documentação [play-store-assets.md](file:///C:/Users/Alexandre/Documents/AnimalMind/play-store-assets.md) na raiz do projeto com toda a informação requerida para a publicação em duas línguas (Português de Portugal e Inglês dos EUA), respeitando os limites estritos de tamanho do Google Play Console e listando apenas as funcionalidades reais da aplicação (Mindi AI, Classificador Offline, Dicionário de Alimentos, Registo de Sintomas).
+
+### 4. Passos Manuais de Publicação (Guia do Programador)
+Para lançar a aplicação na Google Play Store, o programador deve seguir as seguintes etapas:
+1. **Registo na Google Play Console**: Criar uma conta de programador na Google Play Console.
+2. **Criar Nova Aplicação**: Introduzir o nome `AnimalMind`, definir como Aplicação Gratuita (Free) e selecionar o idioma principal (PT-PT).
+3. **Carregar o Pacote (.aab)**: No separador "Versões de produção" ou "Testes fechados", carregar o ficheiro `android/builds/animalmind-v1.0.0.aab` assinado.
+4. **Metadados e Imagens**: Preencher os campos de Título, Descrição Curta e Longa com os textos definidos em `play-store-assets.md`, e carregar o ícone de 512x512px gerado na ronda anterior.
+5. **Digital Asset Links**: Como a app é uma TWA, a barra de navegação do browser desaparecerá assim que a relação de confiança for ativada pelo Google Play. O ficheiro [assetlinks.json](file:///C:/Users/Alexandre/Documents/AnimalMind/client/public/.well-known/assetlinks.json) já está live em `https://animalmind.vercel.app/.well-known/assetlinks.json` contendo o fingerprint SHA-256 correto.
+6. **Enviar para Revisão**: Concluir o questionário de classificação de conteúdo (PEGI 3) e enviar a aplicação para aprovação final pela Google.
+
+---
+
+### 5. Validação e Qualidade Técnica
+* **TypeScript compilation**: Executámos `pnpm run check` garantindo **0 erros** de compilação.
+* **Unit tests**: Executámos `pnpm test` com todos os **103/103 testes** a passar com sucesso.
