@@ -1,7 +1,6 @@
 import { useLocation } from "wouter";
-import { ArrowLeft, Search, WifiOff } from "lucide-react";
+import { ArrowLeft, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppStore } from "@/store/appStore";
 import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -12,7 +11,6 @@ export function Header() {
   const [location, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
   const { t, language } = useLanguage();
-  const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   useEffect(() => {
@@ -109,21 +107,9 @@ export function Header() {
         )}
       </div>
 
-      {/* Right side actions (Offline indicator, Search) */}
+      {/* Right side actions */}
       <div className="flex items-center justify-end gap-1.5 w-1/4">
         <OfflineQueueIndicator />
-        {isRootPage && (
-          <Button
-            onClick={() => setCommandPaletteOpen(true)}
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground active-scale tap-highlight-none h-9 w-9"
-            aria-label="Abrir pesquisa"
-            title="Pesquisar (Ctrl+K)"
-          >
-            <Search className="w-5 h-5" />
-          </Button>
-        )}
       </div>
     </header>
   );
