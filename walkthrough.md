@@ -346,3 +346,34 @@ Para lançar a aplicação na Google Play Store, o programador deve seguir as se
 ### 5. Validação e Qualidade Técnica
 * **TypeScript compilation**: Executámos `pnpm run check` garantindo **0 erros** de compilação.
 * **Unit tests**: Executámos `pnpm test` com todos os **103/103 testes** a passar com sucesso.
+
+---
+
+## 🎨 Secção 12 — Mood System & UI Dinâmica (Round 7) ✅
+
+Nesta secção, implementámos o Mood System dinâmico que reage ao estado emocional do animal ativo. A interface do AnimalMind agora adapta as suas cores, mensagens e animações com base no humor do animal, mantendo um tom de confiança e calma (como um consultório de veterinário), sem ser alarmista.
+
+### 1. Criação do MoodContext
+* **Localização**: [MoodContext.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/contexts/MoodContext.tsx)
+* **Estados**: Três estados emocionais suportados: `calm` | `neutral` | `concerned`.
+* **Mapeamento de Emoções**:
+  - `relaxed`, `excitement` ➔ `calm` (tons verdes/teal suaves, animações lentas)
+  - `attention`, `alert` ➔ `neutral` (tons azuis/cinza neutros, animações normais)
+  - `distress`, `hunger` ➔ `concerned` (tons âmbar/laranja quentes, animações ativas)
+* **Persistência & Fallback**:
+  - O mood é calculado sempre que há uma nova classificação.
+  - Se a última classificação ocorreu há mais de **48 horas**, o humor reverte automaticamente para `neutral`.
+  - O último humor é guardado no `localStorage` e aplicado de forma síncrona na inicialização no `document.documentElement` para evitar cintilação (flash) ao carregar.
+
+### 2. Adaptação Dinâmica da UI (Dashboard)
+* **Cores**: Definição de variáveis CSS HSL (`--mood-primary`, `--mood-bg-subtle`, `--mood-color-rgb`) para light e dark modes em [index.css](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/index.css), registadas como `--color-mood-primary` e `--color-mood-bg` no Tailwind CSS.
+* **Mensagens Contextuais**:
+  - `calm` ➔ `"O [Nome] está bem hoje 🐾"` (onde [Nome] é substituído pelo nome do animal ativo, ex: "O Rex está bem hoje 🐾")
+  - `neutral` ➔ `"Sem novidades com o [Nome]"` (ex: "Sem novidades com o Rex")
+  - `concerned` ➔ `"O [Nome] pode precisar de atenção — vê os detalhes"` (ex: "O Rex pode precisar de atenção — vê os detalhes")
+* **Animações (Framer Motion)**:
+  - **Pulsar do Avatar**: O avatar do animal ativo no cabeçalho do dashboard e na lista de animais pulsa suavemente com escalas e sombras (box-shadow glow) que variam de velocidade consoante o humor: 3.0s para `calm`, 2.0s para `neutral` e 1.2s para `concerned`.
+  - **Cards de Estatísticas & Secções**: Entram com uma animação combinada de fade-in e slide-up progressiva e escalonada (staggered) usando variantes do Framer Motion ao abrir a página do Dashboard.
+  - **Transições de Página**: Aplicado um crossfade suave de 200ms na transição entre rotas no [App.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/App.tsx).
+  - **Botão de Gravação**: Mantém a animação de respiração (breathing animation) ativada durante a captação de áudio através do `GlowingButton`.
+

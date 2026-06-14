@@ -39,6 +39,57 @@
   --transition-default: var(--transition-default);
   --radius-card: var(--radius-card);
   --radius-pill: var(--radius-pill);
+  --color-mood-primary: var(--mood-primary);
+  --color-mood-bg: var(--mood-bg-subtle);
+}
+
+/* --- Mood specific configurations --- */
+:root {
+  --mood-primary: oklch(0.55 0.1 240); /* neutral fallback */
+  --mood-bg-subtle: oklch(0.96 0.01 240);
+  --mood-color-rgb: 66, 133, 244;
+}
+
+:root[data-mood="calm"] {
+  --mood-primary: oklch(0.68 0.12 165); /* Sage green/teal */
+  --mood-bg-subtle: oklch(0.96 0.02 165);
+  --mood-color-rgb: 52, 168, 83;
+}
+
+:root[data-mood="neutral"] {
+  --mood-primary: oklch(0.55 0.1 240); /* Slate/blue-gray */
+  --mood-bg-subtle: oklch(0.96 0.01 240);
+  --mood-color-rgb: 66, 133, 244;
+}
+
+:root[data-mood="concerned"] {
+  --mood-primary: oklch(0.70 0.16 45); /* Warm amber/orange */
+  --mood-bg-subtle: oklch(0.96 0.03 45);
+  --mood-color-rgb: 244, 180, 0;
+}
+
+.dark {
+  --mood-primary: oklch(0.55 0.1 240);
+  --mood-bg-subtle: oklch(0.18 0.01 240 / 0.08);
+  --mood-color-rgb: 66, 133, 244;
+}
+
+.dark[data-mood="calm"], :root[data-mood="calm"] .dark {
+  --mood-primary: oklch(0.65 0.14 165);
+  --mood-bg-subtle: oklch(0.18 0.02 165 / 0.08);
+  --mood-color-rgb: 52, 168, 83;
+}
+
+.dark[data-mood="neutral"], :root[data-mood="neutral"] .dark {
+  --mood-primary: oklch(0.55 0.1 240);
+  --mood-bg-subtle: oklch(0.18 0.01 240 / 0.08);
+  --mood-color-rgb: 66, 133, 244;
+}
+
+.dark[data-mood="concerned"], :root[data-mood="concerned"] .dark {
+  --mood-primary: oklch(0.65 0.15 45);
+  --mood-bg-subtle: oklch(0.18 0.03 45 / 0.08);
+  --mood-color-rgb: 244, 180, 0;
 }
 
 :root {

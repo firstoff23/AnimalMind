@@ -6,11 +6,13 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { useAppStore } from "@/store/appStore";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect } from "wouter";
+import { Route, Switch, Redirect, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SelfHealingProvider } from "./contexts/SelfHealingContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { MoodProvider } from "./contexts/MoodContext";
+import { motion } from "framer-motion";
 import { BottomNav } from "./components/BottomNav";
 import { Sidebar } from "./components/Sidebar";
 import { cn } from "@/lib/utils";
@@ -53,6 +55,7 @@ function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
 
 function Router() {
   const { isAuthenticated } = useAuth();
+  const [location] = useLocation();
   const commandPaletteOpen = useAppStore((state) => state.commandPaletteOpen);
   const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
 
@@ -73,7 +76,14 @@ function Router() {
 
         {/* Page content */}
         <main className={cn("flex-1 overflow-y-auto", isAuthenticated ? "pb-20 md:pb-0" : "")}>
-          <Switch>
+          <motion.div
+            key={location}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="min-h-full flex flex-col"
+          >
+            <Switch>
             {/* Public routes */}
             <Route path="/login" component={LoginPage} />
             <Route path="/register" component={RegisterPage} />
@@ -110,6 +120,7 @@ function Router() {
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>
+          </motion.div>
         </main>
 
         {isAuthenticated && <OnboardingDialog />}
@@ -157,7 +168,9 @@ function App() {
                       },
                     }}
                   />
-                  <Router />
+                  <MoodProvider>
+                    <Router />
+                  </MoodProvider>
                 </TooltipProvider>
               </ThemeProvider>
             </LanguageProvider>
