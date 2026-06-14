@@ -3,7 +3,7 @@ import * as React from "react";
 import { Logo } from "@/components/ui/Logo";
 import { useIsMobile } from "@/hooks/useMobile";
 
-const MOBILE_URL = "https://animalmind.vercel.app";
+const MOBILE_URL = "https://petsense.vercel.app";
 
 function DesktopMobileNotice() {
   const [qrCodeSrc, setQrCodeSrc] = React.useState<string | null>(null);
@@ -52,7 +52,7 @@ function DesktopMobileNotice() {
           </span>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
-              AnimalMind
+              PetSense
             </p>
             <p className="text-sm text-white/52">Experiência mobile-first</p>
           </div>
@@ -64,7 +64,7 @@ function DesktopMobileNotice() {
             Abrir no telemóvel
           </div>
           <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-white">
-            O AnimalMind foi feito para mobile
+            O PetSense foi feito para mobile
           </h1>
           <p className="text-sm leading-6 text-white/58">
             Lê o QR code com o telemóvel para abrir a versão optimizada para
@@ -99,7 +99,7 @@ function DesktopMobileNotice() {
             href={MOBILE_URL}
             className="mt-1 block text-sm font-bold text-white underline-offset-4 hover:underline"
           >
-            animalmind.vercel.app
+            petsense.vercel.app
           </a>
         </div>
       </section>

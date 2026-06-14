@@ -60,7 +60,7 @@ const modeConfig = {
   register: {
     label: "Criar conta",
     href: "/register",
-    description: "Começar no AnimalMind",
+    description: "Começar no PetSense",
   },
 } satisfies Record<
   AuthMode,
@@ -101,14 +101,14 @@ export function AuthShell({
             type="button"
             onClick={() => setLocation("/")}
             className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left text-white shadow-sm backdrop-blur transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            aria-label="Voltar à página inicial do AnimalMind"
+            aria-label="Voltar à página inicial do PetSense"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-emerald-950/30">
               <PawPrint size={18} />
             </span>
             <span>
               <span className="block text-sm font-bold leading-none">
-                AnimalMind
+                PetSense
               </span>
               <span className="mt-1 block text-[10px] font-medium uppercase text-emerald-100/70">
                 acesso seguro
@@ -153,7 +153,7 @@ export function AuthShell({
                 </div>
                 <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.075] p-4 backdrop-blur">
                   <p className="font-semibold text-white">
-                    Nativo no AnimalMind
+                    Nativo no PetSense
                   </p>
                   <p className="mt-1">
                     Componentes, espaçamento e estados seguem a linguagem
@@ -201,7 +201,7 @@ export function AuthShell({
                       className="h-11 w-full rounded-2xl border-border bg-secondary/50 text-sm font-semibold"
                     >
                       <Sparkles size={16} />
-                      Continuar com portal AnimalMind
+                      Continuar com portal PetSense
                     </Button>
                   </div>
                 )}

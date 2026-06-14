@@ -67,7 +67,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       mode="login"
-      title="Entrar no AnimalMind"
+      title="Entrar no PetSense"
       subtitle="Aceda ao histórico, gravações e perfil dos seus animais com uma sessão segura."
       showOAuth
       footer={

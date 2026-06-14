@@ -30,7 +30,7 @@ const queryClient = new QueryClient();
 const trpcUrl =
   import.meta.env.VITE_TRPC_URL ??
   (Capacitor.isNativePlatform()
-    ? "https://animalmind.vercel.app/api/trpc"
+    ? "https://petsense.vercel.app/api/trpc"
     : "/api/trpc");
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {

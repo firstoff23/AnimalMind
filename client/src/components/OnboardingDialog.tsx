@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const ONBOARDING_SEEN_KEY = "animalmind-onboarding-seen";
+const ONBOARDING_SEEN_KEY = "petsense-onboarding-seen";
 
 const steps = [
   {
@@ -55,7 +55,7 @@ export function OnboardingDialog() {
         <DialogHeader className="space-y-2">
           <DialogTitle className="text-2xl">Primeiros passos</DialogTitle>
           <DialogDescription>
-            Três ações rápidas para começar a usar o AnimalMind.
+            Três ações rápidas para começar a usar o PetSense.
           </DialogDescription>
         </DialogHeader>
 

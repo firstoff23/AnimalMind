@@ -39,7 +39,7 @@ export default function VerifyEmailPage() {
   return (
     <AuthShell
       title="Verifique o email"
-      subtitle="Confirme a sua conta para concluir o acesso ao AnimalMind."
+      subtitle="Confirme a sua conta para concluir o acesso ao PetSense."
       eyebrow="Confirmação de conta"
       compact
     >

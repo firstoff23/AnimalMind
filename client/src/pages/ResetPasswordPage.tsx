@@ -121,7 +121,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell
       title="Definir nova palavra-passe"
-      subtitle="Escolha uma palavra-passe forte para proteger o acesso ao AnimalMind."
+      subtitle="Escolha uma palavra-passe forte para proteger o acesso ao PetSense."
       eyebrow="Recuperação de conta"
       compact
     >

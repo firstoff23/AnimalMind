@@ -1,4 +1,4 @@
-# AnimalMind — Backlog de Features
+# PetSense — Backlog de Features
 
 ## Quando tiver utilizadores reais (beta)
 - [ ] Langfuse — observabilidade das classificações
@@ -36,3 +36,4 @@
 - [x] Migração ESLint + Prettier → Biome (Round 10)
 - [x] The Dog API + The Cat API — autocomplete de raça no perfil (Round 12)
 - [x] Validação SIAC — microchip 15 dígitos (Round 12)
+

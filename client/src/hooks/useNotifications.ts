@@ -7,7 +7,7 @@ import { STATE_LABELS } from "../../../shared/types";
 const lastNotifTime: Record<string, number> = {};
 const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 const NOTIFICATION_PERMISSION_REQUESTED_KEY =
-  "animalmind-notification-permission-requested";
+  "petsense-notification-permission-requested";
 
 export function useNotifications() {
   const permissionRef = useRef<NotificationPermission>(
@@ -51,8 +51,8 @@ export function useNotifications() {
 
       const label = STATE_LABELS[state];
       const title = animalName
-        ? `AnimalMind — ${animalName}`
-        : "AnimalMind — classificação concluída";
+        ? `PetSense — ${animalName}`
+        : "PetSense — classificação concluída";
       const body = `${label}: ${Math.round(confidence * 100)}% de confiança`;
 
       try {
@@ -116,7 +116,7 @@ export function useNotifications() {
         permissionRef.current === "granted"
       ) {
         try {
-          new Notification(`AnimalMind — ${animalName}`, {
+          new Notification(`PetSense — ${animalName}`, {
             body: message,
             icon: "/favicon.ico",
             tag: key,

@@ -166,10 +166,10 @@ const plugins = [
       maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
     },
     manifest: {
-      name: "AnimalMind",
-      short_name: "AnimalMind",
+      name: "PetSense",
+      short_name: "PetSense",
       description:
-        "Animal Mind: Inteligência Emocional e Visão para Animais de Estimação",
+        "PetSense: Monitorização inteligente do bem-estar animal",
       theme_color: "#22c55e",
       background_color: "#0a0a0b",
       display: "standalone",

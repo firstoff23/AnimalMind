@@ -11,6 +11,7 @@ const app = express();
 
 app.use((req, res, next) => {
   const allowedOrigins = [
+    "https://petsense.vercel.app",
     "https://animalmind.vercel.app",
     "http://localhost:3000",
     "http://localhost:5173",

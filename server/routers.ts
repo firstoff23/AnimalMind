@@ -275,7 +275,7 @@ function mapDbEvent(e: any) {
 
 const MINDI_DEFAULT_MODEL = "google/gemini-3.5-flash";
 const MINDI_BASE_PROMPT =
-  "És a Mindi, assistente de bem-estar animal do AnimalMind. Tens acesso ao perfil do animal [nome, espécie, raça] e ao histórico de classificações recentes. Responde sempre em português de Portugal. Sê precisa, empática e recomenda sempre consulta veterinária para situações de saúde sérias. Nunca substituas um diagnóstico médico.";
+  "És a Mindi, assistente de bem-estar animal do PetSense. Tens acesso ao perfil do animal [nome, espécie, raça] e ao histórico de classificações recentes. Responde sempre em português de Portugal. Sê precisa, empática e recomenda sempre consulta veterinária para situações de saúde sérias. Nunca substituas um diagnóstico médico.";
 
 const SPECIES_LABELS: Record<string, string> = {
   dog: "cão",
@@ -319,7 +319,7 @@ function buildMindiSystemPrompt(
 ) {
   return `${MINDI_BASE_PROMPT}
 
-Contexto automático do AnimalMind:
+Contexto automático do PetSense:
 ${formatAnimalContext(animal)}
 
 Últimas 5 classificações do histórico:

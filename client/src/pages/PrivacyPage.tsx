@@ -33,7 +33,7 @@ export default function PrivacyPage() {
             <PawPrint size={18} className="text-indigo-400" />
           </div>
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-indigo-200 bg-clip-text text-transparent">
-            AnimalMind
+            PetSense
           </span>
         </div>
         <Button
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
             Política de Privacidade
           </h1>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Na AnimalMind, a privacidade e a segurança dos dados do utilizador e
+            Na PetSense, a privacidade e a segurança dos dados do utilizador e
             dos seus animais são a nossa prioridade. Esta página descreve de
             forma clara e transparente as nossas práticas de tratamento de
             dados.
@@ -173,7 +173,7 @@ export default function PrivacyPage() {
             <CardContent className="text-slate-350 text-sm leading-relaxed">
               <p className="font-semibold text-amber-300">Atenção ao gravar:</p>
               <p className="mt-1">
-                Ao utilizar o Gravador da AnimalMind, o microfone do seu
+                Ao utilizar o Gravador da PetSense, o microfone do seu
                 dispositivo captará todo o som envolvente. Isto significa que a
                 gravação **pode acidentalmente captar sons do ambiente**,
                 incluindo conversas humanas em segundo plano, ruídos de
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
       <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md mt-12">
         <div className="max-w-4xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-slate-500">
           <p>
-            © {new Date().getFullYear()} AnimalMind. Todos os direitos
+            © {new Date().getFullYear()} PetSense. Todos os direitos
             reservados.
           </p>
           <div className="flex gap-4">

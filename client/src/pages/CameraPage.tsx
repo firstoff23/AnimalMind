@@ -571,8 +571,8 @@ export default function CameraPage() {
       <div className="bg-secondary/25 border border-border/40 rounded-2xl p-3 text-center">
         <p className="text-[10px] text-muted-foreground leading-relaxed">
           {language === "pt"
-            ? "A IA do AnimalMind analisa as posturas corporais e correlaciona-as com sentimentos de relaxamento, angústia ou brincadeira."
-            : "AnimalMind AI analyzes body postures and correlates them with feelings of relaxation, distress or play."}
+            ? "A IA do PetSense analisa as posturas corporais e correlaciona-as com sentimentos de relaxamento, angústia ou brincadeira."
+            : "PetSense AI analyzes body postures and correlates them with feelings of relaxation, distress or play."}
         </p>
       </div>
     </div>

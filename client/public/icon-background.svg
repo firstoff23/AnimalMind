@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#22c55e" />
+      <stop offset="60%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#022c22" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Full-bleed background rect for adaptive masking -->
+  <rect width="512" height="512" fill="url(#bg-grad)" />
+</svg>

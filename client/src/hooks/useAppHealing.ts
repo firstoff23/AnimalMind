@@ -1,5 +1,5 @@
 /**
- * useAppHealing — Core self-healing hook for AnimalMind
+ * useAppHealing — Core self-healing hook for PetSense
  *
  * Responsibilities:
  * - Capture and classify errors (network, auth, camera, UI, Supabase/RLS)

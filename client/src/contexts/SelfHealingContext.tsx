@@ -1,5 +1,5 @@
 /**
- * SelfHealingProvider — Global error capture bridge for AnimalMind
+ * SelfHealingProvider — Global error capture bridge for PetSense
  *
  * Intercepts:
  * - window.onerror  (uncaught JS errors)

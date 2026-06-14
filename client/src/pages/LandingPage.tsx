@@ -45,7 +45,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 font-satoshi">
             <Logo size={20} className="text-primary" />
             <span className="text-base font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">
-              AnimalMind
+              PetSense
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -85,8 +85,8 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
             <Sparkles size={11} aria-hidden="true" />
             {language === "pt"
-              ? "Inteligência Artificial · AnimalMind"
-              : "Powered by AI · AnimalMind"}
+              ? "Inteligência Artificial · PetSense"
+              : "Powered by AI · PetSense"}
           </div>
 
           {/* Headline */}
@@ -310,7 +310,7 @@ export default function LandingPage() {
                   Honestidade Científica &amp; Limitações
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  O <strong className="text-slate-300">AnimalMind</strong>{" "}
+                  O <strong className="text-slate-300">PetSense</strong>{" "}
                   utiliza o modelo{" "}
                   <strong className="text-slate-300">YAMNet</strong>{" "}
                   (classificador genérico de eventos de áudio) para estimar
@@ -339,7 +339,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-sm text-slate-400 max-w-md mx-auto">
               Esclareça as suas dúvidas sobre o funcionamento e privacidade do
-              AnimalMind.
+              PetSense.
             </p>
           </div>
 
@@ -403,7 +403,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-xs text-slate-500">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <p>
-              © {new Date().getFullYear()} AnimalMind. Todos os direitos
+              © {new Date().getFullYear()} PetSense. Todos os direitos
               reservados.
             </p>
             <div className="flex items-center gap-4">
@@ -415,7 +415,7 @@ export default function LandingPage() {
               </button>
               <span aria-hidden="true">·</span>
               <a
-                href="mailto:suporte@animalmind.app"
+                href="mailto:suporte@petsense.app"
                 className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
               >
                 Suporte

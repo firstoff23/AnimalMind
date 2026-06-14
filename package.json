@@ -1,5 +1,6 @@
 {
-  "name": "animalmind",
+  "name": "petsense",
+  "description": "PetSense - Monitorização inteligente do bem-estar animal",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",

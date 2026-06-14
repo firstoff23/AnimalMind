@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
   const emailError =
     apiError ||
     (emailBlurred && !isEmailValid
-      ? "Introduza o email associado à sua conta AnimalMind."
+      ? "Introduza o email associado à sua conta PetSense."
       : "");
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
