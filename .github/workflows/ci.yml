@@ -41,10 +41,13 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Test
         run: pnpm test
         env:
+          NODE_OPTIONS: --max-old-space-size=4096
           SUPABASE_URL: https://test.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key-for-ci
           SUPABASE_ANON_KEY: test-anon-key-for-ci
