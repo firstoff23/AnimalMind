@@ -501,3 +501,35 @@ Nesta ronda, implementámos um conjunto completo de medidas de conformidade com 
 * **TypeScript & Biome Check**: TypeScript compilado com sucesso e lint do Biome executado sem erros.
 * **Testes Unitários**: Criámos um novo teste em [auth.deleteAccount.test.ts](file:///C:/Users/Alexandre/Documents/PetSense/server/auth.deleteAccount.test.ts) que valida todo o fluxo de eliminação da conta (remoção de áudios, chamada ao Auth Admin do Supabase, remoção de BD e remoção de cookies). A suite completa correu e passou com sucesso (**104/104 testes**).
 
+---
+
+## 🌟 Ronda 14b: Rebranding para PetSense & Novo Ícone Profissional ✅
+
+### 1. Novo Nome do Projeto
+* **PetSense** foi o nome selecionado por representar idealmente a monitorização acústica e visual de animais de estimação, mantendo-se premium, fácil de pronunciar em Português e Inglês, e muito focado no valor do produto.
+
+### 2. Configurações de Rebranding
+* **package.json:** Nome atualizado para `"petsense"` com uma nova descrição descritiva.
+* **capacitor.config.ts:** Alterado `appName` para `"PetSense"`.
+* **strings.xml (Android):** Atualizado `app_name` e `title_activity_main` para `"PetSense"`.
+* **client/index.html:** Atualizado o título principal para `"PetSense 🐾 - Compreenda o Seu Animal de Estimação"`, atualizadas as meta tags de Open Graph/Twitter, definido o `theme-color` como `#22c55e` (verde do tema) e adicionado o link para o ícone favicon `icon.svg`.
+* **vite.config.ts (PWA Manifest):** Atualizadas as configurações do manifest do PWA (`name` e `short_name` para `"PetSense"`, descrição para *"PetSense: Monitorização inteligente do bem-estar animal"* e o `theme_color` ajustado).
+
+### 3. Logótipos e Ícones Profissionais SVG
+* **client/public/icon.svg:** Ícone completo com cantos arredondados, fundo gradiente e a pata central estilizada com ondas sonoras.
+* **client/public/icon-foreground.svg:** Apenas a pata central com fundo transparente, otimizada para ícones adaptativos do Android.
+* **client/public/icon-background.svg:** Apenas o fundo com gradiente radial completo para ícones adaptativos.
+* **docs/icon-export.md:** Manual detalhado ensinando o programador a exportar os ficheiros SVG para o formato de loja PNG 512x512px.
+
+### 4. Rebranding na Interface do Utilizador (UI) e Docs
+* Alteradas todas as menções de marca de "AnimalMind" para "PetSense" nos ecrãs de **Landing Page**, **Autenticação (Login, Registo, Recuperação, Verificação de Email, Callback)**, **Dashboard**, **Histórico**, **Gravação/Captura**, **Câmara**, **Páginas de Privacidade** e **Definições**.
+* Atualizado o domínio principal nas configurações internas de CORS da API e URL padrão do Capacitor para `petsense.vercel.app` (mantendo retrocompatibilidade no backend).
+* Atualizada toda a documentação de suporte do projeto: `README.md`, `walkthrough.md`, `docs/API.md` e `docs/backlog.md`.
+
+### 5. Verificação Técnica Total
+* **Compilação TypeScript:** `pnpm run check` correu sem qualquer erro (0 erros).
+* **Testes Unitários:** Todos os **104 testes unitários** do Vitest passaram com sucesso.
+* **Build de Produção:** O comando `pnpm run build` gerou a build final sem falhas.
+* **Git:** Commits registados com sucesso e alterações enviadas para a branch `main`.
+
+
