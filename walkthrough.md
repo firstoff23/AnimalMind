@@ -468,4 +468,35 @@ Nesta secção, implementámos o autocomplete de raças inteligente que consome 
 * **Testes Unitários**: Suite de testes completa com todos os **103/103 testes** a passar com sucesso.
 * **Build de Produção**: O comando `pnpm run build` gerou o bundle de produção estático e do servidor sem qualquer problema.
 
+## ⚖️ Secção 16 — Conformidade Legal RGPD (Round 13) ✅
 
+Nesta ronda, implementámos um conjunto completo de medidas de conformidade com o Regulamento Geral sobre a Proteção de Dados (RGPD), incluindo uma nova página de Política de Privacidade, links e modais de consentimento nos ecrãs de registo e definições, e a funcionalidade de apagamento permanente de conta (com cascade delete no Supabase e remoção de áudios no Storage).
+
+### 1. Página de Política de Privacidade Pública (/privacidade)
+* **Componente**: Criámos o ficheiro [PrivacyPolicyPage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/PrivacyPolicyPage.tsx) contendo as secções exigidas pelo RGPD (português):
+  - **Identificação da App & Responsáveis**: AnimalMind e placeholders para o tutor preencher.
+  - **Dados Recolhidos**: Nome, email, dados do animal, áudios, câmara e localização.
+  - **Finalidades e Bases Jurídicas**: Prestação de serviço de tradução emocional de vocalizações baseada no consentimento explícito do utilizador (Artigo 6.º, n.º 1, alínea a) do RGPD).
+  - **Alojamento e Segurança**: Dados guardados na região da UE (Frankfurt) através do Supabase com cifragem AES-256 em repouso e Row Level Security (RLS) ativo.
+  - **Direitos do Tutor**: Acesso, retificação, eliminação ("direito ao esquecimento"), portabilidade e oposição.
+  - **Retenção de Dados**: Eliminação imediata dos servidores após o apagamento da conta e remoção dos registos de autenticação em 30 dias.
+* **Design**: Consistente com o tema dark e estética premium da app, com secções colapsáveis (`Accordion`) e rodapé com link de contacto. A rota foi adicionada publicamente em [App.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/App.tsx) de forma a não exigir autenticação prévia.
+
+### 2. Consentimento e Políticas no Registo e Definições
+* **Ecrã de Registo (`RegisterPage.tsx`)**: Adicionámos o texto explicativo abaixo do botão de submissão do formulário: *"Ao criar conta, aceitas os nossos Termos de Uso e a nossa Política de Privacidade."*
+  - O link de Política de Privacidade redireciona para `/privacidade`.
+  - O link de Termos de Uso abre um modal dialog moderno com a indicação *"Termos de Uso — Em breve"*.
+* **Definições (`SettingsPage.tsx`)**:
+  - Dividimos o botão anterior "Termos e Privacidade" em dois botões autónomos: um para consultar a "Política de Privacidade" e outro que abre o modal informativo "Termos de Uso — Em breve".
+
+### 3. Apagamento Permanente de Conta ("Zona de Perigo")
+* **Botão "Apagar Conta" (`SettingsPage.tsx`)**: Adicionámos uma nova secção visualmente sinalizada de "Zona de Perigo" (Danger Zone) com um botão vermelho que despoleta uma caixa de diálogo de confirmação.
+* **Endpoint de Eliminação (`routers.ts`)**: Implementámos a mutation `deleteAccount` dentro do router `auth` que corre do lado do servidor:
+  - Consulta e remove permanentemente todos os ficheiros de áudio do utilizador armazenados no bucket `audio-recordings` do Supabase Storage.
+  - Invoca o endpoint administrativo do Supabase Auth (`supabase.auth.admin.deleteUser`) para remover o registo de autenticação do utilizador.
+  - Elimina a linha do utilizador na tabela `public.users`, o que ativa automaticamente o apagamento em cascata (`ON DELETE CASCADE`) de todos os registos do utilizador e dos seus animais em todas as tabelas públicas do PostgreSQL no Supabase.
+  - Limpa os cookies de sessão de login no response e redireciona o cliente para o ecrã `/login` exibindo um toast informativo.
+
+### 4. Verificação Técnica
+* **TypeScript & Biome Check**: TypeScript compilado com sucesso e lint do Biome executado sem erros.
+* **Testes Unitários**: Criámos um novo teste em [auth.deleteAccount.test.ts](file:///C:/Users/Alexandre/Documents/AnimalMind/server/auth.deleteAccount.test.ts) que valida todo o fluxo de eliminação da conta (remoção de áudios, chamada ao Auth Admin do Supabase, remoção de BD e remoção de cookies). A suite completa correu e passou com sucesso (**104/104 testes**).

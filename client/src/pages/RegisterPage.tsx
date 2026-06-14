@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   AuthPasswordChecklist,
   AuthShell,
@@ -9,6 +9,14 @@ import {
   authIcons,
 } from "@/components/auth/AuthShell";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -23,6 +31,7 @@ export default function RegisterPage() {
   const [emailBlurred, setEmailBlurred] = useState(false);
   const [passwordBlurred, setPasswordBlurred] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user?.email) {
@@ -166,7 +175,39 @@ export default function RegisterPage() {
         <AuthSubmitButton loading={loading} loadingLabel="A criar conta...">
           Criar conta
         </AuthSubmitButton>
+        <p className="text-center text-[10px] sm:text-xs leading-relaxed text-muted-foreground mt-4">
+          Ao criar conta, aceitas os nossos{" "}
+          <button
+            type="button"
+            onClick={() => setTermsDialogOpen(true)}
+            className="text-primary hover:underline font-semibold"
+          >
+            Termos de Uso
+          </button>{" "}
+          e a nossa{" "}
+          <Link href="/privacidade" className="text-primary hover:underline font-semibold">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
       </form>
+
+      <Dialog open={termsDialogOpen} onOpenChange={setTermsDialogOpen}>
+        <DialogContent className="max-w-md border-border bg-card text-card-foreground">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl">Termos de Uso</DialogTitle>
+            <DialogDescription>
+              Termos de Uso — Em breve
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Os nossos termos de utilização completos serão disponibilizados em breve. O uso do serviço é atualmente gratuito para testes de bem-estar animal sob consentimento do tutor.
+          </div>
+          <Button onClick={() => setTermsDialogOpen(false)} className="w-full">
+            Fechar
+          </Button>
+        </DialogContent>
+      </Dialog>
     </AuthShell>
   );
 }

@@ -36,7 +36,7 @@ import HistoryPage from "./pages/HistoryPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import MindiPage from "./pages/MindiPage";
-import PrivacyPage from "./pages/PrivacyPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ProfilePage from "./pages/ProfilePage";
 import RecordingPage from "./pages/RecordingPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -110,7 +110,7 @@ function Router() {
 
               {/* Public routes */}
               <Route path="/" component={LandingPage} />
-              <Route path="/privacidade" component={PrivacyPage} />
+              <Route path="/privacidade" component={PrivacyPolicyPage} />
 
               {/* Protected routes */}
               <Route

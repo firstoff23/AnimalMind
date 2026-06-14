@@ -62,6 +62,7 @@ import {
   updateEventAudio,
   updateEventFeedback,
   updateEventNotes,
+  getSupabase,
   updateUser,
   uploadAudioToSupabase,
   upsertSettings,
@@ -466,6 +467,69 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         await updateUser(userId, input);
+        return { success: true };
+      }),
+    deleteAccount: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const openId = ctx.user.openId;
+
+        const supabase = getSupabase();
+
+        // 1. Get all events with audio_url for this user to delete from storage
+        const { data: events, error: eventsError } = await supabase
+          .from("classification_events")
+          .select("audio_url")
+          .eq("user_id", userId);
+
+        if (eventsError) {
+          console.error("[DeleteAccount] Error fetching user events for audio deletion:", eventsError);
+        }
+
+        const fileNames = (events || [])
+          .map((e: any) => e.audio_url)
+          .filter((url: any): url is string => Boolean(url && url.includes("audio-recordings/")))
+          .map((url: string) => url.split("audio-recordings/").pop() as string);
+
+        if (fileNames.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from("audio-recordings")
+            .remove(fileNames);
+          if (storageError) {
+            console.error("[DeleteAccount] Error removing audio files from storage:", storageError);
+          } else {
+            console.log(`[DeleteAccount] Successfully removed ${fileNames.length} audio files from storage.`);
+          }
+        }
+
+        // 2. Delete from Supabase Auth
+        const { error: authError } = await supabase.auth.admin.deleteUser(openId);
+        if (authError) {
+          console.error("[DeleteAccount] Error deleting user from Supabase Auth:", authError);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Erro ao eliminar utilizador no Supabase Auth: ${authError.message}`,
+          });
+        }
+
+        // 3. Delete from public.users table (cascades to all other tables)
+        const { error: dbError } = await supabase
+          .from("users")
+          .delete()
+          .eq("id", userId);
+
+        if (dbError) {
+          console.error("[DeleteAccount] Error deleting user from database:", dbError);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Erro ao eliminar dados do utilizador na base de dados: ${dbError.message}`,
+          });
+        }
+
+        // 4. Clear session cookies (logout)
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
         return { success: true };
       }),
   }),

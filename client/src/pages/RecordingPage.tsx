@@ -731,7 +731,7 @@ export default function RecordingPage() {
     return () => clearInterval(interval);
   }, [recordState, stopAndGetBlobLiveAudio, language, uploadAndProcess]);
 
-  const uploadAndProcess = async (blob: Blob, mimeType: string) => {
+  async function uploadAndProcess(blob: Blob, mimeType: string) {
     if (blob.size > 20 * 1024 * 1024) {
       setRecordState("error");
       setErrorMessage(
@@ -800,7 +800,7 @@ export default function RecordingPage() {
         reader.readAsDataURL(blob);
       }
     }, step);
-  };
+  }
 
   const handleConfirm = () => {
     const blob = lastRecordedBlobRef.current;

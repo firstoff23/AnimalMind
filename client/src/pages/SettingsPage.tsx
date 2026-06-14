@@ -14,6 +14,7 @@ import {
   Moon,
   RefreshCw,
   Shield,
+  ShieldAlert,
   Stethoscope,
   Sun,
   Trash2,
@@ -33,6 +34,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/Logo";
 import { Label } from "@/components/ui/label";
@@ -89,6 +98,31 @@ export default function SettingsPage() {
   const [sensitivity, setSensitivity] = useState<Sensitivity>("medium");
   const [shareDiagnosticData, setShareDiagnosticData] = useState(true);
   const [localHistoryOnly, setLocalHistoryOnly] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation({
+    onSuccess: async () => {
+      toast.success(
+        language === "pt"
+          ? "A sua conta foi eliminada permanentemente."
+          : "Your account has been permanently deleted.",
+      );
+      try {
+        await signOut();
+      } catch (err) {
+        console.error("Signout error during account deletion:", err);
+      }
+      setLocation("/login");
+    },
+    onError: (err) => {
+      toast.error(
+        language === "pt"
+          ? `Erro ao eliminar conta: ${err.message}`
+          : `Error deleting account: ${err.message}`,
+      );
+    },
+  });
 
   // Diagnostics and errors state
 
@@ -1099,15 +1133,26 @@ export default function SettingsPage() {
                   ? "Documentos e Políticas"
                   : "Documents & Policies"}
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLocation("/privacidade")}
-                className="h-9 w-full rounded-xl border-border/60 hover:bg-muted text-xs justify-center gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <Shield size={14} className="text-primary" />
-                {language === "pt" ? "Termos e Privacidade" : "Terms & Privacy"}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLocation("/privacidade")}
+                  className="h-9 flex-1 rounded-xl border-border/60 hover:bg-muted text-xs justify-center gap-2 text-muted-foreground hover:text-foreground active-scale tap-highlight-none"
+                >
+                  <Shield size={14} className="text-primary" />
+                  {language === "pt" ? "Política de Privacidade" : "Privacy Policy"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTermsOpen(true)}
+                  className="h-9 flex-1 rounded-xl border-border/60 hover:bg-muted text-xs justify-center gap-2 text-muted-foreground hover:text-foreground active-scale tap-highlight-none"
+                >
+                  <Info size={14} className="text-primary" />
+                  {language === "pt" ? "Termos de Uso" : "Terms of Use"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1151,6 +1196,110 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Zona de Perigo */}
+      <motion.div variants={cardVariants}>
+        <Card className="bg-card border-rose-500/20 overflow-hidden">
+          <CardHeader className="pb-3 border-b border-rose-500/20 bg-rose-500/5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-400">
+              <ShieldAlert className="w-4 h-4 text-rose-500" />
+              {language === "pt" ? "Zona de Perigo" : "Danger Zone"}
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              {language === "pt"
+                ? "Ações irreversíveis para a sua conta"
+                : "Irreversible actions for your account"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+              {language === "pt"
+                ? "Ao apagar a sua conta, todos os seus dados pessoais, registos de saúde, histórico de classificações e animais associados serão eliminados permanentemente dos nossos servidores."
+                : "By deleting your account, all your personal data, health records, classification history, and associated animals will be permanently removed from our servers."}
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteConfirmOpen(true)}
+              className="w-full gap-2 text-xs h-9 font-semibold bg-rose-600 hover:bg-rose-700 active-scale tap-highlight-none"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {language === "pt" ? "Apagar Conta" : "Delete Account"}
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Dialogs */}
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="max-w-md border-border bg-card text-card-foreground">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl">
+              {language === "pt" ? "Termos de Uso" : "Terms of Use"}
+            </DialogTitle>
+            <DialogDescription>
+              {language === "pt"
+                ? "Termos de Uso — Em breve"
+                : "Terms of Use — Coming Soon"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            {language === "pt"
+              ? "Os nossos termos de utilização completos serão disponibilizados em breve. O uso do serviço é atualmente gratuito para testes de bem-estar animal sob consentimento do tutor."
+              : "Our full terms of use will be available soon. The service is currently free for animal well-being testing under guardian consent."}
+          </div>
+          <Button onClick={() => setTermsOpen(false)} className="w-full">
+            {language === "pt" ? "Fechar" : "Close"}
+          </Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-md border-border bg-card text-card-foreground">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl text-red-400 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-rose-500" />
+              {language === "pt" ? "Apagar Conta?" : "Delete Account?"}
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-foreground/90 font-medium">
+              {language === "pt"
+                ? "Tens a certeza? Esta ação é irreversível. Todos os teus dados e animais serão eliminados permanentemente."
+                : "Are you sure? This action is irreversible. All your data and animals will be permanently deleted."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 text-xs text-muted-foreground leading-relaxed">
+            {language === "pt"
+              ? "Esta ação irá eliminar o seu perfil no Supabase Auth, as informações do utilizador e todos os dados associados nas tabelas de forma definitiva, bem como as gravações de áudio. Os dados não poderão ser recuperados."
+              : "This action will permanently delete your profile in Supabase Auth, user details, and all associated tables and audio recordings. Data cannot be recovered."}
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmOpen(false)}
+              className="w-full sm:w-auto text-xs"
+            >
+              {language === "pt" ? "Cancelar" : "Cancel"}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                deleteAccountMutation.mutate();
+              }}
+              disabled={deleteAccountMutation.isPending}
+              className="w-full sm:w-auto text-xs bg-rose-600 hover:bg-rose-700"
+            >
+              {deleteAccountMutation.isPending ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                  {language === "pt" ? "A apagar..." : "Deleting..."}
+                </>
+              ) : (
+                language === "pt" ? "Apagar conta" : "Delete account"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

@@ -25,6 +25,9 @@
 - [ ] Landing page com waitlist
 - [ ] App Store / Google Play — submissão
 - [ ] TestFlight / Beta fechado — 10 utilizadores de confiança primeiro
+- [ ] Preencher placeholders na Política de Privacidade (nome, email de contacto)
+- [ ] Data Safety Form no Google Play Console
+- [ ] App Privacy Nutrition Label na App Store Connect
 
 ## Concluído ✅
 - [x] Mood System + UI Dinâmica (Round 7)
