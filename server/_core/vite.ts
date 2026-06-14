@@ -1,6 +1,6 @@
-import express, { type Express } from "express";
+import type { Express } from "express";
 import fs from "fs";
-import { type Server } from "http";
+import type { Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
 export async function setupVite(app: Express, server: Server) {
@@ -29,14 +29,14 @@ export async function setupVite(app: Express, server: Server) {
         import.meta.dirname,
         "../..",
         "client",
-        "index.html"
+        "index.html",
       );
 
       // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
+        `src="/src/main.tsx?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);

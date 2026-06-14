@@ -1,9 +1,9 @@
-import { trpc } from "@/lib/trpc";
+import { useEffect, useMemo } from "react";
 import { supabase } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
+import { trpc } from "@/lib/trpc";
 import type { EmotionalState } from "../../../shared/types";
 import { STATE_LABELS } from "../../../shared/types";
-import { useEffect, useMemo } from "react";
 
 type ClassificationEventRow = {
   id: number | string;
@@ -15,12 +15,13 @@ type ClassificationEventRow = {
 };
 
 function isEmotionalState(value: string): value is EmotionalState {
-  return Object.prototype.hasOwnProperty.call(STATE_LABELS, value);
+  return Object.hasOwn(STATE_LABELS, value);
 }
 
 export function useRealtimeNotifications(enabled = true) {
   const utils = trpc.useUtils();
-  const { requestNotificationPermission, sendClassificationNotification } = useNotifications();
+  const { requestNotificationPermission, sendClassificationNotification } =
+    useNotifications();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     enabled,
@@ -65,23 +66,26 @@ export function useRealtimeNotifications(enabled = true) {
           if (!row?.state || !isEmotionalState(row.state)) return;
 
           const eventId = Number(row.id);
-          const animalId = row.animal_id === null ? null : Number(row.animal_id);
+          const animalId =
+            row.animal_id === null ? null : Number(row.animal_id);
           const confidence = Number(row.confidence);
           const animalName =
-            animalId !== null ? animalNames.get(animalId) ?? "Animal" : "Animal";
+            animalId !== null
+              ? (animalNames.get(animalId) ?? "Animal")
+              : "Animal";
 
           sendClassificationNotification(
             row.state,
             Number.isFinite(confidence) ? confidence : 0,
             animalName,
-            Number.isFinite(eventId) ? eventId : undefined
+            Number.isFinite(eventId) ? eventId : undefined,
           );
 
           void utils.events.recent.invalidate();
           void utils.events.list.invalidate();
           void utils.events.listForAnimal.invalidate();
           void utils.animals.weeklyStats.invalidate();
-        }
+        },
       )
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR") {

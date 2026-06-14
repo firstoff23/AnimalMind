@@ -1,44 +1,44 @@
-import { describe, expect, it, beforeAll, afterAll, vi } from "vitest";
-import { appRouter } from "./routers";
-import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
-
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 vi.mock("@supabase/supabase-js", () => {
   let isShareDeleted = false;
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {
-        let lastEqColumn: string | null = null;
+        let _lastEqColumn: string | null = null;
         let lastEqValue: any = null;
-        let currentOperation: "insert" | "select" | "update" | "delete" = "select";
-        let lastInsertData: any = null;
+        let _currentOperation: "insert" | "select" | "update" | "delete" =
+          "select";
+        let _lastInsertData: any = null;
 
         const builder: any = {
           select: vi.fn().mockImplementation(() => {
-            currentOperation = "select";
+            _currentOperation = "select";
             return builder;
           }),
           insert: vi.fn().mockImplementation((data: any) => {
-            currentOperation = "insert";
-            lastInsertData = Array.isArray(data) ? data[0] : data;
+            _currentOperation = "insert";
+            _lastInsertData = Array.isArray(data) ? data[0] : data;
             return builder;
           }),
           update: vi.fn().mockImplementation(() => {
-            currentOperation = "update";
+            _currentOperation = "update";
             return builder;
           }),
           upsert: vi.fn().mockImplementation(() => {
-            currentOperation = "update";
+            _currentOperation = "update";
             return builder;
           }),
           delete: vi.fn().mockImplementation(() => {
-            currentOperation = "delete";
+            _currentOperation = "delete";
             isShareDeleted = true;
             return builder;
           }),
           eq: vi.fn().mockImplementation((col: string, val: any) => {
-            lastEqColumn = col;
+            _lastEqColumn = col;
             lastEqValue = val;
             return builder;
           }),
@@ -49,10 +49,22 @@ vi.mock("@supabase/supabase-js", () => {
           single: vi.fn().mockImplementation(() => {
             let data: any = null;
             if (table === "users") {
-              if (lastEqValue === "partner@family.local" || lastEqValue === 2 || lastEqValue === "demo-user-002") {
-                data = { id: 2, email: "partner@family.local", name: "Partner User" };
+              if (
+                lastEqValue === "partner@family.local" ||
+                lastEqValue === 2 ||
+                lastEqValue === "demo-user-002"
+              ) {
+                data = {
+                  id: 2,
+                  email: "partner@family.local",
+                  name: "Partner User",
+                };
               } else {
-                data = { id: 1, email: "demo@animalmind.local", name: "Test User" };
+                data = {
+                  id: 1,
+                  email: "demo@animalmind.local",
+                  name: "Test User",
+                };
               }
             } else if (table === "animals") {
               data = { id: 1, user_id: 1, name: "Bobi", species: "dog" };
@@ -68,7 +80,7 @@ vi.mock("@supabase/supabase-js", () => {
                   shared_with_user_id: 2,
                   status: "pending",
                   permission: "read",
-                  created_at: new Date().toISOString()
+                  created_at: new Date().toISOString(),
                 };
               }
             }
@@ -89,7 +101,7 @@ vi.mock("@supabase/supabase-js", () => {
                     shared_with_user_id: 2,
                     status: "pending",
                     permission: "read",
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
                   };
                 }
               }
@@ -98,7 +110,9 @@ vi.mock("@supabase/supabase-js", () => {
           }),
           limit: vi.fn().mockImplementation(() => {
             if (table === "animals") {
-              return Promise.resolve({ data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }] });
+              return Promise.resolve({
+                data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }],
+              });
             }
             return builder;
           }),
@@ -116,13 +130,13 @@ vi.mock("@supabase/supabase-js", () => {
                     status: "pending",
                     permission: "read",
                     created_at: new Date().toISOString(),
-                    animal: { id: 1, name: "Bobi", species: "dog" }
-                  }
+                    animal: { id: 1, name: "Bobi", species: "dog" },
+                  },
                 ];
               }
             }
             return Promise.resolve({ data, error: null }).then(resolve);
-          })
+          }),
         };
         return builder;
       }),
@@ -130,8 +144,11 @@ vi.mock("@supabase/supabase-js", () => {
   };
 });
 
-
-function createMockContext(userId: number, openId: string, email: string): TrpcContext {
+function createMockContext(
+  userId: number,
+  openId: string,
+  email: string,
+): TrpcContext {
   return {
     user: {
       id: userId,
@@ -152,23 +169,36 @@ function createMockContext(userId: number, openId: string, email: string): TrpcC
 describe("tRPC Family Sharing / Multi-utilizador", () => {
   let credentialsValid = false;
   let ownerAnimalId = 1;
-  
+
   // Owner user context (user ID 1)
-  const ownerCtx = createMockContext(1, "demo-user-001", "demo@animalmind.local");
+  const ownerCtx = createMockContext(
+    1,
+    "demo-user-001",
+    "demo@animalmind.local",
+  );
   const ownerCaller = appRouter.createCaller(ownerCtx);
 
   // Target user context (user ID 2)
-  const targetCtx = createMockContext(2, "demo-user-002", "partner@family.local");
+  const targetCtx = createMockContext(
+    2,
+    "demo-user-002",
+    "partner@family.local",
+  );
   const targetCaller = appRouter.createCaller(targetCtx);
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
     try {
       const supabase = createClient(url, key);
-      const { data: selectOwner } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      const { data: selectOwner } = await supabase
+        .from("users")
+        .select("id")
+        .eq("open_id", "demo-user-001")
+        .single();
       if (!selectOwner) {
         credentialsValid = false;
         return;
@@ -177,17 +207,25 @@ describe("tRPC Family Sharing / Multi-utilizador", () => {
       ownerCtx.user.id = ownerId;
 
       // Upsert target user without explicit ID
-      let { data: selectTarget } = await supabase.from("users").select("id").eq("open_id", "demo-user-002").single();
+      let { data: selectTarget } = await supabase
+        .from("users")
+        .select("id")
+        .eq("open_id", "demo-user-002")
+        .single();
       if (!selectTarget) {
-        const { data: insertData, error: insertErr } = await supabase.from("users").insert([
-          {
-            open_id: "demo-user-002",
-            name: "Partner User",
-            email: "partner@family.local",
-            login_method: "demo",
-            last_signed_in: new Date().toISOString(),
-          }
-        ]).select().single();
+        const { data: insertData, error: insertErr } = await supabase
+          .from("users")
+          .insert([
+            {
+              open_id: "demo-user-002",
+              name: "Partner User",
+              email: "partner@family.local",
+              login_method: "demo",
+              last_signed_in: new Date().toISOString(),
+            },
+          ])
+          .select()
+          .single();
         if (insertErr) throw insertErr;
         selectTarget = insertData;
       }
@@ -195,7 +233,11 @@ describe("tRPC Family Sharing / Multi-utilizador", () => {
       targetCtx.user.id = targetId;
 
       // Fetch animal owned by ownerId
-      const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ownerId).limit(1);
+      const { data: animals } = await supabase
+        .from("animals")
+        .select("id")
+        .eq("user_id", ownerId)
+        .limit(1);
       if (animals && animals.length > 0) {
         ownerAnimalId = Number(animals[0].id);
         credentialsValid = true;
@@ -251,7 +293,9 @@ describe("tRPC Family Sharing / Multi-utilizador", () => {
   it("owner can list and remove share relationships", async () => {
     if (!credentialsValid) return;
 
-    const shares = await ownerCaller.animals.listShares({ animalId: ownerAnimalId });
+    const shares = await ownerCaller.animals.listShares({
+      animalId: ownerAnimalId,
+    });
     expect(Array.isArray(shares)).toBe(true);
     expect(shares.length).toBeGreaterThan(0);
 
@@ -268,6 +312,4 @@ describe("tRPC Family Sharing / Multi-utilizador", () => {
     const sharedIds = targetAnimals.map((a) => a.id);
     expect(sharedIds).not.toContain(ownerAnimalId);
   });
-
-
 });

@@ -1,11 +1,11 @@
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
 import { createServer } from "http";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { createContext } from "./_core/context";
 import { registerOAuthRoutes } from "./_core/oauth";
+import { serveStatic } from "./_core/serveStatic";
 import { registerStorageProxy } from "./_core/storageProxy";
 import { appRouter } from "./routers";
-import { createContext } from "./_core/context";
-import { serveStatic } from "./_core/serveStatic";
 
 const app = express();
 
@@ -14,7 +14,7 @@ app.use((req, res, next) => {
     "https://animalmind.vercel.app",
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://localhost"
+    "https://localhost",
   ];
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
@@ -22,8 +22,14 @@ app.use((req, res, next) => {
   } else if (!origin) {
     // Allow non-CORS requests (like direct curl or backend calls) to pass through without origin header validation
   }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-Requested-With, Content-Type, Authorization",
+  );
   res.setHeader("Access-Control-Allow-Credentials", "true");
 
   if (req.method === "OPTIONS") {
@@ -33,8 +39,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  console.log(`[Request] Method: ${req.method}, URL: ${req.url}, Path: ${req.path}`);
+app.use((req, _res, next) => {
+  console.log(
+    `[Request] Method: ${req.method}, URL: ${req.url}, Path: ${req.path}`,
+  );
   next();
 });
 
@@ -51,7 +59,7 @@ app.use(
   createExpressMiddleware({
     router: appRouter,
     createContext,
-  })
+  }),
 );
 
 // If not running on Vercel, setup static serving/Vite and listen
@@ -65,7 +73,7 @@ if (!process.env.VERCEL) {
     } else {
       serveStatic(app);
     }
-    const port = parseInt(process.env.PORT || "3000");
+    const port = parseInt(process.env.PORT || "3000", 10);
     server.listen(port, () => {
       console.log(`Server running on http://localhost:${port}/`);
     });

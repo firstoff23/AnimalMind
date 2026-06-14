@@ -21,7 +21,9 @@ export async function getOfflineActions(): Promise<OfflineAction[]> {
   }
 }
 
-export async function enqueueOfflineAction(action: OfflineAction): Promise<void> {
+export async function enqueueOfflineAction(
+  action: OfflineAction,
+): Promise<void> {
   try {
     const current = await getOfflineActions();
     await set(ACTIONS_KEY, [...current, action], queueStore);
@@ -59,7 +61,11 @@ export async function processOfflineActions(mutations: {
       }
       processed++;
     } catch (err) {
-      console.error("[OfflineQueueActions] Failed to process action:", action.type, err);
+      console.error(
+        "[OfflineQueueActions] Failed to process action:",
+        action.type,
+        err,
+      );
       remaining.push(action);
       failed++;
     }

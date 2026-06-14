@@ -1,11 +1,30 @@
-import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import {
+  Activity,
+  AlertCircle,
+  Bell,
+  Check,
+  CheckCircle2,
+  Download,
+  Gauge,
+  Globe,
+  Info,
+  Loader2,
+  LogOut,
+  Moon,
+  RefreshCw,
+  Shield,
+  Stethoscope,
+  Sun,
+  Trash2,
+  User,
+  Wrench,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { Switch } from "@/components/ui/switch";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Drawer } from "vaul";
 import {
   Card,
   CardContent,
@@ -14,46 +33,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import {
-  Download,
-  Bell,
-  Gauge,
-  Info,
-  User,
-  Shield,
-  Loader2,
-  Check,
-  Sun,
-  Moon,
-  LogOut,
-  Stethoscope,
-  Activity,
-  Trash2,
-  Play,
-  CheckCircle2,
-  AlertCircle,
-  Wrench,
-  RefreshCw,
-  Camera,
-  PawPrint,
-  FileText,
-  Globe,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/Logo";
-import { toast } from "sonner";
-import { motion } from "framer-motion";
-import { useLanguage } from "@/hooks/useLanguage";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { useTheme } from "@/contexts/ThemeContext";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
-import { getVeterinaryRoleLabel, isVeterinaryRole } from "@/lib/roles";
 import { useSelfHealing } from "@/contexts/SelfHealingContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/hooks/useLanguage";
+import { getVeterinaryRoleLabel, isVeterinaryRole } from "@/lib/roles";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 
 type Sensitivity = "low" | "medium" | "high";
 
 function CrashingComponent(): null {
-  throw new Error("Erro Simulado de UI: Falha crítica na renderização do componente de teste.");
+  throw new Error(
+    "Erro Simulado de UI: Falha crítica na renderização do componente de teste.",
+  );
 }
 
 function SettingsSectionLabel({
@@ -66,7 +63,9 @@ function SettingsSectionLabel({
   return (
     <div className="space-y-1 pt-2">
       <p className="text-xs font-semibold uppercase text-primary">{title}</p>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">{description}</p>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        {description}
+      </p>
     </div>
   );
 }
@@ -77,7 +76,8 @@ export default function SettingsPage() {
   const { theme, toggleTheme, switchable } = useTheme();
   const { signOut } = useAuth();
   const { data: dbUser, refetch: refetchUser } = trpc.auth.me.useQuery();
-  const { data: settingsData, isLoading: settingsLoading } = trpc.settings.get.useQuery();
+  const { data: settingsData, isLoading: settingsLoading } =
+    trpc.settings.get.useQuery();
   const canAccessVetMode = isVeterinaryRole(dbUser?.role);
   const veterinaryRoleLabel = getVeterinaryRoleLabel(dbUser?.role);
 
@@ -97,19 +97,29 @@ export default function SettingsPage() {
   const [shouldCrash, setShouldCrash] = useState(false);
   const [expandedErrorId, setExpandedErrorId] = useState<number | null>(null);
 
-  const { data: recentErrors, refetch: refetchErrors } = trpc.healing.getRecentErrors.useQuery({ limit: 5 });
-  const { data: healingHistory, refetch: refetchHealing } = trpc.healing.getHealingHistory.useQuery({ limit: 5 });
-  const { data: healthState, refetch: refetchHealth } = trpc.healing.getHealthState.useQuery();
+  const { data: recentErrors, refetch: refetchErrors } =
+    trpc.healing.getRecentErrors.useQuery({ limit: 5 });
+  const { data: healingHistory, refetch: refetchHealing } =
+    trpc.healing.getHealingHistory.useQuery({ limit: 5 });
+  const { data: healthState, refetch: refetchHealth } =
+    trpc.healing.getHealthState.useQuery();
 
   const clearHistoryMutation = trpc.healing.clearHistory.useMutation({
     onSuccess: () => {
-      toast.success(language === "pt" ? "Logs de diagnóstico limpos!" : "Diagnostic logs cleared!");
+      toast.success(
+        language === "pt"
+          ? "Logs de diagnóstico limpos!"
+          : "Diagnostic logs cleared!",
+      );
       refetchErrors();
       refetchHealing();
       refetchHealth();
     },
     onError: (err) => {
-      toast.error(err.message || (language === "pt" ? "Erro ao limpar logs." : "Error clearing logs."));
+      toast.error(
+        err.message ||
+          (language === "pt" ? "Erro ao limpar logs." : "Error clearing logs."),
+      );
     },
   });
 
@@ -120,9 +130,16 @@ export default function SettingsPage() {
   };
 
   const sensitivityDescs: Record<Sensitivity, string> = {
-    low: language === "pt" ? "Apenas alertas de alta confiança (≥85%)" : "Only high confidence alerts (≥85%)",
-    medium: language === "pt" ? "Alertas moderados (≥75%)" : "Moderate alerts (≥75%)",
-    high: language === "pt" ? "Alertas frequentes (≥65%)" : "Frequent alerts (≥65%)",
+    low:
+      language === "pt"
+        ? "Apenas alertas de alta confiança (≥85%)"
+        : "Only high confidence alerts (≥85%)",
+    medium:
+      language === "pt" ? "Alertas moderados (≥75%)" : "Moderate alerts (≥75%)",
+    high:
+      language === "pt"
+        ? "Alertas frequentes (≥65%)"
+        : "Frequent alerts (≥65%)",
   };
 
   // Load user data
@@ -143,11 +160,20 @@ export default function SettingsPage() {
 
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success(language === "pt" ? "Perfil atualizado com sucesso!" : "Profile updated successfully!");
+      toast.success(
+        language === "pt"
+          ? "Perfil atualizado com sucesso!"
+          : "Profile updated successfully!",
+      );
       refetchUser();
     },
     onError: (err) => {
-      toast.error(err.message || (language === "pt" ? "Erro ao atualizar perfil." : "Error updating profile."));
+      toast.error(
+        err.message ||
+          (language === "pt"
+            ? "Erro ao atualizar perfil."
+            : "Error updating profile."),
+      );
     },
   });
 
@@ -155,25 +181,34 @@ export default function SettingsPage() {
     onSuccess: () => {
       utils.settings.get.invalidate();
     },
-    onError: () => toast.error(language === "pt" ? "Erro ao guardar definições." : "Error saving settings."),
+    onError: () =>
+      toast.error(
+        language === "pt"
+          ? "Erro ao guardar definições."
+          : "Error saving settings.",
+      ),
   });
 
-  const { refetch: fetchCsv, isFetching: csvLoading } = trpc.events.exportCsv.useQuery(
-    undefined,
-    { enabled: false }
-  );
+  const { refetch: fetchCsv, isFetching: csvLoading } =
+    trpc.events.exportCsv.useQuery(undefined, { enabled: false });
 
   const handleExportCsv = async () => {
     const result = await fetchCsv();
     if (result.data?.csv) {
-      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob([result.data.csv], {
+        type: "text/csv;charset=utf-8;",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `animalmind-export-${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(language === "pt" ? "CSV exportado com sucesso!" : "CSV exported successfully!");
+      toast.success(
+        language === "pt"
+          ? "CSV exportado com sucesso!"
+          : "CSV exported successfully!",
+      );
     }
   };
 
@@ -191,7 +226,7 @@ export default function SettingsPage() {
     toast.success(
       language === "pt"
         ? `Notificações ${val ? "ativadas" : "desativadas"}`
-        : `Notifications ${val ? "enabled" : "disabled"}`
+        : `Notifications ${val ? "enabled" : "disabled"}`,
     );
   };
 
@@ -201,7 +236,7 @@ export default function SettingsPage() {
     toast.success(
       language === "pt"
         ? `Sensibilidade definida para: ${sensitivityLabels[val]}`
-        : `Sensitivity set to: ${sensitivityLabels[val]}`
+        : `Sensitivity set to: ${sensitivityLabels[val]}`,
     );
   };
 
@@ -241,7 +276,9 @@ export default function SettingsPage() {
     >
       {shouldCrash && <CrashingComponent />}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("settingsPage.title")}</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          {t("settingsPage.title")}
+        </h1>
         <p className="text-xs text-muted-foreground">
           {language === "pt"
             ? "Gerencie as suas preferências e informações pessoais do AnimalMind"
@@ -275,18 +312,22 @@ export default function SettingsPage() {
                 className="w-full gap-2 bg-emerald-500 text-white hover:bg-emerald-600 text-xs h-9 active-scale tap-highlight-none"
               >
                 <Stethoscope className="w-3.5 h-3.5" />
-                {language === "pt" ? "Abrir Modo Veterinário" : "Open Veterinary Mode"}
+                {language === "pt"
+                  ? "Abrir Modo Veterinário"
+                  : "Open Veterinary Mode"}
               </Button>
             </CardContent>
           </Card>
         </motion.div>
       )}
 
-
-
       <SettingsSectionLabel
         title={language === "pt" ? "Conta" : "Account"}
-        description={language === "pt" ? "Dados pessoais, idioma e aparência da app." : "Personal data, language and app appearance."}
+        description={
+          language === "pt"
+            ? "Dados pessoais, idioma e aparência da app."
+            : "Personal data, language and app appearance."
+        }
       />
 
       {/* Perfil do Utilizador */}
@@ -298,13 +339,18 @@ export default function SettingsPage() {
               {t("profilePage.title")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              {language === "pt" ? "Atualize o seu nome e endereço de email de contacto" : "Update your name and contact email address"}
+              {language === "pt"
+                ? "Atualize o seu nome e endereço de email de contacto"
+                : "Update your name and contact email address"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 pb-0">
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="profile-name" className="text-xs font-medium text-foreground">
+                <Label
+                  htmlFor="profile-name"
+                  className="text-xs font-medium text-foreground"
+                >
                   {language === "pt" ? "Nome Completo" : "Full Name"}
                 </Label>
                 <Input
@@ -319,7 +365,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="profile-email" className="text-xs font-medium text-foreground">
+                <Label
+                  htmlFor="profile-email"
+                  className="text-xs font-medium text-foreground"
+                >
                   {language === "pt" ? "Endereço de Email" : "Email Address"}
                 </Label>
                 <Input
@@ -343,8 +392,10 @@ export default function SettingsPage() {
                       <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                       {t("common.loading")}
                     </>
+                  ) : language === "pt" ? (
+                    "Guardar Perfil"
                   ) : (
-                    language === "pt" ? "Guardar Perfil" : "Save Profile"
+                    "Save Profile"
                   )}
                 </Button>
               </div>
@@ -362,7 +413,9 @@ export default function SettingsPage() {
               {t("settingsPage.language")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              {language === "pt" ? "Escolha o idioma preferido para a interface" : "Choose the preferred language for the interface"}
+              {language === "pt"
+                ? "Escolha o idioma preferido para a interface"
+                : "Choose the preferred language for the interface"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 flex gap-4">
@@ -396,11 +449,17 @@ export default function SettingsPage() {
           <Card className="bg-card border-border overflow-hidden">
             <CardHeader className="pb-3 border-b border-border bg-muted/30">
               <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                {theme === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+                {theme === "dark" ? (
+                  <Moon className="w-4 h-4 text-primary" />
+                ) : (
+                  <Sun className="w-4 h-4 text-primary" />
+                )}
                 {language === "pt" ? "Tema Visual" : "Visual Theme"}
               </CardTitle>
               <CardDescription className="text-xs text-muted-foreground mt-0.5">
-                {language === "pt" ? "Selecione o esquema de cores da aplicação" : "Select the application's color scheme"}
+                {language === "pt"
+                  ? "Selecione o esquema de cores da aplicação"
+                  : "Select the application's color scheme"}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4 flex gap-4">
@@ -431,7 +490,11 @@ export default function SettingsPage() {
 
       <SettingsSectionLabel
         title={language === "pt" ? "Alertas" : "Alerts"}
-        description={language === "pt" ? "Preferências de notificação e sensibilidade clínica." : "Notification preferences and clinical sensitivity."}
+        description={
+          language === "pt"
+            ? "Preferências de notificação e sensibilidade clínica."
+            : "Notification preferences and clinical sensitivity."
+        }
       />
 
       {/* Notificações */}
@@ -440,18 +503,26 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Bell className="w-4 h-4 text-primary" />
-              {language === "pt" ? "Notificações e Alertas" : "Notifications & Alerts"}
+              {language === "pt"
+                ? "Notificações e Alertas"
+                : "Notifications & Alerts"}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              {language === "pt" ? "Defina como e quando quer ser alertado sobre o bem-estar do seu animal" : "Define how and when you want to be alerted about your animal's well-being"}
+              {language === "pt"
+                ? "Defina como e quando quer ser alertado sobre o bem-estar do seu animal"
+                : "Define how and when you want to be alerted about your animal's well-being"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-xs font-medium text-foreground">{t("settingsPage.notifications")}</Label>
+                <Label className="text-xs font-medium text-foreground">
+                  {t("settingsPage.notifications")}
+                </Label>
                 <p className="text-[10px] text-muted-foreground">
-                  {language === "pt" ? "Receba avisos instantâneos de comportamento" : "Receive instant behavior alerts"}
+                  {language === "pt"
+                    ? "Receba avisos instantâneos de comportamento"
+                    : "Receive instant behavior alerts"}
                 </p>
               </div>
               <Switch
@@ -463,9 +534,15 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between border-t border-border/40 pt-4">
               <div className="space-y-0.5">
-                <Label className="text-xs font-medium text-foreground">{language === "pt" ? "Alertas de Angústia" : "Distress Alerts"}</Label>
+                <Label className="text-xs font-medium text-foreground">
+                  {language === "pt"
+                    ? "Alertas de Angústia"
+                    : "Distress Alerts"}
+                </Label>
                 <p className="text-[10px] text-muted-foreground">
-                  {language === "pt" ? "Apenas para detecções de choro ou ganido persistente" : "Only for detections of persistent crying or whining"}
+                  {language === "pt"
+                    ? "Apenas para detecções de choro ou ganido persistente"
+                    : "Only for detections of persistent crying or whining"}
                 </p>
               </div>
               <Switch
@@ -478,9 +555,13 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between border-t border-border/40 pt-4">
               <div className="space-y-0.5">
-                <Label className="text-xs font-medium text-foreground">{language === "pt" ? "Alertas de Fome" : "Hunger Alerts"}</Label>
+                <Label className="text-xs font-medium text-foreground">
+                  {language === "pt" ? "Alertas de Fome" : "Hunger Alerts"}
+                </Label>
                 <p className="text-[10px] text-muted-foreground">
-                  {language === "pt" ? "Notifique quando há probabilidade de fome elevada" : "Notify when hunger probability is high"}
+                  {language === "pt"
+                    ? "Notifique quando há probabilidade de fome elevada"
+                    : "Notify when hunger probability is high"}
                 </p>
               </div>
               <Switch
@@ -517,7 +598,7 @@ export default function SettingsPage() {
                   "w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left active-scale tap-highlight-none",
                   sensitivity === s
                     ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40 bg-background/50"
+                    : "border-border hover:border-primary/40 bg-background/50",
                 )}
               >
                 <div
@@ -525,16 +606,18 @@ export default function SettingsPage() {
                     "w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
                     sensitivity === s
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-muted-foreground bg-transparent"
+                      : "border-muted-foreground bg-transparent",
                   )}
                 >
-                  {sensitivity === s && <Check className="w-2.5 h-2.5 stroke-[3px]" />}
+                  {sensitivity === s && (
+                    <Check className="w-2.5 h-2.5 stroke-[3px]" />
+                  )}
                 </div>
                 <div>
                   <p
                     className={cn(
                       "text-xs font-semibold",
-                      sensitivity === s ? "text-primary" : "text-foreground"
+                      sensitivity === s ? "text-primary" : "text-foreground",
                     )}
                   >
                     {sensitivityLabels[s]}
@@ -551,7 +634,11 @@ export default function SettingsPage() {
 
       <SettingsSectionLabel
         title={language === "pt" ? "Privacidade" : "Privacy"}
-        description={language === "pt" ? "Controle de dados, histórico local e diagnóstico técnico." : "Data controls, local history and technical diagnostics."}
+        description={
+          language === "pt"
+            ? "Controle de dados, histórico local e diagnóstico técnico."
+            : "Data controls, local history and technical diagnostics."
+        }
       />
 
       {/* Privacidade */}
@@ -563,14 +650,18 @@ export default function SettingsPage() {
               {language === "pt" ? "Privacidade e Dados" : "Privacy & Data"}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
-              {language === "pt" ? "Escolha como os dados recolhidos pela IA são partilhados e armazenados" : "Choose how data collected by AI is shared and stored"}
+              {language === "pt"
+                ? "Escolha como os dados recolhidos pela IA são partilhados e armazenados"
+                : "Choose how data collected by AI is shared and stored"}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5 max-w-[80%]">
                 <Label className="text-xs font-medium text-foreground">
-                  {language === "pt" ? "Partilhar Dados de Diagnóstico" : "Share Diagnostic Data"}
+                  {language === "pt"
+                    ? "Partilhar Dados de Diagnóstico"
+                    : "Share Diagnostic Data"}
                 </Label>
                 <p className="text-[10px] text-muted-foreground">
                   {language === "pt"
@@ -585,7 +676,7 @@ export default function SettingsPage() {
                   toast.success(
                     language === "pt"
                       ? `Partilha de diagnóstico ${val ? "autorizada" : "desativada"}`
-                      : `Diagnostic sharing ${val ? "authorized" : "disabled"}`
+                      : `Diagnostic sharing ${val ? "authorized" : "disabled"}`,
                   );
                 }}
                 className="data-[state=checked]:bg-primary"
@@ -595,7 +686,9 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between border-t border-border/40 pt-4">
               <div className="space-y-0.5 max-w-[80%]">
                 <Label className="text-xs font-medium text-foreground">
-                  {language === "pt" ? "Histórico Local Exclusivo" : "Exclusive Local History"}
+                  {language === "pt"
+                    ? "Histórico Local Exclusivo"
+                    : "Exclusive Local History"}
                 </Label>
                 <p className="text-[10px] text-muted-foreground">
                   {language === "pt"
@@ -610,7 +703,7 @@ export default function SettingsPage() {
                   toast.success(
                     language === "pt"
                       ? `Modo de histórico local ${val ? "ativado" : "desativado"}`
-                      : `Local history mode ${val ? "enabled" : "disabled"}`
+                      : `Local history mode ${val ? "enabled" : "disabled"}`,
                   );
                 }}
                 className="data-[state=checked]:bg-primary"
@@ -626,7 +719,9 @@ export default function SettingsPage() {
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
               <Activity className="w-4 h-4 text-primary animate-pulse" />
-              {language === "pt" ? "Diagnóstico e Autocura" : "Diagnostics & Self-Healing"}
+              {language === "pt"
+                ? "Diagnóstico e Autocura"
+                : "Diagnostics & Self-Healing"}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
               {language === "pt"
@@ -639,24 +734,30 @@ export default function SettingsPage() {
             <div className="bg-muted/35 border border-border/40 rounded-xl p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-foreground">
-                  {language === "pt" ? "Estado de Saúde Geral:" : "Overall Health State:"}
+                  {language === "pt"
+                    ? "Estado de Saúde Geral:"
+                    : "Overall Health State:"}
                 </span>
-                <span className={cn(
-                  "text-[10px] font-bold px-2 py-0.5 rounded-full capitalize flex items-center gap-1.5",
-                  healthState?.status === "healthy" || !healthState
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                    : healthState?.status === "degraded"
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                    : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                )}>
-                  <span className={cn(
-                    "w-1.5 h-1.5 rounded-full animate-ping",
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full capitalize flex items-center gap-1.5",
                     healthState?.status === "healthy" || !healthState
-                      ? "bg-emerald-400"
+                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                       : healthState?.status === "degraded"
-                      ? "bg-amber-400"
-                      : "bg-rose-400"
-                  )} />
+                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                        : "bg-rose-500/10 text-rose-400 border border-rose-500/20",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full animate-ping",
+                      healthState?.status === "healthy" || !healthState
+                        ? "bg-emerald-400"
+                        : healthState?.status === "degraded"
+                          ? "bg-amber-400"
+                          : "bg-rose-400",
+                    )}
+                  />
                   {healthState?.status || "healthy"}
                 </span>
               </div>
@@ -683,7 +784,9 @@ export default function SettingsPage() {
                 <div className="border border-border/30 rounded-lg p-2 bg-background/50 flex flex-col justify-between">
                   <span className="text-muted-foreground">Last Checked:</span>
                   <span className="font-semibold text-foreground mt-0.5">
-                    {healthState ? new Date(healthState.lastCheckedAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
+                    {healthState
+                      ? new Date(healthState.lastCheckedAt).toLocaleTimeString()
+                      : new Date().toLocaleTimeString()}
                   </span>
                 </div>
               </div>
@@ -692,26 +795,42 @@ export default function SettingsPage() {
             {/* Simulated Error Buttons */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-foreground">
-                {language === "pt" ? "Testar Autocura (Simulação)" : "Test Self-Healing (Simulation)"}
+                {language === "pt"
+                  ? "Testar Autocura (Simulação)"
+                  : "Test Self-Healing (Simulation)"}
               </Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   onClick={() => {
-                    toast.loading(language === "pt" ? "A simular erro de interface..." : "Simulating UI error...");
+                    toast.loading(
+                      language === "pt"
+                        ? "A simular erro de interface..."
+                        : "Simulating UI error...",
+                    );
                     setTimeout(() => setShouldCrash(true), 850);
                   }}
                   variant="outline"
                   className="text-[10px] h-8 border-rose-500/20 text-rose-400 hover:bg-rose-500/10 gap-1 active-scale"
                 >
                   <AlertCircle className="w-3 h-3" />
-                  {language === "pt" ? "Erro de UI (Crash)" : "UI Error (Crash)"}
+                  {language === "pt"
+                    ? "Erro de UI (Crash)"
+                    : "UI Error (Crash)"}
                 </Button>
                 <Button
                   type="button"
                   onClick={() => {
-                    reportError(new Error("Simulated API Error: Failed to fetch backend at fly.dev (Status 503)"));
-                    toast.success(language === "pt" ? "Erro de rede simulado e enviado!" : "Simulated network error logged!");
+                    reportError(
+                      new Error(
+                        "Simulated API Error: Failed to fetch backend at fly.dev (Status 503)",
+                      ),
+                    );
+                    toast.success(
+                      language === "pt"
+                        ? "Erro de rede simulado e enviado!"
+                        : "Simulated network error logged!",
+                    );
                     setTimeout(() => {
                       refetchErrors();
                       refetchHealth();
@@ -729,9 +848,14 @@ export default function SettingsPage() {
             {/* Recent Errors List */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-foreground flex items-center justify-between">
-                <span>{language === "pt" ? "Erros Recentes Intercetados" : "Recent Intercepted Errors"}</span>
+                <span>
+                  {language === "pt"
+                    ? "Erros Recentes Intercetados"
+                    : "Recent Intercepted Errors"}
+                </span>
                 <span className="text-[10px] text-muted-foreground font-normal font-sans">
-                  {recentErrors?.length ?? 0} {language === "pt" ? "registados" : "logged"}
+                  {recentErrors?.length ?? 0}{" "}
+                  {language === "pt" ? "registados" : "logged"}
                 </span>
               </Label>
 
@@ -746,28 +870,40 @@ export default function SettingsPage() {
                         <span className="font-semibold text-foreground truncate max-w-[150px]">
                           [{err.component}] {err.errorCode}
                         </span>
-                        <span className={cn(
-                          "px-1.5 py-0.2 rounded-md font-bold capitalize text-[8px]",
-                          err.severity === "critical"
-                            ? "bg-rose-500/10 text-rose-400"
-                            : err.severity === "error"
-                            ? "bg-red-500/10 text-red-400"
-                            : "bg-amber-500/10 text-amber-400"
-                        )}>
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.2 rounded-md font-bold capitalize text-[8px]",
+                            err.severity === "critical"
+                              ? "bg-rose-500/10 text-rose-400"
+                              : err.severity === "error"
+                                ? "bg-red-500/10 text-red-400"
+                                : "bg-amber-500/10 text-amber-400",
+                          )}
+                        >
                           {err.severity}
                         </span>
                       </div>
-                      <p className="text-muted-foreground line-clamp-1 break-all text-[9px]">{err.errorMessage}</p>
+                      <p className="text-muted-foreground line-clamp-1 break-all text-[9px]">
+                        {err.errorMessage}
+                      </p>
                       <div className="flex items-center justify-between text-[8px] text-muted-foreground/80 pt-0.5">
                         <span>{new Date(err.createdAt).toLocaleString()}</span>
                         <button
                           type="button"
-                          onClick={() => setExpandedErrorId(expandedErrorId === err.id ? null : err.id)}
+                          onClick={() =>
+                            setExpandedErrorId(
+                              expandedErrorId === err.id ? null : err.id,
+                            )
+                          }
                           className="text-primary hover:underline"
                         >
                           {expandedErrorId === err.id
-                            ? (language === "pt" ? "Fechar" : "Close")
-                            : (language === "pt" ? "Ver Detalhes" : "View Details")}
+                            ? language === "pt"
+                              ? "Fechar"
+                              : "Close"
+                            : language === "pt"
+                              ? "Ver Detalhes"
+                              : "View Details"}
                         </button>
                       </div>
                       {expandedErrorId === err.id && (
@@ -783,7 +919,11 @@ export default function SettingsPage() {
               ) : (
                 <div className="border border-dashed border-border/40 rounded-xl p-3 flex flex-col items-center justify-center text-center text-muted-foreground py-5">
                   <CheckCircle2 className="w-6 h-6 text-emerald-400 mb-1" />
-                  <span className="text-[10px] font-medium">{language === "pt" ? "Nenhum erro detetado recente" : "No recent errors detected"}</span>
+                  <span className="text-[10px] font-medium">
+                    {language === "pt"
+                      ? "Nenhum erro detetado recente"
+                      : "No recent errors detected"}
+                  </span>
                 </div>
               )}
             </div>
@@ -791,7 +931,9 @@ export default function SettingsPage() {
             {/* Healing History Actions */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-foreground">
-                {language === "pt" ? "Histórico de Ações de Autocura" : "Self-Healing Actions History"}
+                {language === "pt"
+                  ? "Histórico de Ações de Autocura"
+                  : "Self-Healing Actions History"}
               </Label>
               {healingHistory && healingHistory.length > 0 ? (
                 <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
@@ -806,16 +948,20 @@ export default function SettingsPage() {
                           <span className="font-semibold text-foreground capitalize">
                             {act.actionAttempted.replace(/_/g, " ")}
                           </span>
-                          <span className={cn(
-                            "px-1.5 py-0.2 rounded-md font-bold capitalize text-[8px]",
-                            act.status === "success"
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-red-500/10 text-red-400"
-                          )}>
+                          <span
+                            className={cn(
+                              "px-1.5 py-0.2 rounded-md font-bold capitalize text-[8px]",
+                              act.status === "success"
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : "bg-red-500/10 text-red-400",
+                            )}
+                          >
                             {act.status}
                           </span>
                         </div>
-                        <p className="text-muted-foreground leading-snug text-[9px]">{act.resolutionNotes}</p>
+                        <p className="text-muted-foreground leading-snug text-[9px]">
+                          {act.resolutionNotes}
+                        </p>
                         <span className="text-[8px] text-muted-foreground/80 block pt-0.5">
                           {new Date(act.createdAt).toLocaleString()}
                         </span>
@@ -826,7 +972,11 @@ export default function SettingsPage() {
               ) : (
                 <div className="border border-dashed border-border/40 rounded-xl p-3 flex flex-col items-center justify-center text-center text-muted-foreground py-4">
                   <Wrench className="w-5 h-5 text-muted-foreground/60 mb-1" />
-                  <span className="text-[10px]">{language === "pt" ? "Nenhuma ação corretiva executada ainda" : "No corrective actions executed yet"}</span>
+                  <span className="text-[10px]">
+                    {language === "pt"
+                      ? "Nenhuma ação corretiva executada ainda"
+                      : "No corrective actions executed yet"}
+                  </span>
                 </div>
               )}
             </div>
@@ -838,7 +988,13 @@ export default function SettingsPage() {
               <Button
                 type="button"
                 onClick={() => {
-                  if (confirm(language === "pt" ? "Tem a certeza que deseja apagar todos os logs de autocura?" : "Are you sure you want to delete all self-healing logs?")) {
+                  if (
+                    confirm(
+                      language === "pt"
+                        ? "Tem a certeza que deseja apagar todos os logs de autocura?"
+                        : "Are you sure you want to delete all self-healing logs?",
+                    )
+                  ) {
                     clearHistoryMutation.mutate({ olderThanDays: 0 });
                   }
                 }}
@@ -851,7 +1007,9 @@ export default function SettingsPage() {
                 ) : (
                   <Trash2 className="w-3.5 h-3.5" />
                 )}
-                {language === "pt" ? "Limpar Logs de Autocura (Admin)" : "Clear Self-Healing Logs (Admin)"}
+                {language === "pt"
+                  ? "Limpar Logs de Autocura (Admin)"
+                  : "Clear Self-Healing Logs (Admin)"}
               </Button>
             </CardFooter>
           )}
@@ -879,7 +1037,9 @@ export default function SettingsPage() {
               {csvLoading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  {language === "pt" ? "A preparar ficheiro…" : "Preparing file…"}
+                  {language === "pt"
+                    ? "A preparar ficheiro…"
+                    : "Preparing file…"}
                 </>
               ) : (
                 <>
@@ -904,7 +1064,9 @@ export default function SettingsPage() {
           <CardContent className="pt-5 space-y-4">
             <div className="flex flex-col items-center text-center p-4 rounded-2xl bg-muted/30 border border-border/30">
               <Logo className="w-12 h-12 text-primary" />
-              <p className="text-lg font-bold text-foreground mt-2 tracking-tight">AnimalMind</p>
+              <p className="text-lg font-bold text-foreground mt-2 tracking-tight">
+                AnimalMind
+              </p>
               <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">
                 {language === "pt"
                   ? "Análise avançada e monitorização do bem-estar e inteligência emocional animal."
@@ -914,18 +1076,28 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-muted/40 rounded-xl p-3 border border-border/40">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t("settingsPage.version")}</p>
-                <p className="font-semibold text-foreground mt-1">v1.0.0 (offline-ready)</p>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {t("settingsPage.version")}
+                </p>
+                <p className="font-semibold text-foreground mt-1">
+                  v1.0.0 (offline-ready)
+                </p>
               </div>
               <div className="bg-muted/40 rounded-xl p-3 border border-border/40">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{language === "pt" ? "Modelos Locais" : "Local Models"}</p>
-                <p className="font-semibold text-foreground mt-1">YAMNet · YOLOv8 · ResNet</p>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {language === "pt" ? "Modelos Locais" : "Local Models"}
+                </p>
+                <p className="font-semibold text-foreground mt-1">
+                  YAMNet · YOLOv8 · ResNet
+                </p>
               </div>
             </div>
 
             <div className="pt-2 border-t border-border/50 flex flex-col gap-2">
               <p className="text-[11px] font-semibold text-foreground px-1 mb-1">
-                {language === "pt" ? "Documentos e Políticas" : "Documents & Policies"}
+                {language === "pt"
+                  ? "Documentos e Políticas"
+                  : "Documents & Policies"}
               </p>
               <Button
                 variant="outline"
@@ -964,7 +1136,7 @@ export default function SettingsPage() {
                   toast.success(
                     language === "pt"
                       ? "Sessão terminada com sucesso."
-                      : "Signed out successfully."
+                      : "Signed out successfully.",
                   );
                   setLocation("/login");
                 } catch (err: any) {

@@ -45,7 +45,8 @@ export default defineConfig({
           VITE_SUPABASE_ANON_KEY: "test-anon-key-for-e2e",
           SUPABASE_URL: "https://test.supabase.co",
           SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key-for-e2e",
-          OAUTH_SERVER_URL: process.env.OAUTH_SERVER_URL ?? `http://127.0.0.1:${port}`,
+          OAUTH_SERVER_URL:
+            process.env.OAUTH_SERVER_URL ?? `http://127.0.0.1:${port}`,
           JWT_SECRET: process.env.JWT_SECRET ?? "animalmind-e2e-secret",
         },
       },

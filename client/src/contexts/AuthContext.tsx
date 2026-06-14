@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
+import type React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { storeOfflineQueueAuth } from "@/lib/offlineQueue";
 
 // Initialize Supabase client
@@ -19,15 +20,18 @@ function syncOfflineQueueAuth(session: Session | null) {
     session?.access_token
       ? {
           accessToken: session.access_token,
-          expiresAt: session.expires_at ? session.expires_at * 1000 : Date.now() + 60 * 60 * 1000,
+          expiresAt: session.expires_at
+            ? session.expires_at * 1000
+            : Date.now() + 60 * 60 * 1000,
         }
-      : null
+      : null,
   );
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+export const supabase =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : null;
 
 export function requireSupabase() {
   if (!supabase) {
@@ -125,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     syncOfflineQueueAuth(null);
   };
 
-  const isEmailVerified = user?.email_confirmed_at ? true : false;
+  const isEmailVerified = !!user?.email_confirmed_at;
 
   const resendVerificationEmail = async (email: string) => {
     const { error } = await requireSupabase().auth.resend({
@@ -150,11 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resendVerificationEmail,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

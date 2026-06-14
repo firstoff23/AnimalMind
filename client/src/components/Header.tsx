@@ -1,17 +1,19 @@
-import { useLocation } from "wouter";
 import { ArrowLeft, WifiOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Logo } from "@/components/ui/Logo";
-import { useEffect, useState } from "react";
 
 export function Header() {
   const [location, setLocation] = useLocation();
   const { isAuthenticated } = useAuth();
   const { t, language } = useLanguage();
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true,
+  );
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -31,7 +33,15 @@ export function Header() {
   }
 
   // Check if current page is one of the main tabs
-  const isRootPage = ["/dashboard", "/perfil", "/capturar", "/mindi", "/alimentos", "/historico", "/definicoes"].includes(location);
+  const isRootPage = [
+    "/dashboard",
+    "/perfil",
+    "/capturar",
+    "/mindi",
+    "/alimentos",
+    "/historico",
+    "/definicoes",
+  ].includes(location);
 
   const handleBack = () => {
     if (location.startsWith("/animal/")) {
@@ -53,27 +63,48 @@ export function Header() {
 
   // Compute page title dynamically
   const getPageTitle = () => {
-    const translatedOr = (key: string, fallbackPt: string, fallbackEn: string) => {
+    const translatedOr = (
+      key: string,
+      fallbackPt: string,
+      fallbackEn: string,
+    ) => {
       const translated = t(key);
-      return translated && translated !== key ? translated : language === "pt" ? fallbackPt : fallbackEn;
+      return translated && translated !== key
+        ? translated
+        : language === "pt"
+          ? fallbackPt
+          : fallbackEn;
     };
 
     if (location === "/dashboard") return "AnimalMind";
     if (location === "/perfil") return language === "pt" ? "Animais" : "Pets";
-    if (location === "/capturar") return language === "pt" ? "Capturar" : "Capture";
-    if (location === "/alimentos") return language === "pt" ? "Alimentos" : "Food Dictionary";
-    if (location === "/historico") return language === "pt" ? "Histórico" : "History";
-    if (location === "/definicoes") return language === "pt" ? "Definições" : "Settings";
-    if (location === "/gravar") return language === "pt" ? "Gravar Áudio" : "Record Audio";
-    if (location === "/camera") return language === "pt" ? "Câmara Visão" : "Vision Camera";
+    if (location === "/capturar")
+      return language === "pt" ? "Capturar" : "Capture";
+    if (location === "/alimentos")
+      return language === "pt" ? "Alimentos" : "Food Dictionary";
+    if (location === "/historico")
+      return language === "pt" ? "Histórico" : "History";
+    if (location === "/definicoes")
+      return language === "pt" ? "Definições" : "Settings";
+    if (location === "/gravar")
+      return language === "pt" ? "Gravar Áudio" : "Record Audio";
+    if (location === "/camera")
+      return language === "pt" ? "Câmara Visão" : "Vision Camera";
     if (location === "/mindi") return "Mindi AI Chat";
-    if (location.startsWith("/animal/")) return translatedOr("animalDetail.title", "Detalhes", "Details");
+    if (location.startsWith("/animal/"))
+      return translatedOr("animalDetail.title", "Detalhes", "Details");
     if (location.startsWith("/vet/animal/")) return "Paciente";
     if (location === "/vet") return "Modo Veterinário";
-    if (location === "/comparison") return translatedOr("comparison.title", "Comparação", "Comparison");
-    if (location === "/health") return translatedOr("health.title", "Saúde", "Health");
+    if (location === "/comparison")
+      return translatedOr("comparison.title", "Comparação", "Comparison");
+    if (location === "/health")
+      return translatedOr("health.title", "Saúde", "Health");
     if (location === "/family" || location.startsWith("/join/")) {
-      return translatedOr("dashboardPage.family", "Modo Família", "Family Mode");
+      return translatedOr(
+        "dashboardPage.family",
+        "Modo Família",
+        "Family Mode",
+      );
     }
     return "AnimalMind";
   };
@@ -100,7 +131,10 @@ export function Header() {
         {isRootPage && <Logo className="text-primary size-5" />}
         <span>{getPageTitle()}</span>
         {!isOnline && (
-          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/15 text-destructive border border-destructive/25 uppercase tracking-wider shrink-0 animate-pulse" title="Modo Offline">
+          <span
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-destructive/15 text-destructive border border-destructive/25 uppercase tracking-wider shrink-0 animate-pulse"
+            title="Modo Offline"
+          >
             <WifiOff className="h-2.5 w-2.5" />
             Offline
           </span>

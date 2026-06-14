@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { appRouter } from "./routers";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 vi.mock("@supabase/supabase-js", () => {
   const families: any[] = [];
@@ -10,7 +10,7 @@ vi.mock("@supabase/supabase-js", () => {
   const family_animals: any[] = [];
   const users: any[] = [
     { id: 1, email: "demo@animalmind.local", name: "Demo User" },
-    { id: 2, email: "family-member@animalmind.local", name: "Family Member" }
+    { id: 2, email: "family-member@animalmind.local", name: "Family Member" },
   ];
 
   return {
@@ -28,7 +28,11 @@ vi.mock("@supabase/supabase-js", () => {
             const arr = Array.isArray(data) ? data : [data];
             for (const item of arr) {
               const id = Math.floor(Math.random() * 1000000) + 1;
-              const newItem = { id, created_at: new Date().toISOString(), ...item };
+              const newItem = {
+                id,
+                created_at: new Date().toISOString(),
+                ...item,
+              };
               if (table === "families") families.push(newItem);
               if (table === "family_members") family_members.push(newItem);
               if (table === "invites") invites.push(newItem);
@@ -41,7 +45,7 @@ vi.mock("@supabase/supabase-js", () => {
             let targetList: any[] = [];
             if (table === "invites") targetList = invites;
             for (const item of targetList) {
-              const codeCond = eqConditions["code"];
+              const codeCond = eqConditions.code;
               if (codeCond && item.code === codeCond) {
                 Object.assign(item, data);
               } else if (lastEqColumn && item[lastEqColumn] === lastEqValue) {
@@ -56,15 +60,20 @@ vi.mock("@supabase/supabase-js", () => {
             if (table === "family_members") targetList = family_members;
             if (table === "family_animals") targetList = family_animals;
             for (const item of arr) {
-              const match = targetList.find(x => 
-                x.family_id === item.family_id && 
-                ((item.user_id !== undefined && x.user_id === item.user_id) || 
-                 (item.animal_id !== undefined && x.animal_id === item.animal_id))
+              const match = targetList.find(
+                (x) =>
+                  x.family_id === item.family_id &&
+                  ((item.user_id !== undefined && x.user_id === item.user_id) ||
+                    (item.animal_id !== undefined &&
+                      x.animal_id === item.animal_id)),
               );
               if (match) {
                 Object.assign(match, item);
               } else {
-                targetList.push({ id: Math.floor(Math.random() * 1000000) + 1, ...item });
+                targetList.push({
+                  id: Math.floor(Math.random() * 1000000) + 1,
+                  ...item,
+                });
               }
             }
             return builder;
@@ -75,7 +84,7 @@ vi.mock("@supabase/supabase-js", () => {
             lastEqValue = val;
             return builder;
           }),
-          in: vi.fn().mockImplementation((col: string, val: any) => {
+          in: vi.fn().mockImplementation((_col: string, val: any) => {
             lastInValue = val;
             return builder;
           }),
@@ -88,40 +97,56 @@ vi.mock("@supabase/supabase-js", () => {
             if (table === "families" && lastInsertData) {
               data = lastInsertData;
             } else if (table === "users") {
-              const emailCond = eqConditions["email"];
-              const idCond = eqConditions["id"];
-              const openIdCond = eqConditions["open_id"];
-              data = users.find(u => 
-                (emailCond && u.email === emailCond) || 
-                (idCond && u.id === idCond) ||
-                (openIdCond && u.openId === openIdCond)
+              const emailCond = eqConditions.email;
+              const idCond = eqConditions.id;
+              const openIdCond = eqConditions.open_id;
+              data = users.find(
+                (u) =>
+                  (emailCond && u.email === emailCond) ||
+                  (idCond && u.id === idCond) ||
+                  (openIdCond && u.openId === openIdCond),
               );
-              if (!data) data = { id: 1, email: "demo@animalmind.local", name: "Demo User" };
+              if (!data)
+                data = {
+                  id: 1,
+                  email: "demo@animalmind.local",
+                  name: "Demo User",
+                };
             } else if (table === "animals") {
               data = { id: 1, user_id: 1, name: "Bobi", species: "dog" };
             } else if (table === "invites") {
-              const codeCond = eqConditions["code"];
+              const codeCond = eqConditions.code;
               if (codeCond) {
-                data = invites.find(i => i.code === codeCond);
+                data = invites.find((i) => i.code === codeCond);
               } else {
-                data = invites.find(i => i.code === lastEqValue) || lastInsertData;
+                data =
+                  invites.find((i) => i.code === lastEqValue) || lastInsertData;
               }
             }
-            return Promise.resolve({ data, error: data ? null : { code: "PGRST116", message: "Not found" } });
+            return Promise.resolve({
+              data,
+              error: data ? null : { code: "PGRST116", message: "Not found" },
+            });
           }),
           then: vi.fn().mockImplementation((resolve) => {
             let data: any = [];
             if (table === "family_members") {
               if (lastInValue) {
-                data = family_members.filter(m => lastInValue.includes(Number(m.family_id)));
-              } else if (eqConditions["user_id"]) {
-                data = family_members.filter(m => Number(m.user_id) === Number(eqConditions["user_id"]));
+                data = family_members.filter((m) =>
+                  lastInValue.includes(Number(m.family_id)),
+                );
+              } else if (eqConditions.user_id) {
+                data = family_members.filter(
+                  (m) => Number(m.user_id) === Number(eqConditions.user_id),
+                );
               } else {
                 data = family_members;
               }
             } else if (table === "family_animals") {
               if (lastInValue) {
-                data = family_animals.filter(a => lastInValue.includes(a.family_id));
+                data = family_animals.filter((a) =>
+                  lastInValue.includes(a.family_id),
+                );
               } else {
                 data = family_animals;
               }
@@ -129,15 +154,13 @@ vi.mock("@supabase/supabase-js", () => {
               data = [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }];
             }
             return Promise.resolve({ data, error: null }).then(resolve);
-          })
+          }),
         };
         return builder;
       }),
     }),
   };
 });
-
-
 
 function createMockContext(id: number, email: string): TrpcContext {
   return {
@@ -167,7 +190,8 @@ describe("tRPC familyRouter", () => {
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
     try {
@@ -223,7 +247,9 @@ describe("tRPC familyRouter", () => {
     const family = await ownerCaller.family.create({ name: "Família Teste" });
     expect(family.name).toBe("Família Teste");
 
-    const invite = await ownerCaller.family.createInvite({ familyId: family.id });
+    const invite = await ownerCaller.family.createInvite({
+      familyId: family.id,
+    });
     expect(invite.code).toHaveLength(6);
     expect(invite.inviteUrl).toContain(`/join/${invite.code}`);
 
@@ -231,7 +257,9 @@ describe("tRPC familyRouter", () => {
     expect(joined).toEqual({ success: true, familyId: family.id });
 
     const members = await ownerCaller.family.getMembers();
-    expect(members.some((member) => member.userId === memberCtx.user.id)).toBe(true);
+    expect(members.some((member) => member.userId === memberCtx.user.id)).toBe(
+      true,
+    );
   });
 
   it("shares an animal with the family and lists shared animals", async () => {
@@ -242,11 +270,15 @@ describe("tRPC familyRouter", () => {
       familyId: family.id,
       animalId: ownerAnimalId,
     });
-    expect(result).toEqual({ success: true, familyId: family.id, animalId: ownerAnimalId });
+    expect(result).toEqual({
+      success: true,
+      familyId: family.id,
+      animalId: ownerAnimalId,
+    });
 
     const animals = await ownerCaller.family.getAnimals();
-    expect(animals.some((animal) => Number(animal.id) === ownerAnimalId)).toBe(true);
+    expect(animals.some((animal) => Number(animal.id) === ownerAnimalId)).toBe(
+      true,
+    );
   });
-
-
 });

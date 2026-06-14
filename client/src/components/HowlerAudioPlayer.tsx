@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
 import { Howl } from "howler";
-import { Play, Square, Pause } from "lucide-react";
+import { Pause, Play, Square } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface HowlerAudioPlayerProps {
   audioUrl: string;
@@ -27,10 +27,10 @@ export function HowlerAudioPlayer({ audioUrl }: HowlerAudioPlayerProps) {
     return () => {
       cleanup();
     };
-  }, [audioUrl]);
+  }, [cleanup]);
 
   const updateProgress = () => {
-    if (!soundRef.current || !soundRef.current.playing()) return;
+    if (!soundRef.current?.playing()) return;
     const seek = soundRef.current.seek() as number;
     const duration = soundRef.current.duration() || 1;
     setProgress((seek / duration) * 100);
@@ -67,16 +67,16 @@ export function HowlerAudioPlayer({ audioUrl }: HowlerAudioPlayerProps) {
           setProgress(100);
           setTimeout(() => setProgress(0), 300);
         },
-        onloaderror: (id, err) => {
+        onloaderror: (_id, err) => {
           console.error("Howl load error:", err);
           setIsPlaying(false);
         },
-        onplayerror: (id, err) => {
+        onplayerror: (_id, err) => {
           console.error("Howl play error:", err);
           soundRef.current?.unload();
           soundRef.current = null;
           setIsPlaying(false);
-        }
+        },
       });
     }
 
@@ -102,7 +102,11 @@ export function HowlerAudioPlayer({ audioUrl }: HowlerAudioPlayerProps) {
         className="w-7 h-7 rounded-lg bg-secondary hover:bg-secondary/80 text-cyan-400 hover:text-cyan-300 flex items-center justify-center transition-colors shadow-sm"
         title={isPlaying ? "Pausar" : "Reproduzir"}
       >
-        {isPlaying ? <Pause size={11} fill="currentColor" /> : <Play size={11} fill="currentColor" className="ml-0.5" />}
+        {isPlaying ? (
+          <Pause size={11} fill="currentColor" />
+        ) : (
+          <Play size={11} fill="currentColor" className="ml-0.5" />
+        )}
       </button>
 
       <button

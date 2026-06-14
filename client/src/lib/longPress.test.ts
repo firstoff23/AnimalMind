@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  LONG_PRESS_DELAY_MS,
-  LONG_PRESS_MOVE_TOLERANCE,
   isLongPressDuration,
   isLongPressMovementAllowed,
+  LONG_PRESS_DELAY_MS,
+  LONG_PRESS_MOVE_TOLERANCE,
   shouldOpenLongPressDetails,
 } from "./longPress";
 

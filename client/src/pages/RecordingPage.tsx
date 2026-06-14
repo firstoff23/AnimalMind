@@ -1,43 +1,50 @@
-import { useState, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
-import { trpc } from "@/lib/trpc";
-import { motion, AnimatePresence } from "framer-motion";
-import { GlowingButton } from "@/components/ui/GlowingButton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { ConfidenceRing } from "@/components/ConfidenceRing";
-import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Mic,
-  MicOff,
-  ThumbsUp,
-  ThumbsDown,
+  AlertCircle,
+  Check,
   Clock,
   Infinity as InfinityIcon,
-  AlertCircle,
-  Volume2,
-  Play,
+  Loader2,
+  Mic,
+  MicOff,
   Pause,
+  Play,
   RefreshCw,
-  Trash2,
   Settings,
-  Check,
-  Loader2
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+  Volume2,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ConfidenceRing } from "@/components/ConfidenceRing";
+import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { GlowingButton } from "@/components/ui/GlowingButton";
+import { Progress } from "@/components/ui/progress";
+import { useHaptic } from "@/hooks/useHaptic";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { isBrowserOffline } from "@/lib/offlineQueue";
-import { Switch } from "@/components/ui/switch";
-import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
-import type { EmotionalState } from "../../../shared/types";
-import { useLanguage } from "@/hooks/useLanguage";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
-import { useHaptic } from "@/hooks/useHaptic";
+import type { EmotionalState } from "../../../shared/types";
+import { STATE_COLORS, STATE_LABELS } from "../../../shared/types";
 
-type RecordState = "idle" | "requesting" | "recording" | "review" | "uploading" | "processing" | "success" | "error";
+type RecordState =
+  | "idle"
+  | "requesting"
+  | "recording"
+  | "review"
+  | "uploading"
+  | "processing"
+  | "success"
+  | "error";
 
 interface ClassifyResult {
   state: EmotionalState;
@@ -74,7 +81,9 @@ function ResultCard({
   onFeedback: (feedback: "correct" | "incorrect") => void;
 }) {
   const { t } = useLanguage();
-  const [feedbackSent, setFeedbackSent] = useState<"correct" | "incorrect" | null>(null);
+  const [feedbackSent, setFeedbackSent] = useState<
+    "correct" | "incorrect" | null
+  >(null);
   const [notes, setNotes] = useState("");
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -103,8 +112,9 @@ function ResultCard({
     }
 
     const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
       toast.error(t("recordingPage.speechNotSupported"));
       return;
@@ -122,7 +132,7 @@ function ResultCard({
 
     rec.onresult = (e: any) => {
       const transcript = e.results[0][0].transcript;
-      setNotes((prev) => (prev ? prev + " " + transcript : transcript));
+      setNotes((prev) => (prev ? `${prev} ${transcript}` : transcript));
     };
 
     rec.onerror = (e: any) => {
@@ -157,10 +167,10 @@ function ResultCard({
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4 page-enter text-left">
-      <ConfidenceRing 
-        confidence={result.confidence} 
-        emoji={result.emoji} 
-        state={result.state} 
+      <ConfidenceRing
+        confidence={result.confidence}
+        emoji={result.emoji}
+        state={result.state}
       />
 
       <div className="flex justify-center">
@@ -216,9 +226,9 @@ function ResultCard({
             onClick={toggleListening}
             className={cn(
               "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300",
-              isListening 
-                ? "bg-cyan-500 hover:bg-cyan-600 border-0 text-white animate-pulse shadow-md shadow-cyan-500/20" 
-                : "hover:text-cyan-400 hover:border-cyan-500/20"
+              isListening
+                ? "bg-cyan-500 hover:bg-cyan-600 border-0 text-white animate-pulse shadow-md shadow-cyan-500/20"
+                : "hover:text-cyan-400 hover:border-cyan-500/20",
             )}
             title={t("recordingPage.dictateNote")}
             aria-label={t("recordingPage.dictateNote")}
@@ -233,7 +243,9 @@ function ResultCard({
             disabled={updateNotesMutation.isPending}
             className="w-full text-xs font-semibold h-8 rounded-xl transition-all"
           >
-            {updateNotesMutation.isPending ? t("recordingPage.saving") : t("recordingPage.saveNote")}
+            {updateNotesMutation.isPending
+              ? t("recordingPage.saving")
+              : t("recordingPage.saveNote")}
           </Button>
         )}
       </div>
@@ -242,7 +254,17 @@ function ResultCard({
 }
 
 // ─── History Item ─────────────────────────────────────────────────────────────
-function HistoryItem({ event }: { event: { state: string; confidence: number; emoji: string; modelUsed: string; createdAt: Date } }) {
+function HistoryItem({
+  event,
+}: {
+  event: {
+    state: string;
+    confidence: number;
+    emoji: string;
+    modelUsed: string;
+    createdAt: Date;
+  };
+}) {
   const { t } = useLanguage();
   const state = event.state as EmotionalState;
   const pct = Math.round(event.confidence * 100);
@@ -250,7 +272,10 @@ function HistoryItem({ event }: { event: { state: string; confidence: number; em
     <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-0 text-left">
       <span className="text-2xl">{event.emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium" style={{ color: STATE_COLORS[state] }}>
+        <p
+          className="text-sm font-medium"
+          style={{ color: STATE_COLORS[state] }}
+        >
           {t(`states.${state}` as any) || STATE_LABELS[state]}
         </p>
         <p className="text-xs text-muted-foreground">{event.modelUsed}</p>
@@ -277,20 +302,27 @@ function LiveWaveformBars({
   level: number;
   waveform: number[];
 }) {
-  const bars = waveform.length > 0
-    ? waveform.slice(0, 18)
-    : Array.from({ length: 18 }, (_, index) => Math.sin(index * 0.9));
+  const bars =
+    waveform.length > 0
+      ? waveform.slice(0, 18)
+      : Array.from({ length: 18 }, (_, index) => Math.sin(index * 0.9));
 
   return (
-    <div className="flex h-16 w-full items-end justify-center gap-1.5 px-2" aria-hidden="true">
+    <div
+      className="flex h-16 w-full items-end justify-center gap-1.5 px-2"
+      aria-hidden="true"
+    >
       {bars.map((sample, index) => {
-        const normalized = Math.min(1, Math.max(0.14, Math.abs(sample) + level * 0.65));
+        const normalized = Math.min(
+          1,
+          Math.max(0.14, Math.abs(sample) + level * 0.65),
+        );
         return (
           <span
             key={`${index}-${sample.toFixed(2)}`}
             className={cn(
               "w-1.5 rounded-full bg-emerald-400/80 transition-all duration-150",
-              active && "animate-pulse"
+              active && "animate-pulse",
             )}
             style={{
               height: `${Math.round(18 + normalized * 44)}px`,
@@ -336,10 +368,14 @@ export default function RecordingPage() {
 
   const [isAutoMode, setIsAutoMode] = useState(false);
   const [autoClassificationCount, setAutoClassificationCount] = useState(0);
-  const [lastAutoResult, setLastAutoResult] = useState<ClassifyResult | null>(null);
+  const [lastAutoResult, setLastAutoResult] = useState<ClassifyResult | null>(
+    null,
+  );
 
   const isAutoModeRef = useRef(false);
-  const autoRecordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoRecordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressActiveRef = useRef(false);
 
@@ -352,12 +388,19 @@ export default function RecordingPage() {
 
   const utils = trpc.useUtils();
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
-  const { data: recentEventsData = [] } = trpc.events.recent.useQuery({ limit: 5 });
+  const { data: recentEventsData = [] } = trpc.events.recent.useQuery({
+    limit: 5,
+  });
   const { data: settingsData } = trpc.settings.get.useQuery();
   const { enqueue, pendingCount } = useOfflineQueue({ autoProcess: false });
   const activeAnimal = activeAnimalData as ActiveAnimal | null | undefined;
   const recentEvents = recentEventsData as RecentEvent[];
-  const { triggerStartRecording, triggerStopRecording, triggerSaveSuccess, triggerCriticalError } = useHaptic();
+  const {
+    triggerStartRecording,
+    triggerStopRecording,
+    triggerSaveSuccess,
+    triggerCriticalError,
+  } = useHaptic();
 
   useEffect(() => {
     setRecording(recordState === "recording");
@@ -372,10 +415,18 @@ export default function RecordingPage() {
       // Permission denied or error
       if (liveAudioStatus === "denied") {
         setRecordState("error");
-        setErrorMessage(language === "pt" ? "Permissão de microfone negada. Ative nas definições." : "Microphone permission denied. Enable in settings.");
+        setErrorMessage(
+          language === "pt"
+            ? "Permissão de microfone negada. Ative nas definições."
+            : "Microphone permission denied. Enable in settings.",
+        );
       } else {
         setRecordState("error");
-        setErrorMessage(language === "pt" ? "Erro ao aceder ao microfone." : "Error accessing microphone.");
+        setErrorMessage(
+          language === "pt"
+            ? "Erro ao aceder ao microfone."
+            : "Error accessing microphone.",
+        );
       }
       triggerCriticalError();
       setIsAutoMode(false);
@@ -409,7 +460,11 @@ export default function RecordingPage() {
     clearAutoRecordingTimer();
     stopLiveAudio();
     setRecordState("idle");
-    toast.info(language === "pt" ? "Modo Automático desligado." : "Continuous Mode turned off.");
+    toast.info(
+      language === "pt"
+        ? "Modo Automático desligado."
+        : "Continuous Mode turned off.",
+    );
   };
 
   const enableAutoMode = () => {
@@ -421,10 +476,17 @@ export default function RecordingPage() {
     setRecordedAudioUrl(null);
     clearAutoRecordingTimer();
     startRecordingCycle();
-    toast.success(language === "pt" ? "Modo Automático ativado!" : "Continuous Mode active!");
+    toast.success(
+      language === "pt"
+        ? "Modo Automático ativado!"
+        : "Continuous Mode active!",
+    );
   };
 
-  const handleClassificationResult = (res: ClassifyResult, offlineMode: boolean) => {
+  const handleClassificationResult = (
+    res: ClassifyResult,
+    offlineMode: boolean,
+  ) => {
     setIsOfflineMode(offlineMode);
     setResult(res);
 
@@ -436,10 +498,14 @@ export default function RecordingPage() {
       res.state,
       res.confidence,
       activeAnimal?.name,
-      res.eventId
+      res.eventId,
     );
 
-    if (!offlineMode && activeAnimal && (res.state === "distress" || res.state === "hunger")) {
+    if (
+      !offlineMode &&
+      activeAnimal &&
+      (res.state === "distress" || res.state === "hunger")
+    ) {
       sendNotification(
         res.state,
         res.confidence,
@@ -447,7 +513,7 @@ export default function RecordingPage() {
         String(activeAnimal.id),
         settingsData?.alertSensitivity ?? "medium",
         settingsData?.notificationsEnabled ?? true,
-        false
+        false,
       );
     }
 
@@ -463,7 +529,11 @@ export default function RecordingPage() {
   };
 
   const runLocalClassification = async (blob: Blob) => {
-    toast.info(language === "pt" ? "A classificar offline com YAMNet local..." : "Classifying offline with local YAMNet...");
+    toast.info(
+      language === "pt"
+        ? "A classificar offline com YAMNet local..."
+        : "Classifying offline with local YAMNet...",
+    );
     const localClassifier = await import("@/lib/localClassifier");
     const localRes = await localClassifier.runLocalYAMNet(blob);
 
@@ -488,7 +558,11 @@ export default function RecordingPage() {
       const lastBlob = lastRecordedBlobRef.current;
       if (lastBlob) {
         try {
-          toast.info(language === "pt" ? "Servidor indisponível. A usar fallback local..." : "Server unavailable. Using local fallback...");
+          toast.info(
+            language === "pt"
+              ? "Servidor indisponível. A usar fallback local..."
+              : "Server unavailable. Using local fallback...",
+          );
           await runLocalClassification(lastBlob);
           return;
         } catch (localErr) {
@@ -497,17 +571,26 @@ export default function RecordingPage() {
       }
 
       setRecordState("error");
-      const isNetError = !navigator.onLine || err.message?.toLowerCase().includes("network") || err.message?.toLowerCase().includes("failed to fetch") || err.message?.toLowerCase().includes("offline");
+      const isNetError =
+        !navigator.onLine ||
+        err.message?.toLowerCase().includes("network") ||
+        err.message?.toLowerCase().includes("failed to fetch") ||
+        err.message?.toLowerCase().includes("offline");
       setErrorMessage(
         isNetError || language === "pt"
           ? "Ligação interrompida. Tentar novamente."
-          : "Connection interrupted. Try again."
+          : "Connection interrupted. Try again.",
       );
     },
   });
 
   const feedbackMutation = trpc.events.feedback.useMutation({
-    onSuccess: () => toast.success(language === "pt" ? "Obrigado pelo feedback!" : "Thank you for your feedback!"),
+    onSuccess: () =>
+      toast.success(
+        language === "pt"
+          ? "Obrigado pelo feedback!"
+          : "Thank you for your feedback!",
+      ),
   });
 
   // Tone.js FFT audio analysis hook
@@ -524,7 +607,7 @@ export default function RecordingPage() {
     const startToneAnalysis = async () => {
       try {
         const Tone = await import("tone");
-        
+
         if (Tone.getContext().state !== "running") {
           await Tone.getContext().resume();
         }
@@ -549,7 +632,7 @@ export default function RecordingPage() {
 
             for (let i = 0; i < values.length; i++) {
               const db = values[i];
-              const amp = Math.pow(10, db / 20);
+              const amp = 10 ** (db / 20);
               sumEnergy += amp * amp;
               sumAmp += amp;
 
@@ -564,7 +647,8 @@ export default function RecordingPage() {
 
             const domPitch = Math.round(maxIdx * binWidth);
             const energy = Math.round(sumEnergy * 100) / 100;
-            const brightness = sumAmp > 0 ? Math.round(weightedSum / sumAmp) : 0;
+            const brightness =
+              sumAmp > 0 ? Math.round(weightedSum / sumAmp) : 0;
 
             if (active) {
               setDominantFreq(domPitch);
@@ -592,12 +676,12 @@ export default function RecordingPage() {
       if (micSource) {
         try {
           micSource.disconnect();
-        } catch (e) {}
+        } catch (_e) {}
       }
       if (analyser) {
         try {
           analyser.dispose();
-        } catch (e) {}
+        } catch (_e) {}
       }
     };
   }, [recordState, liveAudioStream]);
@@ -610,7 +694,7 @@ export default function RecordingPage() {
       setCountdown((c) => {
         if (c <= 1) {
           clearInterval(interval);
-          
+
           void (async () => {
             try {
               const res = await stopAndGetBlobLiveAudio();
@@ -618,7 +702,7 @@ export default function RecordingPage() {
                 lastRecordedBlobRef.current = res.blob;
                 const audioUrl = URL.createObjectURL(res.blob);
                 setRecordedAudioUrl(audioUrl);
-                
+
                 // If in Continuous/Auto mode, skip review screen and send immediately
                 if (isAutoModeRef.current) {
                   uploadAndProcess(res.blob, res.mimeType);
@@ -627,21 +711,25 @@ export default function RecordingPage() {
                 }
               } else {
                 setRecordState("idle");
-                toast.error(language === "pt" ? "Não foi possível registar o áudio." : "Could not record audio.");
+                toast.error(
+                  language === "pt"
+                    ? "Não foi possível registar o áudio."
+                    : "Could not record audio.",
+                );
               }
             } catch (err) {
               console.error("Failed to capture recorded audio:", err);
               setRecordState("idle");
             }
           })();
-          
+
           return 0;
         }
         return c - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [recordState, stopAndGetBlobLiveAudio]);
+  }, [recordState, stopAndGetBlobLiveAudio, language, uploadAndProcess]);
 
   const uploadAndProcess = async (blob: Blob, mimeType: string) => {
     if (blob.size > 20 * 1024 * 1024) {
@@ -649,7 +737,7 @@ export default function RecordingPage() {
       setErrorMessage(
         language === "pt"
           ? "Ficheiro demasiado grande. Máximo 20 MB."
-          : "File too large. Maximum 20 MB."
+          : "File too large. Maximum 20 MB.",
       );
       return;
     }
@@ -666,7 +754,7 @@ export default function RecordingPage() {
     const interval = setInterval(async () => {
       curProgress = Math.min(100, curProgress + increment);
       setUploadProgress(Math.round(curProgress));
-      
+
       if (curProgress >= 100) {
         clearInterval(interval);
         setRecordState("processing");
@@ -687,7 +775,11 @@ export default function RecordingPage() {
           } catch (localErr) {
             console.error("Local classification failed:", localErr);
             setRecordState("error");
-            setErrorMessage(language === "pt" ? "Erro na classificação local." : "Error in local classification.");
+            setErrorMessage(
+              language === "pt"
+                ? "Erro na classificação local."
+                : "Error in local classification.",
+            );
           }
           return;
         }
@@ -747,7 +839,7 @@ export default function RecordingPage() {
       audioPlaybackRef.current.pause();
       setIsPlayingAudio(false);
     } else {
-      audioPlaybackRef.current.play().catch(err => console.error(err));
+      audioPlaybackRef.current.play().catch((err) => console.error(err));
       setIsPlayingAudio(true);
     }
   };
@@ -765,7 +857,7 @@ export default function RecordingPage() {
         URL.revokeObjectURL(recordedAudioUrl);
       }
     };
-  }, [stopLiveAudio]);
+  }, [stopLiveAudio, recordedAudioUrl, clearAutoRecordingTimer]);
 
   const handleButtonClick = () => {
     if (isAutoModeRef.current) {
@@ -773,7 +865,11 @@ export default function RecordingPage() {
       return;
     }
 
-    if (recordState === "recording" || recordState === "requesting" || recordState === "processing") {
+    if (
+      recordState === "recording" ||
+      recordState === "requesting" ||
+      recordState === "processing"
+    ) {
       triggerStopRecording();
       stopLiveAudio();
       setRecordState("idle");
@@ -785,7 +881,7 @@ export default function RecordingPage() {
     startRecordingCycle();
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handlePointerDown = (_e: React.PointerEvent) => {
     if (isAutoModeRef.current) return;
     if (recordState !== "idle") return;
 
@@ -800,7 +896,7 @@ export default function RecordingPage() {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
     }
-    
+
     if (isLongPressActiveRef.current) {
       e.preventDefault();
       return;
@@ -820,12 +916,12 @@ export default function RecordingPage() {
   const buttonColor = isAutoMode
     ? "bg-gradient-to-tr from-cyan-500 to-blue-600 auto-pulse shadow-lg shadow-cyan-500/20 text-white"
     : recordState === "idle"
-    ? "bg-primary hover:bg-emerald-600 text-white"
-    : recordState === "recording"
-    ? "bg-red-500 record-pulse text-white"
-    : recordState === "requesting"
-    ? "bg-slate-600 text-white"
-    : "bg-yellow-500 text-white";
+      ? "bg-primary hover:bg-emerald-600 text-white"
+      : recordState === "recording"
+        ? "bg-red-500 record-pulse text-white"
+        : recordState === "requesting"
+          ? "bg-slate-600 text-white"
+          : "bg-yellow-500 text-white";
 
   const renderButtonContent = () => {
     if (recordState === "requesting") {
@@ -847,7 +943,11 @@ export default function RecordingPage() {
     if (isAutoMode) {
       return (
         <>
-          <InfinityIcon size={40} strokeWidth={1.5} className="animate-pulse text-cyan-200" />
+          <InfinityIcon
+            size={40}
+            strokeWidth={1.5}
+            className="animate-pulse text-cyan-200"
+          />
           <span className="text-sm font-semibold tracking-wider">AUTO</span>
         </>
       );
@@ -855,7 +955,9 @@ export default function RecordingPage() {
     return (
       <>
         <Mic size={40} strokeWidth={1.5} />
-        <span className="text-sm font-semibold tracking-wider">{t("recordingPage.record")}</span>
+        <span className="text-sm font-semibold tracking-wider">
+          {t("recordingPage.record")}
+        </span>
       </>
     );
   };
@@ -865,11 +967,11 @@ export default function RecordingPage() {
       <div className="text-center space-y-1">
         <h1 className="text-2xl font-bold text-foreground">AnimalMind</h1>
         {activeAnimal ? (
-          <p className="text-sm text-muted-foreground">
-            {activeAnimal.name}
-          </p>
+          <p className="text-sm text-muted-foreground">{activeAnimal.name}</p>
         ) : (
-          <p className="text-sm text-muted-foreground">{t("header.noAnimal")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("header.noAnimal")}
+          </p>
         )}
       </div>
 
@@ -889,10 +991,14 @@ export default function RecordingPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-foreground">
-                  {language === "pt" ? "Gravação Concluída" : "Recording Completed"}
+                  {language === "pt"
+                    ? "Gravação Concluída"
+                    : "Recording Completed"}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {language === "pt" ? "Reveja o som antes de analisar" : "Review the sound before analyzing"}
+                  {language === "pt"
+                    ? "Reveja o som antes de analisar"
+                    : "Review the sound before analyzing"}
                 </p>
               </div>
             </div>
@@ -911,17 +1017,26 @@ export default function RecordingPage() {
             >
               <div className="flex items-center gap-2.5">
                 {isPlayingAudio ? (
-                  <Pause size={18} className="text-primary fill-primary animate-pulse" />
+                  <Pause
+                    size={18}
+                    className="text-primary fill-primary animate-pulse"
+                  />
                 ) : (
                   <Play size={18} className="text-primary fill-primary" />
                 )}
                 <span className="text-xs font-semibold text-foreground">
-                  {isPlayingAudio 
-                    ? (language === "pt" ? "A reproduzir áudio..." : "Playing audio...") 
-                    : (language === "pt" ? "Ouvir gravação" : "Listen to recording")}
+                  {isPlayingAudio
+                    ? language === "pt"
+                      ? "A reproduzir áudio..."
+                      : "Playing audio..."
+                    : language === "pt"
+                      ? "Ouvir gravação"
+                      : "Listen to recording"}
                 </span>
               </div>
-              <span className="text-[10px] text-muted-foreground font-semibold">3s</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">
+                3s
+              </span>
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -968,10 +1083,17 @@ export default function RecordingPage() {
             {recordState === "uploading" ? (
               <>
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider mb-2.5">
-                  {language === "pt" ? "A enviar gravação..." : "Uploading recording..."}
+                  {language === "pt"
+                    ? "A enviar gravação..."
+                    : "Uploading recording..."}
                 </span>
-                <Progress value={uploadProgress} className="w-full max-w-[240px] bg-white/10 h-2" />
-                <span className="text-xs text-foreground mt-1.5 font-bold">{uploadProgress}%</span>
+                <Progress
+                  value={uploadProgress}
+                  className="w-full max-w-[240px] bg-white/10 h-2"
+                />
+                <span className="text-xs text-foreground mt-1.5 font-bold">
+                  {uploadProgress}%
+                </span>
               </>
             ) : (
               <>
@@ -1009,11 +1131,16 @@ export default function RecordingPage() {
             </div>
 
             <div className="flex gap-3 justify-end pt-1">
-              {errorMessage?.includes("permissão") || errorMessage?.includes("permission") ? (
+              {errorMessage?.includes("permissão") ||
+              errorMessage?.includes("permission") ? (
                 <Button
                   type="button"
                   onClick={() => {
-                    toast.info(language === "pt" ? "Clique no ícone de microfone nas definições do browser." : "Click the microphone icon in browser settings.");
+                    toast.info(
+                      language === "pt"
+                        ? "Clique no ícone de microfone nas definições do browser."
+                        : "Click the microphone icon in browser settings.",
+                    );
                   }}
                   className="text-xs h-9 bg-primary hover:bg-emerald-600 text-white"
                 >
@@ -1043,7 +1170,10 @@ export default function RecordingPage() {
         )}
 
         {/* Single Audio Recorder view */}
-        {(recordState === "idle" || recordState === "recording" || recordState === "requesting" || recordState === "success") && (
+        {(recordState === "idle" ||
+          recordState === "recording" ||
+          recordState === "requesting" ||
+          recordState === "success") && (
           <motion.div
             key="recorder"
             initial={{ opacity: 0 }}
@@ -1058,10 +1188,14 @@ export default function RecordingPage() {
                 <div className="flex w-full items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase text-emerald-300">
-                      {language === "pt" ? "Gravação acústica" : "Acoustic recording"}
+                      {language === "pt"
+                        ? "Gravação acústica"
+                        : "Acoustic recording"}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {language === "pt" ? "Toque para 3 segundos ou mantenha para auto" : "Tap for 3 seconds or hold for auto"}
+                      {language === "pt"
+                        ? "Toque para 3 segundos ou mantenha para auto"
+                        : "Tap for 3 seconds or hold for auto"}
                     </p>
                   </div>
                   <Badge
@@ -1070,15 +1204,21 @@ export default function RecordingPage() {
                       "rounded-full px-2.5 py-1 text-[10px] font-semibold",
                       recordState === "recording"
                         ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
-                        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
                     )}
                   >
                     <Volume2 className="h-3 w-3" />
                     {recordState === "idle" || recordState === "success"
-                      ? language === "pt" ? "Pronto" : "Ready"
+                      ? language === "pt"
+                        ? "Pronto"
+                        : "Ready"
                       : recordState === "recording"
-                      ? language === "pt" ? "A gravar" : "Recording"
-                      : language === "pt" ? "A ligar" : "Connecting"}
+                        ? language === "pt"
+                          ? "A gravar"
+                          : "Recording"
+                        : language === "pt"
+                          ? "A ligar"
+                          : "Connecting"}
                   </Badge>
                 </div>
 
@@ -1119,7 +1259,7 @@ export default function RecordingPage() {
                       "absolute h-48 w-48 rounded-full border transition-all duration-300",
                       recordState === "recording"
                         ? "border-rose-400/30 bg-rose-500/5"
-                        : "border-emerald-400/20 bg-emerald-500/5"
+                        : "border-emerald-400/20 bg-emerald-500/5",
                     )}
                     style={{
                       transform: `scale(${1 + Math.min(0.18, liveAudioLevel * 0.18)})`,
@@ -1143,12 +1283,18 @@ export default function RecordingPage() {
                         : { duration: 0.2 }
                     }
                     active={recordState === "recording" || isAutoMode}
-                    glowColor={recordState === "recording" ? "#ef4444" : isAutoMode ? "#06b6d4" : "#10b981"}
+                    glowColor={
+                      recordState === "recording"
+                        ? "#ef4444"
+                        : isAutoMode
+                          ? "#06b6d4"
+                          : "#10b981"
+                    }
                     className={cn(
                       "w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2",
                       "font-semibold shadow-2xl transition-all duration-300",
                       "active:scale-95 disabled:cursor-not-allowed active-scale tap-highlight-none",
-                      buttonColor
+                      buttonColor,
                     )}
                     aria-label="Iniciar gravação"
                   >
@@ -1158,20 +1304,30 @@ export default function RecordingPage() {
 
                 <div className="w-full rounded-2xl border border-white/10 bg-black/20 p-3">
                   <div className="flex items-center justify-between text-[10px] font-semibold uppercase text-muted-foreground">
-                    <span>{language === "pt" ? "Nível de áudio" : "Audio level"}</span>
-                    <span className="text-emerald-300">{Math.round(liveAudioLevel * 100)}%</span>
+                    <span>
+                      {language === "pt" ? "Nível de áudio" : "Audio level"}
+                    </span>
+                    <span className="text-emerald-300">
+                      {Math.round(liveAudioLevel * 100)}%
+                    </span>
                   </div>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
                     <div
                       className="h-full rounded-full bg-[var(--color-primary)] transition-all duration-150"
-                      style={{ width: `${Math.min(100, Math.round(liveAudioLevel * 100))}%` }}
+                      style={{
+                        width: `${Math.min(100, Math.round(liveAudioLevel * 100))}%`,
+                      }}
                     />
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground text-center h-4 font-sans">
-                  {isAutoMode && recordState === "idle" && t("recordingPage.nextAcusticSoon")}
-                  {!isAutoMode && recordState === "idle" && t("recordingPage.tapForSingle")}
+                  {isAutoMode &&
+                    recordState === "idle" &&
+                    t("recordingPage.nextAcusticSoon")}
+                  {!isAutoMode &&
+                    recordState === "idle" &&
+                    t("recordingPage.tapForSingle")}
                 </p>
 
                 {pendingCount > 0 && (
@@ -1201,8 +1357,14 @@ export default function RecordingPage() {
               <div className="space-y-4 animate-fade-in">
                 {isOfflineMode && (
                   <div className="flex justify-center">
-                    <Badge variant="destructive" className="text-xs animate-pulse bg-red-950/50 border-red-500/30 text-red-400">
-                      ⚠️ {language === "pt" ? "Modo offline (TF.js local)" : "Offline Mode (Local TF.js)"}
+                    <Badge
+                      variant="destructive"
+                      className="text-xs animate-pulse bg-red-950/50 border-red-500/30 text-red-400"
+                    >
+                      ⚠️{" "}
+                      {language === "pt"
+                        ? "Modo offline (TF.js local)"
+                        : "Offline Mode (Local TF.js)"}
                     </Badge>
                   </div>
                 )}
@@ -1210,7 +1372,10 @@ export default function RecordingPage() {
                   result={result}
                   onFeedback={(feedback) => {
                     if (result.eventId) {
-                      feedbackMutation.mutate({ eventId: result.eventId, feedback });
+                      feedbackMutation.mutate({
+                        eventId: result.eventId,
+                        feedback,
+                      });
                     }
                   }}
                 />
@@ -1221,19 +1386,21 @@ export default function RecordingPage() {
       </AnimatePresence>
 
       {/* Continuous Mode Banner */}
-      <div 
+      <div
         className={cn(
           "border rounded-2xl p-4 flex items-center justify-between transition-all duration-300",
-          isAutoMode 
-            ? "bg-cyan-950/20 border-cyan-500/20 shadow-md shadow-cyan-950/10" 
-            : "bg-card border-border"
+          isAutoMode
+            ? "bg-cyan-950/20 border-cyan-500/20 shadow-md shadow-cyan-950/10"
+            : "bg-card border-border",
         )}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div 
+          <div
             className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300",
-              isAutoMode ? "bg-cyan-500/10 text-cyan-400" : "bg-muted text-muted-foreground"
+              isAutoMode
+                ? "bg-cyan-500/10 text-cyan-400"
+                : "bg-muted text-muted-foreground",
             )}
           >
             <InfinityIcon size={16} />
@@ -1250,10 +1417,16 @@ export default function RecordingPage() {
             {isAutoMode && lastAutoResult && (
               <p className="text-[11px] text-cyan-300 mt-1 truncate max-w-[220px] flex items-center gap-1.5">
                 <span>{t("recordingPage.lastClass")}</span>
-                <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATE_COLORS[lastAutoResult.state] }} />
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{
+                    backgroundColor: STATE_COLORS[lastAutoResult.state],
+                  }}
+                />
                 <span>
-                  {t(`states.${lastAutoResult.state}` as any) || STATE_LABELS[lastAutoResult.state]} ·{" "}
-                  {Math.round(lastAutoResult.confidence * 100)}%
+                  {t(`states.${lastAutoResult.state}` as any) ||
+                    STATE_LABELS[lastAutoResult.state]}{" "}
+                  · {Math.round(lastAutoResult.confidence * 100)}%
                 </span>
               </p>
             )}
@@ -1264,9 +1437,9 @@ export default function RecordingPage() {
           size="sm"
           className={cn(
             "text-xs font-semibold transition-all duration-300 active-scale tap-highlight-none",
-            isAutoMode 
+            isAutoMode
               ? "bg-cyan-500 hover:bg-cyan-600 text-white border-0 shadow-sm"
-              : "hover:bg-cyan-500/5 hover:text-cyan-400 hover:border-cyan-500/30"
+              : "hover:bg-cyan-500/5 hover:text-cyan-400 hover:border-cyan-500/30",
           )}
           onClick={isAutoMode ? disableAutoMode : enableAutoMode}
         >
@@ -1293,7 +1466,9 @@ export default function RecordingPage() {
       <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5 shadow-sm text-left">
         <span className="text-base select-none mt-0.5">⚠️</span>
         <p className="leading-relaxed">
-          <strong>Aviso:</strong> AnimalMind não substitui avaliação veterinária. Os resultados são estimativas comportamentais baseadas em áudio.
+          <strong>Aviso:</strong> AnimalMind não substitui avaliação
+          veterinária. Os resultados são estimativas comportamentais baseadas em
+          áudio.
         </p>
       </div>
 

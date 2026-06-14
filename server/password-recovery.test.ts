@@ -1,14 +1,18 @@
-import { describe, expect, it, beforeAll, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("@supabase/supabase-js", () => {
   const mockAdmin = {
     listUsers: vi.fn().mockResolvedValue({ data: { users: [] }, error: null }),
-    createUser: vi.fn().mockImplementation(({ email }) => Promise.resolve({
-      data: { user: { id: "test-user-id", email } },
-      error: null,
-    })),
-    generateLink: vi.fn().mockResolvedValue({ data: { link: "http://example.com" }, error: null }),
+    createUser: vi.fn().mockImplementation(({ email }) =>
+      Promise.resolve({
+        data: { user: { id: "test-user-id", email } },
+        error: null,
+      }),
+    ),
+    generateLink: vi
+      .fn()
+      .mockResolvedValue({ data: { link: "http://example.com" }, error: null }),
     updateUserById: vi.fn().mockResolvedValue({ error: null }),
     deleteUser: vi.fn().mockResolvedValue({ error: null }),
   };
@@ -34,7 +38,10 @@ describe("Password Recovery", () => {
 
     try {
       supabase = createClient(url, key);
-      const { error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+      const { error } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
       credentialsValid = !error;
     } catch {
       credentialsValid = false;
@@ -71,9 +78,12 @@ describe("Password Recovery", () => {
   it("pode actualizar palavra-passe com token válido", async () => {
     if (!credentialsValid) return;
     // Use admin API to update password directly
-    const { error: updateError } = await supabase.auth.admin.updateUserById(testUserId, {
-      password: "NewPassword123!",
-    });
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      testUserId,
+      {
+        password: "NewPassword123!",
+      },
+    );
 
     expect(updateError).toBeNull();
   });

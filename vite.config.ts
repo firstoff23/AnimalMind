@@ -1,7 +1,7 @@
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 import { VitePWA } from "vite-plugin-pwa";
@@ -168,7 +168,8 @@ const plugins = [
     manifest: {
       name: "AnimalMind",
       short_name: "AnimalMind",
-      description: "Animal Mind: Inteligência Emocional e Visão para Animais de Estimação",
+      description:
+        "Animal Mind: Inteligência Emocional e Visão para Animais de Estimação",
       theme_color: "#22c55e",
       background_color: "#0a0a0b",
       display: "standalone",
@@ -213,7 +214,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          "vendor-react": ["react", "react-dom", "@tanstack/react-query", "@trpc/client", "@trpc/react-query"],
+          "vendor-react": [
+            "react",
+            "react-dom",
+            "@tanstack/react-query",
+            "@trpc/client",
+            "@trpc/react-query",
+          ],
           "vendor-charts": ["recharts"],
           "vendor-export": ["jspdf"],
           "vendor-markdown": ["streamdown"],

@@ -1,6 +1,6 @@
-import React from "react";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import type React from "react";
+import { cn } from "@/lib/utils";
 
 interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -21,10 +21,11 @@ export function SpotlightCard({
       onClick={onClick}
       className={cn(
         "relative rounded-2xl border border-border bg-card p-5 overflow-hidden transition-all duration-300 tap-highlight-none",
-        isInteractive && "active:border-primary/40 active:ring-2 active:ring-primary/10 select-none cursor-pointer",
-        className
+        isInteractive &&
+          "active:border-primary/40 active:ring-2 active:ring-primary/10 select-none cursor-pointer",
+        className,
       )}
-      {...props as any}
+      {...(props as any)}
     >
       {/* Dynamic glow overlay only visible in active state to simulate touch pressure */}
       {isInteractive && (

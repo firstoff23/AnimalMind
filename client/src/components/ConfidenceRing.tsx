@@ -1,6 +1,11 @@
+// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in Vitest
 import React from "react";
-import { STATE_COLORS, STATE_LABELS, type EmotionalState } from "../../../shared/types";
 import { useLanguage } from "@/hooks/useLanguage";
+import {
+  type EmotionalState,
+  STATE_COLORS,
+  STATE_LABELS,
+} from "../../../shared/types";
 
 interface ConfidenceRingProps {
   confidence: number;
@@ -18,7 +23,11 @@ function toPercent(confidence: number) {
   return Math.min(100, Math.max(0, Math.round(confidence * 100)));
 }
 
-export function ConfidenceRing({ confidence, emoji, state }: ConfidenceRingProps) {
+export function ConfidenceRing({
+  confidence,
+  emoji,
+  state,
+}: ConfidenceRingProps) {
   const { t } = useLanguage();
   const percent = toPercent(confidence);
   const color = getConfidenceColor(percent);
@@ -71,14 +80,21 @@ export function ConfidenceRing({ confidence, emoji, state }: ConfidenceRingProps
           >
             {percent}%
           </span>
-          <span className="leading-none drop-shadow-sm" style={{ fontSize: "1.5rem" }} aria-hidden="true">
+          <span
+            className="leading-none drop-shadow-sm"
+            style={{ fontSize: "1.5rem" }}
+            aria-hidden="true"
+          >
             {emoji}
           </span>
         </div>
       </div>
 
       <div className="flex flex-col items-center gap-1">
-        <span className="text-2xl font-bold tracking-normal" style={{ color: STATE_COLORS[state] }}>
+        <span
+          className="text-2xl font-bold tracking-normal"
+          style={{ color: STATE_COLORS[state] }}
+        >
           {t(`states.${state}` as any) || STATE_LABELS[state]}
         </span>
         <span className="text-sm font-medium" style={{ color }}>

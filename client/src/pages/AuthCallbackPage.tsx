@@ -1,9 +1,9 @@
+import { CheckCircle2, CircleAlert, Loader2, LogIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { CheckCircle2, CircleAlert, Loader2, LogIn } from "lucide-react";
-import { requireSupabase } from "@/contexts/AuthContext";
 import { AuthInlineNote, AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
+import { requireSupabase } from "@/contexts/AuthContext";
 
 type CallbackStatus = "loading" | "success" | "error";
 
@@ -21,7 +21,9 @@ function readCallbackParams() {
     refreshToken: hash.get("refresh_token") || query.get("refresh_token"),
     error: query.get("error") || hash.get("error"),
     errorDescription:
-      query.get("error_description") || hash.get("error_description") || query.get("error_code"),
+      query.get("error_description") ||
+      hash.get("error_description") ||
+      query.get("error_code"),
   };
 }
 
@@ -39,11 +41,15 @@ export default function AuthCallbackPage() {
         const params = readCallbackParams();
 
         if (params.error) {
-          throw new Error(params.errorDescription || "O link de confirmação não é válido.");
+          throw new Error(
+            params.errorDescription || "O link de confirmação não é válido.",
+          );
         }
 
         if (params.code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+          const { error } = await supabase.auth.exchangeCodeForSession(
+            params.code,
+          );
           if (error) throw error;
         } else if (params.accessToken && params.refreshToken) {
           const { error } = await supabase.auth.setSession({
@@ -76,7 +82,11 @@ export default function AuthCallbackPage() {
         redirectTimer = setTimeout(() => setLocation("/login"), 3000);
       } catch (error) {
         setStatus("error");
-        setMessage(error instanceof Error ? error.message : "Não foi possível confirmar o email.");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível confirmar o email.",
+        );
       }
     };
 
@@ -92,7 +102,13 @@ export default function AuthCallbackPage() {
 
   return (
     <AuthShell
-      title={isSuccess ? "Email confirmado" : isLoading ? "A verificar email" : "Link inválido"}
+      title={
+        isSuccess
+          ? "Email confirmado"
+          : isLoading
+            ? "A verificar email"
+            : "Link inválido"
+      }
       subtitle={
         isSuccess
           ? "A confirmação foi concluída dentro da experiência AnimalMind."
@@ -107,7 +123,13 @@ export default function AuthCallbackPage() {
         <AuthInlineNote
           icon={isLoading ? Loader2 : isSuccess ? CheckCircle2 : CircleAlert}
           tone={isSuccess ? "success" : isLoading ? "neutral" : "warning"}
-          title={isSuccess ? "Verificação concluída" : isLoading ? "A confirmar sessão" : "Confirmação falhou"}
+          title={
+            isSuccess
+              ? "Verificação concluída"
+              : isLoading
+                ? "A confirmar sessão"
+                : "Confirmação falhou"
+          }
           description={message}
         />
 

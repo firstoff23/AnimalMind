@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc";
 import { Copy, Link2, Plus } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { trpc } from "@/lib/trpc";
 
 export default function FamilyInvite() {
   const [inviteUrl, setInviteUrl] = useState("");
@@ -29,7 +29,9 @@ export default function FamilyInvite() {
     <SpotlightCard className="p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-0.5 min-w-0">
-          <p className="text-sm font-semibold text-slate-100">Convite familiar</p>
+          <p className="text-sm font-semibold text-slate-100">
+            Convite familiar
+          </p>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
             Gera um link e código único válido por 7 dias.
           </p>
@@ -51,7 +53,11 @@ export default function FamilyInvite() {
           aria-live="polite"
           aria-label="Link de convite gerado"
         >
-          <Link2 size={14} className="text-emerald-400 shrink-0 ml-1" aria-hidden="true" />
+          <Link2
+            size={14}
+            className="text-emerald-400 shrink-0 ml-1"
+            aria-hidden="true"
+          />
           <input
             readOnly
             value={inviteUrl}

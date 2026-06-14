@@ -1,5 +1,5 @@
-import { TRPCError } from "@trpc/server";
 import { createHmac } from "node:crypto";
+import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
 
 export type NotificationPayload = {
@@ -16,12 +16,10 @@ const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
 const buildEndpointUrl = (baseUrl: string): string => {
-  const normalizedBase = baseUrl.endsWith("/")
-    ? baseUrl
-    : `${baseUrl}/`;
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return new URL(
     "webdevtoken.v1.WebDevService/SendNotification",
-    normalizedBase
+    normalizedBase,
   ).toString();
 };
 
@@ -66,7 +64,7 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
  * bubble up as TRPC errors so callers can fix the payload.
  */
 export async function notifyOwner(
-  payload: NotificationPayload
+  payload: NotificationPayload,
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
@@ -103,7 +101,7 @@ export async function notifyOwner(
       console.warn(
         `[Notification] Failed to notify owner (${response.status} ${response.statusText})${
           detail ? `: ${detail}` : ""
-        }`
+        }`,
       );
       return false;
     }
@@ -129,16 +127,22 @@ export function createN8NSignature(body: string, secret: string): string {
   return `sha256=${digest}`;
 }
 
-export async function notifyN8N(payload: N8NClassificationPayload): Promise<boolean> {
+export async function notifyN8N(
+  payload: N8NClassificationPayload,
+): Promise<boolean> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   if (!webhookUrl) {
-    console.log("[n8n] Webhook notification skipped: N8N_WEBHOOK_URL is not configured.");
+    console.log(
+      "[n8n] Webhook notification skipped: N8N_WEBHOOK_URL is not configured.",
+    );
     return false;
   }
 
   const webhookSecret = process.env.N8N_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.warn("[n8n] Webhook notification skipped: N8N_WEBHOOK_SECRET is not configured.");
+    console.warn(
+      "[n8n] Webhook notification skipped: N8N_WEBHOOK_SECRET is not configured.",
+    );
     return false;
   }
 
@@ -159,7 +163,9 @@ export async function notifyN8N(payload: N8NClassificationPayload): Promise<bool
     });
 
     if (!response.ok) {
-      console.warn(`[n8n] Webhook returned status ${response.status}: ${response.statusText}`);
+      console.warn(
+        `[n8n] Webhook returned status ${response.status}: ${response.statusText}`,
+      );
       return false;
     }
 

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 // Mock Supabase client
 vi.mock("@supabase/supabase-js", () => {
   const mockNotes: Record<number, string> = {};
-  
+
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {

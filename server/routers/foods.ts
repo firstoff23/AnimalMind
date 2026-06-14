@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { getFoods, getFoodById, searchFoods } from "../db";
+import { getFoodById, getFoods, searchFoods } from "../db";
 
 export const foodsRouter = router({
   search: publicProcedure
@@ -8,7 +8,7 @@ export const foodsRouter = router({
       z.object({
         query: z.string(),
         species: z.string(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return searchFoods(input.query, input.species);
@@ -19,7 +19,7 @@ export const foodsRouter = router({
       z.object({
         id: z.string(),
         species: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return getFoodById(input.id, input.species);
@@ -27,9 +27,11 @@ export const foodsRouter = router({
 
   getAll: publicProcedure
     .input(
-      z.object({
-        species: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          species: z.string().optional(),
+        })
+        .optional(),
     )
     .query(async ({ input }) => {
       return getFoods(input?.species);

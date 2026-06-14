@@ -1,5 +1,3 @@
-import { useMemo, useState, type InputHTMLAttributes, type ReactNode } from "react";
-import { useLocation } from "wouter";
 import {
   AlertCircle,
   ArrowLeft,
@@ -8,17 +6,24 @@ import {
   EyeOff,
   Loader2,
   LockKeyhole,
+  type LucideIcon,
   Mail,
   PawPrint,
   Sparkles,
   UserRound,
-  type LucideIcon,
 } from "lucide-react";
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  useMemo,
+  useState,
+} from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { getLoginUrl } from "@/const";
+import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register";
 
@@ -57,10 +62,15 @@ const modeConfig = {
     href: "/register",
     description: "Começar no AnimalMind",
   },
-} satisfies Record<AuthMode, { label: string; href: string; description: string }>;
+} satisfies Record<
+  AuthMode,
+  { label: string; href: string; description: string }
+>;
 
 function isOAuthConfigured() {
-  return Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
+  return Boolean(
+    import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID,
+  );
 }
 
 export function AuthShell({
@@ -97,7 +107,9 @@ export function AuthShell({
               <PawPrint size={18} />
             </span>
             <span>
-              <span className="block text-sm font-bold leading-none">AnimalMind</span>
+              <span className="block text-sm font-bold leading-none">
+                AnimalMind
+              </span>
               <span className="mt-1 block text-[10px] font-medium uppercase text-emerald-100/70">
                 acesso seguro
               </span>
@@ -127,17 +139,26 @@ export function AuthShell({
                   Uma entrada mais calma para cuidar melhor.
                 </h1>
                 <p className="text-sm leading-6 text-white/68">
-                  Uma experiência escura, quente e táctil, alinhada com o cuidado diário dos seus animais.
+                  Uma experiência escura, quente e táctil, alinhada com o
+                  cuidado diário dos seus animais.
                 </p>
               </div>
               <div className="grid gap-3 text-xs text-white/72">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
                   <p className="font-semibold text-white">Sessão segura</p>
-                  <p className="mt-1">Email, palavra-passe e recuperação ficam num fluxo único e protegido.</p>
+                  <p className="mt-1">
+                    Email, palavra-passe e recuperação ficam num fluxo único e
+                    protegido.
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.075] p-4 backdrop-blur">
-                  <p className="font-semibold text-white">Nativo no AnimalMind</p>
-                  <p className="mt-1">Componentes, espaçamento e estados seguem a linguagem mobile-first da app.</p>
+                  <p className="font-semibold text-white">
+                    Nativo no AnimalMind
+                  </p>
+                  <p className="mt-1">
+                    Componentes, espaçamento e estados seguem a linguagem
+                    mobile-first da app.
+                  </p>
                 </div>
               </div>
             </div>
@@ -151,8 +172,12 @@ export function AuthShell({
                     <p className="text-[11px] font-semibold uppercase text-primary">
                       {eyebrow}
                     </p>
-                    <h2 className="text-2xl font-bold text-foreground">{title}</h2>
-                    <p className="text-sm leading-6 text-muted-foreground">{subtitle}</p>
+                    <h2 className="text-2xl font-bold text-foreground">
+                      {title}
+                    </h2>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {subtitle}
+                    </p>
                   </div>
 
                   {mode && <AuthModeTabs activeMode={mode} />}
@@ -214,7 +239,7 @@ function AuthModeTabs({ activeMode }: { activeMode: AuthMode }) {
               "rounded-xl px-3 py-2.5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active-scale",
               active
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <span className="block text-xs font-bold">{config.label}</span>
@@ -242,7 +267,11 @@ export function AuthTextField({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && passwordVisible ? "text" : type;
-  const describedBy = error ? `${id}-error` : success ? `${id}-success` : undefined;
+  const describedBy = error
+    ? `${id}-error`
+    : success
+      ? `${id}-success`
+      : undefined;
 
   return (
     <div className="space-y-2">
@@ -251,7 +280,10 @@ export function AuthTextField({
           {label}
         </Label>
         {success && !error && (
-          <span id={`${id}-success`} className="inline-flex items-center gap-1 text-[11px] font-medium text-primary">
+          <span
+            id={`${id}-success`}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary"
+          >
             <Check size={12} />
             {success}
           </span>
@@ -264,7 +296,7 @@ export function AuthTextField({
             className={cn(
               "pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground",
               error && "text-destructive",
-              success && !error && "text-primary"
+              success && !error && "text-primary",
             )}
           />
         )}
@@ -278,10 +310,13 @@ export function AuthTextField({
             "h-12 rounded-2xl border-border bg-background/75 text-sm text-foreground shadow-none transition-colors placeholder:text-muted-foreground/65 focus-visible:ring-primary/30",
             Icon && "pl-10",
             isPassword && "pr-11",
-            error && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/25",
-            success && !error && "border-primary/50 focus-visible:border-primary",
+            error &&
+              "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/25",
+            success &&
+              !error &&
+              "border-primary/50 focus-visible:border-primary",
             disabled && "opacity-70",
-            className
+            className,
           )}
           {...props}
         />
@@ -291,14 +326,21 @@ export function AuthTextField({
             onClick={() => setPasswordVisible((visible) => !visible)}
             disabled={disabled}
             className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
-            aria-label={passwordVisible ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
+            aria-label={
+              passwordVisible
+                ? "Ocultar palavra-passe"
+                : "Mostrar palavra-passe"
+            }
           >
             {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         )}
       </div>
       {error && (
-        <p id={`${id}-error`} className="flex items-start gap-1.5 text-xs font-medium leading-relaxed text-destructive">
+        <p
+          id={`${id}-error`}
+          className="flex items-start gap-1.5 text-xs font-medium leading-relaxed text-destructive"
+        >
           <AlertCircle size={14} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </p>
@@ -336,10 +378,14 @@ export function AuthSubmitButton({
   );
 }
 
-export function AuthPasswordChecklist({ requirements }: { requirements: PasswordRequirement[] }) {
+export function AuthPasswordChecklist({
+  requirements,
+}: {
+  requirements: PasswordRequirement[];
+}) {
   const complete = useMemo(
     () => requirements.filter((requirement) => requirement.met).length,
-    [requirements]
+    [requirements],
   );
 
   return (
@@ -358,7 +404,7 @@ export function AuthPasswordChecklist({ requirements }: { requirements: Password
             key={requirement.label}
             className={cn(
               "flex items-center gap-2 text-[11px] font-medium transition-colors",
-              requirement.met ? "text-primary" : "text-muted-foreground"
+              requirement.met ? "text-primary" : "text-muted-foreground",
             )}
           >
             <span
@@ -366,7 +412,7 @@ export function AuthPasswordChecklist({ requirements }: { requirements: Password
                 "flex h-4 w-4 items-center justify-center rounded-full border text-[9px]",
                 requirement.met
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background"
+                  : "border-border bg-background",
               )}
               aria-hidden="true"
             >
@@ -396,8 +442,9 @@ export function AuthInlineNote({
       className={cn(
         "rounded-2xl border p-4",
         tone === "success" && "border-primary/25 bg-primary/10 text-primary",
-        tone === "warning" && "border-orange-400/25 bg-orange-400/10 text-orange-200",
-        tone === "neutral" && "border-border bg-secondary/45 text-foreground"
+        tone === "warning" &&
+          "border-orange-400/25 bg-orange-400/10 text-orange-200",
+        tone === "neutral" && "border-border bg-secondary/45 text-foreground",
       )}
     >
       <div className="flex items-start gap-3">
@@ -406,7 +453,9 @@ export function AuthInlineNote({
         </span>
         <div>
           <p className="text-sm font-bold">{title}</p>
-          <div className="mt-1 text-xs leading-relaxed opacity-78">{description}</div>
+          <div className="mt-1 text-xs leading-relaxed opacity-78">
+            {description}
+          </div>
         </div>
       </div>
     </div>

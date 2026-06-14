@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
 import { clientsClaim } from "workbox-core";
 import {
   cleanupOutdatedCaches,
@@ -8,7 +9,6 @@ import {
   precacheAndRoute,
 } from "workbox-precaching";
 import { NavigationRoute, registerRoute } from "workbox-routing";
-import superjson from "superjson";
 import {
   getOfflineQueueAuth,
   OFFLINE_QUEUE_SYNC_TAG,
@@ -48,7 +48,8 @@ async function notifyClients(message: unknown) {
 
 async function processPendingRecordingsFromServiceWorker() {
   const auth = await getOfflineQueueAuth();
-  const tokenIsValid = auth?.accessToken && auth.expiresAt > Date.now() + 30_000;
+  const tokenIsValid =
+    auth?.accessToken && auth.expiresAt > Date.now() + 30_000;
 
   if (!tokenIsValid) {
     await notifyClients({ type: "process-pending-recordings" });
@@ -74,7 +75,7 @@ async function processPendingRecordingsFromServiceWorker() {
   });
 
   const result = await processPendingQueue((payload) =>
-    client.classify.run.mutate(payload)
+    client.classify.run.mutate(payload),
   );
 
   await notifyClients({
@@ -85,7 +86,7 @@ async function processPendingRecordingsFromServiceWorker() {
 
   if (result.summary.pendingCount > 0) {
     await (self.registration as SyncCapableRegistration).sync?.register(
-      OFFLINE_QUEUE_SYNC_TAG
+      OFFLINE_QUEUE_SYNC_TAG,
     );
   }
 }
@@ -102,5 +103,3 @@ self.addEventListener("message", (event) => {
     event.waitUntil(processPendingRecordingsFromServiceWorker());
   }
 });
-
-export {};

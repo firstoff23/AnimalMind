@@ -7,16 +7,17 @@ describe("audioLevel", () => {
   });
 
   it("normalizes waveform amplitude into a 0 to 1 level", () => {
-    expect(calculateAudioLevel(new Uint8Array([0, 128, 255, 128]))).toBeGreaterThanOrEqual(0.7);
-    expect(calculateAudioLevel(new Uint8Array([0, 128, 255, 128]))).toBeLessThanOrEqual(1);
+    expect(
+      calculateAudioLevel(new Uint8Array([0, 128, 255, 128])),
+    ).toBeGreaterThanOrEqual(0.7);
+    expect(
+      calculateAudioLevel(new Uint8Array([0, 128, 255, 128])),
+    ).toBeLessThanOrEqual(1);
   });
 
   it("creates compact waveform buckets from raw samples", () => {
-    expect(createWaveform(new Uint8Array([128, 128, 0, 255, 128, 160, 96, 128]), 4)).toEqual([
-      0,
-      1,
-      0.25,
-      0.25,
-    ]);
+    expect(
+      createWaveform(new Uint8Array([128, 128, 0, 255, 128, 160, 96, 128]), 4),
+    ).toEqual([0, 1, 0.25, 0.25]);
   });
 });

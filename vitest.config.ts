@@ -1,7 +1,7 @@
-import { defineConfig } from "vitest/config";
-import path from "path";
 import dotenv from "dotenv";
 import fs from "fs";
+import path from "path";
+import { defineConfig } from "vitest/config";
 
 const templateRoot = path.resolve(import.meta.dirname);
 

@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import { beforeAll, describe, expect, it } from "vitest";
 
 describe("Supabase Integration", () => {
   let supabase: ReturnType<typeof createClient>;
@@ -7,7 +7,8 @@ describe("Supabase Integration", () => {
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
     try {
@@ -73,7 +74,14 @@ describe("Supabase Integration", () => {
     const event = events[0];
     expect(event).toHaveProperty("state");
     expect(event).toHaveProperty("confidence");
-    expect(["distress", "attention", "excitement", "hunger", "alert", "relaxed"]).toContain(event.state);
+    expect([
+      "distress",
+      "attention",
+      "excitement",
+      "hunger",
+      "alert",
+      "relaxed",
+    ]).toContain(event.state);
     expect(event.confidence).toBeGreaterThanOrEqual(0.6);
     expect(event.confidence).toBeLessThanOrEqual(1.0);
   });

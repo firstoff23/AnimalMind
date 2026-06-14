@@ -13,7 +13,10 @@ export async function blobToBase64(blob: Blob) {
   return btoa(binary);
 }
 
-export function base64ToBlob(base64: string, mimeType = "application/octet-stream") {
+export function base64ToBlob(
+  base64: string,
+  mimeType = "application/octet-stream",
+) {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
 

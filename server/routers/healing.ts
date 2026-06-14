@@ -1,16 +1,18 @@
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { z } from "zod";
+import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import {
-  logAppError,
-  getRecentAppErrors,
-  getHealingHistory,
-  getLatestHealthState,
   clearHealingAndErrorHistory,
   getDemoUserId,
+  getHealingHistory,
+  getLatestHealthState,
+  getRecentAppErrors,
+  logAppError,
 } from "../db";
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -25,10 +27,12 @@ export const healingRouter = router({
         errorMessage: z.string().min(1),
         errorStack: z.string().optional().nullable(),
         errorCode: z.string().optional().nullable(),
-        severity: z.enum(["info", "warning", "error", "critical"]).default("error"),
+        severity: z
+          .enum(["info", "warning", "error", "critical"])
+          .default("error"),
         component: z.string().default("unknown"),
         context: z.any().optional().nullable(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);
@@ -49,7 +53,7 @@ export const healingRouter = router({
       z.object({
         limit: z.number().int().min(1).max(100).default(50),
         includeResolved: z.boolean().default(false),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);
@@ -61,7 +65,7 @@ export const healingRouter = router({
     .input(
       z.object({
         limit: z.number().int().min(1).max(100).default(50),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);
@@ -81,7 +85,7 @@ export const healingRouter = router({
     .input(
       z.object({
         olderThanDays: z.number().int().min(1).default(30),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);

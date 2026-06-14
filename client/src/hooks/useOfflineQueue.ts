@@ -1,17 +1,17 @@
-import { trpc } from "@/lib/trpc";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   enqueuePendingRecording,
   getOfflineQueueSummary,
   isBrowserOffline,
   OFFLINE_QUEUE_CHANGED_EVENT,
   OFFLINE_QUEUE_CHANNEL,
-  processPendingQueue,
-  registerPendingRecordingsSync,
   type OfflineQueueSummary,
+  processPendingQueue,
   type QueueRecordingInput,
+  registerPendingRecordingsSync,
 } from "@/lib/offlineQueue";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 type UseOfflineQueueOptions = {
   autoProcess?: boolean;
@@ -57,7 +57,7 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
 
     try {
       const result = await processPendingQueue((payload) =>
-        classifyRecording(payload)
+        classifyRecording(payload),
       );
 
       if (result.processed > 0) {
@@ -65,19 +65,21 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
         toast.success(
           result.processed === 1
             ? "1 gravação offline sincronizada."
-            : `${result.processed} gravações offline sincronizadas.`
+            : `${result.processed} gravações offline sincronizadas.`,
         );
       }
 
       if (result.failed > 0 && result.summary.failedCount === 0) {
-        toast.warning("Sincronização adiada. Vamos tentar novamente automaticamente.");
+        toast.warning(
+          "Sincronização adiada. Vamos tentar novamente automaticamente.",
+        );
       }
 
       if (result.summary.failedCount > 0) {
         toast.error(
           result.summary.failedCount === 1
             ? "1 gravação offline falhou após 3 tentativas."
-            : `${result.summary.failedCount} gravações offline falharam após 3 tentativas.`
+            : `${result.summary.failedCount} gravações offline falharam após 3 tentativas.`,
         );
       }
 
@@ -102,7 +104,7 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
         void processQueue();
       }, delay);
     },
-    [autoProcess, clearRetryTimer, processQueue]
+    [autoProcess, clearRetryTimer, processQueue],
   );
 
   const enqueueRecording = useCallback(
@@ -111,11 +113,11 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
       const nextSummary = await refreshSummary();
       scheduleNextRetry(nextSummary);
       toast.info(
-        "Sem ligação. A gravação foi guardada e será sincronizada automaticamente."
+        "Sem ligação. A gravação foi guardada e será sincronizada automaticamente.",
       );
       return queued;
     },
-    [refreshSummary, scheduleNextRetry]
+    [refreshSummary, scheduleNextRetry],
   );
 
   useEffect(() => {
@@ -153,7 +155,10 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
 
     window.addEventListener(OFFLINE_QUEUE_CHANGED_EVENT, handleQueueChanged);
     window.addEventListener("online", handleOnline);
-    navigator.serviceWorker?.addEventListener("message", handleServiceWorkerMessage);
+    navigator.serviceWorker?.addEventListener(
+      "message",
+      handleServiceWorkerMessage,
+    );
 
     let channel: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== "undefined") {
@@ -170,9 +175,15 @@ export function useOfflineQueue(options: UseOfflineQueueOptions = {}) {
     return () => {
       mounted = false;
       clearRetryTimer();
-      window.removeEventListener(OFFLINE_QUEUE_CHANGED_EVENT, handleQueueChanged);
+      window.removeEventListener(
+        OFFLINE_QUEUE_CHANGED_EVENT,
+        handleQueueChanged,
+      );
       window.removeEventListener("online", handleOnline);
-      navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
+      navigator.serviceWorker?.removeEventListener(
+        "message",
+        handleServiceWorkerMessage,
+      );
       channel?.close();
     };
   }, [autoProcess, clearRetryTimer, processQueue, scheduleNextRetry]);

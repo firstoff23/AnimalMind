@@ -59,7 +59,11 @@ export function getPeriodLabel(dateFrom?: string, dateTo?: string): string {
   return "Todos os períodos";
 }
 
-export function downloadTextFile(content: string, mimeType: string, fileName: string) {
+export function downloadTextFile(
+  content: string,
+  mimeType: string,
+  fileName: string,
+) {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

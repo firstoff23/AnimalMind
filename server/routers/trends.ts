@@ -1,15 +1,17 @@
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import type { EmotionalState } from "../../shared/types";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
-  getTrendsEvents,
   getAnimalById,
-  verifyAnimalOwner,
   getDemoUserId,
+  getTrendsEvents,
+  verifyAnimalOwner,
 } from "../db";
-import type { EmotionalState } from "../../shared/types";
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -44,7 +46,10 @@ export const trendsRouter = router({
 
       const animal = await getAnimalById(input.animalId, userId);
       if (!animal) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Animal não encontrado" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Animal não encontrado",
+        });
       }
 
       const events = await getTrendsEvents(input.animalId, 14);
@@ -53,12 +58,19 @@ export const trendsRouter = router({
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(now.getDate() - 7);
 
-      const last7DaysEvents = events.filter((e) => new Date(e.created_at) >= sevenDaysAgo);
-      const prev7DaysEvents = events.filter((e) => new Date(e.created_at) < sevenDaysAgo);
+      const last7DaysEvents = events.filter(
+        (e) => new Date(e.created_at) >= sevenDaysAgo,
+      );
+      const prev7DaysEvents = events.filter(
+        (e) => new Date(e.created_at) < sevenDaysAgo,
+      );
 
       const calcAverage = (evs: typeof events) => {
         if (evs.length === 0) return 0;
-        const sum = evs.reduce((acc, e) => acc + (SCORE_MAP[e.state as EmotionalState] ?? 50), 0);
+        const sum = evs.reduce(
+          (acc, e) => acc + (SCORE_MAP[e.state as EmotionalState] ?? 50),
+          0,
+        );
         return sum / evs.length;
       };
 
@@ -79,7 +91,7 @@ export const trendsRouter = router({
 
       // Group last 7 days by calendar date
       const dailyScoresMap: Record<string, { sum: number; count: number }> = {};
-      
+
       // Initialize last 7 days to ensure we have entries (even if score is neutral/relaxed or empty)
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
@@ -91,7 +103,8 @@ export const trendsRouter = router({
       last7DaysEvents.forEach((e) => {
         const dateStr = new Date(e.created_at).toISOString().split("T")[0];
         if (dailyScoresMap[dateStr]) {
-          dailyScoresMap[dateStr].sum += SCORE_MAP[e.state as EmotionalState] ?? 50;
+          dailyScoresMap[dateStr].sum +=
+            SCORE_MAP[e.state as EmotionalState] ?? 50;
           dailyScoresMap[dateStr].count += 1;
         }
       });
@@ -125,7 +138,7 @@ export const trendsRouter = router({
       if (last7DaysEvents.length === 0) {
         message = "Sem dados suficientes nos últimos 7 dias.";
       } else {
-        const emotionName = dominantEmotion ? dominantEmotion : "estável";
+        const _emotionName = dominantEmotion ? dominantEmotion : "estável";
         if (trend === "up") {
           message = `O bem-estar do ${animal.name} melhorou em ${Math.round(Math.abs(percentageChange))}% esta semana.`;
         } else if (trend === "down") {
@@ -152,7 +165,10 @@ export const trendsRouter = router({
 
       const animal = await getAnimalById(input.animalId, userId);
       if (!animal) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Animal não encontrado" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Animal não encontrado",
+        });
       }
 
       const events = await getTrendsEvents(input.animalId, 30);
@@ -161,7 +177,9 @@ export const trendsRouter = router({
         return {
           worstDayOfWeek: null,
           bestDayOfWeek: null,
-          patterns: ["Dados insuficientes para analisar padrões. Continue a fazer gravações nos próximos dias."],
+          patterns: [
+            "Dados insuficientes para analisar padrões. Continue a fazer gravações nos próximos dias.",
+          ],
         };
       }
 
@@ -203,20 +221,28 @@ export const trendsRouter = router({
         const bestDayName = DAY_NAMES[bestDayOfWeek];
         const worstDayName = DAY_NAMES[worstDayOfWeek];
 
-        patterns.push(`O dia com melhor bem-estar médio é a ${bestDayName.toLowerCase()}.`);
-        
+        patterns.push(
+          `O dia com melhor bem-estar médio é a ${bestDayName.toLowerCase()}.`,
+        );
+
         if (bestDayOfWeek === 0 || bestDayOfWeek === 6) {
-          patterns.push(`O ${animal.name} costuma estar mais calmo e relaxado aos fins de semana.`);
+          patterns.push(
+            `O ${animal.name} costuma estar mais calmo e relaxado aos fins de semana.`,
+          );
         }
 
         if (minScore < 50) {
-          patterns.push(`Níveis mais elevados de agitação/ansiedade registados à ${worstDayName.toLowerCase()}.`);
+          patterns.push(
+            `Níveis mais elevados de agitação/ansiedade registados à ${worstDayName.toLowerCase()}.`,
+          );
         }
 
         // Check if there are distress vocalizations
         const distressEvents = events.filter((e) => e.state === "distress");
         if (distressEvents.length >= 3) {
-          patterns.push(`Detetados ${distressEvents.length} eventos de angústia. Considere rever o ambiente físico.`);
+          patterns.push(
+            `Detetados ${distressEvents.length} eventos de angústia. Considere rever o ambiente físico.`,
+          );
         }
       }
 

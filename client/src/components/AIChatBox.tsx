@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { Loader2, Send, User, Sparkles } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { Loader2, Send, Sparkles, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 /**
  * Message type matching server-side LLM Message interface
@@ -143,7 +143,8 @@ export function AIChatBox({
       // - user message: 40px (item height) + 16px (margin-top from space-y-4) = 56px
       // Note: margin-bottom is not counted because it naturally pushes the assistant message down
       const userMessageReservedHeight = 56;
-      const calculatedHeight = scrollAreaHeight - 32 - userMessageReservedHeight;
+      const calculatedHeight =
+        scrollAreaHeight - 32 - userMessageReservedHeight;
 
       setMinHeightForLastMessage(Math.max(0, calculatedHeight));
     }
@@ -152,14 +153,14 @@ export function AIChatBox({
   // Scroll to bottom helper function with smooth animation
   const scrollToBottom = () => {
     const viewport = scrollAreaRef.current?.querySelector(
-      '[data-radix-scroll-area-viewport]'
+      "[data-radix-scroll-area-viewport]",
     ) as HTMLDivElement;
 
     if (viewport) {
       requestAnimationFrame(() => {
         viewport.scrollTo({
           top: viewport.scrollHeight,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       });
     }
@@ -192,7 +193,7 @@ export function AIChatBox({
       ref={containerRef}
       className={cn(
         "flex flex-col bg-card text-card-foreground rounded-lg border shadow-sm",
-        className
+        className,
       )}
       style={{ height }}
     >
@@ -238,7 +239,7 @@ export function AIChatBox({
                       "flex gap-3",
                       message.role === "user"
                         ? "justify-end items-start"
-                        : "justify-start items-start"
+                        : "justify-start items-start",
                     )}
                     style={
                       shouldApplyMinHeight
@@ -257,7 +258,7 @@ export function AIChatBox({
                         "max-w-[80%] rounded-lg px-4 py-2.5",
                         message.role === "user"
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
+                          : "bg-muted text-foreground",
                       )}
                     >
                       {message.role === "assistant" ? (

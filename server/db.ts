@@ -1,9 +1,16 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type {
+  AppError,
+  AppHealingAction,
+  AppHealthState,
+  Food,
+  FoodResult,
+  InsertUser,
+  SeverityType,
+  User,
+} from "../shared/dbTypes";
+import { type EmotionalState, STATE_LABELS } from "../shared/types";
 import { ENV } from "./_core/env";
-import type { InsertUser, User, AppError, AppHealingAction, AppHealthState, Food, FoodResult, SeverityType } from "../shared/dbTypes";
-import { STATE_LABELS, type EmotionalState } from "../shared/types";
-import fs from "fs";
-import path from "path";
 
 let _supabase: SupabaseClient<any> | null = null;
 export const AUDIO_RECORDINGS_BUCKET = "audio-recordings";
@@ -13,9 +20,12 @@ export const AUDIO_RECORDINGS_BUCKET = "audio-recordings";
 export function getSupabase() {
   if (!_supabase) {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) {
-      throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY");
+      throw new Error(
+        "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY",
+      );
     }
     _supabase = createClient<any>(url, key);
   }
@@ -70,7 +80,7 @@ export async function updateUser(
   data: {
     name?: string | null;
     email?: string | null;
-  }
+  },
 ): Promise<void> {
   const supabase = getSupabase();
   const updates: Record<string, any> = {};
@@ -157,19 +167,26 @@ const optionalAnimalColumns = new Set([
 
 function getMissingAnimalColumn(error: any): string | null {
   const message = String(error?.message ?? "");
-  const directMatch = message.match(/column animals\.([a-z_]+) does not exist/i);
+  const directMatch = message.match(
+    /column animals\.([a-z_]+) does not exist/i,
+  );
   const schemaCacheMatch = message.match(/'([^']+)' column of 'animals'/i);
   return directMatch?.[1] ?? schemaCacheMatch?.[1] ?? null;
 }
 
-function removeMissingOptionalAnimalColumn(payload: Record<string, any>, error: any) {
+function removeMissingOptionalAnimalColumn(
+  payload: Record<string, any>,
+  error: any,
+) {
   const column = getMissingAnimalColumn(error);
   if (!column || !optionalAnimalColumns.has(column) || !(column in payload)) {
     return false;
   }
 
   delete payload[column];
-  console.warn(`[animals] Optional column "${column}" is missing in Supabase; saving without it until the migration is applied.`);
+  console.warn(
+    `[animals] Optional column "${column}" is missing in Supabase; saving without it until the migration is applied.`,
+  );
   return true;
 }
 
@@ -201,9 +218,9 @@ export async function addAnimal(data: {
   breed?: string | null;
   age?: number | null;
   dateOfBirth?: string | null;
-  sex?: 'male' | 'female' | 'unknown';
+  sex?: "male" | "female" | "unknown";
   color?: string | null;
-  coat?: 'short' | 'medium' | 'long' | null;
+  coat?: "short" | "medium" | "long" | null;
   photoUrl?: string | null;
   microchipNumber?: string | null;
   height?: string | null;
@@ -274,7 +291,7 @@ export async function setActiveAnimal(animalId: number, userId: number) {
 
 export async function getActiveAnimal(userId: number) {
   const supabase = getSupabase();
-  
+
   // First check if there is an active owned animal
   const { data, error } = await supabase
     .from("animals")
@@ -284,7 +301,11 @@ export async function getActiveAnimal(userId: number) {
     .single();
 
   if (!error && data) {
-    return { ...mapDbAnimal(data), isShared: false, permission: "write" as const };
+    return {
+      ...mapDbAnimal(data),
+      isShared: false,
+      permission: "write" as const,
+    };
   }
 
   // Otherwise check shared animals
@@ -306,16 +327,16 @@ export async function updateAnimal(
     breed?: string | null;
     age?: number | null;
     dateOfBirth?: string | null;
-    sex?: 'male' | 'female' | 'unknown';
+    sex?: "male" | "female" | "unknown";
     color?: string | null;
-    coat?: 'short' | 'medium' | 'long' | null;
+    coat?: "short" | "medium" | "long" | null;
     photoUrl?: string | null;
     microchipNumber?: string | null;
     height?: string | null;
     tail?: string | null;
     specialMarkings?: string | null;
     weight?: string | null;
-  }
+  },
 ) {
   const supabase = getSupabase();
   const updatePayload: Record<string, any> = {};
@@ -323,15 +344,18 @@ export async function updateAnimal(
   if (data.species !== undefined) updatePayload.species = data.species;
   if (data.breed !== undefined) updatePayload.breed = data.breed;
   if (data.age !== undefined) updatePayload.age = data.age;
-  if (data.dateOfBirth !== undefined) updatePayload.date_of_birth = data.dateOfBirth;
+  if (data.dateOfBirth !== undefined)
+    updatePayload.date_of_birth = data.dateOfBirth;
   if (data.sex !== undefined) updatePayload.sex = data.sex;
   if (data.color !== undefined) updatePayload.color = data.color;
   if (data.coat !== undefined) updatePayload.coat = data.coat;
   if (data.photoUrl !== undefined) updatePayload.photo_url = data.photoUrl;
-  if (data.microchipNumber !== undefined) updatePayload.microchip_number = data.microchipNumber;
+  if (data.microchipNumber !== undefined)
+    updatePayload.microchip_number = data.microchipNumber;
   if (data.height !== undefined) updatePayload.height = data.height;
   if (data.tail !== undefined) updatePayload.tail = data.tail;
-  if (data.specialMarkings !== undefined) updatePayload.special_markings = data.specialMarkings;
+  if (data.specialMarkings !== undefined)
+    updatePayload.special_markings = data.specialMarkings;
   if (data.weight !== undefined) updatePayload.weight = data.weight;
 
   let result: any = null;
@@ -365,7 +389,7 @@ export async function updateAnimal(
     throw error;
   }
   return mapDbAnimal(result);
-}// ─── Event operations ────────────────────────────────────────────────────────
+} // ─── Event operations ────────────────────────────────────────────────────────
 
 export async function insertEvent(data: {
   userId: number;
@@ -412,7 +436,7 @@ export async function getRecentEvents(userId: number, limit = 5) {
     .limit(limit);
 
   if (error) throw error;
-  
+
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: e.notes || null,
@@ -428,7 +452,7 @@ export async function getEventsPaginated(
   state?: string,
   dateFrom?: string,
   dateTo?: string,
-  animalId?: number
+  animalId?: number,
 ) {
   const supabase = getSupabase();
   let query = supabase
@@ -447,7 +471,7 @@ export async function getEventsPaginated(
     .range(offset, offset + pageSize - 1);
 
   if (error) throw error;
-  
+
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: e.notes || null,
@@ -459,7 +483,7 @@ export async function getEventsPaginated(
 export async function updateEventFeedback(
   eventId: number,
   userId: number,
-  feedback: "correct" | "incorrect"
+  feedback: "correct" | "incorrect",
 ) {
   const supabase = getSupabase();
   const { error: updateError } = await supabase
@@ -479,7 +503,10 @@ export async function updateEventFeedback(
     .single();
 
   if (eventError || !event) {
-    console.error("[updateEventFeedback] Failed to fetch event details:", eventError);
+    console.error(
+      "[updateEventFeedback] Failed to fetch event details:",
+      eventError,
+    );
     return;
   }
 
@@ -508,7 +535,10 @@ export async function updateEventFeedback(
         },
       ]);
     if (insertError) {
-      console.error("[updateEventFeedback] Failed to insert feedback annotation:", insertError);
+      console.error(
+        "[updateEventFeedback] Failed to insert feedback annotation:",
+        insertError,
+      );
     }
   }
 }
@@ -520,16 +550,14 @@ export async function saveBreedFeedback(data: {
   confidence: number;
 }) {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("feedback_annotations")
-    .insert([
-      {
-        animal_type: data.animalType,
-        predicted_breed: data.predictedBreed,
-        confirmed_breed: data.confirmedBreed,
-        confidence: data.confidence,
-      },
-    ]);
+  const { error } = await supabase.from("feedback_annotations").insert([
+    {
+      animal_type: data.animalType,
+      predicted_breed: data.predictedBreed,
+      confirmed_breed: data.confirmedBreed,
+      confidence: data.confidence,
+    },
+  ]);
   if (error) throw error;
 }
 
@@ -540,7 +568,7 @@ export async function getAllEventsForExport(
     dateFrom?: string;
     dateTo?: string;
     animalId?: number;
-  } = {}
+  } = {},
 ) {
   const supabase = getSupabase();
   let query = supabase
@@ -549,7 +577,8 @@ export async function getAllEventsForExport(
     .eq("user_id", userId);
 
   if (filters.animalId) query = query.eq("animal_id", filters.animalId);
-  if (filters.state && filters.state !== "all") query = query.eq("state", filters.state);
+  if (filters.state && filters.state !== "all")
+    query = query.eq("state", filters.state);
   if (filters.dateFrom) query = query.gte("created_at", filters.dateFrom);
   if (filters.dateTo) query = query.lte("created_at", filters.dateTo);
 
@@ -582,7 +611,7 @@ export async function getWeeklyStats(userId: number, animalId?: number) {
 
 export async function getSettings(userId: number) {
   const supabase = getSupabase();
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("settings")
     .select("*")
     .eq("user_id", userId)
@@ -612,7 +641,10 @@ export async function getSettings(userId: number) {
 
 export async function upsertSettings(
   userId: number,
-  data: { notificationsEnabled?: boolean; alertSensitivity?: "low" | "medium" | "high" }
+  data: {
+    notificationsEnabled?: boolean;
+    alertSensitivity?: "low" | "medium" | "high";
+  },
 ) {
   const supabase = getSupabase();
   const updates: Record<string, any> = {};
@@ -624,10 +656,7 @@ export async function upsertSettings(
 
   const { data: result, error } = await supabase
     .from("settings")
-    .upsert(
-      [{ user_id: userId, ...updates }],
-      { onConflict: "user_id" }
-    )
+    .upsert([{ user_id: userId, ...updates }], { onConflict: "user_id" })
     .select()
     .single();
 
@@ -652,7 +681,10 @@ export async function getEventNotes(eventId: number): Promise<string> {
   return data?.notes ?? "";
 }
 
-export async function updateEventNotes(eventId: number, noteText: string): Promise<string> {
+export async function updateEventNotes(
+  eventId: number,
+  noteText: string,
+): Promise<string> {
   const supabase = getSupabase();
   const { error } = await supabase
     .from("classification_events")
@@ -677,7 +709,10 @@ export async function getEventAudio(eventId: number): Promise<string> {
   return data?.audio_url ?? "";
 }
 
-export async function updateEventAudio(eventId: number, audioUrl: string): Promise<string> {
+export async function updateEventAudio(
+  eventId: number,
+  audioUrl: string,
+): Promise<string> {
   const supabase = getSupabase();
   const { error } = await supabase
     .from("classification_events")
@@ -691,16 +726,23 @@ export async function updateEventAudio(eventId: number, audioUrl: string): Promi
 export async function uploadAudioToSupabase(
   fileName: string,
   buffer: Buffer,
-  mimeType: string
+  mimeType: string,
 ): Promise<string> {
   const supabase = getSupabase();
 
   try {
     await supabase.storage.createBucket(AUDIO_RECORDINGS_BUCKET, {
       public: false,
-      allowedMimeTypes: ["audio/webm", "audio/wav", "audio/ogg", "audio/mpeg", "audio/mp4", "audio/x-m4a"],
+      allowedMimeTypes: [
+        "audio/webm",
+        "audio/wav",
+        "audio/ogg",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/x-m4a",
+      ],
     });
-  } catch (err) {
+  } catch (_err) {
     // Ignore bucket creation if already exists
   }
 
@@ -721,16 +763,21 @@ export async function uploadAudioToSupabase(
     .createSignedUrl(fileName, 3600);
 
   if (signedUrlError) {
-    console.error("[Storage] Supabase signed URL generation failed:", signedUrlError);
+    console.error(
+      "[Storage] Supabase signed URL generation failed:",
+      signedUrlError,
+    );
     throw signedUrlError;
   }
 
   return signedUrlData.signedUrl;
 }
 
-export async function getSignedAudioUrl(pathOrUrl: string | null | undefined): Promise<string | null> {
+export async function getSignedAudioUrl(
+  pathOrUrl: string | null | undefined,
+): Promise<string | null> {
   if (!pathOrUrl) return null;
-  
+
   // Extract path from signed or public URL if needed
   let path = pathOrUrl;
   if (pathOrUrl.startsWith("http")) {
@@ -739,7 +786,7 @@ export async function getSignedAudioUrl(pathOrUrl: string | null | undefined): P
       path = parts[1].split("?")[0];
     }
   }
-  
+
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase.storage
@@ -770,7 +817,6 @@ export interface AnimalBaseline {
   updatedAt: string;
 }
 
-
 const DEFAULT_STATE_DISTRIBUTION: Record<string, number> = {
   relaxed: 0.5,
   excitement: 0.2,
@@ -792,18 +838,25 @@ const DEFAULT_BASELINE: AnimalBaseline = {
   updatedAt: new Date(0).toISOString(),
 };
 
-function normalizeAnimalBaseline(data: Partial<AnimalBaseline> | null | undefined): AnimalBaseline {
+function normalizeAnimalBaseline(
+  data: Partial<AnimalBaseline> | null | undefined,
+): AnimalBaseline {
   return {
     ...DEFAULT_BASELINE,
     ...data,
-    vocalizationThreshold: data?.vocalizationThreshold ?? DEFAULT_BASELINE.vocalizationThreshold,
+    vocalizationThreshold:
+      data?.vocalizationThreshold ?? DEFAULT_BASELINE.vocalizationThreshold,
     normalStates: data?.normalStates ?? DEFAULT_BASELINE.normalStates,
-    alertSensitivity: data?.alertSensitivity ?? DEFAULT_BASELINE.alertSensitivity,
+    alertSensitivity:
+      data?.alertSensitivity ?? DEFAULT_BASELINE.alertSensitivity,
     stateDistribution: {
       ...DEFAULT_STATE_DISTRIBUTION,
       ...(data?.stateDistribution ?? {}),
     },
-    typicalStates: data?.typicalStates ?? data?.normalStates ?? DEFAULT_BASELINE.typicalStates,
+    typicalStates:
+      data?.typicalStates ??
+      data?.normalStates ??
+      DEFAULT_BASELINE.typicalStates,
     sampleSize: data?.sampleSize ?? 0,
     calculatedFrom: data?.calculatedFrom ?? null,
     calculatedTo: data?.calculatedTo ?? null,
@@ -811,7 +864,9 @@ function normalizeAnimalBaseline(data: Partial<AnimalBaseline> | null | undefine
   };
 }
 
-async function readBaselineFromDatabase(animalId: number): Promise<AnimalBaseline | null> {
+async function readBaselineFromDatabase(
+  animalId: number,
+): Promise<AnimalBaseline | null> {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -825,14 +880,19 @@ async function readBaselineFromDatabase(animalId: number): Promise<AnimalBaselin
       throw error;
     }
 
-    return data?.baseline_data ? normalizeAnimalBaseline(data.baseline_data) : null;
+    return data?.baseline_data
+      ? normalizeAnimalBaseline(data.baseline_data)
+      : null;
   } catch (error) {
     console.error("[Baselines] Failed to read baseline:", error);
     return null;
   }
 }
 
-async function persistBaselineToDatabase(animalId: number, baseline: AnimalBaseline): Promise<void> {
+async function persistBaselineToDatabase(
+  animalId: number,
+  baseline: AnimalBaseline,
+): Promise<void> {
   try {
     const supabase = getSupabase();
     const { error } = await supabase
@@ -841,16 +901,21 @@ async function persistBaselineToDatabase(animalId: number, baseline: AnimalBasel
       .eq("id", animalId);
     if (error) throw error;
   } catch (error) {
-    console.error("[Baselines] Could not persist baseline_data in Supabase:", error);
+    console.error(
+      "[Baselines] Could not persist baseline_data in Supabase:",
+      error,
+    );
   }
 }
 
-export async function getAnimalBaseline(animalId: number): Promise<AnimalBaseline> {
+export async function getAnimalBaseline(
+  animalId: number,
+): Promise<AnimalBaseline> {
   const databaseBaseline = await readBaselineFromDatabase(animalId);
   if (databaseBaseline) {
     return databaseBaseline;
   }
-  
+
   return normalizeAnimalBaseline({ updatedAt: new Date().toISOString() });
 }
 
@@ -860,13 +925,14 @@ export async function updateAnimalBaseline(
     vocalizationThreshold?: number;
     normalStates?: string[];
     alertSensitivity?: "low" | "medium" | "high";
-  }
+  },
 ): Promise<AnimalBaseline> {
   const current = await getAnimalBaseline(animalId);
 
   const updated: AnimalBaseline = {
     ...current,
-    vocalizationThreshold: data.vocalizationThreshold ?? current.vocalizationThreshold,
+    vocalizationThreshold:
+      data.vocalizationThreshold ?? current.vocalizationThreshold,
     normalStates: data.normalStates ?? current.normalStates,
     alertSensitivity: data.alertSensitivity ?? current.alertSensitivity,
     updatedAt: new Date().toISOString(),
@@ -880,7 +946,7 @@ export function buildBehaviorBaselineFromEvents(
   events: Array<{ state: string; created_at?: string | Date | null }>,
   current: Partial<AnimalBaseline> = {},
   calculatedFrom: string | null = null,
-  calculatedTo: string | null = new Date().toISOString()
+  calculatedTo: string | null = new Date().toISOString(),
 ): AnimalBaseline {
   const base = normalizeAnimalBaseline(current);
   const counts = STATES_LIST.reduce<Record<string, number>>((acc, state) => {
@@ -893,10 +959,16 @@ export function buildBehaviorBaselineFromEvents(
   });
 
   const sampleSize = events.length;
-  const stateDistribution = STATES_LIST.reduce<Record<string, number>>((acc, state) => {
-    acc[state] = sampleSize > 0 ? Math.round((counts[state] / sampleSize) * 100) / 100 : 0;
-    return acc;
-  }, {});
+  const stateDistribution = STATES_LIST.reduce<Record<string, number>>(
+    (acc, state) => {
+      acc[state] =
+        sampleSize > 0
+          ? Math.round((counts[state] / sampleSize) * 100) / 100
+          : 0;
+      return acc;
+    },
+    {},
+  );
 
   const typicalStates =
     sampleSize > 0
@@ -906,7 +978,8 @@ export function buildBehaviorBaselineFromEvents(
   return {
     ...base,
     stateDistribution,
-    typicalStates: typicalStates.length > 0 ? typicalStates : base.typicalStates,
+    typicalStates:
+      typicalStates.length > 0 ? typicalStates : base.typicalStates,
     sampleSize,
     calculatedFrom,
     calculatedTo,
@@ -916,7 +989,7 @@ export function buildBehaviorBaselineFromEvents(
 
 export async function recalculateAnimalBehaviorBaseline(
   animalId: number,
-  userId?: number
+  userId?: number,
 ): Promise<AnimalBaseline> {
   const supabase = getSupabase();
   const calculatedTo = new Date().toISOString();
@@ -940,7 +1013,7 @@ export async function recalculateAnimalBehaviorBaseline(
     data || [],
     current,
     calculatedFrom,
-    calculatedTo
+    calculatedTo,
   );
 
   await persistBaselineToDatabase(animalId, updated);
@@ -950,7 +1023,7 @@ export async function recalculateAnimalBehaviorBaseline(
 export async function verifyAnimalOwner(
   animalId: number,
   userId: number,
-  requireWrite = false
+  requireWrite = false,
 ): Promise<void> {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -977,7 +1050,7 @@ export async function verifyAnimalOwner(
     .eq("id", userId)
     .single();
 
-  if (!user || !user.email) {
+  if (!user?.email) {
     throw new Error("Não autorizado");
   }
 
@@ -993,7 +1066,10 @@ export async function verifyAnimalOwner(
     if (shareError) throw shareError;
     share = data;
   } catch (err) {
-    console.warn(`[Graceful Degradation] Failed to query family_shares in verifyAnimalOwner:`, err);
+    console.warn(
+      `[Graceful Degradation] Failed to query family_shares in verifyAnimalOwner:`,
+      err,
+    );
     share = null;
   }
 
@@ -1012,7 +1088,7 @@ export async function verifyAnimalOwner(
 
 export async function getAnimalById(animalId: number, userId: number) {
   const supabase = getSupabase();
-  
+
   // Try owned first
   const { data, error } = await supabase
     .from("animals")
@@ -1022,7 +1098,11 @@ export async function getAnimalById(animalId: number, userId: number) {
     .single();
 
   if (!error && data) {
-    return { ...mapDbAnimal(data), isShared: false, permission: "write" as const };
+    return {
+      ...mapDbAnimal(data),
+      isShared: false,
+      permission: "write" as const,
+    };
   }
 
   // Check if shared
@@ -1035,7 +1115,7 @@ export async function getEventsForAnimalPaginated(
   animalId: number,
   userId: number,
   page: number,
-  pageSize: number
+  pageSize: number,
 ) {
   const supabase = getSupabase();
   const offset = (page - 1) * pageSize;
@@ -1049,17 +1129,21 @@ export async function getEventsForAnimalPaginated(
     .range(offset, offset + pageSize - 1);
 
   if (error) throw error;
-  
+
   const events = (data || []).map((e: any) => ({
     ...e,
     notes: e.notes || null,
     audioUrl: e.audio_url ?? null,
   }));
-  
+
   return { events, total: count || 0 };
 }
 
-export async function getStatsForAnimal(animalId: number, userId: number, days = 7) {
+export async function getStatsForAnimal(
+  animalId: number,
+  userId: number,
+  days = 7,
+) {
   const supabase = getSupabase();
   const sinceDate = new Date();
   sinceDate.setDate(sinceDate.getDate() - days);
@@ -1074,7 +1158,10 @@ export async function getStatsForAnimal(animalId: number, userId: number, days =
 
   if (error) throw error;
 
-  const dayStats: Record<string, { count: number; sumConfidence: number; [key: string]: any }> = {};
+  const dayStats: Record<
+    string,
+    { count: number; sumConfidence: number; [key: string]: any }
+  > = {};
   const stateCounts: Record<string, number> = {};
 
   // Pre-fill days to avoid gaps in chart
@@ -1109,7 +1196,10 @@ export async function getStatsForAnimal(animalId: number, userId: number, days =
       return {
         date,
         count: val.count,
-        avgConfidence: val.count > 0 ? Math.round((val.sumConfidence / val.count) * 100) / 100 : 0,
+        avgConfidence:
+          val.count > 0
+            ? Math.round((val.sumConfidence / val.count) * 100) / 100
+            : 0,
         ...stateBreakdown,
       };
     })
@@ -1136,10 +1226,10 @@ export interface BeliefState {
   updatedAt: string;
 }
 
-
-
 // Belief State updates
-export async function getEventBeliefState(eventId: number): Promise<BeliefState | null> {
+export async function getEventBeliefState(
+  eventId: number,
+): Promise<BeliefState | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("classification_events")
@@ -1151,12 +1241,14 @@ export async function getEventBeliefState(eventId: number): Promise<BeliefState 
     if (error.code === "PGRST116") return null;
     throw error;
   }
-  return data?.belief_state as any as BeliefState || null;
+  return (data?.belief_state as any as BeliefState) || null;
 }
 
-export async function getLatestBeliefState(animalId: number): Promise<BeliefState> {
+export async function getLatestBeliefState(
+  animalId: number,
+): Promise<BeliefState> {
   const supabase = getSupabase();
-  
+
   // Find most recent event for this animal with a belief state
   const { data: recentEvent, error } = await supabase
     .from("classification_events")
@@ -1174,7 +1266,7 @@ export async function getLatestBeliefState(animalId: number): Promise<BeliefStat
     hunger: 0.1,
     alert: 0.1,
     attention: 0.1,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   if (error || !recentEvent || !recentEvent.belief_state) {
@@ -1200,7 +1292,7 @@ export async function updateBeliefStateForAnimal(
   animalId: number,
   observedState: string,
   confidence: number,
-  eventId: number
+  eventId: number,
 ): Promise<BeliefState> {
   const lastBelief = await getLatestBeliefState(animalId);
   const baseline = await getAnimalBaseline(animalId);
@@ -1209,10 +1301,12 @@ export async function updateBeliefStateForAnimal(
   let alpha = 0.3;
   if (baseline.alertSensitivity === "high") {
     // Sensitive alerts (fast update to distress/alert)
-    alpha = (observedState === "distress" || observedState === "alert") ? 0.6 : 0.4;
+    alpha =
+      observedState === "distress" || observedState === "alert" ? 0.6 : 0.4;
   } else if (baseline.alertSensitivity === "low") {
     // Resilient alerts (filter transient vocalizations)
-    alpha = (observedState === "distress" || observedState === "alert") ? 0.15 : 0.3;
+    alpha =
+      observedState === "distress" || observedState === "alert" ? 0.15 : 0.3;
   }
 
   const baselineFrequency = baseline.stateDistribution?.[observedState] ?? 0;
@@ -1227,7 +1321,7 @@ export async function updateBeliefStateForAnimal(
     distress: lastBelief.distress,
     hunger: lastBelief.hunger,
     alert: lastBelief.alert,
-    attention: lastBelief.attention
+    attention: lastBelief.attention,
   };
 
   // Bayesian update rule
@@ -1250,7 +1344,7 @@ export async function updateBeliefStateForAnimal(
     hunger: updated.hunger ?? 0,
     alert: updated.alert ?? 0,
     attention: updated.attention ?? 0,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 
   const supabase = getSupabase();
@@ -1264,7 +1358,14 @@ export async function updateBeliefStateForAnimal(
   return finalBelief;
 }
 
-const STATES_LIST = ["relaxed", "excitement", "distress", "hunger", "alert", "attention"];
+const STATES_LIST = [
+  "relaxed",
+  "excitement",
+  "distress",
+  "hunger",
+  "alert",
+  "attention",
+];
 
 // Postures
 export async function getEventPosture(eventId: number): Promise<string | null> {
@@ -1282,7 +1383,10 @@ export async function getEventPosture(eventId: number): Promise<string | null> {
   return data?.posture ?? null;
 }
 
-export async function savePostureForEvent(eventId: number, posture: string): Promise<string> {
+export async function savePostureForEvent(
+  eventId: number,
+  posture: string,
+): Promise<string> {
   const supabase = getSupabase();
   const { error } = await supabase
     .from("classification_events")
@@ -1375,19 +1479,25 @@ function isMissingRelationError(error: any) {
   return (
     error?.code === "42P01" ||
     error?.code === "PGRST205" ||
-    /relation .* does not exist|could not find the table|schema cache/i.test(message)
+    /relation .* does not exist|could not find the table|schema cache/i.test(
+      message,
+    )
   );
 }
 
 function normalizeCaseStatus(status: unknown): VetCaseStatus {
-  return status === "stable" || status === "requires_attention" ? status : "monitor";
+  return status === "stable" || status === "requires_attention"
+    ? status
+    : "monitor";
 }
 
 function normalizePermission(permission: unknown): "read" | "write" {
   return permission === "write" ? "write" : "read";
 }
 
-function normalizeAccessStatus(status: unknown): "pending" | "active" | "revoked" {
+function normalizeAccessStatus(
+  status: unknown,
+): "pending" | "active" | "revoked" {
   if (status === "pending" || status === "revoked") return status;
   return "active";
 }
@@ -1410,7 +1520,9 @@ async function getAnimalOwnerSummary(ownerId: number | null) {
   }
 }
 
-async function getUserSummaryByEmail(email: string): Promise<{ id: number; name: string | null; email: string | null } | null> {
+async function getUserSummaryByEmail(
+  email: string,
+): Promise<{ id: number; name: string | null; email: string | null } | null> {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -1419,7 +1531,13 @@ async function getUserSummaryByEmail(email: string): Promise<{ id: number; name:
       .eq("email", email.toLowerCase())
       .single();
     if (error) return null;
-    return data ? { id: Number(data.id), name: data.name ?? null, email: data.email ?? null } : null;
+    return data
+      ? {
+          id: Number(data.id),
+          name: data.name ?? null,
+          email: data.email ?? null,
+        }
+      : null;
   } catch {
     return null;
   }
@@ -1432,7 +1550,12 @@ async function resolveVetTarget(data: {
 }) {
   const supabase = getSupabase();
   const normalizedEmail = data.email?.trim().toLowerCase() || null;
-  let target: { id: number | null; email: string | null; name: string | null; vetCode: string | null } = {
+  let target: {
+    id: number | null;
+    email: string | null;
+    name: string | null;
+    vetCode: string | null;
+  } = {
     id: null,
     email: normalizedEmail,
     name: data.name?.trim() || null,
@@ -1478,7 +1601,9 @@ async function resolveVetTarget(data: {
   }
 
   if (!target.email) {
-    throw new Error("Email ou código de veterinário obrigatório para partilhar o animal.");
+    throw new Error(
+      "Email ou código de veterinário obrigatório para partilhar o animal.",
+    );
   }
 
   return target;
@@ -1496,7 +1621,8 @@ async function getLatestEventSummaryForAnimal(animalId: number) {
       .maybeSingle();
     return {
       lastState: data?.state ?? null,
-      lastConfidence: data?.confidence !== undefined ? Number(data.confidence) : null,
+      lastConfidence:
+        data?.confidence !== undefined ? Number(data.confidence) : null,
       lastEventAt: data?.created_at ?? null,
     };
   } catch {
@@ -1504,7 +1630,11 @@ async function getLatestEventSummaryForAnimal(animalId: number) {
   }
 }
 
-async function getVetEventsForAnimal(animalId: number, days = 30, limit?: number) {
+async function getVetEventsForAnimal(
+  animalId: number,
+  days = 30,
+  limit?: number,
+) {
   const supabase = getSupabase();
   const since = new Date();
   since.setDate(since.getDate() - days);
@@ -1543,16 +1673,19 @@ export function mapDbFood(f: any): Food {
   };
 }
 
-export function computeFoodSeverity(food: Food, species?: string): SeverityType {
+export function computeFoodSeverity(
+  food: Food,
+  species?: string,
+): SeverityType {
   if (!species) return food.severity;
   const spec = species.toLowerCase().trim();
-  if (food.toxicFor && food.toxicFor.map(s => s.toLowerCase().trim()).includes(spec)) {
+  if (food.toxicFor?.map((s) => s.toLowerCase().trim()).includes(spec)) {
     return "toxic";
   }
-  if (food.dangerousFor && food.dangerousFor.map(s => s.toLowerCase().trim()).includes(spec)) {
+  if (food.dangerousFor?.map((s) => s.toLowerCase().trim()).includes(spec)) {
     return "dangerous";
   }
-  if (food.safeFor && food.safeFor.map(s => s.toLowerCase().trim()).includes(spec)) {
+  if (food.safeFor?.map((s) => s.toLowerCase().trim()).includes(spec)) {
     return "safe";
   }
   return food.severity;
@@ -1564,10 +1697,10 @@ export async function getFoods(species?: string): Promise<FoodResult[]> {
     .from("foods")
     .select("*")
     .order("name", { ascending: true });
-    
+
   if (error) throw error;
-  
-  let results = (data || []).map(f => {
+
+  let results = (data || []).map((f) => {
     const food = mapDbFood(f);
     const computedSeverity = computeFoodSeverity(food, species);
     return { ...food, computedSeverity };
@@ -1575,10 +1708,16 @@ export async function getFoods(species?: string): Promise<FoodResult[]> {
 
   if (species) {
     const spec = species.toLowerCase().trim();
-    results = results.filter(food => {
-      const isSafe = food.safeFor && food.safeFor.map(s => s.toLowerCase().trim()).includes(spec);
-      const isDangerous = food.dangerousFor && food.dangerousFor.map(s => s.toLowerCase().trim()).includes(spec);
-      const isToxic = food.toxicFor && food.toxicFor.map(s => s.toLowerCase().trim()).includes(spec);
+    results = results.filter((food) => {
+      const isSafe = food.safeFor
+        ?.map((s) => s.toLowerCase().trim())
+        .includes(spec);
+      const isDangerous = food.dangerousFor
+        ?.map((s) => s.toLowerCase().trim())
+        .includes(spec);
+      const isToxic = food.toxicFor
+        ?.map((s) => s.toLowerCase().trim())
+        .includes(spec);
       return isSafe || isDangerous || isToxic;
     });
   }
@@ -1586,34 +1725,41 @@ export async function getFoods(species?: string): Promise<FoodResult[]> {
   return results;
 }
 
-export async function getFoodById(id: string, species?: string): Promise<FoodResult> {
+export async function getFoodById(
+  id: string,
+  species?: string,
+): Promise<FoodResult> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("foods")
     .select("*")
     .eq("id", id)
     .single();
-    
+
   if (error) throw error;
   if (!data) throw new Error(`Food not found with id: ${id}`);
-  
+
   const food = mapDbFood(data);
   const computedSeverity = computeFoodSeverity(food, species);
   return { ...food, computedSeverity };
 }
 
-export async function searchFoods(query: string, species: string): Promise<FoodResult[]> {
+export async function searchFoods(
+  query: string,
+  species: string,
+): Promise<FoodResult[]> {
   const allFoods = await getFoods(species);
   const q = query.toLowerCase().trim();
-  
-  return allFoods.filter(food => {
+
+  return allFoods.filter((food) => {
     if (!q) return true;
     const nameMatch = food.name.toLowerCase().includes(q);
-    const aliasMatch = food.aliases && food.aliases.some(alias => alias.toLowerCase().includes(q));
+    const aliasMatch = food.aliases?.some((alias) =>
+      alias.toLowerCase().includes(q),
+    );
     return nameMatch || aliasMatch;
   });
 }
-
 
 // ─── Self-Healing & Learning System Operations ───────────────────────────────
 
@@ -1710,7 +1856,7 @@ export async function logAppError(data: {
 export async function getRecentAppErrors(
   userId: number,
   limit = 50,
-  includeResolved = false
+  includeResolved = false,
 ): Promise<AppError[]> {
   const supabase = getSupabase();
   const isAdmin = await isUserAdmin(userId);
@@ -1768,7 +1914,7 @@ export async function updateHealingAction(
   data: {
     status: "success" | "failed";
     resultMessage?: string | null;
-  }
+  },
 ): Promise<AppHealingAction> {
   const supabase = getSupabase();
   const payload = {
@@ -1791,7 +1937,7 @@ export async function updateHealingAction(
 // Get history of healing actions (scoped to owner unless they are admin)
 export async function getHealingHistory(
   userId: number,
-  limit = 50
+  limit = 50,
 ): Promise<AppHealingAction[]> {
   const supabase = getSupabase();
   const isAdmin = await isUserAdmin(userId);
@@ -1812,7 +1958,7 @@ export async function getHealingHistory(
 
 // Get the latest recorded health state (scoped to owner unless they are admin)
 export async function getLatestHealthState(
-  userId: number
+  userId: number,
 ): Promise<AppHealthState | null> {
   const supabase = getSupabase();
   const isAdmin = await isUserAdmin(userId);
@@ -1866,13 +2012,15 @@ export async function updateHealthState(data: {
 // Clean old records by invoking the admin RPC
 export async function clearHealingAndErrorHistory(
   userId: number,
-  olderThanDays = 30
+  olderThanDays = 30,
 ): Promise<void> {
   const supabase = getSupabase();
   const isAdmin = await isUserAdmin(userId);
 
   if (!isAdmin) {
-    throw new Error("Não autorizado: apenas administradores podem limpar o histórico de autocura.");
+    throw new Error(
+      "Não autorizado: apenas administradores podem limpar o histórico de autocura.",
+    );
   }
 
   const { error } = await supabase.rpc("clear_app_error_history", {
@@ -1882,27 +2030,33 @@ export async function clearHealingAndErrorHistory(
   if (error) throw error;
 }
 
-
 function daysSince(value: string | null) {
   if (!value) return Number.POSITIVE_INFINITY;
-  return Math.floor((Date.now() - new Date(value).getTime()) / (24 * 60 * 60 * 1000));
+  return Math.floor(
+    (Date.now() - new Date(value).getTime()) / (24 * 60 * 60 * 1000),
+  );
 }
 
 function computeClinicalAlerts(
   animalId: number,
   events: any[],
-  lastEventAt: string | null
+  lastEventAt: string | null,
 ): VetClinicalAlert[] {
   const now = new Date().toISOString();
   const recent = [...events].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
-  const lastSevenDays = recent.filter((event) => daysSince(event.created_at) <= 7);
+  const lastSevenDays = recent.filter(
+    (event) => daysSince(event.created_at) <= 7,
+  );
   const stressStates = new Set(["distress", "alert"]);
   const negativeStates = new Set(["distress", "alert", "hunger"]);
   const alerts: VetClinicalAlert[] = [];
 
-  const repeatedStress = lastSevenDays.filter((event) => stressStates.has(event.state)).length;
+  const repeatedStress = lastSevenDays.filter((event) =>
+    stressStates.has(event.state),
+  ).length;
   if (repeatedStress >= 3) {
     alerts.push({
       id: `computed-${animalId}-repeated-distress`,
@@ -1916,7 +2070,9 @@ function computeClinicalAlerts(
     });
   }
 
-  const lowConfidenceCount = recent.slice(0, 10).filter((event) => Number(event.confidence) < 0.65).length;
+  const lowConfidenceCount = recent
+    .slice(0, 10)
+    .filter((event) => Number(event.confidence) < 0.65).length;
   if (lowConfidenceCount >= 3) {
     alerts.push({
       id: `computed-${animalId}-low-confidence`,
@@ -1924,14 +2080,19 @@ function computeClinicalAlerts(
       type: "low_confidence",
       severity: "info",
       title: "Confiança baixa recorrente",
-      description: "Várias análises recentes tiveram confiança abaixo de 65%. Pode ser necessário rever qualidade de gravação ou contexto ambiental.",
+      description:
+        "Várias análises recentes tiveram confiança abaixo de 65%. Pode ser necessário rever qualidade de gravação ou contexto ambiental.",
       detectedAt: now,
       source: "computed",
     });
   }
 
-  const lastFiveNegative = recent.slice(0, 5).filter((event) => negativeStates.has(event.state)).length;
-  const previousFiveNegative = recent.slice(5, 10).filter((event) => negativeStates.has(event.state)).length;
+  const lastFiveNegative = recent
+    .slice(0, 5)
+    .filter((event) => negativeStates.has(event.state)).length;
+  const previousFiveNegative = recent
+    .slice(5, 10)
+    .filter((event) => negativeStates.has(event.state)).length;
   if (lastFiveNegative >= 3 && lastFiveNegative - previousFiveNegative >= 2) {
     alerts.push({
       id: `computed-${animalId}-negative-trend`,
@@ -1939,7 +2100,8 @@ function computeClinicalAlerts(
       type: "negative_trend",
       severity: "warning",
       title: "Tendência negativa recente",
-      description: "As últimas classificações mostram mais estados de alerta, fome ou angústia do que o período anterior.",
+      description:
+        "As últimas classificações mostram mais estados de alerta, fome ou angústia do que o período anterior.",
       detectedAt: now,
       source: "computed",
     });
@@ -1969,17 +2131,29 @@ function getAlertLevel(alerts: VetClinicalAlert[]): VetAlertSeverity | "none" {
   return "none";
 }
 
-function getOverallStatus(caseStatus: VetCaseStatus, alerts: VetClinicalAlert[]) {
-  if (caseStatus === "requires_attention" || alerts.some((alert) => alert.severity === "critical")) {
+function getOverallStatus(
+  caseStatus: VetCaseStatus,
+  alerts: VetClinicalAlert[],
+) {
+  if (
+    caseStatus === "requires_attention" ||
+    alerts.some((alert) => alert.severity === "critical")
+  ) {
     return "requer atenção" as const;
   }
-  if (caseStatus === "monitor" || alerts.some((alert) => alert.severity === "warning")) {
+  if (
+    caseStatus === "monitor" ||
+    alerts.some((alert) => alert.severity === "warning")
+  ) {
     return "monitorizar" as const;
   }
   return "estável" as const;
 }
 
-function mapVetAccessRow(row: any, source: VetAccessRow["source"]): VetAccessRow {
+function mapVetAccessRow(
+  row: any,
+  source: VetAccessRow["source"],
+): VetAccessRow {
   return {
     source,
     animalId: Number(row.animal_id),
@@ -2000,7 +2174,7 @@ function mapVetAccessRow(row: any, source: VetAccessRow["source"]): VetAccessRow
 async function getVetAccessRowsFromTable(
   table: "vet_pet_access" | "vet_shares",
   vetUserId: number,
-  normalizedEmail: string | null
+  normalizedEmail: string | null,
 ): Promise<VetAccessRow[]> {
   const supabase = getSupabase();
   let query = supabase
@@ -2009,7 +2183,9 @@ async function getVetAccessRowsFromTable(
     .order("shared_at", { ascending: false });
 
   if (normalizedEmail) {
-    query = query.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`);
+    query = query.or(
+      `vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`,
+    );
   } else {
     query = query.eq("vet_user_id", vetUserId);
   }
@@ -2028,8 +2204,16 @@ async function getVetAccessRowsFromTable(
 async function getVetAccessRows(vetUserId: number, vetEmail: string | null) {
   const normalizedEmail = vetEmail?.toLowerCase() ?? null;
   const rows = [
-    ...(await getVetAccessRowsFromTable("vet_pet_access", vetUserId, normalizedEmail)),
-    ...(await getVetAccessRowsFromTable("vet_shares", vetUserId, normalizedEmail)),
+    ...(await getVetAccessRowsFromTable(
+      "vet_pet_access",
+      vetUserId,
+      normalizedEmail,
+    )),
+    ...(await getVetAccessRowsFromTable(
+      "vet_shares",
+      vetUserId,
+      normalizedEmail,
+    )),
   ];
   const unique = new Map<string, VetAccessRow>();
   for (const row of rows) {
@@ -2041,18 +2225,37 @@ async function getVetAccessRows(vetUserId: number, vetEmail: string | null) {
   return Array.from(unique.values());
 }
 
-function filterVetAnimals(animals: VetSharedAnimal[], filters: VetAnimalFilters = {}) {
+function filterVetAnimals(
+  animals: VetSharedAnimal[],
+  filters: VetAnimalFilters = {},
+) {
   return animals.filter((animal) => {
-    if (filters.species && filters.species !== "all" && animal.species !== filters.species) {
+    if (
+      filters.species &&
+      filters.species !== "all" &&
+      animal.species !== filters.species
+    ) {
       return false;
     }
-    if (filters.state && filters.state !== "all" && animal.lastState !== filters.state) {
+    if (
+      filters.state &&
+      filters.state !== "all" &&
+      animal.lastState !== filters.state
+    ) {
       return false;
     }
-    if (filters.dateFrom && animal.lastEventAt && animal.lastEventAt < filters.dateFrom) {
+    if (
+      filters.dateFrom &&
+      animal.lastEventAt &&
+      animal.lastEventAt < filters.dateFrom
+    ) {
       return false;
     }
-    if (filters.dateTo && animal.lastEventAt && animal.lastEventAt > filters.dateTo) {
+    if (
+      filters.dateTo &&
+      animal.lastEventAt &&
+      animal.lastEventAt > filters.dateTo
+    ) {
       return false;
     }
     return true;
@@ -2062,7 +2265,12 @@ function filterVetAnimals(animals: VetSharedAnimal[], filters: VetAnimalFilters 
 export async function linkPetWithVet(
   ownerId: number,
   animalId: number,
-  data: { name?: string | null; email?: string | null; vetCode?: string | null; note?: string | null }
+  data: {
+    name?: string | null;
+    email?: string | null;
+    vetCode?: string | null;
+    note?: string | null;
+  },
 ) {
   const supabase = getSupabase();
   const target = await resolveVetTarget({
@@ -2090,22 +2298,20 @@ export async function linkPetWithVet(
     .upsert([accessPayload], { onConflict: "animal_id,vet_email" });
   if (accessError && !isMissingRelationError(accessError)) throw accessError;
 
-  const { error: legacyError } = await supabase
-    .from("vet_shares")
-    .upsert(
-      [
-        {
-          animal_id: animalId,
-          owner_id: ownerId,
-          vet_user_id: target.id,
-          vet_email: target.email,
-          vet_name: target.name,
-          owner_note: data.note ?? "",
-          shared_at: now,
-        },
-      ],
-      { onConflict: "animal_id,vet_email" }
-    );
+  const { error: legacyError } = await supabase.from("vet_shares").upsert(
+    [
+      {
+        animal_id: animalId,
+        owner_id: ownerId,
+        vet_user_id: target.id,
+        vet_email: target.email,
+        vet_name: target.name,
+        owner_note: data.note ?? "",
+        shared_at: now,
+      },
+    ],
+    { onConflict: "animal_id,vet_email" },
+  );
   if (legacyError && !isMissingRelationError(legacyError)) throw legacyError;
 
   return {
@@ -2118,7 +2324,7 @@ export async function linkPetWithVet(
 
 export async function shareReportWithVet(
   animalId: number,
-  data: { name: string; email: string; note: string; ownerId?: number }
+  data: { name: string; email: string; note: string; ownerId?: number },
 ): Promise<boolean> {
   if (!data.ownerId) {
     throw new Error("Dono do animal é obrigatório para partilha.");
@@ -2134,7 +2340,7 @@ export async function shareReportWithVet(
 export async function getVetSharedAnimals(
   vetUserId: number,
   vetEmail: string | null,
-  filters: VetAnimalFilters = {}
+  filters: VetAnimalFilters = {},
 ): Promise<VetSharedAnimal[]> {
   const supabase = getSupabase();
   const shares = await getVetAccessRows(vetUserId, vetEmail);
@@ -2150,8 +2356,16 @@ export async function getVetSharedAnimals(
 
     const owner = await getAnimalOwnerSummary(share.ownerId);
     const latest = await getLatestEventSummaryForAnimal(share.animalId);
-    const recentEvents = await getVetEventsForAnimal(share.animalId, 30, 20).catch(() => []);
-    const alerts = computeClinicalAlerts(share.animalId, recentEvents, latest.lastEventAt);
+    const recentEvents = await getVetEventsForAnimal(
+      share.animalId,
+      30,
+      20,
+    ).catch(() => []);
+    const alerts = computeClinicalAlerts(
+      share.animalId,
+      recentEvents,
+      latest.lastEventAt,
+    );
     const alertLevel = getAlertLevel(alerts);
 
     result.push({
@@ -2180,27 +2394,43 @@ export async function getVetSharedAnimals(
   return filterVetAnimals(result, filters);
 }
 
-export async function getVetDashboardData(vetUserId: number, vetEmail: string | null) {
+export async function getVetDashboardData(
+  vetUserId: number,
+  vetEmail: string | null,
+) {
   const animals = await getVetSharedAnimals(vetUserId, vetEmail);
   const alerts = animals.flatMap((animal) => animal.alerts);
   const priorityAlerts = alerts
     .filter((alert) => alert.severity !== "info")
     .sort((a, b) => {
-      const severityRank: Record<VetAlertSeverity, number> = { critical: 0, warning: 1, info: 2 };
+      const severityRank: Record<VetAlertSeverity, number> = {
+        critical: 0,
+        warning: 1,
+        info: 2,
+      };
       return severityRank[a.severity] - severityRank[b.severity];
     });
 
   return {
     summary: {
       animalsFollowed: animals.length,
-      reportsReceived: animals.reduce((total, animal) => total + animal.recentEventsCount, 0),
+      reportsReceived: animals.reduce(
+        (total, animal) => total + animal.recentEventsCount,
+        0,
+      ),
       recentAlerts: alerts.length,
-      casesRequiringAttention: animals.filter((animal) => animal.overallStatus === "requer atenção").length,
+      casesRequiringAttention: animals.filter(
+        (animal) => animal.overallStatus === "requer atenção",
+      ).length,
     },
     animals: animals.slice(0, 6),
     recentActivity: animals
       .filter((animal) => animal.lastEventAt)
-      .sort((a, b) => new Date(b.lastEventAt || 0).getTime() - new Date(a.lastEventAt || 0).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.lastEventAt || 0).getTime() -
+          new Date(a.lastEventAt || 0).getTime(),
+      )
       .slice(0, 6)
       .map((animal) => ({
         animalId: animal.id,
@@ -2218,7 +2448,7 @@ export async function getVetReportData(
   vetUserId: number,
   vetEmail: string | null,
   animalId: number,
-  days: number
+  days: number,
 ) {
   const sharedAnimals = await getVetSharedAnimals(vetUserId, vetEmail);
   const animal = sharedAnimals.find((item) => item.id === animalId);
@@ -2234,16 +2464,14 @@ export async function getVetReportData(
   }
 
   const clinicalNotes = await getVetClinicalNotes(vetUserId, animalId);
-  const trend = [...events]
-    .reverse()
-    .map((event) => ({
-      date: new Date(event.created_at).toLocaleDateString("pt-PT", {
-        day: "2-digit",
-        month: "2-digit",
-      }),
-      confidence: Number(event.confidence),
-      state: event.state,
-    }));
+  const trend = [...events].reverse().map((event) => ({
+    date: new Date(event.created_at).toLocaleDateString("pt-PT", {
+      day: "2-digit",
+      month: "2-digit",
+    }),
+    confidence: Number(event.confidence),
+    state: event.state,
+  }));
   const mappedEvents = await Promise.all(
     events.map(async (event) => ({
       id: Number(event.id),
@@ -2256,7 +2484,7 @@ export async function getVetReportData(
       durationSeconds: 3,
       notes: event.notes || "",
       audioUrl: await getSignedAudioUrl(event.audio_url),
-    }))
+    })),
   );
 
   return {
@@ -2269,7 +2497,12 @@ export async function getVetReportData(
   };
 }
 
-function mapVetNote(row: any, vetUserId: number, animalId: number, fallbackNote = ""): VetNote {
+function mapVetNote(
+  row: any,
+  vetUserId: number,
+  animalId: number,
+  fallbackNote = "",
+): VetNote {
   return {
     id: row?.id ? Number(row.id) : Date.now(),
     animalId: row?.animal_id ? Number(row.animal_id) : animalId,
@@ -2280,7 +2513,10 @@ function mapVetNote(row: any, vetUserId: number, animalId: number, fallbackNote 
   };
 }
 
-export async function getVetNotes(vetUserId: number, animalId: number): Promise<VetNote[]> {
+export async function getVetNotes(
+  vetUserId: number,
+  animalId: number,
+): Promise<VetNote[]> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("vet_notes")
@@ -2297,7 +2533,11 @@ export async function getVetNotes(vetUserId: number, animalId: number): Promise<
   return (data || []).map((row: any) => mapVetNote(row, vetUserId, animalId));
 }
 
-export async function addVetNote(vetUserId: number, animalId: number, note: string): Promise<VetNote> {
+export async function addVetNote(
+  vetUserId: number,
+  animalId: number,
+  note: string,
+): Promise<VetNote> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("vet_notes")
@@ -2326,9 +2566,11 @@ export async function setVetCaseStatus(
   vetUserId: number,
   vetEmail: string | null,
   animalId: number,
-  status: VetCaseStatus
+  status: VetCaseStatus,
 ) {
-  const animal = (await getVetSharedAnimals(vetUserId, vetEmail)).find((item) => item.id === animalId);
+  const animal = (await getVetSharedAnimals(vetUserId, vetEmail)).find(
+    (item) => item.id === animalId,
+  );
   if (!animal) {
     throw new Error("Animal não partilhado com este veterinário");
   }
@@ -2345,7 +2587,9 @@ export async function setVetCaseStatus(
     .update(updates)
     .eq("animal_id", animalId);
   accessQuery = normalizedEmail
-    ? accessQuery.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`)
+    ? accessQuery.or(
+        `vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`,
+      )
     : accessQuery.eq("vet_user_id", vetUserId);
   const { error: accessError } = await accessQuery;
   if (accessError && !isMissingRelationError(accessError)) throw accessError;
@@ -2355,7 +2599,9 @@ export async function setVetCaseStatus(
     .update(updates)
     .eq("animal_id", animalId);
   legacyQuery = normalizedEmail
-    ? legacyQuery.or(`vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`)
+    ? legacyQuery.or(
+        `vet_user_id.eq.${vetUserId},vet_email.eq.${normalizedEmail}`,
+      )
     : legacyQuery.eq("vet_user_id", vetUserId);
   const { error: legacyError } = await legacyQuery;
   if (legacyError && !isMissingRelationError(legacyError)) throw legacyError;
@@ -2363,7 +2609,10 @@ export async function setVetCaseStatus(
   return { success: true, caseStatus: status };
 }
 
-export async function getVetClinicalNotes(vetUserId: number, animalId: number): Promise<string> {
+export async function getVetClinicalNotes(
+  vetUserId: number,
+  animalId: number,
+): Promise<string> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("vet_clinical_notes")
@@ -2381,22 +2630,20 @@ export async function getVetClinicalNotes(vetUserId: number, animalId: number): 
 export async function saveVetClinicalNotes(
   vetUserId: number,
   animalId: number,
-  notes: string
+  notes: string,
 ): Promise<string> {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("vet_clinical_notes")
-    .upsert(
-      [
-        {
-          vet_user_id: vetUserId,
-          animal_id: animalId,
-          notes,
-          updated_at: new Date().toISOString(),
-        },
-      ],
-      { onConflict: "animal_id,vet_user_id" }
-    );
+  const { error } = await supabase.from("vet_clinical_notes").upsert(
+    [
+      {
+        vet_user_id: vetUserId,
+        animal_id: animalId,
+        notes,
+        updated_at: new Date().toISOString(),
+      },
+    ],
+    { onConflict: "animal_id,vet_user_id" },
+  );
   if (error && !isMissingRelationError(error)) throw error;
   return notes;
 }
@@ -2405,7 +2652,7 @@ export async function getVetPetDetail(
   vetUserId: number,
   vetEmail: string | null,
   animalId: number,
-  days = 30
+  days = 30,
 ) {
   const report = await getVetReportData(vetUserId, vetEmail, animalId, days);
   const notes = await getVetNotes(vetUserId, animalId);
@@ -2416,7 +2663,7 @@ export async function getVetPetDetail(
       confidence: event.confidence,
       created_at: event.createdAt,
     })),
-    report.animal.lastEventAt
+    report.animal.lastEventAt,
   );
 
   return {
@@ -2459,7 +2706,6 @@ export interface FamilyShare {
   createdAt: string;
 }
 
-
 export async function getUserByEmail(email: string) {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -2478,7 +2724,9 @@ function mapDbFamilyShare(row: any): FamilyShare {
     ownerId: Number(row.owner_id),
     animalId: Number(row.animal_id),
     sharedWithEmail: row.shared_with_email,
-    sharedWithUserId: row.shared_with_user_id ? Number(row.shared_with_user_id) : null,
+    sharedWithUserId: row.shared_with_user_id
+      ? Number(row.shared_with_user_id)
+      : null,
     permission: row.permission as "read" | "write",
     status: row.status as "pending" | "accepted" | "rejected",
     createdAt: row.created_at,
@@ -2489,7 +2737,7 @@ export async function createShareInvitation(
   ownerId: number,
   animalId: number,
   targetEmail: string,
-  permission: "read" | "write"
+  permission: "read" | "write",
 ): Promise<FamilyShare> {
   try {
     const targetUser = await getUserByEmail(targetEmail);
@@ -2542,7 +2790,10 @@ export async function createShareInvitation(
     if (insertError) throw insertError;
     return mapDbFamilyShare(inserted);
   } catch (err) {
-    console.error("[Graceful Degradation] Failed in createShareInvitation:", err);
+    console.error(
+      "[Graceful Degradation] Failed in createShareInvitation:",
+      err,
+    );
     throw new Error("Funcionalidade de partilha temporariamente indisponível.");
   }
 }
@@ -2562,7 +2813,9 @@ export async function getPendingInvitations(userId: number): Promise<any[]> {
       .from("family_shares")
       .select("*")
       .eq("status", "pending")
-      .or(`shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`);
+      .or(
+        `shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`,
+      );
 
     if (error) throw error;
 
@@ -2598,7 +2851,10 @@ export async function getPendingInvitations(userId: number): Promise<any[]> {
 
     return result;
   } catch (err) {
-    console.error("[Graceful Degradation] Failed in getPendingInvitations:", err);
+    console.error(
+      "[Graceful Degradation] Failed in getPendingInvitations:",
+      err,
+    );
     return [];
   }
 }
@@ -2606,7 +2862,7 @@ export async function getPendingInvitations(userId: number): Promise<any[]> {
 export async function respondToInvitation(
   userId: number,
   invitationId: number,
-  action: "accept" | "reject"
+  action: "accept" | "reject",
 ): Promise<boolean> {
   try {
     const supabase = getSupabase();
@@ -2624,7 +2880,10 @@ export async function respondToInvitation(
       .eq("id", userId)
       .single();
 
-    if (!user || share.shared_with_email.toLowerCase() !== user.email.toLowerCase()) {
+    if (
+      !user ||
+      share.shared_with_email.toLowerCase() !== user.email.toLowerCase()
+    ) {
       throw new Error("Nao autorizado");
     }
 
@@ -2653,13 +2912,15 @@ export async function getSharedAnimalsForUser(userId: number): Promise<any[]> {
       .eq("id", userId)
       .single();
 
-    if (!user || !user.email) return [];
+    if (!user?.email) return [];
 
     const { data: activeShares, error } = await supabase
       .from("family_shares")
       .select("*")
       .eq("status", "accepted")
-      .or(`shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`);
+      .or(
+        `shared_with_user_id.eq.${userId},shared_with_email.eq.${user.email.toLowerCase()}`,
+      );
 
     if (error) throw error;
 
@@ -2682,7 +2943,10 @@ export async function getSharedAnimalsForUser(userId: number): Promise<any[]> {
 
     return result;
   } catch (err) {
-    console.error("[Graceful Degradation] Failed in getSharedAnimalsForUser:", err);
+    console.error(
+      "[Graceful Degradation] Failed in getSharedAnimalsForUser:",
+      err,
+    );
     return [];
   }
 }
@@ -2703,7 +2967,10 @@ export async function getAnimalShares(animalId: number): Promise<any[]> {
   }
 }
 
-export async function removeAnimalShare(ownerId: number, shareId: number): Promise<boolean> {
+export async function removeAnimalShare(
+  ownerId: number,
+  shareId: number,
+): Promise<boolean> {
   try {
     const supabase = getSupabase();
     const { error } = await supabase
@@ -2785,7 +3052,10 @@ async function getUserFamilyIds(userId: number): Promise<number[]> {
   return data.map((row: any) => Number(row.family_id));
 }
 
-export async function createFamilyGroup(userId: number, name: string): Promise<FamilyRecord> {
+export async function createFamilyGroup(
+  userId: number,
+  name: string,
+): Promise<FamilyRecord> {
   const supabase = getSupabase();
   const { data: family, error } = await supabase
     .from("families")
@@ -2810,7 +3080,9 @@ export async function createFamilyGroup(userId: number, name: string): Promise<F
   };
 }
 
-export async function getFamilyMembersForUser(userId: number): Promise<FamilyMemberRecord[]> {
+export async function getFamilyMembersForUser(
+  userId: number,
+): Promise<FamilyMemberRecord[]> {
   const familyIds = await getUserFamilyIds(userId);
   if (familyIds.length === 0) return [];
 
@@ -2837,7 +3109,7 @@ export async function getFamilyMembersForUser(userId: number): Promise<FamilyMem
 
 export async function leaveFamilyForUser(
   userId: number,
-  familyId: number
+  familyId: number,
 ): Promise<void> {
   const supabase = getSupabase();
 
@@ -2864,7 +3136,7 @@ export async function leaveFamilyForUser(
 
     if (allMembers && allMembers.length > 1) {
       throw new Error(
-        "És o proprietário desta família. Transfere a propriedade para outro membro antes de sair, ou remove os restantes membros primeiro."
+        "És o proprietário desta família. Transfere a propriedade para outro membro antes de sair, ou remove os restantes membros primeiro.",
       );
     }
 
@@ -2884,10 +3156,9 @@ export async function leaveFamilyForUser(
   if (error) throw error;
 }
 
-
 export async function createFamilyInviteForUser(
   userId: number,
-  familyId?: number
+  familyId?: number,
 ): Promise<FamilyInviteRecord & { inviteUrl: string }> {
   const familyIds = await getUserFamilyIds(userId);
   const targetFamilyId = familyId ?? familyIds[0];
@@ -2928,7 +3199,10 @@ export async function createFamilyInviteForUser(
   throw new Error("Falha ao gerar código de convite único");
 }
 
-export async function joinFamilyByInviteCode(userId: number, code: string): Promise<{ success: true; familyId: number }> {
+export async function joinFamilyByInviteCode(
+  userId: number,
+  code: string,
+): Promise<{ success: true; familyId: number }> {
   const normalizedCode = code.trim().toUpperCase();
 
   const supabase = getSupabase();
@@ -2951,16 +3225,19 @@ export async function joinFamilyByInviteCode(userId: number, code: string): Prom
         role: "member",
       },
     ],
-    { onConflict: "family_id,user_id" }
+    { onConflict: "family_id,user_id" },
   );
-  await supabase.from("invites").update({ used: true }).eq("code", normalizedCode);
+  await supabase
+    .from("invites")
+    .update({ used: true })
+    .eq("code", normalizedCode);
   return { success: true, familyId: Number(invite.family_id) };
 }
 
 export async function shareAnimalWithFamily(
   userId: number,
   animalId: number,
-  familyId?: number
+  familyId?: number,
 ): Promise<{ success: true; familyId: number; animalId: number }> {
   await verifyAnimalOwner(animalId, userId, true);
   const familyIds = await getUserFamilyIds(userId);
@@ -2970,17 +3247,15 @@ export async function shareAnimalWithFamily(
   }
 
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("family_animals")
-    .upsert(
-      [
-        {
-          family_id: targetFamilyId,
-          animal_id: animalId,
-        },
-      ],
-      { onConflict: "family_id,animal_id" }
-    );
+  const { error } = await supabase.from("family_animals").upsert(
+    [
+      {
+        family_id: targetFamilyId,
+        animal_id: animalId,
+      },
+    ],
+    { onConflict: "family_id,animal_id" },
+  );
   if (error) throw error;
 
   return { success: true, familyId: targetFamilyId, animalId };
@@ -3017,7 +3292,9 @@ export async function getFamilyAnimalsForUser(userId: number): Promise<any[]> {
 
 export async function getFamilyActivityForUser(userId: number): Promise<any[]> {
   const animals = await getFamilyAnimalsForUser(userId);
-  const animalIds = Array.from(new Set(animals.map((animal) => Number(animal.id))));
+  const animalIds = Array.from(
+    new Set(animals.map((animal) => Number(animal.id))),
+  );
   if (animalIds.length === 0) return [];
 
   try {
@@ -3033,7 +3310,9 @@ export async function getFamilyActivityForUser(userId: number): Promise<any[]> {
 
     const result = [];
     for (const event of data || []) {
-      const animal = animals.find((item) => Number(item.id) === Number(event.animal_id));
+      const animal = animals.find(
+        (item) => Number(item.id) === Number(event.animal_id),
+      );
       const user = await getUserSummary(Number(event.user_id));
       result.push({
         id: Number(event.id),
@@ -3051,7 +3330,10 @@ export async function getFamilyActivityForUser(userId: number): Promise<any[]> {
     return [];
   }
 }
-async function userHasFamilyAnimalAccess(userId: number, animalId: number): Promise<boolean> {
+async function userHasFamilyAnimalAccess(
+  userId: number,
+  animalId: number,
+): Promise<boolean> {
   const animals = await getFamilyAnimalsForUser(userId);
   return animals.some((animal) => Number(animal.id) === animalId);
 }
@@ -3064,7 +3346,7 @@ function mapDbVaccination(v: any) {
     id: Number(v.id),
     animalId: Number(v.animal_id),
     vaccineName: v.vaccine_name,
-    vaccineType: v.vaccine_type as 'rabies' | 'other',
+    vaccineType: v.vaccine_type as "rabies" | "other",
     dateAdministered: v.date_administered,
     batchNumber: v.batch_number ?? null,
     veterinarian: v.veterinarian ?? null,
@@ -3078,7 +3360,7 @@ function mapDbDeworming(d: any) {
   return {
     id: Number(d.id),
     animalId: Number(d.animal_id),
-    type: d.type as 'internal' | 'external' | 'both',
+    type: d.type as "internal" | "external" | "both",
     product: d.product,
     dosage: d.dosage ?? null,
     dateAdministered: d.date_administered,
@@ -3121,7 +3403,13 @@ function mapDbLicensing(l: any) {
     issueDate: l.issue_date,
     expiryDate: l.expiry_date ?? null,
     issuingAuthority: l.issuing_authority,
-    category: l.category as 'companion' | 'dangerous' | 'potentially_dangerous' | 'hunting' | 'guard' | 'other',
+    category: l.category as
+      | "companion"
+      | "dangerous"
+      | "potentially_dangerous"
+      | "hunting"
+      | "guard"
+      | "other",
     notes: l.notes ?? null,
     createdAt: l.created_at ? new Date(l.created_at) : null,
   };
@@ -3143,7 +3431,7 @@ export async function getVaccinations(animalId: number) {
 export async function addVaccination(data: {
   animalId: number;
   vaccineName: string;
-  vaccineType: 'rabies' | 'other';
+  vaccineType: "rabies" | "other";
   dateAdministered: string;
   batchNumber?: string | null;
   veterinarian?: string | null;
@@ -3152,15 +3440,17 @@ export async function addVaccination(data: {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("vaccinations")
-    .insert([{
-      animal_id: data.animalId,
-      vaccine_name: data.vaccineName,
-      vaccine_type: data.vaccineType,
-      date_administered: data.dateAdministered,
-      batch_number: data.batchNumber ?? null,
-      veterinarian: data.veterinarian ?? null,
-      next_due_date: data.nextDueDate ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        vaccine_name: data.vaccineName,
+        vaccine_type: data.vaccineType,
+        date_administered: data.dateAdministered,
+        batch_number: data.batchNumber ?? null,
+        veterinarian: data.veterinarian ?? null,
+        next_due_date: data.nextDueDate ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3169,10 +3459,7 @@ export async function addVaccination(data: {
 
 export async function deleteVaccination(id: number) {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("vaccinations")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("vaccinations").delete().eq("id", id);
   if (error) throw error;
   return { success: true };
 }
@@ -3190,7 +3477,7 @@ export async function getDewormings(animalId: number) {
 
 export async function addDeworming(data: {
   animalId: number;
-  type: 'internal' | 'external' | 'both';
+  type: "internal" | "external" | "both";
   product: string;
   dosage?: string | null;
   dateAdministered: string;
@@ -3199,14 +3486,16 @@ export async function addDeworming(data: {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("dewormings")
-    .insert([{
-      animal_id: data.animalId,
-      type: data.type,
-      product: data.product,
-      dosage: data.dosage ?? null,
-      date_administered: data.dateAdministered,
-      next_due_date: data.nextDueDate ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        type: data.type,
+        product: data.product,
+        dosage: data.dosage ?? null,
+        date_administered: data.dateAdministered,
+        next_due_date: data.nextDueDate ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3215,10 +3504,7 @@ export async function addDeworming(data: {
 
 export async function deleteDeworming(id: number) {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("dewormings")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("dewormings").delete().eq("id", id);
   if (error) throw error;
   return { success: true };
 }
@@ -3244,13 +3530,15 @@ export async function addDiagnosticTest(data: {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("diagnostic_tests")
-    .insert([{
-      animal_id: data.animalId,
-      test_name: data.testName,
-      date_performed: data.datePerformed,
-      result: data.result,
-      notes: data.notes ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        test_name: data.testName,
+        date_performed: data.datePerformed,
+        result: data.result,
+        notes: data.notes ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3287,12 +3575,14 @@ export async function addOtherTreatment(data: {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("other_treatments")
-    .insert([{
-      animal_id: data.animalId,
-      treatment_name: data.treatmentName,
-      date_administered: data.dateAdministered,
-      notes: data.notes ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        treatment_name: data.treatmentName,
+        date_administered: data.dateAdministered,
+        notes: data.notes ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3326,21 +3616,29 @@ export async function addLicensing(data: {
   issueDate: string;
   expiryDate?: string | null;
   issuingAuthority: string;
-  category: 'companion' | 'dangerous' | 'potentially_dangerous' | 'hunting' | 'guard' | 'other';
+  category:
+    | "companion"
+    | "dangerous"
+    | "potentially_dangerous"
+    | "hunting"
+    | "guard"
+    | "other";
   notes?: string | null;
 }) {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("licensing")
-    .insert([{
-      animal_id: data.animalId,
-      license_number: data.licenseNumber,
-      issue_date: data.issueDate,
-      expiry_date: data.expiryDate ?? null,
-      issuing_authority: data.issuingAuthority,
-      category: data.category,
-      notes: data.notes ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        license_number: data.licenseNumber,
+        issue_date: data.issueDate,
+        expiry_date: data.expiryDate ?? null,
+        issuing_authority: data.issuingAuthority,
+        category: data.category,
+        notes: data.notes ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3349,10 +3647,7 @@ export async function addLicensing(data: {
 
 export async function deleteLicensing(id: number) {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("licensing")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("licensing").delete().eq("id", id);
   if (error) throw error;
   return { success: true };
 }
@@ -3365,7 +3660,7 @@ export function mapDbVaccine(v: any) {
     id: Number(v.id),
     animalId: Number(v.animal_id),
     vaccineName: v.vaccine_name,
-    vaccineType: v.vaccine_type as 'rabies' | 'other',
+    vaccineType: v.vaccine_type as "rabies" | "other",
     dateAdministered: v.date_administered,
     batchNumber: v.batch_number ?? null,
     veterinarian: v.veterinarian ?? null,
@@ -3388,7 +3683,7 @@ export async function getVaccines(animalId: number) {
 export async function addVaccine(data: {
   animalId: number;
   vaccineName: string;
-  vaccineType: 'rabies' | 'other';
+  vaccineType: "rabies" | "other";
   dateAdministered: string;
   batchNumber?: string | null;
   veterinarian?: string | null;
@@ -3397,15 +3692,17 @@ export async function addVaccine(data: {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("vaccines")
-    .insert([{
-      animal_id: data.animalId,
-      vaccine_name: data.vaccineName,
-      vaccine_type: data.vaccineType,
-      date_administered: data.dateAdministered,
-      batch_number: data.batchNumber ?? null,
-      veterinarian: data.veterinarian ?? null,
-      next_due_date: data.nextDueDate ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        vaccine_name: data.vaccineName,
+        vaccine_type: data.vaccineType,
+        date_administered: data.dateAdministered,
+        batch_number: data.batchNumber ?? null,
+        veterinarian: data.veterinarian ?? null,
+        next_due_date: data.nextDueDate ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3425,10 +3722,7 @@ export async function getVaccineById(id: number) {
 
 export async function deleteVaccine(id: number) {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("vaccines")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("vaccines").delete().eq("id", id);
   if (error) throw error;
   return { success: true };
 }
@@ -3438,7 +3732,12 @@ export function mapDbHealthRecord(r: any) {
   return {
     id: Number(r.id),
     animalId: Number(r.animal_id),
-    recordType: r.record_type as 'deworming' | 'diagnostic_test' | 'other_treatment' | 'licensing' | 'notes',
+    recordType: r.record_type as
+      | "deworming"
+      | "diagnostic_test"
+      | "other_treatment"
+      | "licensing"
+      | "notes",
     date: r.date,
     product: r.product ?? null,
     dosage: r.dosage ?? null,
@@ -3465,7 +3764,12 @@ export async function getHealthRecords(animalId: number) {
 
 export async function addHealthRecord(data: {
   animalId: number;
-  recordType: 'deworming' | 'diagnostic_test' | 'other_treatment' | 'licensing' | 'notes';
+  recordType:
+    | "deworming"
+    | "diagnostic_test"
+    | "other_treatment"
+    | "licensing"
+    | "notes";
   date: string;
   product?: string | null;
   dosage?: string | null;
@@ -3479,19 +3783,21 @@ export async function addHealthRecord(data: {
   const supabase = getSupabase();
   const { data: result, error } = await supabase
     .from("health_records")
-    .insert([{
-      animal_id: data.animalId,
-      record_type: data.recordType,
-      date: data.date,
-      product: data.product ?? null,
-      dosage: data.dosage ?? null,
-      result: data.result ?? null,
-      category: data.category ?? null,
-      notes: data.notes ?? null,
-      license_number: data.licenseNumber ?? null,
-      issuing_authority: data.issuingAuthority ?? null,
-      next_due_date: data.nextDueDate ?? null,
-    }])
+    .insert([
+      {
+        animal_id: data.animalId,
+        record_type: data.recordType,
+        date: data.date,
+        product: data.product ?? null,
+        dosage: data.dosage ?? null,
+        result: data.result ?? null,
+        category: data.category ?? null,
+        notes: data.notes ?? null,
+        license_number: data.licenseNumber ?? null,
+        issuing_authority: data.issuingAuthority ?? null,
+        next_due_date: data.nextDueDate ?? null,
+      },
+    ])
     .select()
     .single();
   if (error) throw error;
@@ -3511,10 +3817,7 @@ export async function getHealthRecordById(id: number) {
 
 export async function deleteHealthRecord(id: number) {
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("health_records")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("health_records").delete().eq("id", id);
   if (error) throw error;
   return { success: true };
 }

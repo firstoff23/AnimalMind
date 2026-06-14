@@ -1,41 +1,51 @@
-import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertCircle,
+  Camera,
+  Check,
+  RefreshCw as LoopIcon,
+  RefreshCw,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { Camera, RefreshCw, Check, AlertCircle, ArrowLeft, RefreshCw as LoopIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
-import { STATE_COLORS } from "../../../shared/types";
+import { trpc } from "@/lib/trpc";
 import type { EmotionalState } from "../../../shared/types";
+import { STATE_COLORS } from "../../../shared/types";
 
 type UploadState = "idle" | "uploading" | "processing" | "success" | "error";
 type CameraPermissionState = "prompt" | "allowed" | "denied" | "error";
 
 export default function CameraPage() {
   const { t, language } = useLanguage();
-  const [, setLocation] = useLocation();
+  const [, _setLocation] = useLocation();
   const [uploadState, setUploadState] = useState<UploadState>("idle");
-  const [permissionState, setPermissionState] = useState<CameraPermissionState>("prompt");
+  const [permissionState, setPermissionState] =
+    useState<CameraPermissionState>("prompt");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [capturedImage, setCapturedImage] = useState<string | null>(null); // base64 JPEG
   const [classificationResult, setClassificationResult] = useState<any>(null);
-  
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+  const [facingMode, setFacingMode] = useState<"user" | "environment">(
+    "environment",
+  );
 
   const { data: activeAnimal } = trpc.animals.getActive.useQuery();
   const saveVisionMutation = trpc.classify.saveVisionEvent.useMutation();
 
   const startCamera = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      const msg = language === "pt"
-        ? "O seu browser ou dispositivo não suporta acesso à câmara."
-        : "Your browser or device does not support camera access.";
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const msg =
+        language === "pt"
+          ? "O seu browser ou dispositivo não suporta acesso à câmara."
+          : "Your browser or device does not support camera access.";
       setErrorMessage(msg);
       setPermissionState("error");
       return;
@@ -61,18 +71,27 @@ export default function CameraPage() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().catch((err) => console.error("Play error:", err));
+        videoRef.current
+          .play()
+          .catch((err) => console.error("Play error:", err));
       }
     } catch (err) {
       console.error("Camera access error:", err);
       let nextState: CameraPermissionState = "error";
-      let msg = language === "pt" ? "Não foi possível aceder à câmara." : "Could not access camera.";
+      let msg =
+        language === "pt"
+          ? "Não foi possível aceder à câmara."
+          : "Could not access camera.";
 
       if (err instanceof DOMException) {
-        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-          msg = language === "pt" 
-            ? "Permissão de câmara negada. Por favor, ative-a nas definições do browser." 
-            : "Camera permission denied. Please enable it in browser settings.";
+        if (
+          err.name === "NotAllowedError" ||
+          err.name === "PermissionDeniedError"
+        ) {
+          msg =
+            language === "pt"
+              ? "Permissão de câmara negada. Por favor, ative-a nas definições do browser."
+              : "Camera permission denied. Please enable it in browser settings.";
           nextState = "denied";
         }
       }
@@ -102,24 +121,24 @@ export default function CameraPage() {
     return () => {
       stopCamera();
     };
-  }, [facingMode]);
+  }, [stopCamera, startCamera, permissionState]);
 
   const handleCapture = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
-    
+
     // Create an offscreen canvas
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
-    
+
     const ctx = canvas.getContext("2d");
     if (ctx) {
       // Draw frame to canvas
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       setCapturedImage(dataUrl);
-      
+
       // Stop the camera once captured to save battery/bandwidth
       stopCamera();
     }
@@ -146,17 +165,26 @@ export default function CameraPage() {
   const handleConfirm = async () => {
     if (!capturedImage) return;
     if (!activeAnimal) {
-      toast.error(language === "pt" ? "Selecione ou crie um animal ativo no perfil primeiro." : "Please select or create an active pet in profile first.");
+      toast.error(
+        language === "pt"
+          ? "Selecione ou crie um animal ativo no perfil primeiro."
+          : "Please select or create an active pet in profile first.",
+      );
       return;
     }
 
     // Type check (standardized error)
-    if (!capturedImage.startsWith("data:image/jpeg") && !capturedImage.startsWith("data:image/jpg") && !capturedImage.startsWith("data:image/png") && !capturedImage.startsWith("data:application/pdf")) {
+    if (
+      !capturedImage.startsWith("data:image/jpeg") &&
+      !capturedImage.startsWith("data:image/jpg") &&
+      !capturedImage.startsWith("data:image/png") &&
+      !capturedImage.startsWith("data:application/pdf")
+    ) {
       setUploadState("error");
       setErrorMessage(
         language === "pt"
           ? "Formato não suportado. Usa JPG, PNG ou PDF."
-          : "Unsupported format. Use JPG, PNG or PDF."
+          : "Unsupported format. Use JPG, PNG or PDF.",
       );
       return;
     }
@@ -169,7 +197,7 @@ export default function CameraPage() {
       setErrorMessage(
         language === "pt"
           ? "Ficheiro demasiado grande. Máximo 20 MB."
-          : "File too large. Maximum 20 MB."
+          : "File too large. Maximum 20 MB.",
       );
       return;
     }
@@ -196,7 +224,7 @@ export default function CameraPage() {
 
   const sendToClassification = () => {
     if (!capturedImage || !activeAnimal) return;
-    
+
     // Extract base64 part
     const base64Image = capturedImage.split(",")[1];
 
@@ -210,19 +238,31 @@ export default function CameraPage() {
         onSuccess: (data) => {
           setClassificationResult(data);
           setUploadState("success");
-          toast.success(language === "pt" ? "Análise visual concluída!" : "Visual analysis completed!");
+          toast.success(
+            language === "pt"
+              ? "Análise visual concluída!"
+              : "Visual analysis completed!",
+          );
         },
         onError: (err) => {
           console.error("Save vision event failed:", err);
           setUploadState("error");
-          const isNetError = !navigator.onLine || err.message?.toLowerCase().includes("network") || err.message?.toLowerCase().includes("failed to fetch") || err.message?.toLowerCase().includes("offline");
+          const isNetError =
+            !navigator.onLine ||
+            err.message?.toLowerCase().includes("network") ||
+            err.message?.toLowerCase().includes("failed to fetch") ||
+            err.message?.toLowerCase().includes("offline");
           setErrorMessage(
             isNetError
-              ? (language === "pt" ? "Ligação interrompida. Tentar novamente." : "Connection interrupted. Try again.")
-              : (language === "pt" ? "Não foi possível analisar o ficheiro. Tenta novamente." : "Could not analyze the file. Try again.")
+              ? language === "pt"
+                ? "Ligação interrompida. Tentar novamente."
+                : "Connection interrupted. Try again."
+              : language === "pt"
+                ? "Não foi possível analisar o ficheiro. Tenta novamente."
+                : "Could not analyze the file. Try again.",
           );
         },
-      }
+      },
     );
   };
 
@@ -231,13 +271,12 @@ export default function CameraPage() {
     toast.info(
       language === "pt"
         ? "Para conceder permissão, clique no ícone do cadeado na barra de endereço do browser."
-        : "To grant permission, click the lock icon in the browser's address bar."
+        : "To grant permission, click the lock icon in the browser's address bar.",
     );
   };
 
   return (
     <div className="page-enter min-h-full px-4 pt-4 pb-6 max-w-lg mx-auto flex flex-col justify-between h-[calc(100vh-4.5rem)]">
-
       {/* Main View Area */}
       <div className="flex-1 flex flex-col justify-center my-4 relative rounded-3xl overflow-hidden bg-slate-950 border border-border/40 shadow-inner min-h-[300px]">
         <AnimatePresence mode="wait">
@@ -258,17 +297,28 @@ export default function CameraPage() {
 
                 {/* Overlays / Progress indicators */}
                 {uploadState === "uploading" && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-6" aria-live="polite">
+                  <div
+                    className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-6"
+                    aria-live="polite"
+                  >
                     <span className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
                       {language === "pt" ? "A enviar..." : "Uploading..."}
                     </span>
-                    <Progress value={uploadProgress} className="w-full max-w-[200px] bg-white/10" />
-                    <span className="text-xs text-white mt-1.5 font-bold">{uploadProgress}%</span>
+                    <Progress
+                      value={uploadProgress}
+                      className="w-full max-w-[200px] bg-white/10"
+                    />
+                    <span className="text-xs text-white mt-1.5 font-bold">
+                      {uploadProgress}%
+                    </span>
                   </div>
                 )}
 
                 {uploadState === "processing" && (
-                  <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-6" aria-live="polite">
+                  <div
+                    className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-6"
+                    aria-live="polite"
+                  >
                     <LoopIcon className="w-8 h-8 text-primary animate-spin mb-3" />
                     <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
                       {language === "pt" ? "A processar..." : "Processing..."}
@@ -277,7 +327,10 @@ export default function CameraPage() {
                 )}
 
                 {uploadState === "success" && classificationResult && (
-                  <div className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center p-6" aria-live="polite">
+                  <div
+                    className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center p-6"
+                    aria-live="polite"
+                  >
                     <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-bounce">
                       <Check size={24} strokeWidth={2.5} />
                     </div>
@@ -285,17 +338,34 @@ export default function CameraPage() {
                       {language === "pt" ? "Concluído!" : "Success!"}
                     </span>
                     <Badge className="mt-2 text-xl px-3 py-1.5 bg-card/80 border border-border/50 text-foreground flex items-center gap-2">
-                      <span className="w-3.5 h-3.5 rounded-full inline-block shrink-0 animate-pulse" style={{ backgroundColor: STATE_COLORS[classificationResult.state as EmotionalState] }} />
-                      <span>{t(`states.${classificationResult.state}` as any)?.toUpperCase() || classificationResult.state.toUpperCase()}</span>
+                      <span
+                        className="w-3.5 h-3.5 rounded-full inline-block shrink-0 animate-pulse"
+                        style={{
+                          backgroundColor:
+                            STATE_COLORS[
+                              classificationResult.state as EmotionalState
+                            ],
+                        }}
+                      />
+                      <span>
+                        {t(
+                          `states.${classificationResult.state}` as any,
+                        )?.toUpperCase() ||
+                          classificationResult.state.toUpperCase()}
+                      </span>
                     </Badge>
                     <p className="text-[10px] text-muted-foreground mt-2">
-                      Confiança: {Math.round(classificationResult.confidence * 100)}%
+                      Confiança:{" "}
+                      {Math.round(classificationResult.confidence * 100)}%
                     </p>
                   </div>
                 )}
 
                 {uploadState === "error" && (
-                  <div className="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center" aria-live="polite">
+                  <div
+                    className="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center"
+                    aria-live="polite"
+                  >
                     <AlertCircle className="w-10 h-10 text-rose-500 mb-3" />
                     <span className="text-sm font-semibold text-rose-400">
                       {language === "pt" ? "Erro" : "Error"}
@@ -343,9 +413,13 @@ export default function CameraPage() {
                   variant="outline"
                   className="w-full text-xs font-semibold h-11 mt-4 border-white/10"
                 >
-                  {uploadState === "success" 
-                    ? (language === "pt" ? "Tirar outra foto" : "Take another photo") 
-                    : (language === "pt" ? "Tentar novamente" : "Try again")}
+                  {uploadState === "success"
+                    ? language === "pt"
+                      ? "Tirar outra foto"
+                      : "Take another photo"
+                    : language === "pt"
+                      ? "Tentar novamente"
+                      : "Try again"}
                 </Button>
               )}
             </motion.div>
@@ -366,7 +440,7 @@ export default function CameraPage() {
                     muted
                     className="w-full h-full object-cover"
                   />
-                  
+
                   {/* Camera overlay grid */}
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
                     <div className="border-r border-b border-white/15" />
@@ -379,12 +453,13 @@ export default function CameraPage() {
                     <div className="border-r border-white/15" />
                     <div className="bg-transparent" />
                   </div>
-                  
+
                   {/* Species tag overlay */}
                   {activeAnimal && (
                     <div className="absolute top-3 left-3">
                       <Badge className="bg-black/60 text-[10px] py-1 border border-white/10 uppercase tracking-wider font-semibold">
-                        {activeAnimal.species === "dog" ? "Cão" : "Gato"}: {activeAnimal.name}
+                        {activeAnimal.species === "dog" ? "Cão" : "Gato"}:{" "}
+                        {activeAnimal.name}
                       </Badge>
                     </div>
                   )}
@@ -408,7 +483,9 @@ export default function CameraPage() {
                       whileTap={{ scale: 0.9 }}
                       className="w-18 h-18 rounded-full border-4 border-white bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center shadow-2xl relative"
                       title={language === "pt" ? "Tirar Foto" : "Take Photo"}
-                      aria-label={language === "pt" ? "Tirar foto" : "Take photo"}
+                      aria-label={
+                        language === "pt" ? "Tirar foto" : "Take photo"
+                      }
                     >
                       <div className="w-13 h-13 rounded-full bg-white shadow-md" />
                     </motion.button>
@@ -422,7 +499,9 @@ export default function CameraPage() {
                         <AlertCircle size={24} />
                       </div>
                       <h3 className="font-bold text-foreground text-sm">
-                        {language === "pt" ? "Acesso à câmara negado" : "Camera access denied"}
+                        {language === "pt"
+                          ? "Acesso à câmara negado"
+                          : "Camera access denied"}
                       </h3>
                       <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
                         {errorMessage}
@@ -433,14 +512,18 @@ export default function CameraPage() {
                         size="sm"
                         className="bg-primary text-primary-foreground font-semibold text-xs active-scale"
                       >
-                        {language === "pt" ? "Abrir Definições" : "Open Settings"}
+                        {language === "pt"
+                          ? "Abrir Definições"
+                          : "Open Settings"}
                       </Button>
                     </>
                   ) : permissionState === "error" ? (
                     <>
                       <AlertCircle className="w-10 h-10 text-rose-500" />
                       <h3 className="font-bold text-foreground text-sm">
-                        {language === "pt" ? "Erro no sistema de visão" : "Vision system error"}
+                        {language === "pt"
+                          ? "Erro no sistema de visão"
+                          : "Vision system error"}
                       </h3>
                       <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
                         {errorMessage}
@@ -459,7 +542,9 @@ export default function CameraPage() {
                     <>
                       <Camera className="w-10 h-10 text-muted-foreground animate-pulse mb-1" />
                       <h3 className="font-bold text-foreground text-sm">
-                        {language === "pt" ? "A câmara necessita de autorização" : "Camera requires authorization"}
+                        {language === "pt"
+                          ? "A câmara necessita de autorização"
+                          : "Camera requires authorization"}
                       </h3>
                       <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
                         {language === "pt"

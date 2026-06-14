@@ -4,7 +4,7 @@
  * Tests the error classification, pattern detection, and retry logic
  * in isolation (no network calls, no React DOM).
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { withAutoRetry } from "../hooks/useAppHealing";
 
 describe("withAutoRetry", () => {
@@ -39,7 +39,7 @@ describe("withAutoRetry", () => {
     });
 
     await expect(
-      withAutoRetry(fn, { maxAttempts: 3, baseDelayMs: 0 })
+      withAutoRetry(fn, { maxAttempts: 3, baseDelayMs: 0 }),
     ).rejects.toThrow("permanent failure");
     expect(fn).toHaveBeenCalledTimes(3);
   });

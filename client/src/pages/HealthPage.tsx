@@ -1,18 +1,23 @@
-import { useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { useLanguage } from "@/hooks/useLanguage";
-import HealthBulletinTab from "@/components/HealthBulletinTab";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Heart, PawPrint, Download, AlertCircle } from "lucide-react";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { toast } from "sonner";
 import { pdf } from "@react-pdf/renderer";
+import { AlertCircle, Download, Heart, PawPrint } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { HealthBulletinPDF } from "@/components/HealthBulletinPDF";
+import HealthBulletinTab from "@/components/HealthBulletinTab";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/hooks/useLanguage";
+import { trpc } from "@/lib/trpc";
 
 export default function HealthPage() {
   const { t, language } = useLanguage();
-  const { data: animals = [], refetch, isLoading: isLoadingAnimals, error: errorAnimals } = trpc.animals.list.useQuery();
+  const {
+    data: animals = [],
+    refetch,
+    isLoading: isLoadingAnimals,
+    error: errorAnimals,
+  } = trpc.animals.list.useQuery();
   const [isExporting, setIsExporting] = useState(false);
 
   // Find active animal or fallback to first animal
@@ -23,13 +28,23 @@ export default function HealthPage() {
     ? animals.find((a) => a.id === selectedAnimalId)
     : activeAnimalFromList;
 
-  const { data: vaccinations = [], isLoading: isLoadingVaccines, error: errorVaccines, refetch: refetchVaccines } = trpc.health.getVaccines.useQuery(
+  const {
+    data: vaccinations = [],
+    isLoading: isLoadingVaccines,
+    error: errorVaccines,
+    refetch: refetchVaccines,
+  } = trpc.health.getVaccines.useQuery(
     { animalId: selectedAnimal?.id ?? 0 },
-    { enabled: !!selectedAnimal }
+    { enabled: !!selectedAnimal },
   );
-  const { data: healthRecords = [], isLoading: isLoadingRecords, error: errorRecords, refetch: refetchRecords } = trpc.health.getHealthRecords.useQuery(
+  const {
+    data: healthRecords = [],
+    isLoading: isLoadingRecords,
+    error: errorRecords,
+    refetch: refetchRecords,
+  } = trpc.health.getHealthRecords.useQuery(
     { animalId: selectedAnimal?.id ?? 0 },
-    { enabled: !!selectedAnimal }
+    { enabled: !!selectedAnimal },
   );
 
   const handleExportPDF = async () => {
@@ -38,8 +53,11 @@ export default function HealthPage() {
     try {
       // Derive sub-arrays
       const dewormings = (healthRecords || [])
-        .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "deworming")
-        .map(r => ({
+        .filter(
+          (r): r is NonNullable<typeof r> =>
+            r !== null && r !== undefined && r.recordType === "deworming",
+        )
+        .map((r) => ({
           id: r.id,
           product: r.product || "",
           type: r.category || "internal",
@@ -49,19 +67,30 @@ export default function HealthPage() {
         }));
 
       const treatments = (healthRecords || [])
-        .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "other_treatment")
-        .map(r => ({
+        .filter(
+          (r): r is NonNullable<typeof r> =>
+            r !== null && r !== undefined && r.recordType === "other_treatment",
+        )
+        .map((r) => ({
           id: r.id,
           treatmentName: r.product || "",
           dateAdministered: r.date,
           notes: r.notes,
         }));
 
-      const activeVaccinations = (vaccinations || []).filter((v): v is NonNullable<typeof v> => v !== null);
+      const activeVaccinations = (vaccinations || []).filter(
+        (v): v is NonNullable<typeof v> => v !== null,
+      );
 
       const symptoms = (healthRecords || [])
-        .filter((r): r is NonNullable<typeof r> => r !== null && r !== undefined && r.recordType === "notes" && r.category === "symptom")
-        .map(r => ({
+        .filter(
+          (r): r is NonNullable<typeof r> =>
+            r !== null &&
+            r !== undefined &&
+            r.recordType === "notes" &&
+            r.category === "symptom",
+        )
+        .map((r) => ({
           id: r.id,
           symptomName: r.product || "",
           severity: r.result || "low",
@@ -76,7 +105,7 @@ export default function HealthPage() {
           dewormings={dewormings}
           treatments={treatments}
           symptoms={symptoms}
-        />
+        />,
       ).toBlob();
 
       const url = URL.createObjectURL(docBlob);
@@ -87,16 +116,25 @@ export default function HealthPage() {
       link.click();
       URL.revokeObjectURL(url);
 
-      toast.success(language === "pt" ? "PDF exportado com sucesso!" : "PDF exported successfully!");
+      toast.success(
+        language === "pt"
+          ? "PDF exportado com sucesso!"
+          : "PDF exported successfully!",
+      );
     } catch (err) {
       console.error("PDF export error:", err);
-      toast.error(language === "pt" ? "Erro ao exportar PDF." : "Failed to export PDF.");
+      toast.error(
+        language === "pt" ? "Erro ao exportar PDF." : "Failed to export PDF.",
+      );
     } finally {
       setIsExporting(false);
     }
   };
 
-  if (isLoadingAnimals || (selectedAnimal && (isLoadingVaccines || isLoadingRecords))) {
+  if (
+    isLoadingAnimals ||
+    (selectedAnimal && (isLoadingVaccines || isLoadingRecords))
+  ) {
     return <AppShellSkeleton mode="content" variant="health" />;
   }
 
@@ -106,7 +144,9 @@ export default function HealthPage() {
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake max-w-md mx-auto">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
           <h2 className="text-sm font-semibold text-foreground">
-            {language === "pt" ? "Erro ao carregar boletim sanitário." : "Error loading health bulletin."}
+            {language === "pt"
+              ? "Erro ao carregar boletim sanitário."
+              : "Error loading health bulletin."}
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
             {language === "pt"
@@ -136,7 +176,9 @@ export default function HealthPage() {
       <div className="max-w-2xl mx-auto p-4 space-y-6 text-center pt-16">
         <PawPrint className="w-16 h-16 text-muted-foreground mx-auto opacity-50 animate-pulse" />
         <h1 className="text-2xl font-bold text-white">
-          {language === "pt" ? "Sem Animais Registados" : "No Registered Animals"}
+          {language === "pt"
+            ? "Sem Animais Registados"
+            : "No Registered Animals"}
         </h1>
         <p className="text-slate-400 max-w-sm mx-auto">
           {language === "pt"
@@ -147,7 +189,10 @@ export default function HealthPage() {
     );
   }
 
-  const species = selectedAnimal?.species === "cat" || selectedAnimal?.species === "gato" ? "cat" : "dog";
+  const species =
+    selectedAnimal?.species === "cat" || selectedAnimal?.species === "gato"
+      ? "cat"
+      : "dog";
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -173,8 +218,12 @@ export default function HealthPage() {
           >
             <Download size={14} />
             {isExporting
-              ? (language === "pt" ? "A gerar..." : "Generating...")
-              : (language === "pt" ? "Exportar PDF" : "Export PDF")}
+              ? language === "pt"
+                ? "A gerar..."
+                : "Generating..."
+              : language === "pt"
+                ? "Exportar PDF"
+                : "Export PDF"}
           </Button>
         )}
       </div>
@@ -219,14 +268,24 @@ export default function HealthPage() {
             )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white truncate">{selectedAnimal.name}</h2>
+                <h2 className="text-lg font-bold text-white truncate">
+                  {selectedAnimal.name}
+                </h2>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {species === "dog" ? (language === "pt" ? "Cão" : "Dog") : (language === "pt" ? "Gato" : "Cat")}
+                  {species === "dog"
+                    ? language === "pt"
+                      ? "Cão"
+                      : "Dog"
+                    : language === "pt"
+                      ? "Gato"
+                      : "Cat"}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5 truncate">
-                {selectedAnimal.breed || (language === "pt" ? "Raça Indefinida" : "Unknown Breed")}
-                {selectedAnimal.microchipNumber && ` · Chip: ${selectedAnimal.microchipNumber}`}
+                {selectedAnimal.breed ||
+                  (language === "pt" ? "Raça Indefinida" : "Unknown Breed")}
+                {selectedAnimal.microchipNumber &&
+                  ` · Chip: ${selectedAnimal.microchipNumber}`}
               </p>
             </div>
           </CardContent>

@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
   createFamilyGroup,
@@ -13,7 +13,9 @@ import {
   shareAnimalWithFamily,
 } from "../db";
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -60,7 +62,7 @@ export const familyRouter = router({
       z.object({
         animalId: z.number(),
         familyId: z.number().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);

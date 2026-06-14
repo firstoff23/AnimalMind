@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { calculateAudioLevel, createWaveform } from "@/lib/audioLevel";
 
-export type LiveAudioStatus = "idle" | "requesting" | "streaming" | "unsupported" | "denied" | "error";
+export type LiveAudioStatus =
+  | "idle"
+  | "requesting"
+  | "streaming"
+  | "unsupported"
+  | "denied"
+  | "error";
 
 const EMPTY_WAVEFORM = Array.from({ length: 16 }, () => 0);
 
-type WebkitWindow = Window & typeof globalThis & {
-  webkitAudioContext?: typeof AudioContext;
-};
+type WebkitWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
 
 function getAudioContextConstructor() {
   if (typeof window === "undefined") return null;
-  return window.AudioContext ?? (window as WebkitWindow).webkitAudioContext ?? null;
+  return (
+    window.AudioContext ?? (window as WebkitWindow).webkitAudioContext ?? null
+  );
 }
 
 export function useLiveAudioStream() {
@@ -32,43 +41,55 @@ export function useLiveAudioStream() {
     setWaveform(EMPTY_WAVEFORM);
   }, []);
 
-  const cleanupStream = useCallback((resetState = true) => {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
+  const cleanupStream = useCallback(
+    (resetState = true) => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (e) {}
-    }
-    mediaRecorderRef.current = null;
-    chunksRef.current = [];
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (_e) {}
+      }
+      mediaRecorderRef.current = null;
+      chunksRef.current = [];
 
-    sourceRef.current?.disconnect();
-    analyserRef.current?.disconnect();
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+      sourceRef.current?.disconnect();
+      analyserRef.current?.disconnect();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
 
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      void audioContextRef.current.close();
-    }
+      if (
+        audioContextRef.current &&
+        audioContextRef.current.state !== "closed"
+      ) {
+        void audioContextRef.current.close();
+      }
 
-    sourceRef.current = null;
-    analyserRef.current = null;
-    streamRef.current = null;
-    audioContextRef.current = null;
-    if (resetState) {
-      resetMeter();
-    }
-  }, [resetMeter]);
+      sourceRef.current = null;
+      analyserRef.current = null;
+      streamRef.current = null;
+      audioContextRef.current = null;
+      if (resetState) {
+        resetMeter();
+      }
+    },
+    [resetMeter],
+  );
 
   const stop = useCallback(() => {
     cleanupStream(true);
     setStatus("idle");
   }, [cleanupStream]);
 
-  const stopAndGetBlob = useCallback((): Promise<{ blob: Blob; mimeType: string } | null> => {
+  const stopAndGetBlob = useCallback((): Promise<{
+    blob: Blob;
+    mimeType: string;
+  } | null> => {
     return new Promise((resolve) => {
       const mr = mediaRecorderRef.current;
       if (!mr || mr.state === "inactive") {
@@ -89,7 +110,10 @@ export function useLiveAudioStream() {
       try {
         mr.stop();
       } catch (err) {
-        console.error("[useLiveAudioStream] Failed to stop MediaRecorder:", err);
+        console.error(
+          "[useLiveAudioStream] Failed to stop MediaRecorder:",
+          err,
+        );
         resolve(null);
       }
 
@@ -99,7 +123,10 @@ export function useLiveAudioStream() {
   }, [cleanupStream]);
 
   const start = useCallback(async () => {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
       setStatus("unsupported");
       return false;
     }
@@ -139,11 +166,14 @@ export function useLiveAudioStream() {
       let mediaRecorder: MediaRecorder | null = null;
       try {
         mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      } catch (e) {
+      } catch (_e) {
         try {
           mediaRecorder = new MediaRecorder(stream);
         } catch (err) {
-          console.error("[useLiveAudioStream] MediaRecorder is not supported:", err);
+          console.error(
+            "[useLiveAudioStream] MediaRecorder is not supported:",
+            err,
+          );
         }
       }
 
@@ -173,7 +203,11 @@ export function useLiveAudioStream() {
       return true;
     } catch (error) {
       cleanupStream(true);
-      setStatus(error instanceof DOMException && error.name === "NotAllowedError" ? "denied" : "error");
+      setStatus(
+        error instanceof DOMException && error.name === "NotAllowedError"
+          ? "denied"
+          : "error",
+      );
       return false;
     }
   }, [cleanupStream]);

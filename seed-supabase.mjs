@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("Missing SUPABASE_URL or SUPABASE_ANON_KEY");
@@ -99,8 +100,22 @@ async function seed() {
 
     // 3. Create demo events
     console.log("📊 Creating demo classification events...");
-    const states = ["relaxed", "attention", "excitement", "alert", "hunger", "distress"];
-    const emojis = { relaxed: "⚪", attention: "🟡", excitement: "🟢", alert: "🔵", hunger: "🟠", distress: "🔴" };
+    const states = [
+      "relaxed",
+      "attention",
+      "excitement",
+      "alert",
+      "hunger",
+      "distress",
+    ];
+    const emojis = {
+      relaxed: "⚪",
+      attention: "🟡",
+      excitement: "🟢",
+      alert: "🔵",
+      hunger: "🟠",
+      distress: "🔴",
+    };
     const models = ["yamnet", "wav2vec2", "gemini"];
 
     const events = [];
@@ -113,7 +128,9 @@ async function seed() {
       const model = models[Math.floor(Math.random() * models.length)];
 
       const eventTime = new Date(now);
-      eventTime.setHours(eventTime.getHours() - Math.floor(Math.random() * 24 * 7));
+      eventTime.setHours(
+        eventTime.getHours() - Math.floor(Math.random() * 24 * 7),
+      );
 
       events.push({
         user_id: userId,
@@ -140,15 +157,13 @@ async function seed() {
 
     // 4. Create demo settings
     console.log("⚙️  Creating demo settings...");
-    const { error: settingsError } = await supabase
-      .from("settings")
-      .insert([
-        {
-          user_id: userId,
-          notifications_enabled: true,
-          alert_sensitivity: "medium",
-        },
-      ]);
+    const { error: settingsError } = await supabase.from("settings").insert([
+      {
+        user_id: userId,
+        notifications_enabled: true,
+        alert_sensitivity: "medium",
+      },
+    ]);
 
     if (settingsError && !settingsError.message.includes("duplicate")) {
       console.warn("⚠️  Settings error:", settingsError.message);

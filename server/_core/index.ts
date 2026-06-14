@@ -1,16 +1,16 @@
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { registerOAuthRoutes } from "./oauth";
 import { serveStatic } from "./serveStatic";
+import { registerStorageProxy } from "./storageProxy";
 import { setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const server = net.createServer();
     server.listen(port, () => {
       server.close(() => resolve(true));
@@ -42,7 +42,7 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
-    })
+    }),
   );
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
@@ -51,7 +51,7 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
+  const preferredPort = parseInt(process.env.PORT || "3000", 10);
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {

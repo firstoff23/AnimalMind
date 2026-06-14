@@ -1,13 +1,16 @@
-import React from "react";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import type React from "react";
+import { cn } from "@/lib/utils";
 
-export function BackgroundGrid({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function BackgroundGrid({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
         "pointer-events-none fixed inset-0 -z-10 overflow-hidden",
-        className
+        className,
       )}
       {...props}
     >
@@ -15,8 +18,10 @@ export function BackgroundGrid({ className, ...props }: React.HTMLAttributes<HTM
       <div
         className="absolute inset-0 h-full w-full bg-[linear-gradient(to_right,oklch(0.22_0.012_264_/_0.35)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.22_0.012_264_/_0.35)_1px,transparent_1px)] bg-[size:32px_32px]"
         style={{
-          maskImage: "radial-gradient(ellipse 60% 60% at 50% 30%, black 50%, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 60% 60% at 50% 30%, black 50%, transparent 100%)",
+          maskImage:
+            "radial-gradient(ellipse 60% 60% at 50% 30%, black 50%, transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 60% 60% at 50% 30%, black 50%, transparent 100%)",
         }}
       />
       {/* Animated glowing spotlights in the background */}

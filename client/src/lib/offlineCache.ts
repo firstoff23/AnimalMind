@@ -36,7 +36,11 @@ export async function getCachedFoods(query: string, species: string) {
   return getCachedData<any[]>(cacheKey);
 }
 
-export async function setCachedFoods(query: string, species: string, foods: any[]) {
+export async function setCachedFoods(
+  query: string,
+  species: string,
+  foods: any[],
+) {
   const cacheKey = `${CACHE_KEYS.FOODS_CACHE_PREFIX}${species}-${query.toLowerCase().trim()}`;
   await setCachedData(cacheKey, foods);
 }

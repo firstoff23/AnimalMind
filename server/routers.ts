@@ -1,75 +1,78 @@
-import { TRPCError } from "@trpc/server";
-import { streamText, type ModelMessage } from "ai";
-import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
-import { notifyN8N } from "./_core/notification";
+import { TRPCError } from "@trpc/server";
+import { type ModelMessage, streamText } from "ai";
+import { z } from "zod";
+import {
+  type EmotionalState,
+  type ModelUsed,
+  STATE_LABELS,
+} from "../shared/types";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { notifyN8N } from "./_core/notification";
+import { checkRateLimit } from "./_core/rateLimiter";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { familyRouter } from "./routers/family";
-import { vetRouter } from "./routers/vet";
-import { healthRouter } from "./routers/health";
-import { trendsRouter } from "./routers/trends";
-import { healingRouter } from "./routers/healing";
-import { foodsRouter } from "./routers/foods";
 import {
   addAnimal,
-  updateAnimal,
-  getAllEventsForExport,
+  addDeworming,
+  addDiagnosticTest,
+  addLicensing,
+  addOtherTreatment,
+  addVaccination,
+  createShareInvitation,
+  deleteDeworming,
+  deleteDiagnosticTest,
+  deleteLicensing,
+  deleteOtherTreatment,
+  deleteVaccination,
   getActiveAnimal,
+  getAllEventsForExport,
+  getAnimalBaseline,
+  getAnimalById,
+  getAnimalShares,
   getAnimalsByUser,
+  getDemoUserId,
+  getDewormings,
+  getDiagnosticTests,
+  getEventBeliefState,
+  getEventNotes,
+  getEventPosture,
+  getEventsForAnimalPaginated,
   getEventsPaginated,
-  getOrCreateDemoUserId,
+  getLatestBeliefState,
+  getLicensing,
+  getOtherTreatments,
+  getPendingInvitations,
   getRecentEvents,
   getSettings,
+  getSignedAudioUrl,
+  getStatsForAnimal,
+  getVaccinations,
   getWeeklyStats,
   insertEvent,
-  setActiveAnimal,
-  updateEventFeedback,
-  upsertSettings,
-  getDemoUserId,
-  getEventNotes,
-  updateEventNotes,
-  uploadAudioToSupabase,
-  getSignedAudioUrl,
-  updateEventAudio,
-  getAnimalById,
-  getAnimalBaseline,
   recalculateAnimalBehaviorBaseline,
-  updateAnimalBaseline,
-  verifyAnimalOwner,
-  getEventsForAnimalPaginated,
-  getStatsForAnimal,
-  updateBeliefStateForAnimal,
-  getLatestBeliefState,
-  getEventBeliefState,
-  getEventPosture,
-  savePostureForEvent,
-  createShareInvitation,
-  getPendingInvitations,
-  respondToInvitation,
-  getAnimalShares,
   removeAnimalShare,
+  respondToInvitation,
   saveBreedFeedback,
+  savePostureForEvent,
+  setActiveAnimal,
+  updateAnimal,
+  updateAnimalBaseline,
+  updateBeliefStateForAnimal,
+  updateEventAudio,
+  updateEventFeedback,
+  updateEventNotes,
   updateUser,
-  getVaccinations,
-  addVaccination,
-  deleteVaccination,
-  getDewormings,
-  addDeworming,
-  deleteDeworming,
-  getDiagnosticTests,
-  addDiagnosticTest,
-  deleteDiagnosticTest,
-  getOtherTreatments,
-  addOtherTreatment,
-  deleteOtherTreatment,
-  getLicensing,
-  addLicensing,
-  deleteLicensing,
+  uploadAudioToSupabase,
+  upsertSettings,
+  verifyAnimalOwner,
 } from "./db";
-import { checkRateLimit } from "./_core/rateLimiter";
-import { STATE_LABELS, type EmotionalState, type ModelUsed } from "../shared/types";
+import { familyRouter } from "./routers/family";
+import { foodsRouter } from "./routers/foods";
+import { healingRouter } from "./routers/healing";
+import { healthRouter } from "./routers/health";
+import { trendsRouter } from "./routers/trends";
+import { vetRouter } from "./routers/vet";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -83,15 +86,15 @@ const STATES: EmotionalState[] = [
 ];
 
 const STATE_EMOJIS: Record<EmotionalState, string> = {
-  distress:   "🔴",
-  attention:  "🟡",
+  distress: "🔴",
+  attention: "🟡",
   excitement: "🟢",
-  hunger:     "🟠",
-  alert:      "🔵",
-  relaxed:    "⚪",
+  hunger: "🟠",
+  alert: "🔵",
+  relaxed: "⚪",
 };
 
-const MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
+const _MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
 
 // Default ML backends. Runtime env can prepend a deployed backend without
 // removing these known-good fallbacks.
@@ -99,7 +102,7 @@ const PRIMARY_BACKEND_URL = "https://animalmind-backend.fly.dev";
 const HF_BACKEND_URL = "https://firstoff-animalmind-backend.hf.space";
 const CLASSIFY_TIMEOUT_MS = 5000;
 
-async function sleep(ms: number) {
+async function _sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
@@ -108,7 +111,7 @@ async function tryBackendPost(
   url: string,
   endpoint: string,
   formData: FormData,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -124,7 +127,9 @@ async function tryBackendPost(
     return await response.json();
   } catch (err) {
     const isTimeout = err instanceof Error && err.name === "AbortError";
-    console.warn(`[ML] Backend ${url}${endpoint} failed${isTimeout ? " (timeout)" : ""}: ${err}`);
+    console.warn(
+      `[ML] Backend ${url}${endpoint} failed${isTimeout ? " (timeout)" : ""}: ${err}`,
+    );
     return null;
   } finally {
     clearTimeout(timer);
@@ -135,8 +140,13 @@ async function tryBackendPost(
 async function tryClassifyBackend(
   url: string,
   formData: FormData,
-  timeoutMs: number
-): Promise<{ state: string; confidence: number; emoji: string; model_used: string } | null> {
+  timeoutMs: number,
+): Promise<{
+  state: string;
+  confidence: number;
+  emoji: string;
+  model_used: string;
+} | null> {
   return tryBackendPost(url, "/classify", formData, timeoutMs);
 }
 
@@ -170,23 +180,39 @@ function resolveMlBackendUrls() {
 async function tryVisionBackend(
   endpoint: string,
   imageBuffer: Buffer,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<any> {
   for (const backendUrl of resolveMlBackendUrls()) {
-    const file = new File([Uint8Array.from(imageBuffer)], "frame.jpg", { type: "image/jpeg" });
+    const file = new File([Uint8Array.from(imageBuffer)], "frame.jpg", {
+      type: "image/jpeg",
+    });
     const formData = new FormData();
     formData.append("file", file);
-    
-    const data = await tryBackendPost(backendUrl, endpoint, formData, timeoutMs);
+
+    const data = await tryBackendPost(
+      backendUrl,
+      endpoint,
+      formData,
+      timeoutMs,
+    );
     if (data) return data;
   }
   return null;
 }
 
 /** Map raw backend response into our typed result shape. */
-function mapBackendResult(
-  data: { state: string; confidence: number; emoji: string; model_used: string }
-): { state: EmotionalState; confidence: number; emoji: string; model_used: ModelUsed; cached: boolean } | null {
+function mapBackendResult(data: {
+  state: string;
+  confidence: number;
+  emoji: string;
+  model_used: string;
+}): {
+  state: EmotionalState;
+  confidence: number;
+  emoji: string;
+  model_used: ModelUsed;
+  cached: boolean;
+} | null {
   if (!STATES.includes(data.state as EmotionalState)) return null;
   let modelUsedMapped: ModelUsed = "yamnet";
   if (data.model_used === "wav2vec2") modelUsedMapped = "wav2vec2";
@@ -203,7 +229,9 @@ function mapBackendResult(
 
 // ─── Effective user ID (demo fallback) ───────────────────────────────────────
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -286,7 +314,7 @@ function formatRecentClassifications(events: ReturnType<typeof mapDbEvent>[]) {
 
 function buildMindiSystemPrompt(
   animal: any | null,
-  events: ReturnType<typeof mapDbEvent>[]
+  events: ReturnType<typeof mapDbEvent>[],
 ) {
   return `${MINDI_BASE_PROMPT}
 
@@ -305,7 +333,7 @@ Regras de resposta:
 function buildFallbackMindiResponse(
   message: string,
   animal: any | null,
-  events: ReturnType<typeof mapDbEvent>[]
+  events: ReturnType<typeof mapDbEvent>[],
 ) {
   const animalName = animal?.name ? animal.name : "o teu animal";
   const recent = events[0];
@@ -314,7 +342,11 @@ function buildFallbackMindiResponse(
     : "";
   const normalized = message.toLocaleLowerCase("pt-PT");
 
-  if (normalized.includes("não come") || normalized.includes("nao come") || normalized.includes("comer")) {
+  if (
+    normalized.includes("não come") ||
+    normalized.includes("nao come") ||
+    normalized.includes("comer")
+  ) {
     return `${animalName} pode estar a recusar comida por stress, alteração de rotina, desconforto oral, náusea ou dor.${recentState} Observa também água, energia, vómitos, diarreia e sinais de dor. Se não comer durante 24 horas, se for gato, sénior, cachorro, ou se houver apatia/vómitos/dificuldade respiratória, contacta um médico veterinário.`;
   }
 
@@ -350,11 +382,11 @@ export const appRouter = router({
               z.object({
                 role: z.enum(["user", "assistant"]),
                 content: z.string().min(1).max(4000),
-              })
+              }),
             )
             .max(10)
             .optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "chat.send", 25);
@@ -366,7 +398,8 @@ export const appRouter = router({
         if (input.animalId && !animal) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Animal não encontrado ou sem acesso para este utilizador.",
+            message:
+              "Animal não encontrado ou sem acesso para este utilizador.",
           });
         }
 
@@ -392,14 +425,23 @@ export const appRouter = router({
           });
           const reply = (await result.text).trim();
           return {
-            reply: reply || buildFallbackMindiResponse(input.message, animal, recentEvents),
+            reply:
+              reply ||
+              buildFallbackMindiResponse(input.message, animal, recentEvents),
             model,
             fallback: !reply,
           };
         } catch (err) {
-          console.warn("[Mindi] AI generation failed, returning fallback response:", err);
+          console.warn(
+            "[Mindi] AI generation failed, returning fallback response:",
+            err,
+          );
           return {
-            reply: buildFallbackMindiResponse(input.message, animal, recentEvents),
+            reply: buildFallbackMindiResponse(
+              input.message,
+              animal,
+              recentEvents,
+            ),
             model,
             fallback: true,
           };
@@ -419,7 +461,7 @@ export const appRouter = router({
         z.object({
           name: z.string().min(1).max(100).optional(),
           email: z.string().email().optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -440,7 +482,7 @@ export const appRouter = router({
           pitch: z.number().optional(),
           spectralEnergy: z.number().optional(),
           tonalBrightness: z.number().optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.run", 30);
@@ -471,7 +513,11 @@ export const appRouter = router({
             const formData = new FormData();
             formData.append("file", file);
 
-            const data = await tryClassifyBackend(backendUrl, formData, CLASSIFY_TIMEOUT_MS);
+            const data = await tryClassifyBackend(
+              backendUrl,
+              formData,
+              CLASSIFY_TIMEOUT_MS,
+            );
             if (data) {
               const mapped = mapBackendResult(data);
               if (mapped) {
@@ -479,7 +525,9 @@ export const appRouter = router({
                 console.log(`[Classify] Success from ${backendUrl}:`, result);
                 break;
               } else {
-                console.warn(`[Classify] ${backendUrl} returned invalid state "${data.state}", trying next.`);
+                console.warn(
+                  `[Classify] ${backendUrl} returned invalid state "${data.state}", trying next.`,
+                );
               }
             }
           }
@@ -492,7 +540,8 @@ export const appRouter = router({
         if (!result) {
           throw new TRPCError({
             code: "SERVICE_UNAVAILABLE",
-            message: "Não foi possível classificar o áudio neste momento. O áudio foi guardado para análise posterior.",
+            message:
+              "Não foi possível classificar o áudio neste momento. O áudio foi guardado para análise posterior.",
           });
         }
 
@@ -533,11 +582,19 @@ export const appRouter = router({
         let beliefState = null;
         if (eventId) {
           const animalId = input.animalId || 1;
-          beliefState = await updateBeliefStateForAnimal(animalId, result.state, result.confidence, eventId);
+          beliefState = await updateBeliefStateForAnimal(
+            animalId,
+            result.state,
+            result.confidence,
+            eventId,
+          );
           try {
             await recalculateAnimalBehaviorBaseline(animalId, userId);
           } catch (err) {
-            console.error("[Baseline] Failed to recalculate behavior baseline:", err);
+            console.error(
+              "[Baseline] Failed to recalculate behavior baseline:",
+              err,
+            );
           }
           if (input.posture) {
             await savePostureForEvent(eventId, input.posture);
@@ -557,19 +614,29 @@ export const appRouter = router({
           }
         }
 
-        return { ...result, eventId, audioUrl, beliefState, posture: input.posture || null };
+        return {
+          ...result,
+          eventId,
+          audioUrl,
+          beliefState,
+          posture: input.posture || null,
+        };
       }),
 
     detectPosture: protectedProcedure
       .input(
         z.object({
           image: z.string(), // base64 JPEG
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.detectPosture", 45);
         const buffer = Buffer.from(input.image, "base64");
-        const data = await tryVisionBackend("/detect-posture", buffer, CLASSIFY_TIMEOUT_MS);
+        const data = await tryVisionBackend(
+          "/detect-posture",
+          buffer,
+          CLASSIFY_TIMEOUT_MS,
+        );
         if (!data) {
           throw new TRPCError({
             code: "SERVICE_UNAVAILABLE",
@@ -583,12 +650,16 @@ export const appRouter = router({
       .input(
         z.object({
           image: z.string(), // base64 JPEG
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.detectSpecies", 45);
         const buffer = Buffer.from(input.image, "base64");
-        const data = await tryVisionBackend("/detect-species", buffer, CLASSIFY_TIMEOUT_MS);
+        const data = await tryVisionBackend(
+          "/detect-species",
+          buffer,
+          CLASSIFY_TIMEOUT_MS,
+        );
         if (!data) {
           throw new TRPCError({
             code: "SERVICE_UNAVAILABLE",
@@ -605,42 +676,76 @@ export const appRouter = router({
           posture: z.string(),
           species: z.string().optional().nullable(),
           image: z.string().optional(), // base64 JPEG
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
-        let state: "relaxed" | "distress" | "attention" | "hunger" | "alert" | "excitement" = "relaxed";
+        let state:
+          | "relaxed"
+          | "distress"
+          | "attention"
+          | "hunger"
+          | "alert"
+          | "excitement" = "relaxed";
         let emoji = "😌";
         const p = input.posture.toLowerCase();
-        
-        if (p.includes("sleep") || p.includes("lie") || p.includes("lying") || p.includes("sitting") || p.includes("sit")) {
+
+        if (
+          p.includes("sleep") ||
+          p.includes("lie") ||
+          p.includes("lying") ||
+          p.includes("sitting") ||
+          p.includes("sit")
+        ) {
           state = "relaxed";
           emoji = "😌";
-        } else if (p.includes("stand") || p.includes("standing") || p.includes("walk") || p.includes("run")) {
+        } else if (
+          p.includes("stand") ||
+          p.includes("standing") ||
+          p.includes("walk") ||
+          p.includes("run")
+        ) {
           state = "alert";
           emoji = "👀";
-        } else if (p.includes("play") || p.includes("jump") || p.includes("excited")) {
+        } else if (
+          p.includes("play") ||
+          p.includes("jump") ||
+          p.includes("excited")
+        ) {
           state = "excitement";
           emoji = "🤪";
-        } else if (p.includes("beg") || p.includes("begging") || p.includes("food")) {
+        } else if (
+          p.includes("beg") ||
+          p.includes("begging") ||
+          p.includes("food")
+        ) {
           state = "hunger";
           emoji = "😋";
-        } else if (p.includes("cower") || p.includes("fear") || p.includes("hide") || p.includes("distress")) {
+        } else if (
+          p.includes("cower") ||
+          p.includes("fear") ||
+          p.includes("hide") ||
+          p.includes("distress")
+        ) {
           state = "distress";
           emoji = "😰";
-        } else if (p.includes("bark") || p.includes("growl") || p.includes("attention")) {
+        } else if (
+          p.includes("bark") ||
+          p.includes("growl") ||
+          p.includes("attention")
+        ) {
           state = "attention";
           emoji = "🥺";
         }
 
         const userId = await effectiveUserId(ctx.user);
         await verifyAnimalOwner(input.animalId, userId, true);
-        const targetAnimal = await getAnimalById(input.animalId, userId);
+        const _targetAnimal = await getAnimalById(input.animalId, userId);
 
         const event = await insertEvent({
           userId,
           animalId: input.animalId,
           state,
-          confidence: 0.90,
+          confidence: 0.9,
           emoji,
           modelUsed: "YOLOv8-Vision",
           cached: false,
@@ -649,15 +754,24 @@ export const appRouter = router({
         const eventId = (event as any)?.id;
         if (eventId) {
           await savePostureForEvent(eventId, input.posture);
-          await updateBeliefStateForAnimal(input.animalId, state, 0.90, eventId);
+          await updateBeliefStateForAnimal(input.animalId, state, 0.9, eventId);
           try {
             await recalculateAnimalBehaviorBaseline(input.animalId, userId);
           } catch (err) {
-            console.error("[Baseline] Failed to recalculate behavior baseline:", err);
+            console.error(
+              "[Baseline] Failed to recalculate behavior baseline:",
+              err,
+            );
           }
         }
 
-        return { state, confidence: 0.90, emoji, model_used: "YOLOv8-Vision", eventId };
+        return {
+          state,
+          confidence: 0.9,
+          emoji,
+          model_used: "YOLOv8-Vision",
+          eventId,
+        };
       }),
   }),
 
@@ -685,7 +799,7 @@ export const appRouter = router({
           tail: z.string().max(50).optional().nullable(),
           specialMarkings: z.string().optional().nullable(),
           weight: z.string().max(50).optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -710,7 +824,7 @@ export const appRouter = router({
           tail: z.string().max(50).optional().nullable(),
           specialMarkings: z.string().optional().nullable(),
           weight: z.string().max(50).optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -759,7 +873,10 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         await verifyAnimalOwner(input.animalId, userId);
         try {
-          return await recalculateAnimalBehaviorBaseline(input.animalId, userId);
+          return await recalculateAnimalBehaviorBaseline(
+            input.animalId,
+            userId,
+          );
         } catch {
           return getAnimalBaseline(input.animalId);
         }
@@ -772,7 +889,7 @@ export const appRouter = router({
           vocalizationThreshold: z.number().int().min(1).max(100).optional(),
           normalStates: z.array(z.string()).optional(),
           alertSensitivity: z.enum(["low", "medium", "high"]).optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -794,7 +911,7 @@ export const appRouter = router({
           animalId: z.number(),
           email: z.string().email(),
           permission: z.enum(["read", "write"]),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -805,7 +922,12 @@ export const appRouter = router({
             message: "Apenas o proprietario pode convidar co-tutores.",
           });
         }
-        return createShareInvitation(userId, input.animalId, input.email, input.permission);
+        return createShareInvitation(
+          userId,
+          input.animalId,
+          input.email,
+          input.permission,
+        );
       }),
 
     listShares: protectedProcedure
@@ -841,7 +963,7 @@ export const appRouter = router({
         z.object({
           invitationId: z.number(),
           action: z.enum(["accept", "reject"]),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -856,7 +978,7 @@ export const appRouter = router({
           predictedBreed: z.string(),
           confirmedBreed: z.string(),
           confidence: z.number(),
-        })
+        }),
       )
       .mutation(async ({ input }) => {
         await saveBreedFeedback(input);
@@ -881,7 +1003,7 @@ export const appRouter = router({
           batchNumber: z.string().max(50).optional().nullable(),
           veterinarian: z.string().max(100).optional().nullable(),
           nextDueDate: z.string().length(10).optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -914,7 +1036,7 @@ export const appRouter = router({
           dosage: z.string().max(100).optional().nullable(),
           dateAdministered: z.string().length(10),
           nextDueDate: z.string().length(10).optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -946,7 +1068,7 @@ export const appRouter = router({
           datePerformed: z.string().length(10),
           result: z.string().min(1).max(200),
           notes: z.string().optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -977,7 +1099,7 @@ export const appRouter = router({
           treatmentName: z.string().min(1).max(200),
           dateAdministered: z.string().length(10),
           notes: z.string().optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1009,9 +1131,16 @@ export const appRouter = router({
           issueDate: z.string().length(10),
           expiryDate: z.string().length(10).optional().nullable(),
           issuingAuthority: z.string().min(1).max(150),
-          category: z.enum(["companion", "dangerous", "potentially_dangerous", "hunting", "guard", "other"]),
+          category: z.enum([
+            "companion",
+            "dangerous",
+            "potentially_dangerous",
+            "hunting",
+            "guard",
+            "other",
+          ]),
           notes: z.string().optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1040,20 +1169,20 @@ export const appRouter = router({
           mapped.map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
       }),
 
     list: protectedProcedure
       .input(
         z.object({
-          page:     z.number().default(1),
+          page: z.number().default(1),
           pageSize: z.number().default(10),
-          state:    z.string().optional(),
+          state: z.string().optional(),
           dateFrom: z.string().optional(),
-          dateTo:   z.string().optional(),
+          dateTo: z.string().optional(),
           animalId: z.number().optional(),
-        })
+        }),
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1064,13 +1193,13 @@ export const appRouter = router({
           input.state,
           input.dateFrom,
           input.dateTo,
-          input.animalId
+          input.animalId,
         );
         const mappedEvents = await Promise.all(
           result.events.map(mapDbEvent).map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
         return {
           events: mappedEvents,
@@ -1081,9 +1210,9 @@ export const appRouter = router({
     feedback: protectedProcedure
       .input(
         z.object({
-          eventId:  z.number(),
+          eventId: z.number(),
           feedback: z.enum(["correct", "incorrect"]),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1098,7 +1227,7 @@ export const appRouter = router({
           dateFrom: z.string().optional(),
           dateTo: z.string().optional(),
           animalId: z.number().optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1113,7 +1242,7 @@ export const appRouter = router({
           events.map(mapEventForExport).map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
         return {
           events: mappedEvents,
@@ -1125,7 +1254,8 @@ export const appRouter = router({
     exportCsv: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       const events = await getAllEventsForExport(userId);
-      const header = "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
+      const header =
+        "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
       const rows = await Promise.all(
         events.map(async (e: any) => {
           const signedUrl = await getSignedAudioUrl(e.audio_url);
@@ -1140,7 +1270,7 @@ export const appRouter = router({
             signedUrl ?? "",
             new Date(e.created_at).toISOString(),
           ].join(",");
-        })
+        }),
       );
       return { csv: [header, ...rows].join("\n") };
     }),
@@ -1155,8 +1285,8 @@ export const appRouter = router({
       .input(
         z.object({
           eventId: z.number(),
-          notes:   z.string(),
-        })
+          notes: z.string(),
+        }),
       )
       .mutation(async ({ input }) => {
         const notes = await updateEventNotes(input.eventId, input.notes);
@@ -1169,7 +1299,7 @@ export const appRouter = router({
           animalId: z.number(),
           page: z.number().default(1),
           pageSize: z.number().default(10),
-        })
+        }),
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1177,13 +1307,13 @@ export const appRouter = router({
           input.animalId,
           userId,
           input.page,
-          input.pageSize
+          input.pageSize,
         );
         const mappedEvents = await Promise.all(
           result.events.map(mapDbEvent).map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
         return {
           events: mappedEvents,
@@ -1196,7 +1326,7 @@ export const appRouter = router({
         z.object({
           animalId: z.number(),
           days: z.number().default(7),
-        })
+        }),
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1233,8 +1363,8 @@ export const appRouter = router({
       .input(
         z.object({
           notificationsEnabled: z.boolean().optional(),
-          alertSensitivity:     z.enum(["low", "medium", "high"]).optional(),
-        })
+          alertSensitivity: z.enum(["low", "medium", "high"]).optional(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);

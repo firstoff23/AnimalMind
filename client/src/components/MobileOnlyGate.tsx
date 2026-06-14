@@ -1,5 +1,5 @@
-import * as React from "react";
 import { QrCode, Smartphone } from "lucide-react";
+import * as React from "react";
 import { Logo } from "@/components/ui/Logo";
 import { useIsMobile } from "@/hooks/useMobile";
 
@@ -67,8 +67,8 @@ function DesktopMobileNotice() {
             O AnimalMind foi feito para mobile
           </h1>
           <p className="text-sm leading-6 text-white/58">
-            Lê o QR code com o telemóvel para abrir a versão optimizada para gravações,
-            histórico e acompanhamento dos teus animais.
+            Lê o QR code com o telemóvel para abrir a versão optimizada para
+            gravações, histórico e acompanhamento dos teus animais.
           </p>
         </div>
 

@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Bot, Send, Sparkles } from "lucide-react";
-import { Streamdown } from "streamdown";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Streamdown } from "streamdown";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { STATE_LABELS, type EmotionalState } from "../../../shared/types";
+import { type EmotionalState, STATE_LABELS } from "../../../shared/types";
 
 type ChatMessage = {
   id: string;
@@ -28,7 +28,10 @@ const createMessageId = () =>
 
 function TypingIndicator() {
   return (
-    <div className="flex items-center gap-1 px-1 py-2" aria-label="Mindi está a responder">
+    <div
+      className="flex items-center gap-1 px-1 py-2"
+      aria-label="Mindi está a responder"
+    >
       {[0, 1, 2].map((index) => (
         <span
           key={index}
@@ -52,14 +55,19 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user";
 
   return (
-    <div className={cn("flex w-full gap-3", isUser ? "justify-end" : "justify-start")}>
+    <div
+      className={cn(
+        "flex w-full gap-3",
+        isUser ? "justify-end" : "justify-start",
+      )}
+    >
       {!isUser && <MindiAvatar />}
       <div
         className={cn(
           "max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
           isUser
             ? "rounded-br-md bg-primary text-primary-foreground"
-            : "rounded-bl-md border border-border bg-card/95 text-foreground"
+            : "rounded-bl-md border border-border bg-card/95 text-foreground",
         )}
       >
         {isUser ? (
@@ -77,25 +85,50 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 }
 
 function getContextSummary(
-  animal: { name?: string; species?: string; breed?: string | null; age?: number | null } | null | undefined,
-  latestState?: string
+  animal:
+    | {
+        name?: string;
+        species?: string;
+        breed?: string | null;
+        age?: number | null;
+      }
+    | null
+    | undefined,
+  latestState?: string,
 ) {
   if (!animal) {
     return "Escolhe um animal no Perfil para a Mindi usar contexto automático.";
   }
 
-  const species = animal.species === "dog" ? "Cão" : animal.species === "cat" ? "Gato" : "Animal";
+  const species =
+    animal.species === "dog"
+      ? "Cão"
+      : animal.species === "cat"
+        ? "Gato"
+        : "Animal";
   const breed = animal.breed || "raça indefinida";
-  const age = typeof animal.age === "number" ? `${animal.age} anos` : "idade desconhecida";
-  const recent = latestState ? `Último estado: ${latestState}.` : "Sem histórico recente.";
+  const age =
+    typeof animal.age === "number"
+      ? `${animal.age} anos`
+      : "idade desconhecida";
+  const recent = latestState
+    ? `Último estado: ${latestState}.`
+    : "Sem histórico recente.";
   return `${animal.name} · ${species} · ${breed} · ${age}. ${recent}`;
 }
 
-function buildClientFallbackResponse(message: string, animalName?: string): string {
+function buildClientFallbackResponse(
+  message: string,
+  animalName?: string,
+): string {
   const name = animalName || "o teu animal";
   const normalized = message.toLocaleLowerCase("pt-PT");
 
-  if (normalized.includes("não come") || normalized.includes("nao come") || normalized.includes("comer")) {
+  if (
+    normalized.includes("não come") ||
+    normalized.includes("nao come") ||
+    normalized.includes("comer")
+  ) {
     return `${name} pode estar a recusar comida por stress, alteração de rotina, desconforto oral, náusea ou dor. Observa também água, energia, vómitos, diarreia e sinais de dor. Se não comer durante 24 horas, contacta um médico veterinário.`;
   }
   if (normalized.includes("stress") || normalized.includes("ansiedade")) {
@@ -118,16 +151,18 @@ export default function MindiPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const revealTimerRef = useRef<number | null>(null);
 
-  const { data: activeAnimal, isLoading: animalLoading } = trpc.animals.getActive.useQuery();
+  const { data: activeAnimal, isLoading: animalLoading } =
+    trpc.animals.getActive.useQuery();
   const recentEventsQuery = trpc.events.listForAnimal.useQuery(
     { animalId: activeAnimal?.id ?? 0, page: 1, pageSize: 5 },
-    { enabled: Boolean(activeAnimal?.id) }
+    { enabled: Boolean(activeAnimal?.id) },
   );
   const sendMutation = trpc.chat.send.useMutation();
 
   const recentEvents = recentEventsQuery.data?.events ?? [];
   const latestStateLabel = recentEvents[0]?.state
-    ? STATE_LABELS[recentEvents[0].state as EmotionalState] ?? recentEvents[0].state
+    ? (STATE_LABELS[recentEvents[0].state as EmotionalState] ??
+      recentEvents[0].state)
     : undefined;
 
   const welcomeMessage = useMemo<ChatMessage>(
@@ -138,7 +173,7 @@ export default function MindiPage() {
         ? `Olá, sou a Mindi. Já tenho o contexto de ${activeAnimal.name} e vou usar o perfil e as últimas classificações para te ajudar.`
         : "Olá, sou a Mindi. Posso ajudar com comportamento, saúde, nutrição e bem-estar animal. Seleciona um animal para eu usar contexto automático.",
     }),
-    [activeAnimal]
+    [activeAnimal],
   );
 
   const displayMessages = [welcomeMessage, ...messages];
@@ -147,7 +182,7 @@ export default function MindiPage() {
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [displayMessages, isBusy]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -170,8 +205,10 @@ export default function MindiPage() {
       cursor = Math.min(text.length, cursor + chunkSize);
       setMessages((current) =>
         current.map((message) =>
-          message.id === messageId ? { ...message, content: text.slice(0, cursor) } : message
-        )
+          message.id === messageId
+            ? { ...message, content: text.slice(0, cursor) }
+            : message,
+        ),
       );
 
       if (cursor >= text.length) {
@@ -209,7 +246,10 @@ export default function MindiPage() {
 
     // Offline: use client-side fallback immediately
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      const offlineReply = buildClientFallbackResponse(content, activeAnimal?.name);
+      const offlineReply = buildClientFallbackResponse(
+        content,
+        activeAnimal?.name,
+      );
       setTimeout(() => revealAssistantMessage(assistantId, offlineReply), 150);
       return;
     }
@@ -225,7 +265,10 @@ export default function MindiPage() {
       console.error("[Mindi] Chat request failed:", error);
       setIsRevealing(false);
       // Network failure fallback
-      const fallbackReply = buildClientFallbackResponse(content, activeAnimal?.name);
+      const fallbackReply = buildClientFallbackResponse(
+        content,
+        activeAnimal?.name,
+      );
       revealAssistantMessage(assistantId, fallbackReply);
       toast.error("Resposta gerada localmente (modo offline).");
     }
@@ -249,7 +292,9 @@ export default function MindiPage() {
               <Sparkles className="h-3.5 w-3.5" />
               Chat IA
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">Mindi</h1>
+            <h1 className="text-3xl font-black tracking-tight text-foreground">
+              Mindi
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               A tua assistente de bem-estar animal
             </p>

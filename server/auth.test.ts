@@ -1,12 +1,15 @@
-import { describe, expect, it, beforeAll, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("@supabase/supabase-js", () => {
   const mockAdmin = {
     listUsers: vi.fn().mockResolvedValue({ data: { users: [] }, error: null }),
     createUser: vi.fn().mockImplementation(({ email, password }) => {
       if (password === "123") {
-        return Promise.resolve({ data: { user: null }, error: new Error("Weak password") });
+        return Promise.resolve({
+          data: { user: null },
+          error: new Error("Weak password"),
+        });
       }
       return Promise.resolve({
         data: { user: { id: "test-user-id", email } },
@@ -36,7 +39,10 @@ describe("Supabase Auth", () => {
     try {
       supabase = createClient(url, key);
       // Quick connectivity check using admin API
-      const { error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+      const { error } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
       credentialsValid = !error;
     } catch {
       credentialsValid = false;

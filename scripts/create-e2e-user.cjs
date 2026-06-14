@@ -27,7 +27,10 @@ async function main() {
   console.log(`Ensuring E2E test user exists: ${e2eEmail}...`);
 
   // Check if user already exists in auth.users
-  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+  const {
+    data: { users },
+    error: listError,
+  } = await supabase.auth.admin.listUsers();
   if (listError) {
     console.error("Error listing users:", listError.message);
     process.exit(1);
@@ -37,12 +40,13 @@ async function main() {
 
   if (!user) {
     console.log("E2E user does not exist in Auth. Creating...");
-    const { data: createData, error: createError } = await supabase.auth.admin.createUser({
-      email: e2eEmail,
-      password: e2ePassword,
-      email_confirm: true,
-      user_metadata: { full_name: "E2E Test User" },
-    });
+    const { data: createData, error: createError } =
+      await supabase.auth.admin.createUser({
+        email: e2eEmail,
+        password: e2ePassword,
+        email_confirm: true,
+        user_metadata: { full_name: "E2E Test User" },
+      });
 
     if (createError) {
       console.error("Error creating auth user:", createError.message);

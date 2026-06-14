@@ -1,27 +1,34 @@
-import { useState, useRef, useEffect } from "react";
-import { Drawer } from "vaul";
-import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { Plus, Check, Camera, Loader2, AlertCircle, PawPrint } from "lucide-react";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { toast } from "sonner";
-import { useLanguage } from "@/hooks/useLanguage";
 import { motion } from "framer-motion";
 import {
-  RadarChart,
-  PolarGrid,
+  AlertCircle,
+  Camera,
+  Check,
+  Loader2,
+  PawPrint,
+  Plus,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
   PolarAngleAxis,
+  PolarGrid,
   Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { STATE_LABELS, STATE_COLORS } from "../../../shared/types";
+import { toast } from "sonner";
+import { Drawer } from "vaul";
+import { useLocation } from "wouter";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/hooks/useLanguage";
+import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import type { EmotionalState } from "../../../shared/types";
+import { STATE_LABELS } from "../../../shared/types";
 
 const STATES: EmotionalState[] = [
   "distress",
@@ -40,7 +47,14 @@ function AnimalCard({
   onSelect,
   index,
 }: {
-  animal: { id: number; name: string; species: string; breed: string | null; age: number | null; isActive: boolean };
+  animal: {
+    id: number;
+    name: string;
+    species: string;
+    breed: string | null;
+    age: number | null;
+    isActive: boolean;
+  };
   active: boolean;
   onSelect: () => void;
   index: number;
@@ -54,7 +68,7 @@ function AnimalCard({
       viewport={{ once: true, margin: "-20px" }}
       variants={{
         hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 }
+        visible: { opacity: 1, y: 0 },
       }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
       className={cn(
@@ -62,17 +76,22 @@ function AnimalCard({
         "active:scale-95",
         active
           ? "border-primary bg-primary/10"
-          : "border-border bg-card hover:border-primary/50"
+          : "border-border bg-card hover:border-primary/50",
       )}
     >
       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
         <PawPrint size={20} className="text-primary" />
       </div>
-      <p className="font-semibold text-sm text-foreground truncate">{animal.name}</p>
-      <p className="text-xs text-muted-foreground truncate">{animal.breed ?? "—"}</p>
+      <p className="font-semibold text-sm text-foreground truncate">
+        {animal.name}
+      </p>
+      <p className="text-xs text-muted-foreground truncate">
+        {animal.breed ?? "—"}
+      </p>
       {animal.age !== null && (
         <p className="text-xs text-muted-foreground">
-          {animal.age} {animal.age === 1 ? t("profilePage.year") : t("profilePage.years")}
+          {animal.age}{" "}
+          {animal.age === 1 ? t("profilePage.year") : t("profilePage.years")}
         </p>
       )}
       {active && (
@@ -91,8 +110,12 @@ function WeeklyChart({ animalId }: { animalId: number }) {
   const { data: events = [] } = trpc.animals.weeklyStats.useQuery({ animalId });
 
   const counts: Record<EmotionalState, number> = {
-    distress: 0, attention: 0, excitement: 0,
-    hunger: 0, alert: 0, relaxed: 0,
+    distress: 0,
+    attention: 0,
+    excitement: 0,
+    hunger: 0,
+    alert: 0,
+    relaxed: 0,
   };
   for (const e of events) {
     if (e.state in counts) counts[e.state as EmotionalState]++;
@@ -141,9 +164,9 @@ function WeeklyChart({ animalId }: { animalId: number }) {
   );
 }
 
+import { FileText, Settings, Trash2 } from "lucide-react";
 // ─── Reusable Upload State Hook & Component ──────────────────────────────────
 import { Progress } from "@/components/ui/progress";
-import { Trash2, Settings, FileText } from "lucide-react";
 
 interface MediaState {
   status: "idle" | "uploading" | "processing" | "success" | "error";
@@ -183,7 +206,7 @@ function PhotoUploadZone({
     toast.info(
       language === "pt"
         ? "Para conceder permissão de câmara/ficheiro, aceda às definições do seu browser."
-        : "To grant camera/file permission, access your browser settings."
+        : "To grant camera/file permission, access your browser settings.",
     );
   };
 
@@ -192,7 +215,7 @@ function PhotoUploadZone({
       <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
         {label}
       </Label>
-      
+
       <input
         ref={fileInputRef}
         type="file"
@@ -208,7 +231,9 @@ function PhotoUploadZone({
         >
           <Camera className="w-8 h-8 text-muted-foreground mb-2" />
           <span className="text-xs font-semibold text-foreground">
-            {language === "pt" ? "Carregar Imagem ou PDF" : "Upload Image or PDF"}
+            {language === "pt"
+              ? "Carregar Imagem ou PDF"
+              : "Upload Image or PDF"}
           </span>
           <span className="text-[10px] text-muted-foreground mt-1 leading-normal max-w-[200px]">
             {language === "pt"
@@ -223,8 +248,13 @@ function PhotoUploadZone({
           <span className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
             {language === "pt" ? "A enviar..." : "Uploading..."}
           </span>
-          <Progress value={mediaState.progress} className="w-full bg-white/10 h-2" />
-          <span className="text-xs text-foreground mt-1.5 font-bold">{mediaState.progress}%</span>
+          <Progress
+            value={mediaState.progress}
+            className="w-full bg-white/10 h-2"
+          />
+          <span className="text-xs text-foreground mt-1.5 font-bold">
+            {mediaState.progress}%
+          </span>
         </div>
       )}
 
@@ -240,7 +270,8 @@ function PhotoUploadZone({
       {mediaState.status === "success" && (
         <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-2xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {mediaState.filePreview && !mediaState.filePreview.startsWith("data:application/pdf") ? (
+            {mediaState.filePreview &&
+            !mediaState.filePreview.startsWith("data:application/pdf") ? (
               <img
                 src={mediaState.filePreview}
                 alt="Uploaded preview"
@@ -253,10 +284,12 @@ function PhotoUploadZone({
             )}
             <div className="min-w-0">
               <p className="text-xs font-bold text-foreground truncate max-w-[150px]">
-                {mediaState.fileName || (language === "pt" ? "Ficheiro carregado" : "File uploaded")}
+                {mediaState.fileName ||
+                  (language === "pt" ? "Ficheiro carregado" : "File uploaded")}
               </p>
               <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5 mt-0.5">
-                <Check size={10} strokeWidth={2.5} /> {language === "pt" ? "Sucesso" : "Success"}
+                <Check size={10} strokeWidth={2.5} />{" "}
+                {language === "pt" ? "Sucesso" : "Success"}
               </span>
             </div>
           </div>
@@ -297,7 +330,8 @@ function PhotoUploadZone({
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            {mediaState.error?.includes("permissão") || mediaState.error?.includes("permission") ? (
+            {mediaState.error?.includes("permissão") ||
+            mediaState.error?.includes("permission") ? (
               <Button
                 type="button"
                 size="sm"
@@ -339,12 +373,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const { t, language } = useLanguage();
   const utils = trpc.useUtils();
 
-  const [activeTab, setActiveTab] = useState<"manual" | "microchip" | "ocr">("manual");
-  
+  const [activeTab, setActiveTab] = useState<"manual" | "microchip" | "ocr">(
+    "manual",
+  );
+
   // Manual / Shared fields
   const [name, setName] = useState("");
   const [species, setSpecies] = useState<"dog" | "cat">("dog");
-  const [breed, setBreed] = useState("");
+  const [_breed, _setBreed] = useState("");
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -352,10 +388,12 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
   const [color, setColor] = useState("");
   const [coat, setCoat] = useState<"short" | "medium" | "long" | "">("");
   const [microchipNumber, setMicrochipNumber] = useState("");
-  const [height, setHeight] = useState("");
-  const [tail, setTail] = useState<"long" | "short" | "docked" | "tailless" | "">("");
+  const [height, _setHeight] = useState("");
+  const [tail, _setTail] = useState<
+    "long" | "short" | "docked" | "tailless" | ""
+  >("");
   const [specialMarkings, setSpecialMarkings] = useState("");
-  
+
   // OCR Image / File states
   const [ocrMediaState, setOcrMediaState] = useState<MediaState>({
     status: "idle",
@@ -364,7 +402,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
     filePreview: null,
     fileName: null,
   });
-  const [simulateOcrFail, setSimulateOcrFail] = useState(false);
+  const [_simulateOcrFail, _setSimulateOcrFail] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Photo upload states (Option A & B photo)
@@ -378,7 +416,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   const [nameBlurred, setNameBlurred] = useState(false);
   const [specialMarkingsBlurred, setSpecialMarkingsBlurred] = useState(false);
-  const [breedSuggestions, setBreedSuggestions] = useState<Array<{ breed: string; confidence: number }>>([]);
+  const [_breedSuggestions, setBreedSuggestions] = useState<
+    Array<{ breed: string; confidence: number }>
+  >([]);
   const [predictionInfo, setPredictionInfo] = useState<{
     predictedBreed: string;
     confidence: number;
@@ -386,41 +426,52 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
   } | null>(null);
 
   const [breeds, setBreeds] = useState<string[]>([]);
-  const [loadingBreeds, setLoadingBreeds] = useState(false);
+  const [_loadingBreeds, setLoadingBreeds] = useState(false);
   const [selectedBreed, setSelectedBreed] = useState("");
   const [customBreed, setCustomBreed] = useState("");
 
   const isNameValid = name.trim().length > 0 && name.length <= 50;
   const isSpecialMarkingsValid = specialMarkings.length <= 500;
-  const isMicrochipValid = activeTab === "microchip" ? /^\d{15}$/.test(microchipNumber) : true;
-  
-  const isFormValid = activeTab === "microchip"
-    ? isNameValid && isMicrochipValid
-    : isNameValid && isSpecialMarkingsValid;
+  const isMicrochipValid =
+    activeTab === "microchip" ? /^\d{15}$/.test(microchipNumber) : true;
 
-  const nameError = nameBlurred && !isNameValid
-    ? (name.length > 50
-      ? "O nome do animal excede o limite permitido (máx. 50 caracteres)."
-      : "O nome do animal é obrigatório.")
-    : "";
+  const isFormValid =
+    activeTab === "microchip"
+      ? isNameValid && isMicrochipValid
+      : isNameValid && isSpecialMarkingsValid;
 
-  const specialMarkingsError = specialMarkingsBlurred && !isSpecialMarkingsValid
-    ? "Os sinais particulares devem ter no máximo 500 caracteres."
-    : "";
+  const nameError =
+    nameBlurred && !isNameValid
+      ? name.length > 50
+        ? "O nome do animal excede o limite permitido (máx. 50 caracteres)."
+        : "O nome do animal é obrigatório."
+      : "";
+
+  const specialMarkingsError =
+    specialMarkingsBlurred && !isSpecialMarkingsValid
+      ? "Os sinais particulares devem ter no máximo 500 caracteres."
+      : "";
 
   const [microchipBlurred, setMicrochipBlurred] = useState(false);
-  const microchipValidationError = activeTab === "microchip" && (microchipBlurred || microchipNumber.length > 0) && !/^\d{15}$/.test(microchipNumber)
-    ? "O número de microchip deve conter exatamente 15 dígitos numéricos."
-    : "";
+  const microchipValidationError =
+    activeTab === "microchip" &&
+    (microchipBlurred || microchipNumber.length > 0) &&
+    !/^\d{15}$/.test(microchipNumber)
+      ? "O número de microchip deve conter exatamente 15 dígitos numéricos."
+      : "";
 
   const saveBreedFeedbackMutation = trpc.animals.saveBreedFeedback.useMutation({
     onError: (err) => console.error("Error saving breed feedback:", err),
   });
 
-  const handleSelectBreedHelper = (breedName: string, breedList: string[]) => {
-    const isKnown = breedList.some((b) => b.toLowerCase() === breedName.toLowerCase());
+  const _handleSelectBreedHelper = (breedName: string, breedList: string[]) => {
+    const isKnown = breedList.some(
+      (b) => b.toLowerCase() === breedName.toLowerCase(),
+    );
     if (isKnown) {
-      const matched = breedList.find((b) => b.toLowerCase() === breedName.toLowerCase());
+      const matched = breedList.find(
+        (b) => b.toLowerCase() === breedName.toLowerCase(),
+      );
       setSelectedBreed(matched || breedName);
       setCustomBreed("");
     } else {
@@ -444,14 +495,15 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
         } catch {}
       }
 
-      const url = species === "dog"
-        ? "https://api.thedogapi.com/v1/breeds"
-        : "https://api.thecatapi.com/v1/breeds";
+      const url =
+        species === "dog"
+          ? "https://api.thedogapi.com/v1/breeds"
+          : "https://api.thecatapi.com/v1/breeds";
 
       try {
         const res = await fetch(url);
         if (res.ok) {
-          const data = await res.json() as Array<{ name: string }>;
+          const data = (await res.json()) as Array<{ name: string }>;
           const list = data.map((b) => b.name).sort();
           localStorage.setItem(cacheKey, JSON.stringify(list));
           setBreeds(list);
@@ -472,7 +524,8 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
     onSuccess: () => {
       toast.success(t("profilePage.saveSuccess"));
       if (predictionInfo) {
-        const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
+        const finalBreed =
+          selectedBreed === "other" ? customBreed : selectedBreed;
         saveBreedFeedbackMutation.mutate({
           animalType: predictionInfo.animalType,
           predictedBreed: predictionInfo.predictedBreed,
@@ -500,13 +553,16 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
     }
 
     const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
-    const photoUrlToSave = activeTab === "ocr" ? ocrMediaState.filePreview : photoMediaState.filePreview;
+    const photoUrlToSave =
+      activeTab === "ocr"
+        ? ocrMediaState.filePreview
+        : photoMediaState.filePreview;
 
     addMutation.mutate({
       name: name.trim(),
       species,
       breed: finalBreed.trim() || undefined,
-      age: age ? parseInt(age) : undefined,
+      age: age ? parseInt(age, 10) : undefined,
       dateOfBirth: dateOfBirth || undefined,
       sex,
       color: color.trim() || undefined,
@@ -522,7 +578,12 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   // Photo selection zone (Manual / Microchip)
   const handlePhotoUpload = (file: File) => {
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf",
+    ];
     if (!validTypes.includes(file.type)) {
       setPhotoMediaState({
         status: "error",
@@ -571,11 +632,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
     const interval = setInterval(() => {
       curProgress = Math.min(100, curProgress + increment);
-      setPhotoMediaState((prev) => ({ ...prev, progress: Math.round(curProgress) }));
+      setPhotoMediaState((prev) => ({
+        ...prev,
+        progress: Math.round(curProgress),
+      }));
 
       if (curProgress >= 100) {
         clearInterval(interval);
-        
+
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoMediaState({
@@ -585,7 +649,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             filePreview: reader.result as string,
             fileName: file.name,
           });
-          toast.success(language === "pt" ? "Foto carregada!" : "Photo uploaded!");
+          toast.success(
+            language === "pt" ? "Foto carregada!" : "Photo uploaded!",
+          );
         };
         reader.readAsDataURL(file);
       }
@@ -594,7 +660,12 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   // Bulletin selection zone (OCR)
   const handleOcrUpload = (file: File) => {
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf",
+    ];
     if (!validTypes.includes(file.type)) {
       setOcrMediaState({
         status: "error",
@@ -645,17 +716,21 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
       const interval = setInterval(() => {
         curProgress = Math.min(100, curProgress + increment);
-        setOcrMediaState((prev) => ({ ...prev, progress: Math.round(curProgress) }));
+        setOcrMediaState((prev) => ({
+          ...prev,
+          progress: Math.round(curProgress),
+        }));
 
         if (curProgress >= 100) {
           clearInterval(interval);
           setOcrMediaState((prev) => ({ ...prev, status: "processing" }));
-          
+
           setTimeout(() => {
             setOcrMediaState((prev) => ({
               ...prev,
               status: "error",
-              error: "Não foi possível analisar o ficheiro. Tenta novamente ou preenche manualmente.",
+              error:
+                "Não foi possível analisar o ficheiro. Tenta novamente ou preenche manualmente.",
             }));
           }, 1800); // 1.8 seconds processing
         }
@@ -680,10 +755,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
               "flex-1 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-150 active-scale",
               activeTab === method
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {method === "manual" ? "Manual" : method === "microchip" ? "Microchip" : "Boletim (OCR)"}
+            {method === "manual"
+              ? "Manual"
+              : method === "microchip"
+                ? "Microchip"
+                : "Boletim (OCR)"}
           </button>
         ))}
       </div>
@@ -701,24 +780,30 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                     "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200",
                     species === s
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
+                      : "border-border text-muted-foreground hover:border-primary/50",
                   )}
                 >
-              {s === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
+                  {s === "dog"
+                    ? t("profilePage.speciesDog")
+                    : t("profilePage.speciesCat")}
                 </button>
               ))}
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <Label htmlFor="name" className="text-xs text-muted-foreground">{t("profilePage.name")} *</Label>
+                <Label htmlFor="name" className="text-xs text-muted-foreground">
+                  {t("profilePage.name")} *
+                </Label>
                 <div className="flex items-center gap-2">
                   {isNameValid && (
                     <span className="text-emerald-400 text-[10px] flex items-center gap-0.5">
                       <Check size={10} />
                     </span>
                   )}
-                  <span className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
+                  <span
+                    className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}
+                  >
                     {name.length}/50
                   </span>
                 </div>
@@ -731,7 +816,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 placeholder="Ex: Bobi"
                 maxLength={50}
                 className={`bg-secondary border-border ${
-                  nameError ? "border-red-500 focus-visible:ring-red-500/50" : ""
+                  nameError
+                    ? "border-red-500 focus-visible:ring-red-500/50"
+                    : ""
                 } ${isNameValid ? "border-emerald-500/50 focus-visible:ring-emerald-500/50" : ""}`}
               />
               {nameError && (
@@ -743,7 +830,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="breed" className="text-xs text-muted-foreground">{t("profilePage.breed")}</Label>
+              <Label htmlFor="breed" className="text-xs text-muted-foreground">
+                {t("profilePage.breed")}
+              </Label>
               <select
                 id="breed"
                 value={selectedBreed}
@@ -757,9 +846,13 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
               >
                 <option value="">{t("profilePage.breedPlaceholder")}</option>
                 {breeds.map((b) => (
-                  <option key={b} value={b}>{b}</option>
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
                 ))}
-                <option value="other">{language === "pt" ? "Outra (digitar...)" : "Other (type...)"}</option>
+                <option value="other">
+                  {language === "pt" ? "Outra (digitar...)" : "Other (type...)"}
+                </option>
               </select>
 
               {selectedBreed === "other" && (
@@ -774,7 +867,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="age" className="text-xs text-muted-foreground">{t("profilePage.age")}</Label>
+                <Label htmlFor="age" className="text-xs text-muted-foreground">
+                  {t("profilePage.age")}
+                </Label>
                 <Input
                   id="age"
                   type="number"
@@ -787,7 +882,10 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="weight" className="text-xs text-muted-foreground">
+                <Label
+                  htmlFor="weight"
+                  className="text-xs text-muted-foreground"
+                >
                   {language === "pt" ? "Peso" : "Weight"}
                 </Label>
                 <Input
@@ -802,7 +900,12 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="dateOfBirth" className="text-xs text-muted-foreground">{t("profilePage.dateOfBirth")}</Label>
+                <Label
+                  htmlFor="dateOfBirth"
+                  className="text-xs text-muted-foreground"
+                >
+                  {t("profilePage.dateOfBirth")}
+                </Label>
                 <Input
                   id="dateOfBirth"
                   type="date"
@@ -812,7 +915,12 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="color" className="text-xs text-muted-foreground">{t("profilePage.color")}</Label>
+                <Label
+                  htmlFor="color"
+                  className="text-xs text-muted-foreground"
+                >
+                  {t("profilePage.color")}
+                </Label>
                 <Input
                   id="color"
                   value={color}
@@ -824,13 +932,17 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">{t("profilePage.sex")}</Label>
+              <Label className="text-xs text-muted-foreground">
+                {t("profilePage.sex")}
+              </Label>
               <div className="flex gap-2">
-                {([
-                  { value: "male", label: t("profilePage.sexMale") },
-                  { value: "female", label: t("profilePage.sexFemale") },
-                  { value: "unknown", label: t("profilePage.sexUnknown") }
-                ] as const).map((s) => (
+                {(
+                  [
+                    { value: "male", label: t("profilePage.sexMale") },
+                    { value: "female", label: t("profilePage.sexFemale") },
+                    { value: "unknown", label: t("profilePage.sexUnknown") },
+                  ] as const
+                ).map((s) => (
                   <button
                     key={s.value}
                     type="button"
@@ -839,7 +951,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       "flex-1 py-2 rounded-xl border text-xs font-semibold transition-all duration-200",
                       sex === s.value
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50"
+                        : "border-border text-muted-foreground hover:border-primary/50",
                     )}
                   >
                     {s.label}
@@ -849,24 +961,37 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="microchipNumber" className="text-xs text-muted-foreground">{t("profilePage.microchip")}</Label>
+              <Label
+                htmlFor="microchipNumber"
+                className="text-xs text-muted-foreground"
+              >
+                {t("profilePage.microchip")}
+              </Label>
               <Input
                 id="microchipNumber"
                 value={microchipNumber}
-                onChange={(e) => setMicrochipNumber(e.target.value.replace(/\D/g, "").slice(0, 15))}
+                onChange={(e) =>
+                  setMicrochipNumber(
+                    e.target.value.replace(/\D/g, "").slice(0, 15),
+                  )
+                }
                 placeholder="Ex: 900115000678234"
                 className="bg-secondary border-border"
               />
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">{t("profilePage.coat")}</Label>
+              <Label className="text-xs text-muted-foreground">
+                {t("profilePage.coat")}
+              </Label>
               <div className="flex gap-2">
-                {([
-                  { value: "short", label: t("profilePage.coatShort") },
-                  { value: "medium", label: t("profilePage.coatMedium") },
-                  { value: "long", label: t("profilePage.coatLong") }
-                ] as const).map((c) => (
+                {(
+                  [
+                    { value: "short", label: t("profilePage.coatShort") },
+                    { value: "medium", label: t("profilePage.coatMedium") },
+                    { value: "long", label: t("profilePage.coatLong") },
+                  ] as const
+                ).map((c) => (
                   <button
                     key={c.value}
                     type="button"
@@ -875,7 +1000,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       "flex-1 py-2 rounded-xl border text-xs font-semibold transition-all duration-200",
                       coat === c.value
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50"
+                        : "border-border text-muted-foreground hover:border-primary/50",
                     )}
                   >
                     {c.label}
@@ -888,16 +1013,29 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
               label={language === "pt" ? "Foto do Animal" : "Pet Photo"}
               mediaState={photoMediaState}
               onChange={handlePhotoUpload}
-              onRemove={() => setPhotoMediaState({
-                status: "idle", progress: 0, error: null, filePreview: null, fileName: null
-              })}
+              onRemove={() =>
+                setPhotoMediaState({
+                  status: "idle",
+                  progress: 0,
+                  error: null,
+                  filePreview: null,
+                  fileName: null,
+                })
+              }
               language={language}
             />
 
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <Label htmlFor="specialMarkings" className="text-xs text-muted-foreground">{t("profilePage.specialMarkings")}</Label>
-                <span className={`text-[10px] ${specialMarkings.length > 450 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
+                <Label
+                  htmlFor="specialMarkings"
+                  className="text-xs text-muted-foreground"
+                >
+                  {t("profilePage.specialMarkings")}
+                </Label>
+                <span
+                  className={`text-[10px] ${specialMarkings.length > 450 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}
+                >
                   {specialMarkings.length}/500
                 </span>
               </div>
@@ -909,7 +1047,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 placeholder="Sinais particulares, manchas, cicatrizes..."
                 maxLength={600}
                 className={`w-full text-xs p-3 rounded-md bg-secondary border text-foreground min-h-[60px] focus:outline-none ${
-                  specialMarkingsError ? "border-red-500 focus:border-red-500" : "border-border"
+                  specialMarkingsError
+                    ? "border-red-500 focus:border-red-500"
+                    : "border-border"
                 }`}
               />
               {specialMarkingsError && (
@@ -934,24 +1074,30 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                     "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200",
                     species === s
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
+                      : "border-border text-muted-foreground hover:border-primary/50",
                   )}
                 >
-              {s === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
+                  {s === "dog"
+                    ? t("profilePage.speciesDog")
+                    : t("profilePage.speciesCat")}
                 </button>
               ))}
             </div>
 
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <Label htmlFor="name" className="text-xs text-muted-foreground">{t("profilePage.name")} *</Label>
+                <Label htmlFor="name" className="text-xs text-muted-foreground">
+                  {t("profilePage.name")} *
+                </Label>
                 <div className="flex items-center gap-2">
                   {isNameValid && (
                     <span className="text-emerald-400 text-[10px] flex items-center gap-0.5">
                       <Check size={10} />
                     </span>
                   )}
-                  <span className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
+                  <span
+                    className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}
+                  >
                     {name.length}/50
                   </span>
                 </div>
@@ -964,7 +1110,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 placeholder="Ex: Bobi"
                 maxLength={50}
                 className={`bg-secondary border-border ${
-                  nameError ? "border-red-500 focus-visible:ring-red-500/50" : ""
+                  nameError
+                    ? "border-red-500 focus-visible:ring-red-500/50"
+                    : ""
                 } ${isNameValid ? "border-emerald-500/50 focus-visible:ring-emerald-500/50" : ""}`}
               />
               {nameError && (
@@ -976,14 +1124,26 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="microchipNumber" className="text-xs text-muted-foreground">{t("profilePage.microchip")} *</Label>
+              <Label
+                htmlFor="microchipNumber"
+                className="text-xs text-muted-foreground"
+              >
+                {t("profilePage.microchip")} *
+              </Label>
               <Input
                 id="microchipNumber"
                 value={microchipNumber}
-                onChange={(e) => setMicrochipNumber(e.target.value.replace(/\D/g, "").slice(0, 15))}
+                onChange={(e) =>
+                  setMicrochipNumber(
+                    e.target.value.replace(/\D/g, "").slice(0, 15),
+                  )
+                }
                 onBlur={() => setMicrochipBlurred(true)}
                 placeholder="Ex: 900115000678234"
-                className={cn("bg-secondary border-border", microchipValidationError && "border-red-500")}
+                className={cn(
+                  "bg-secondary border-border",
+                  microchipValidationError && "border-red-500",
+                )}
                 required
               />
               {microchipValidationError && (
@@ -1000,9 +1160,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-foreground">
-                {language === "pt" ? "Importar do Boletim (OCR)" : "Import from Bulletin (OCR)"}
+                {language === "pt"
+                  ? "Importar do Boletim (OCR)"
+                  : "Import from Bulletin (OCR)"}
               </span>
-              <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] font-semibold">
+              <Badge
+                variant="secondary"
+                className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] font-semibold"
+              >
                 {language === "pt" ? "Em breve" : "Coming soon"}
               </Badge>
             </div>
@@ -1010,7 +1175,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             {ocrMediaState.status === "idle" && (
               <div className="space-y-1.5 text-left" aria-live="polite">
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-                  {language === "pt" ? "Boletim de Vacinas" : "Vaccination Bulletin"}
+                  {language === "pt"
+                    ? "Boletim de Vacinas"
+                    : "Vaccination Bulletin"}
                 </Label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -1018,7 +1185,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 >
                   <Camera className="w-8 h-8 text-muted-foreground mb-2" />
                   <span className="text-xs font-semibold text-foreground">
-                    {language === "pt" ? "Fotografar boletim" : "Photograph bulletin"}
+                    {language === "pt"
+                      ? "Fotografar boletim"
+                      : "Photograph bulletin"}
                   </span>
                   <span className="text-[10px] text-muted-foreground mt-1 leading-normal max-w-[200px]">
                     {language === "pt"
@@ -1030,20 +1199,33 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
             )}
 
             {ocrMediaState.status === "uploading" && (
-              <div className="border border-border/40 bg-secondary/20 rounded-2xl p-5 flex flex-col items-center justify-center" aria-live="polite">
+              <div
+                className="border border-border/40 bg-secondary/20 rounded-2xl p-5 flex flex-col items-center justify-center"
+                aria-live="polite"
+              >
                 <span className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
                   {language === "pt" ? "A enviar..." : "Uploading..."}
                 </span>
-                <Progress value={ocrMediaState.progress} className="w-full bg-white/10 h-2" />
-                <span className="text-xs text-foreground mt-1.5 font-bold">{ocrMediaState.progress}%</span>
+                <Progress
+                  value={ocrMediaState.progress}
+                  className="w-full bg-white/10 h-2"
+                />
+                <span className="text-xs text-foreground mt-1.5 font-bold">
+                  {ocrMediaState.progress}%
+                </span>
               </div>
             )}
 
             {ocrMediaState.status === "processing" && (
-              <div className="border border-border/40 bg-secondary/20 rounded-2xl p-5 flex flex-col items-center justify-center" aria-live="polite">
+              <div
+                className="border border-border/40 bg-secondary/20 rounded-2xl p-5 flex flex-col items-center justify-center"
+                aria-live="polite"
+              >
                 <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
                 <span className="text-xs font-semibold text-foreground uppercase tracking-wider animate-pulse">
-                  {language === "pt" ? "A processar OCR..." : "Processing OCR..."}
+                  {language === "pt"
+                    ? "A processar OCR..."
+                    : "Processing OCR..."}
                 </span>
               </div>
             )}
@@ -1052,10 +1234,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
               <div className="space-y-3" aria-live="polite">
                 {ocrMediaState.filePreview && (
                   <div className="rounded-2xl border border-border overflow-hidden bg-slate-950 flex items-center justify-center h-48 relative">
-                    {ocrMediaState.filePreview.startsWith("data:application/pdf") ? (
+                    {ocrMediaState.filePreview.startsWith(
+                      "data:application/pdf",
+                    ) ? (
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <FileText className="w-12 h-12 text-primary mb-2" />
-                        <span className="text-xs truncate max-w-[240px]">{ocrMediaState.fileName}</span>
+                        <span className="text-xs truncate max-w-[240px]">
+                          {ocrMediaState.fileName}
+                        </span>
                       </div>
                     ) : (
                       <img
@@ -1072,7 +1258,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                     <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5 animate-bounce" />
                     <div className="min-w-0 flex-1 text-left">
                       <span className="text-xs font-bold text-rose-400">
-                        {language === "pt" ? "Erro no processamento" : "Processing error"}
+                        {language === "pt"
+                          ? "Erro no processamento"
+                          : "Processing error"}
                       </span>
                       <p className="text-xs text-muted-foreground mt-1 leading-relaxed text-rose-200">
                         {ocrMediaState.error}
@@ -1086,7 +1274,11 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       size="sm"
                       onClick={() => {
                         setOcrMediaState({
-                          status: "idle", progress: 0, error: null, filePreview: null, fileName: null
+                          status: "idle",
+                          progress: 0,
+                          error: null,
+                          filePreview: null,
+                          fileName: null,
                         });
                       }}
                       className="text-xs h-8 border-white/10 hover:text-foreground"
@@ -1099,12 +1291,18 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       onClick={() => {
                         setActiveTab("manual");
                         setOcrMediaState({
-                          status: "idle", progress: 0, error: null, filePreview: null, fileName: null
+                          status: "idle",
+                          progress: 0,
+                          error: null,
+                          filePreview: null,
+                          fileName: null,
                         });
                       }}
                       className="text-xs h-8 bg-primary hover:bg-emerald-600 text-white"
                     >
-                      {language === "pt" ? "Preencher manualmente" : "Fill manually"}
+                      {language === "pt"
+                        ? "Preencher manualmente"
+                        : "Fill manually"}
                     </Button>
                   </div>
                 </div>
@@ -1137,9 +1335,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
           <Button
             type="submit"
             size="sm"
-            disabled={addMutation.isPending || !isFormValid || (activeTab === "ocr" && ocrMediaState.status !== "success")}
+            disabled={
+              addMutation.isPending ||
+              !isFormValid ||
+              (activeTab === "ocr" && ocrMediaState.status !== "success")
+            }
             className={`flex-1 font-semibold transition-all ${
-              isFormValid && (activeTab !== "ocr" || ocrMediaState.status === "success")
+              isFormValid &&
+              (activeTab !== "ocr" || ocrMediaState.status === "success")
                 ? "bg-primary text-primary-foreground hover:bg-emerald-600 shadow-md shadow-primary/20"
                 : "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border-border"
             }`}
@@ -1154,24 +1357,42 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
 // ─── Edit Animal Form ──────────────────────────────────────────────────────────
 
-export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () => void }) {
+export function EditAnimalForm({
+  animal,
+  onClose,
+}: {
+  animal: any;
+  onClose: () => void;
+}) {
   const { t, language } = useLanguage();
   const utils = trpc.useUtils();
 
   const [name, setName] = useState(animal.name || "");
-  const [species, setSpecies] = useState<"dog" | "cat">(animal.species || "dog");
-  const [breed, setBreed] = useState(animal.breed || "");
+  const [species, setSpecies] = useState<"dog" | "cat">(
+    animal.species || "dog",
+  );
+  const [_breed, _setBreed] = useState(animal.breed || "");
   const [age, setAge] = useState(animal.age !== null ? String(animal.age) : "");
   const [weight, setWeight] = useState(animal.weight || "");
   const [dateOfBirth, setDateOfBirth] = useState(animal.dateOfBirth || "");
-  const [sex, setSex] = useState<"male" | "female" | "unknown">(animal.sex || "unknown");
+  const [sex, setSex] = useState<"male" | "female" | "unknown">(
+    animal.sex || "unknown",
+  );
   const [color, setColor] = useState(animal.color || "");
-  const [coat, setCoat] = useState<"short" | "medium" | "long" | "">(animal.coat || "");
-  const [microchipNumber, setMicrochipNumber] = useState(animal.microchipNumber || "");
+  const [coat, _setCoat] = useState<"short" | "medium" | "long" | "">(
+    animal.coat || "",
+  );
+  const [microchipNumber, setMicrochipNumber] = useState(
+    animal.microchipNumber || "",
+  );
   const [height, setHeight] = useState(animal.height || "");
-  const [tail, setTail] = useState<"long" | "short" | "docked" | "tailless" | "">(animal.tail || "");
-  const [specialMarkings, setSpecialMarkings] = useState(animal.specialMarkings || "");
-  
+  const [tail, setTail] = useState<
+    "long" | "short" | "docked" | "tailless" | ""
+  >(animal.tail || "");
+  const [specialMarkings, setSpecialMarkings] = useState(
+    animal.specialMarkings || "",
+  );
+
   const [photoMediaState, setPhotoMediaState] = useState<MediaState>({
     status: animal.photoUrl ? "success" : "idle",
     progress: animal.photoUrl ? 100 : 0,
@@ -1184,7 +1405,7 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
   const [specialMarkingsBlurred, setSpecialMarkingsBlurred] = useState(false);
 
   const [breeds, setBreeds] = useState<string[]>([]);
-  const [loadingBreeds, setLoadingBreeds] = useState(false);
+  const [_loadingBreeds, setLoadingBreeds] = useState(false);
   const [selectedBreed, setSelectedBreed] = useState(animal.breed || "");
   const [customBreed, setCustomBreed] = useState("");
 
@@ -1192,19 +1413,25 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
   const isSpecialMarkingsValid = specialMarkings.length <= 500;
   const isFormValid = isNameValid && isSpecialMarkingsValid;
 
-  const nameError = nameBlurred && !isNameValid
-    ? (name.length > 50
-      ? "O nome do animal excede o limite (máx. 50 caracteres)."
-      : "O nome é obrigatório.")
-    : "";
+  const nameError =
+    nameBlurred && !isNameValid
+      ? name.length > 50
+        ? "O nome do animal excede o limite (máx. 50 caracteres)."
+        : "O nome é obrigatório."
+      : "";
 
-  const specialMarkingsError = specialMarkingsBlurred && !isSpecialMarkingsValid
-    ? "Os sinais particulares devem ter no máximo 500 caracteres."
-    : "";
+  const specialMarkingsError =
+    specialMarkingsBlurred && !isSpecialMarkingsValid
+      ? "Os sinais particulares devem ter no máximo 500 caracteres."
+      : "";
 
   const updateMutation = trpc.animals.update.useMutation({
     onSuccess: () => {
-      toast.success(language === "pt" ? "Perfil atualizado com sucesso!" : "Profile updated successfully!");
+      toast.success(
+        language === "pt"
+          ? "Perfil atualizado com sucesso!"
+          : "Profile updated successfully!",
+      );
       utils.animals.list.invalidate();
       utils.animals.getActive.invalidate();
       onClose();
@@ -1226,14 +1453,15 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
         } catch {}
       }
 
-      const url = species === "dog"
-        ? "https://api.thedogapi.com/v1/breeds"
-        : "https://api.thecatapi.com/v1/breeds";
+      const url =
+        species === "dog"
+          ? "https://api.thedogapi.com/v1/breeds"
+          : "https://api.thecatapi.com/v1/breeds";
 
       try {
         const res = await fetch(url);
         if (res.ok) {
-          const data = await res.json() as Array<{ name: string }>;
+          const data = (await res.json()) as Array<{ name: string }>;
           const list = data.map((b) => b.name).sort();
           localStorage.setItem(cacheKey, JSON.stringify(list));
           setBreeds(list);
@@ -1252,7 +1480,9 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
 
   useEffect(() => {
     if (breeds.length > 0 && animal.breed) {
-      const isKnown = breeds.some((b) => b.toLowerCase() === animal.breed.toLowerCase());
+      const isKnown = breeds.some(
+        (b) => b.toLowerCase() === animal.breed.toLowerCase(),
+      );
       if (isKnown) {
         setSelectedBreed(animal.breed);
         setCustomBreed("");
@@ -1273,7 +1503,7 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
       name: name.trim(),
       species,
       breed: finalBreed.trim() || undefined,
-      age: age ? parseInt(age) : undefined,
+      age: age ? parseInt(age, 10) : undefined,
       dateOfBirth: dateOfBirth || undefined,
       sex,
       color: color.trim() || undefined,
@@ -1288,7 +1518,12 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
   };
 
   const handlePhotoUpload = (file: File) => {
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "application/pdf",
+    ];
     if (!validTypes.includes(file.type)) {
       setPhotoMediaState({
         status: "error",
@@ -1337,11 +1572,14 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
 
     const interval = setInterval(() => {
       curProgress = Math.min(100, curProgress + increment);
-      setPhotoMediaState((prev) => ({ ...prev, progress: Math.round(curProgress) }));
+      setPhotoMediaState((prev) => ({
+        ...prev,
+        progress: Math.round(curProgress),
+      }));
 
       if (curProgress >= 100) {
         clearInterval(interval);
-        
+
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoMediaState({
@@ -1351,7 +1589,9 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
             filePreview: reader.result as string,
             fileName: file.name,
           });
-          toast.success(language === "pt" ? "Foto atualizada!" : "Photo updated!");
+          toast.success(
+            language === "pt" ? "Foto atualizada!" : "Photo updated!",
+          );
         };
         reader.readAsDataURL(file);
       }
@@ -1371,18 +1611,27 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
                 "flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200",
                 species === s
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:border-primary/50"
+                  : "border-border text-muted-foreground hover:border-primary/50",
               )}
             >
-              {s === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
+              {s === "dog"
+                ? t("profilePage.speciesDog")
+                : t("profilePage.speciesCat")}
             </button>
           ))}
         </div>
 
         <div className="space-y-1">
           <div className="flex justify-between items-center">
-            <Label htmlFor="edit-name" className="text-xs text-muted-foreground">{t("profilePage.name")} *</Label>
-            <span className="text-[10px] text-muted-foreground">{name.length}/50</span>
+            <Label
+              htmlFor="edit-name"
+              className="text-xs text-muted-foreground"
+            >
+              {t("profilePage.name")} *
+            </Label>
+            <span className="text-[10px] text-muted-foreground">
+              {name.length}/50
+            </span>
           </div>
           <Input
             id="edit-name"
@@ -1394,11 +1643,17 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
             className={`bg-secondary border-border ${nameError ? "border-red-500" : ""}`}
             required
           />
-          {nameError && <p className="text-[10px] text-red-400 font-medium mt-1">{nameError}</p>}
+          {nameError && (
+            <p className="text-[10px] text-red-400 font-medium mt-1">
+              {nameError}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="edit-breed" className="text-xs text-muted-foreground">{t("profilePage.breed")}</Label>
+          <Label htmlFor="edit-breed" className="text-xs text-muted-foreground">
+            {t("profilePage.breed")}
+          </Label>
           <select
             id="edit-breed"
             value={selectedBreed}
@@ -1412,9 +1667,13 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
           >
             <option value="">{t("profilePage.breedPlaceholder")}</option>
             {breeds.map((b) => (
-              <option key={b} value={b}>{b}</option>
+              <option key={b} value={b}>
+                {b}
+              </option>
             ))}
-            <option value="other">{language === "pt" ? "Outra (digitar...)" : "Other (type...)"}</option>
+            <option value="other">
+              {language === "pt" ? "Outra (digitar...)" : "Other (type...)"}
+            </option>
           </select>
           {selectedBreed === "other" && (
             <Input
@@ -1428,7 +1687,9 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="edit-age" className="text-xs text-muted-foreground">{t("profilePage.age")}</Label>
+            <Label htmlFor="edit-age" className="text-xs text-muted-foreground">
+              {t("profilePage.age")}
+            </Label>
             <Input
               id="edit-age"
               type="number"
@@ -1440,7 +1701,10 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-weight" className="text-xs text-muted-foreground">
+            <Label
+              htmlFor="edit-weight"
+              className="text-xs text-muted-foreground"
+            >
               {language === "pt" ? "Peso" : "Weight"}
             </Label>
             <Input
@@ -1454,7 +1718,9 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="edit-dob" className="text-xs text-muted-foreground">{t("profilePage.dateOfBirth")}</Label>
+            <Label htmlFor="edit-dob" className="text-xs text-muted-foreground">
+              {t("profilePage.dateOfBirth")}
+            </Label>
             <Input
               id="edit-dob"
               type="date"
@@ -1464,7 +1730,12 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-color" className="text-xs text-muted-foreground">{t("profilePage.color")}</Label>
+            <Label
+              htmlFor="edit-color"
+              className="text-xs text-muted-foreground"
+            >
+              {t("profilePage.color")}
+            </Label>
             <Input
               id="edit-color"
               value={color}
@@ -1475,13 +1746,17 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">{t("profilePage.sex")}</Label>
+          <Label className="text-xs text-muted-foreground">
+            {t("profilePage.sex")}
+          </Label>
           <div className="flex gap-2">
-            {([
-              { value: "male", label: t("profilePage.sexMale") },
-              { value: "female", label: t("profilePage.sexFemale") },
-              { value: "unknown", label: t("profilePage.sexUnknown") }
-            ] as const).map((s) => (
+            {(
+              [
+                { value: "male", label: t("profilePage.sexMale") },
+                { value: "female", label: t("profilePage.sexFemale") },
+                { value: "unknown", label: t("profilePage.sexUnknown") },
+              ] as const
+            ).map((s) => (
               <button
                 key={s.value}
                 type="button"
@@ -1490,7 +1765,7 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
                   "flex-1 py-2 rounded-xl border text-xs font-semibold transition-all duration-200",
                   sex === s.value
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-primary/50"
+                    : "border-border text-muted-foreground hover:border-primary/50",
                 )}
               >
                 {s.label}
@@ -1500,11 +1775,18 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="edit-microchip" className="text-xs text-muted-foreground">{t("profilePage.microchip")}</Label>
+          <Label
+            htmlFor="edit-microchip"
+            className="text-xs text-muted-foreground"
+          >
+            {t("profilePage.microchip")}
+          </Label>
           <Input
             id="edit-microchip"
             value={microchipNumber}
-            onChange={(e) => setMicrochipNumber(e.target.value.replace(/\D/g, "").slice(0, 15))}
+            onChange={(e) =>
+              setMicrochipNumber(e.target.value.replace(/\D/g, "").slice(0, 15))
+            }
             placeholder="Ex: 900115000678234"
             className="bg-secondary border-border"
           />
@@ -1512,7 +1794,12 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="edit-height" className="text-xs text-muted-foreground">{t("profilePage.height")}</Label>
+            <Label
+              htmlFor="edit-height"
+              className="text-xs text-muted-foreground"
+            >
+              {t("profilePage.height")}
+            </Label>
             <Input
               id="edit-height"
               value={height}
@@ -1521,7 +1808,12 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-tail" className="text-xs text-muted-foreground">{t("profilePage.tail")}</Label>
+            <Label
+              htmlFor="edit-tail"
+              className="text-xs text-muted-foreground"
+            >
+              {t("profilePage.tail")}
+            </Label>
             <select
               id="edit-tail"
               value={tail}
@@ -1541,16 +1833,29 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
           label={language === "pt" ? "Foto do Animal" : "Pet Photo"}
           mediaState={photoMediaState}
           onChange={handlePhotoUpload}
-          onRemove={() => setPhotoMediaState({
-            status: "idle", progress: 0, error: null, filePreview: null, fileName: null
-          })}
+          onRemove={() =>
+            setPhotoMediaState({
+              status: "idle",
+              progress: 0,
+              error: null,
+              filePreview: null,
+              fileName: null,
+            })
+          }
           language={language}
         />
 
         <div className="space-y-1">
           <div className="flex justify-between items-center">
-            <Label htmlFor="edit-special" className="text-xs text-muted-foreground">{t("profilePage.specialMarkings")}</Label>
-            <span className="text-[10px] text-muted-foreground">{specialMarkings.length}/500</span>
+            <Label
+              htmlFor="edit-special"
+              className="text-xs text-muted-foreground"
+            >
+              {t("profilePage.specialMarkings")}
+            </Label>
+            <span className="text-[10px] text-muted-foreground">
+              {specialMarkings.length}/500
+            </span>
           </div>
           <textarea
             id="edit-special"
@@ -1563,7 +1868,11 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
               specialMarkingsError ? "border-red-500" : "border-border"
             }`}
           />
-          {specialMarkingsError && <p className="text-[10px] text-red-400 font-medium mt-1">{specialMarkingsError}</p>}
+          {specialMarkingsError && (
+            <p className="text-[10px] text-red-400 font-medium mt-1">
+              {specialMarkingsError}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -1598,10 +1907,15 @@ export default function ProfilePage() {
   const [showForm, setShowForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [, setLocation] = useLocation();
-  const { data: animals = [], isLoading, error, refetch } = trpc.animals.list.useQuery();
+  const {
+    data: animals = [],
+    isLoading,
+    error,
+    refetch,
+  } = trpc.animals.list.useQuery();
   const utils = trpc.useUtils();
 
-  const setActiveMutation = trpc.animals.setActive.useMutation({
+  const _setActiveMutation = trpc.animals.setActive.useMutation({
     onSuccess: () => {
       utils.animals.list.invalidate();
       utils.animals.getActive.invalidate();
@@ -1618,7 +1932,9 @@ export default function ProfilePage() {
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-foreground">{t("profilePage.title")}</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          {t("profilePage.title")}
+        </h1>
         <Button
           size="sm"
           onClick={() => setShowForm(true)}
@@ -1653,10 +1969,15 @@ export default function ProfilePage() {
             <div className="p-4 bg-slate-900 flex-1 overflow-y-auto rounded-t-3xl scrollbar-none">
               <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-slate-700 mb-6" />
               <Drawer.Title className="text-lg font-bold text-foreground text-center mb-4">
-                {language === "pt" ? "Editar Perfil do Animal" : "Edit Animal Profile"}
+                {language === "pt"
+                  ? "Editar Perfil do Animal"
+                  : "Edit Animal Profile"}
               </Drawer.Title>
               {activeAnimal && (
-                <EditAnimalForm animal={activeAnimal} onClose={() => setShowEditForm(false)} />
+                <EditAnimalForm
+                  animal={activeAnimal}
+                  onClose={() => setShowEditForm(false)}
+                />
               )}
             </div>
           </Drawer.Content>
@@ -1667,11 +1988,19 @@ export default function ProfilePage() {
       {error ? (
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
-          <p className="text-sm text-foreground font-semibold">Não foi possível carregar a lista de animais.</p>
-          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
-            Ocorreu uma falha ao comunicar com o servidor da base de dados. Por favor, verifique a sua ligação à internet e prima o botão abaixo para tentar novamente.
+          <p className="text-sm text-foreground font-semibold">
+            Não foi possível carregar a lista de animais.
           </p>
-          <Button size="sm" onClick={() => refetch()} className="bg-primary text-primary-foreground rounded-xl">
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
+            Ocorreu uma falha ao comunicar com o servidor da base de dados. Por
+            favor, verifique a sua ligação à internet e prima o botão abaixo
+            para tentar novamente.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => refetch()}
+            className="bg-primary text-primary-foreground rounded-xl"
+          >
             Tentar novamente
           </Button>
         </div>
@@ -1732,7 +2061,8 @@ export default function ProfilePage() {
                 <p className="font-bold text-foreground">{activeAnimal.name}</p>
                 <p className="text-sm text-muted-foreground">
                   {activeAnimal.breed ?? t("profilePage.unknownBreed")}
-                  {activeAnimal.age !== null && ` · ${activeAnimal.age} ${activeAnimal.age === 1 ? t("profilePage.year") : t("profilePage.years")}`}
+                  {activeAnimal.age !== null &&
+                    ` · ${activeAnimal.age} ${activeAnimal.age === 1 ? t("profilePage.year") : t("profilePage.years")}`}
                 </p>
               </div>
             </div>
@@ -1757,15 +2087,23 @@ export default function ProfilePage() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-secondary rounded-xl p-3 text-center">
-              <p className="text-xs text-muted-foreground">{t("profilePage.species")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("profilePage.species")}
+              </p>
               <p className="font-semibold text-sm">
-                {activeAnimal.species === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
+                {activeAnimal.species === "dog"
+                  ? t("profilePage.speciesDog")
+                  : t("profilePage.speciesCat")}
               </p>
             </div>
             <div className="bg-secondary rounded-xl p-3 text-center">
-              <p className="text-xs text-muted-foreground">{t("profilePage.age").split(" ")[0]}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("profilePage.age").split(" ")[0]}
+              </p>
               <p className="font-semibold text-sm">
-                {activeAnimal.age !== null ? `${activeAnimal.age} ${activeAnimal.age === 1 ? t("profilePage.year") : t("profilePage.years")}` : "—"}
+                {activeAnimal.age !== null
+                  ? `${activeAnimal.age} ${activeAnimal.age === 1 ? t("profilePage.year") : t("profilePage.years")}`
+                  : "—"}
               </p>
             </div>
           </div>

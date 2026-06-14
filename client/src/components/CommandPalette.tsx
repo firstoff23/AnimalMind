@@ -1,10 +1,10 @@
-import * as React from "react";
 import { Command } from "cmdk";
+import { GitCompare, Heart, Mic, PawPrint, Search } from "lucide-react";
+import * as React from "react";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { Search, PawPrint, Mic, Heart, GitCompare } from "lucide-react";
-import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/hooks/useLanguage";
+import { trpc } from "@/lib/trpc";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -15,7 +15,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { data: animals = [] } = trpc.animals.list.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: animals = [] } = trpc.animals.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -45,7 +47,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         <div className="flex items-center border-b border-border px-3 py-2.5">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-muted-foreground" />
           <Command.Input
-            placeholder={t("commandPalette.placeholder") || "Pesquisar ou executar ação..."}
+            placeholder={
+              t("commandPalette.placeholder") || "Pesquisar ou executar ação..."
+            }
             className="flex h-10 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 text-foreground"
             autoFocus
           />
@@ -56,7 +60,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             {t("commandPalette.empty") || "Nenhum resultado encontrado."}
           </Command.Empty>
 
-          <Command.Group heading={t("commandPalette.actions") || "Ações Rápidas"} className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+          <Command.Group
+            heading={t("commandPalette.actions") || "Ações Rápidas"}
+            className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wide"
+          >
             <Command.Item
               onSelect={() => navigateTo("/")}
               className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-foreground hover:bg-secondary cursor-pointer"
@@ -76,14 +83,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-foreground hover:bg-secondary cursor-pointer"
             >
               <GitCompare className="h-4 w-4 text-muted-foreground" />
-              <span>{t("commandPalette.compareAnimals") || "Comparar animais"}</span>
+              <span>
+                {t("commandPalette.compareAnimals") || "Comparar animais"}
+              </span>
             </Command.Item>
           </Command.Group>
 
           {animals.length > 0 && (
             <>
               <div className="h-px bg-border my-1.5" />
-              <Command.Group heading={t("commandPalette.animals") || "Animais"} className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+              <Command.Group
+                heading={t("commandPalette.animals") || "Animais"}
+                className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wide"
+              >
                 {animals.map((animal) => (
                   <Command.Item
                     key={animal.id}
@@ -91,9 +103,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     onSelect={() => navigateTo(`/animal/${animal.id}`)}
                     className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-foreground hover:bg-secondary cursor-pointer"
                   >
-                    <PawPrint size={16} className="text-muted-foreground flex-shrink-0" />
+                    <PawPrint
+                      size={16}
+                      className="text-muted-foreground flex-shrink-0"
+                    />
                     <span className="flex-1 truncate">{animal.name}</span>
-                    <span className="text-xs text-muted-foreground truncate">{animal.breed || "—"}</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {animal.breed || "—"}
+                    </span>
                   </Command.Item>
                 ))}
               </Command.Group>

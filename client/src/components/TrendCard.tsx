@@ -1,17 +1,22 @@
-import { trpc } from "@/lib/trpc";
-import { useLanguage } from "@/hooks/useLanguage";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, Minus, Sparkles, AlertCircle } from "lucide-react";
 import {
-  LineChart,
+  AlertCircle,
+  Minus,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import {
   Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/hooks/useLanguage";
+import { trpc } from "@/lib/trpc";
 
 interface TrendCardProps {
   animalId: number;
@@ -20,8 +25,11 @@ interface TrendCardProps {
 export function TrendCard({ animalId }: TrendCardProps) {
   const { t, language } = useLanguage();
 
-  const { data: trend, isLoading: isLoadingTrend, error: trendError } =
-    trpc.trends.getWeeklyTrend.useQuery({ animalId });
+  const {
+    data: trend,
+    isLoading: isLoadingTrend,
+    error: trendError,
+  } = trpc.trends.getWeeklyTrend.useQuery({ animalId });
   const { data: patterns, isLoading: isLoadingPatterns } =
     trpc.trends.getPatterns.useQuery({ animalId });
 
@@ -48,7 +56,9 @@ export function TrendCard({ animalId }: TrendCardProps) {
       <Card className="bg-red-500/5 border border-red-500/10 p-4 flex gap-3 items-center">
         <AlertCircle className="text-red-500" size={20} />
         <span className="text-xs text-muted-foreground">
-          {language === "pt" ? "Erro ao carregar tendências." : "Error loading trends."}
+          {language === "pt"
+            ? "Erro ao carregar tendências."
+            : "Error loading trends."}
         </span>
       </Card>
     );
@@ -67,7 +77,9 @@ export function TrendCard({ animalId }: TrendCardProps) {
       : language === "pt"
         ? "Ainda não há dados suficientes para calcular uma tendência fiável."
         : "There is not enough data yet to calculate a reliable trend.";
-  const patternList = Array.isArray(patterns?.patterns) ? patterns.patterns : [];
+  const patternList = Array.isArray(patterns?.patterns)
+    ? patterns.patterns
+    : [];
 
   return (
     <Card className="bg-slate-900/60 border-slate-800 backdrop-blur-sm overflow-hidden">
@@ -86,14 +98,17 @@ export function TrendCard({ animalId }: TrendCardProps) {
             {direction === "up" && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 <TrendingUp size={12} />
-                {percentageChange > 0 ? `+${percentageChange}%` : `${percentageChange}%`}{" "}
+                {percentageChange > 0
+                  ? `+${percentageChange}%`
+                  : `${percentageChange}%`}{" "}
                 {language === "pt" ? "esta semana" : "this week"}
               </span>
             )}
             {direction === "down" && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
                 <TrendingDown size={12} />
-                {percentageChange}% {language === "pt" ? "esta semana" : "this week"}
+                {percentageChange}%{" "}
+                {language === "pt" ? "esta semana" : "this week"}
               </span>
             )}
             {direction === "stable" && (
@@ -112,7 +127,10 @@ export function TrendCard({ animalId }: TrendCardProps) {
         {dailyScores.length > 0 && (
           <div className="h-32 w-full pt-1">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dailyScores} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+              <LineChart
+                data={dailyScores}
+                margin={{ top: 5, right: 5, left: -25, bottom: 5 }}
+              >
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 9, fill: "#94a3b8" }}
@@ -130,7 +148,9 @@ export function TrendCard({ animalId }: TrendCardProps) {
                     if (!active || !payload?.length) return null;
                     return (
                       <div className="bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg text-[10px] shadow-xl">
-                        <p className="font-semibold text-indigo-400">Score: {payload[0].value}%</p>
+                        <p className="font-semibold text-indigo-400">
+                          Score: {payload[0].value}%
+                        </p>
                       </div>
                     );
                   }}
@@ -152,7 +172,9 @@ export function TrendCard({ animalId }: TrendCardProps) {
         {patternList.length > 0 && (
           <div className="space-y-1.5 pt-1">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              {language === "pt" ? "Padrões Identificados:" : "Identified Patterns:"}
+              {language === "pt"
+                ? "Padrões Identificados:"
+                : "Identified Patterns:"}
             </p>
             <div className="flex flex-col gap-1.5">
               {patternList.map((p, idx) => (

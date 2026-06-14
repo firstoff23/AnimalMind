@@ -405,3 +405,41 @@ Realizámos uma auditoria completa a todos os ecrãs e botões da aplicação pa
 * **Testes Unitários**: Suite de testes com 103/103 testes verdes.
 * **Build de Produção**: `pnpm run build` compilou perfeitamente.
 
+---
+
+## 🛠️ Secção 14 — Migração para Biome ✅
+
+Realizámos a migração completa do ecossistema de qualidade de código do AnimalMind de ESLint + Prettier para o Biome, unificando as tarefas de linting, formatação e ordenação automática de imports numa única ferramenta de alto desempenho.
+
+### O que foi feito:
+1. **Instalação e Inicialização**:
+   * Instalámos a dependência `@biomejs/biome` (versão 2.5.0) e inicializámos a configuração com `pnpm biome init`.
+2. **Configuração Customizada (`biome.json`)**:
+   * Configuração de formatação idêntica ao Prettier anterior (indentação por espaços de tamanho 2, largura máxima de linha de 80, aspas duplas e ponto e vírgula obrigatório).
+   * Ativação das regras recomendadas do linter e suporte para hooks do React (`useHookAtTopLevel` e `useExhaustiveDependencies`).
+   * Configuração de ignores de diretórios usando a sintaxe de exclusão de força `!!` do Biome 2.5.0, excluindo pastas como `node_modules`, `dist`, `build`, `.gemini`, `client/public/__manus__` e `client/src/components/ui` (componentes do shadcn/ui).
+   * Ativação da ordenação automática de imports sob a secção `assist.actions.source.organizeImports`.
+3. **Resolução de Conflitos e Correções no Código**:
+   * Executámos `pnpm biome check --write --unsafe .` para formatar todo o projeto e aplicar correções automáticas seguras de qualidade.
+   * **`HistoryPage.tsx`**: O componente `_EventRow` foi renomeado para `EventRow` (removendo o underscore inicial). Isto permitiu que o Biome o identificasse corretamente como um componente React em vez de uma função comum, eliminando 8 falsos positivos da regra `useHookAtTopLevel` (uso de hooks fora de componentes).
+   * **Vitest e React Scope (`ConfidenceRing.tsx`, `LiveAudioMeter.tsx` e respetivos testes)**: Como o Vitest executa no Node sem o runtime JSX automático ativado por defeito na configuração, a remoção automática do import do React originava erros `ReferenceError: React is not defined` ao correr os testes unitários de componentes UI. Reintroduzimos o import explícito do React com o comentário `// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in Vitest` para manter a integridade dos testes.
+4. **Remoção de Tooling Antigo**:
+   * Removemos a dependência do `prettier` do `package.json`. Como o projeto não continha dependências diretas de `eslint` declaradas, nenhuma outra remoção de pacotes foi necessária.
+5. **Atualização de Scripts (`package.json`)**:
+   * Substituímos a formatação antiga do Prettier pelos comandos do Biome:
+     * `"lint": "biome check ."`
+     * `"lint:fix": "biome check --write ."`
+     * `"format": "biome format --write ."`
+6. **Integração no CI/CD (`.github/workflows/ci.yml`)**:
+   * Adicionámos um step de validação de código no fluxo de integração contínua antes do build:
+     ```yaml
+     - name: Lint & Format check
+       run: pnpm biome ci .
+     ```
+
+### Verificação Técnica Final:
+* **Biome CI**: O comando `pnpm biome ci .` foi executado e concluiu com 100% de sucesso (zero erros).
+* **Testes Unitários**: Todos os 103 testes da aplicação estão verdes.
+* **Build**: O build de produção (`pnpm run build`) compilou perfeitamente e gerou as pastas de distribuição client/server sem avisos.
+
+

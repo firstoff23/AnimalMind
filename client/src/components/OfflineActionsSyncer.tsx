@@ -1,7 +1,7 @@
-import { useEffect, useCallback } from "react";
-import { trpc } from "@/lib/trpc";
-import { processOfflineActions } from "@/lib/offlineQueueActions";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
+import { processOfflineActions } from "@/lib/offlineQueueActions";
+import { trpc } from "@/lib/trpc";
 
 export function OfflineActionsSyncer() {
   const addAnimalMutation = trpc.animals.add.useMutation();
@@ -18,7 +18,7 @@ export function OfflineActionsSyncer() {
           toast.success(
             result.processed === 1
               ? "1 ação guardada offline foi sincronizada."
-              : `${result.processed} ações guardadas offline foram sincronizadas.`
+              : `${result.processed} ações guardadas offline foram sincronizadas.`,
           );
         }
       } catch (err) {

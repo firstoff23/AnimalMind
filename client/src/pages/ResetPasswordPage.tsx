@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
 import { KeyRound, Link2Off } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { requireSupabase } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import {
   AuthInlineNote,
   AuthPasswordChecklist,
@@ -12,6 +11,7 @@ import {
   authIcons,
 } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
+import { requireSupabase } from "@/contexts/AuthContext";
 
 export default function ResetPasswordPage() {
   const [, setLocation] = useLocation();
@@ -34,8 +34,10 @@ export default function ResetPasswordPage() {
   const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  const isPasswordValid = hasMinLength && hasUppercase && hasNumber && hasSpecial;
-  const isConfirmPasswordValid = confirmPassword.length > 0 && password === confirmPassword;
+  const isPasswordValid =
+    hasMinLength && hasUppercase && hasNumber && hasSpecial;
+  const isConfirmPasswordValid =
+    confirmPassword.length > 0 && password === confirmPassword;
   const isFormValid = isPasswordValid && isConfirmPasswordValid;
 
   const passwordRequirements = useMemo(
@@ -45,7 +47,7 @@ export default function ResetPasswordPage() {
       { label: "Um número", met: hasNumber },
       { label: "Um caractere especial", met: hasSpecial },
     ],
-    [hasMinLength, hasNumber, hasSpecial, hasUppercase]
+    [hasMinLength, hasNumber, hasSpecial, hasUppercase],
   );
 
   const passwordError =
@@ -82,7 +84,7 @@ export default function ResetPasswordPage() {
       setApiError(
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível alterar a palavra-passe. Peça um novo link se necessário."
+          : "Não foi possível alterar a palavra-passe. Peça um novo link se necessário.",
       );
     } finally {
       setLoading(false);
@@ -162,10 +164,7 @@ export default function ResetPasswordPage() {
           success={isConfirmPasswordValid ? "Coincide" : undefined}
         />
 
-        <AuthSubmitButton
-          loading={loading}
-          loadingLabel="A alterar..."
-        >
+        <AuthSubmitButton loading={loading} loadingLabel="A alterar...">
           Alterar palavra-passe
         </AuthSubmitButton>
       </form>

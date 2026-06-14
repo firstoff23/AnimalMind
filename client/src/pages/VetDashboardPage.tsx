@@ -1,5 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
 import {
   Activity,
   AlertTriangle,
@@ -10,21 +8,22 @@ import {
   Filter,
   HeartPulse,
   Inbox,
+  type LucideIcon,
   PawPrint,
   ShieldCheck,
-  Stethoscope,
   UserRound,
-  type LucideIcon,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getVeterinaryRoleLabel, isVeterinaryRole } from "@/lib/roles";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { getVeterinaryRoleLabel, isVeterinaryRole } from "@/lib/roles";
-import { STATE_LABELS } from "../../../shared/types";
 import type { EmotionalState } from "../../../shared/types";
+import { STATE_LABELS } from "../../../shared/types";
 
 type VetTab = "overview" | "animals" | "alerts";
 type SpeciesFilter = "all" | "dog" | "cat";
@@ -69,14 +68,18 @@ function stateLabel(state: string | null | undefined) {
 }
 
 function statusClass(status: string) {
-  if (status === "requer atenção") return "border-rose-500/30 bg-rose-500/10 text-rose-300";
-  if (status === "monitorizar") return "border-amber-500/30 bg-amber-500/10 text-amber-300";
+  if (status === "requer atenção")
+    return "border-rose-500/30 bg-rose-500/10 text-rose-300";
+  if (status === "monitorizar")
+    return "border-amber-500/30 bg-amber-500/10 text-amber-300";
   return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
 }
 
 function alertClass(severity: string) {
-  if (severity === "critical") return "border-rose-500/30 bg-rose-500/10 text-rose-200";
-  if (severity === "warning") return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+  if (severity === "critical")
+    return "border-rose-500/30 bg-rose-500/10 text-rose-200";
+  if (severity === "warning")
+    return "border-amber-500/30 bg-amber-500/10 text-amber-200";
   return "border-cyan-500/30 bg-cyan-500/10 text-cyan-200";
 }
 
@@ -107,13 +110,17 @@ function KpiCard({
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {title}
           </p>
-          <p className="text-2xl font-bold leading-none text-foreground">{value}</p>
+          <p className="text-2xl font-bold leading-none text-foreground">
+            {value}
+          </p>
         </div>
         <span className={cn("rounded-xl border p-2", toneClass)}>
           <Icon size={17} />
         </span>
       </div>
-      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">{helper}</p>
+      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+        {helper}
+      </p>
     </div>
   );
 }
@@ -133,7 +140,9 @@ function EmptyState({
         <Icon size={19} />
       </div>
       <p className="mt-3 text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {description}
+      </p>
     </div>
   );
 }
@@ -149,7 +158,9 @@ export default function VetDashboardPage() {
 
   useEffect(() => {
     if (!meQuery.isLoading && meQuery.data && !isVet) {
-      toast.error("Modo Veterinário disponível apenas para contas profissionais.");
+      toast.error(
+        "Modo Veterinário disponível apenas para contas profissionais.",
+      );
       setLocation("/dashboard");
     }
   }, [isVet, meQuery.data, meQuery.isLoading, setLocation]);
@@ -159,7 +170,7 @@ export default function VetDashboardPage() {
   });
   const petsQuery = trpc.vet.listSharedPets.useQuery(
     { species: speciesFilter },
-    { enabled: isVet }
+    { enabled: isVet },
   );
 
   const summary = dashboardQuery.data?.summary ?? {
@@ -174,7 +185,11 @@ export default function VetDashboardPage() {
     return animals.filter((animal) => {
       if (caseFilter === "stable") return animal.caseStatus === "stable";
       if (caseFilter === "monitor") return animal.caseStatus === "monitor";
-      if (caseFilter === "attention") return animal.caseStatus === "requires_attention" || animal.overallStatus === "requer atenção";
+      if (caseFilter === "attention")
+        return (
+          animal.caseStatus === "requires_attention" ||
+          animal.overallStatus === "requer atenção"
+        );
       return true;
     });
   }, [animals, caseFilter]);
@@ -182,7 +197,9 @@ export default function VetDashboardPage() {
   const priorityAlerts = dashboardQuery.data?.priorityAlerts ?? [];
   const recentActivity = dashboardQuery.data?.recentActivity ?? [];
   const roleLabel = getVeterinaryRoleLabel(meQuery.data?.role);
-  const isLoading = meQuery.isLoading || (isVet && (dashboardQuery.isLoading || petsQuery.isLoading));
+  const isLoading =
+    meQuery.isLoading ||
+    (isVet && (dashboardQuery.isLoading || petsQuery.isLoading));
   const error = dashboardQuery.error || petsQuery.error;
 
   if (isLoading) {
@@ -203,13 +220,16 @@ export default function VetDashboardPage() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-foreground">Clínica comportamental AnimalMind</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Clínica comportamental AnimalMind
+                </p>
                 <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[9px] py-0 px-2 h-4 uppercase font-bold tracking-wider">
                   {roleLabel}
                 </Badge>
               </div>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                Casos partilhados por tutores, sinais recentes e notas internas num único fluxo.
+                Casos partilhados por tutores, sinais recentes e notas internas
+                num único fluxo.
               </p>
             </div>
           </div>
@@ -218,7 +238,9 @@ export default function VetDashboardPage() {
 
       {error && (
         <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4">
-          <p className="text-sm font-semibold text-rose-200">Não foi possível carregar o modo veterinário.</p>
+          <p className="text-sm font-semibold text-rose-200">
+            Não foi possível carregar o modo veterinário.
+          </p>
           <p className="mt-1 text-xs text-rose-100/75">{error.message}</p>
           <Button
             onClick={() => {
@@ -273,7 +295,7 @@ export default function VetDashboardPage() {
               "flex h-10 items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition-colors active-scale tap-highlight-none",
               activeTab === id
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Icon size={14} />
@@ -287,8 +309,12 @@ export default function VetDashboardPage() {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-bold text-foreground">Animais e clientes recentes</h2>
-                <p className="text-[11px] text-muted-foreground">Últimos casos partilhados por tutores</p>
+                <h2 className="text-sm font-bold text-foreground">
+                  Animais e clientes recentes
+                </h2>
+                <p className="text-[11px] text-muted-foreground">
+                  Últimos casos partilhados por tutores
+                </p>
               </div>
               <Button
                 variant="ghost"
@@ -317,21 +343,38 @@ export default function VetDashboardPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <PawPrint size={16} className="text-muted-foreground flex-shrink-0" />
-                          <p className="truncate text-sm font-bold text-foreground">{animal.name}</p>
+                          <PawPrint
+                            size={16}
+                            className="text-muted-foreground flex-shrink-0"
+                          />
+                          <p className="truncate text-sm font-bold text-foreground">
+                            {animal.name}
+                          </p>
                         </div>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {speciesLabel(animal.species)} · {animal.breed || "Raça indefinida"} · Tutor: {animal.ownerName}
+                          {speciesLabel(animal.species)} ·{" "}
+                          {animal.breed || "Raça indefinida"} · Tutor:{" "}
+                          {animal.ownerName}
                         </p>
                       </div>
-                      <ChevronRight size={17} className="mt-1 shrink-0 text-muted-foreground" />
+                      <ChevronRight
+                        size={17}
+                        className="mt-1 shrink-0 text-muted-foreground"
+                      />
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={cn("text-[10px]", statusClass(animal.overallStatus))}>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px]",
+                          statusClass(animal.overallStatus),
+                        )}
+                      >
                         {animal.overallStatus}
                       </Badge>
                       <span className="text-[11px] text-muted-foreground">
-                        {stateLabel(animal.lastState)} · {formatConfidence(animal.lastConfidence)}
+                        {stateLabel(animal.lastState)} ·{" "}
+                        {formatConfidence(animal.lastConfidence)}
                       </span>
                     </div>
                   </button>
@@ -341,7 +384,9 @@ export default function VetDashboardPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-sm font-bold text-foreground">Atividade recente</h2>
+            <h2 className="text-sm font-bold text-foreground">
+              Atividade recente
+            </h2>
             {recentActivity.length === 0 ? (
               <EmptyState
                 icon={Clock}
@@ -352,16 +397,25 @@ export default function VetDashboardPage() {
               <div className="rounded-2xl border border-border bg-card/85 p-4">
                 <div className="space-y-4">
                   {recentActivity.map((item) => (
-                    <div key={`${item.animalId}-${item.createdAt}`} className="flex items-start gap-3">
+                    <div
+                      key={`${item.animalId}-${item.createdAt}`}
+                      className="flex items-start gap-3"
+                    >
                       <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                         <Activity size={16} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground">{item.animalName}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {stateLabel(item.state)} · {formatConfidence(item.confidence)} · Tutor: {item.ownerName}
+                        <p className="text-sm font-semibold text-foreground">
+                          {item.animalName}
                         </p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">{formatDate(item.createdAt)}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {stateLabel(item.state)} ·{" "}
+                          {formatConfidence(item.confidence)} · Tutor:{" "}
+                          {item.ownerName}
+                        </p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {formatDate(item.createdAt)}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -371,14 +425,21 @@ export default function VetDashboardPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-sm font-bold text-foreground">Alertas prioritários</h2>
+            <h2 className="text-sm font-bold text-foreground">
+              Alertas prioritários
+            </h2>
             {priorityAlerts.length === 0 ? (
               <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
                 <div className="flex items-center gap-3">
                   <ShieldCheck className="text-emerald-300" size={20} />
                   <div>
-                    <p className="text-sm font-semibold text-emerald-100">Sem alertas prioritários</p>
-                    <p className="text-[11px] text-emerald-100/70">Os casos ativos estão estáveis ou apenas em monitorização ligeira.</p>
+                    <p className="text-sm font-semibold text-emerald-100">
+                      Sem alertas prioritários
+                    </p>
+                    <p className="text-[11px] text-emerald-100/70">
+                      Os casos ativos estão estáveis ou apenas em monitorização
+                      ligeira.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -387,13 +448,18 @@ export default function VetDashboardPage() {
                 {priorityAlerts.map((alert) => (
                   <div
                     key={alert.id}
-                    className={cn("rounded-2xl border p-4", alertClass(alert.severity))}
+                    className={cn(
+                      "rounded-2xl border p-4",
+                      alertClass(alert.severity),
+                    )}
                   >
                     <div className="flex items-start gap-3">
                       <AlertTriangle size={18} className="mt-0.5 shrink-0" />
                       <div>
                         <p className="text-sm font-semibold">{alert.title}</p>
-                        <p className="mt-1 text-xs leading-relaxed opacity-80">{alert.description}</p>
+                        <p className="mt-1 text-xs leading-relaxed opacity-80">
+                          {alert.description}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -416,7 +482,9 @@ export default function VetDashboardPage() {
                 Espécie
                 <select
                   value={speciesFilter}
-                  onChange={(event) => setSpeciesFilter(event.target.value as SpeciesFilter)}
+                  onChange={(event) =>
+                    setSpeciesFilter(event.target.value as SpeciesFilter)
+                  }
                   className="h-10 w-full rounded-xl border border-border bg-secondary px-3 text-xs text-foreground outline-none focus:border-primary"
                 >
                   <option value="all">Todas</option>
@@ -428,7 +496,9 @@ export default function VetDashboardPage() {
                 Estado
                 <select
                   value={caseFilter}
-                  onChange={(event) => setCaseFilter(event.target.value as CaseFilter)}
+                  onChange={(event) =>
+                    setCaseFilter(event.target.value as CaseFilter)
+                  }
                   className="h-10 w-full rounded-xl border border-border bg-secondary px-3 text-xs text-foreground outline-none focus:border-primary"
                 >
                   <option value="all">Todos</option>
@@ -461,9 +531,13 @@ export default function VetDashboardPage() {
                         <PawPrint size={22} className="text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-foreground">{animal.name}</p>
+                        <p className="truncate text-sm font-bold text-foreground">
+                          {animal.name}
+                        </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {speciesLabel(animal.species)} · {animal.breed || "Raça indefinida"} · {animal.age ?? "?"} anos
+                          {speciesLabel(animal.species)} ·{" "}
+                          {animal.breed || "Raça indefinida"} ·{" "}
+                          {animal.age ?? "?"} anos
                         </p>
                         <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
                           <UserRound size={12} />
@@ -471,28 +545,48 @@ export default function VetDashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <ChevronRight size={17} className="mt-1 shrink-0 text-muted-foreground" />
+                    <ChevronRight
+                      size={17}
+                      className="mt-1 shrink-0 text-muted-foreground"
+                    />
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-2 text-[11px]">
                     <div className="rounded-xl border border-border bg-secondary/50 p-2">
                       <p className="text-muted-foreground">Última análise</p>
-                      <p className="mt-0.5 truncate font-semibold text-foreground">{formatDate(animal.lastEventAt)}</p>
+                      <p className="mt-0.5 truncate font-semibold text-foreground">
+                        {formatDate(animal.lastEventAt)}
+                      </p>
                     </div>
                     <div className="rounded-xl border border-border bg-secondary/50 p-2">
                       <p className="text-muted-foreground">Estado geral</p>
-                      <p className="mt-0.5 truncate font-semibold text-foreground">{animal.overallStatus}</p>
+                      <p className="mt-0.5 truncate font-semibold text-foreground">
+                        {animal.overallStatus}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className={cn("text-[10px]", statusClass(animal.overallStatus))}>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px]",
+                        statusClass(animal.overallStatus),
+                      )}
+                    >
                       {animal.overallStatus}
                     </Badge>
-                    <Badge variant="outline" className="border-border bg-secondary/60 text-[10px] text-muted-foreground">
+                    <Badge
+                      variant="outline"
+                      className="border-border bg-secondary/60 text-[10px] text-muted-foreground"
+                    >
                       {statusCopy[animal.caseStatus] ?? animal.caseStatus}
                     </Badge>
                     {animal.alertCount > 0 && (
-                      <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-300">
-                        {animal.alertCount} alerta{animal.alertCount === 1 ? "" : "s"}
+                      <Badge
+                        variant="outline"
+                        className="border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-300"
+                      >
+                        {animal.alertCount} alerta
+                        {animal.alertCount === 1 ? "" : "s"}
                       </Badge>
                     )}
                   </div>
@@ -521,7 +615,7 @@ export default function VetDashboardPage() {
                   onClick={() => setLocation(`/vet/animal/${alert.animalId}`)}
                   className={cn(
                     "w-full rounded-2xl border p-4 text-left transition-transform active-scale tap-highlight-none",
-                    alertClass(alert.severity)
+                    alertClass(alert.severity),
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -529,11 +623,17 @@ export default function VetDashboardPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-semibold">{alert.title}</p>
-                        <ChevronRight size={16} className="shrink-0 opacity-70" />
+                        <ChevronRight
+                          size={16}
+                          className="shrink-0 opacity-70"
+                        />
                       </div>
-                      <p className="mt-1 text-xs leading-relaxed opacity-80">{alert.description}</p>
+                      <p className="mt-1 text-xs leading-relaxed opacity-80">
+                        {alert.description}
+                      </p>
                       <p className="mt-2 text-[11px] font-semibold opacity-90">
-                        {animal?.name ?? `Animal #${alert.animalId}`} · {formatDate(alert.detectedAt)}
+                        {animal?.name ?? `Animal #${alert.animalId}`} ·{" "}
+                        {formatDate(alert.detectedAt)}
                       </p>
                     </div>
                   </div>

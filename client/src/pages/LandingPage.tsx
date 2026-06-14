@@ -1,23 +1,23 @@
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Heart,
+  Languages,
+  Mic,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Wifi,
+} from "lucide-react";
 import { useLocation } from "wouter";
+import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
+import { Button } from "@/components/ui/button";
+import { GlowingButton } from "@/components/ui/GlowingButton";
+import { Logo } from "@/components/ui/Logo";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
-import { Button } from "@/components/ui/button";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
-import { Logo } from "@/components/ui/Logo";
-import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
-import { GlowingButton } from "@/components/ui/GlowingButton";
-import {
-  Mic,
-  Heart,
-  BarChart3,
-  Users,
-  Languages,
-  Sparkles,
-  ShieldCheck,
-  Wifi,
-  CheckCircle2,
-  ArrowRight,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
@@ -84,7 +84,9 @@ export default function LandingPage() {
           {/* Pill badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
             <Sparkles size={11} aria-hidden="true" />
-            {language === "pt" ? "Inteligência Artificial · AnimalMind" : "Powered by AI · AnimalMind"}
+            {language === "pt"
+              ? "Inteligência Artificial · AnimalMind"
+              : "Powered by AI · AnimalMind"}
           </div>
 
           {/* Headline */}
@@ -153,7 +155,11 @@ export default function LandingPage() {
                 key={label}
                 className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-900/60 border border-slate-800 rounded-full px-3 py-1"
               >
-                <Icon size={11} className="text-emerald-400" aria-hidden="true" />
+                <Icon
+                  size={11}
+                  className="text-emerald-400"
+                  aria-hidden="true"
+                />
                 {label}
               </span>
             ))}
@@ -208,7 +214,7 @@ export default function LandingPage() {
                 key={step}
                 className={cn(
                   "relative space-y-4 rounded-2xl p-6 border transition-colors",
-                  "bg-slate-900/40 border-slate-800/80 hover:border-slate-700/80"
+                  "bg-slate-900/40 border-slate-800/80 hover:border-slate-700/80",
                 )}
               >
                 <div className="flex items-start justify-between">
@@ -217,7 +223,8 @@ export default function LandingPage() {
                       "w-10 h-10 rounded-xl flex items-center justify-center",
                       color === "indigo" && "bg-indigo-500/10 text-indigo-400",
                       color === "purple" && "bg-purple-500/10 text-purple-400",
-                      color === "emerald" && "bg-emerald-500/10 text-emerald-400"
+                      color === "emerald" &&
+                        "bg-emerald-500/10 text-emerald-400",
                     )}
                   >
                     <Icon size={20} aria-hidden="true" />
@@ -279,7 +286,7 @@ export default function LandingPage() {
                     "w-10 h-10 rounded-xl flex items-center justify-center",
                     color === "rose" && "bg-rose-500/10 text-rose-400",
                     color === "amber" && "bg-amber-500/10 text-amber-400",
-                    color === "cyan" && "bg-cyan-500/10 text-cyan-400"
+                    color === "cyan" && "bg-cyan-500/10 text-cyan-400",
                   )}
                 >
                   <Icon size={20} aria-hidden="true" />
@@ -295,18 +302,22 @@ export default function LandingPage() {
         <section className="w-full max-w-3xl mx-auto px-5 py-10">
           <div className="p-5 rounded-2xl bg-amber-500/8 border border-amber-500/20">
             <div className="flex items-start gap-3">
-              <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">⚠️</span>
+              <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
+                ⚠️
+              </span>
               <div className="space-y-1.5">
                 <h3 className="font-bold text-sm text-amber-400">
                   Honestidade Científica &amp; Limitações
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  O <strong className="text-slate-300">AnimalMind</strong> utiliza o modelo{" "}
-                  <strong className="text-slate-300">YAMNet</strong> (classificador genérico
-                  de eventos de áudio) para estimar estados emocionais como aproximações
-                  comportamentais. Os resultados devem ser interpretados como{" "}
-                  <strong className="text-slate-300">sinais ou indícios</strong> — nunca
-                  como diagnóstico. Esta aplicação{" "}
+                  O <strong className="text-slate-300">AnimalMind</strong>{" "}
+                  utiliza o modelo{" "}
+                  <strong className="text-slate-300">YAMNet</strong>{" "}
+                  (classificador genérico de eventos de áudio) para estimar
+                  estados emocionais como aproximações comportamentais. Os
+                  resultados devem ser interpretados como{" "}
+                  <strong className="text-slate-300">sinais ou indícios</strong>{" "}
+                  — nunca como diagnóstico. Esta aplicação{" "}
                   <strong className="text-slate-300">
                     não substitui avaliação veterinária profissional
                   </strong>
@@ -327,7 +338,8 @@ export default function LandingPage() {
               Perguntas Frequentes
             </h2>
             <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Esclareça as suas dúvidas sobre o funcionamento e privacidade do AnimalMind.
+              Esclareça as suas dúvidas sobre o funcionamento e privacidade do
+              AnimalMind.
             </p>
           </div>
 
@@ -371,7 +383,8 @@ export default function LandingPage() {
               Pronto para conhecer melhor o seu animal?
             </h2>
             <p className="text-sm text-slate-400">
-              Gratuito, sem cartão de crédito. Instale como app no seu telemóvel.
+              Gratuito, sem cartão de crédito. Instale como app no seu
+              telemóvel.
             </p>
             <GlowingButton
               onClick={() => setLocation("/register")}
@@ -389,7 +402,10 @@ export default function LandingPage() {
       <footer className="w-full border-t border-slate-800/60 bg-slate-950/90 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-xs text-slate-500">
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <p>© {new Date().getFullYear()} AnimalMind. Todos os direitos reservados.</p>
+            <p>
+              © {new Date().getFullYear()} AnimalMind. Todos os direitos
+              reservados.
+            </p>
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setLocation("/privacidade")}
@@ -412,7 +428,7 @@ export default function LandingPage() {
               aria-pressed={language === "pt"}
               className={cn(
                 "hover:text-slate-300 transition-colors focus-visible:outline-none focus-visible:underline",
-                language === "pt" && "text-indigo-400 font-semibold"
+                language === "pt" && "text-indigo-400 font-semibold",
               )}
             >
               Português
@@ -423,7 +439,7 @@ export default function LandingPage() {
               aria-pressed={language === "en"}
               className={cn(
                 "hover:text-slate-300 transition-colors focus-visible:outline-none focus-visible:underline",
-                language === "en" && "text-indigo-400 font-semibold"
+                language === "en" && "text-indigo-400 font-semibold",
               )}
             >
               English

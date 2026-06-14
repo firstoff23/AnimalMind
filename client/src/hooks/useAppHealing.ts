@@ -40,7 +40,7 @@ export interface AppError {
 // The actual persistent record lives in Supabase (app_errors table).
 
 const PATTERN_WINDOW_MS = 5 * 60 * 1000; // 5 min
-const PATTERN_ESCALATE_THRESHOLD = 3;     // 3 identical errors → critical
+const PATTERN_ESCALATE_THRESHOLD = 3; // 3 identical errors → critical
 
 interface ErrorRecord {
   timestamp: number;
@@ -50,10 +50,13 @@ interface ErrorRecord {
 
 const recentErrors: ErrorRecord[] = [];
 
-function countRecentErrors(component: ErrorComponent, code: string | null): number {
+function countRecentErrors(
+  component: ErrorComponent,
+  code: string | null,
+): number {
   const cutoff = Date.now() - PATTERN_WINDOW_MS;
   return recentErrors.filter(
-    (e) => e.timestamp > cutoff && e.component === component && e.code === code
+    (e) => e.timestamp > cutoff && e.component === component && e.code === code,
   ).length;
 }
 
@@ -65,7 +68,10 @@ function trackError(component: ErrorComponent, code: string | null) {
 
 // ─── Error Classifier ───────────────────────────────────────────────────────
 
-function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<AppError, "context"> {
+function classifyError(
+  err: unknown,
+  defaultComponent?: ErrorComponent,
+): Omit<AppError, "context"> {
   const message = err instanceof Error ? err.message : String(err);
   const stack = err instanceof Error ? err.stack : undefined;
 
@@ -76,7 +82,13 @@ function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<Ap
     message.includes("session") ||
     message.includes("JWT")
   ) {
-    return { message, stack, code: "AUTH_ERROR", severity: "warning", component: "auth" };
+    return {
+      message,
+      stack,
+      code: "AUTH_ERROR",
+      severity: "warning",
+      component: "auth",
+    };
   }
 
   // RLS / Supabase permissions
@@ -86,7 +98,13 @@ function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<Ap
     message.includes("permission denied") ||
     message.includes("violates row")
   ) {
-    return { message, stack, code: "RLS_ERROR", severity: "error", component: "rls" };
+    return {
+      message,
+      stack,
+      code: "RLS_ERROR",
+      severity: "error",
+      component: "rls",
+    };
   }
 
   // Network / backend unavailable
@@ -99,12 +117,24 @@ function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<Ap
     message.includes("503") ||
     message.includes("504")
   ) {
-    return { message, stack, code: "NETWORK_ERROR", severity: "warning", component: "network" };
+    return {
+      message,
+      stack,
+      code: "NETWORK_ERROR",
+      severity: "warning",
+      component: "network",
+    };
   }
 
   // tRPC errors
   if (message.includes("TRPCClientError") || message.includes("trpc")) {
-    return { message, stack, code: "TRPC_ERROR", severity: "error", component: "trpc" };
+    return {
+      message,
+      stack,
+      code: "TRPC_ERROR",
+      severity: "error",
+      component: "trpc",
+    };
   }
 
   // Camera / media devices
@@ -114,7 +144,13 @@ function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<Ap
     message.includes("getUserMedia") ||
     message.includes("mediaDevices")
   ) {
-    return { message, stack, code: "CAMERA_PERMISSION", severity: "warning", component: "camera" };
+    return {
+      message,
+      stack,
+      code: "CAMERA_PERMISSION",
+      severity: "warning",
+      component: "camera",
+    };
   }
 
   // Audio / classification
@@ -124,12 +160,28 @@ function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<Ap
     message.includes("classify") ||
     message.includes("MediaRecorder")
   ) {
-    return { message, stack, code: "AUDIO_ERROR", severity: "error", component: "audio" };
+    return {
+      message,
+      stack,
+      code: "AUDIO_ERROR",
+      severity: "error",
+      component: "audio",
+    };
   }
 
   // React / UI render errors
-  if (message.includes("render") || message.includes("React") || message.includes("Component")) {
-    return { message, stack, code: "UI_RENDER_ERROR", severity: "error", component: "ui" };
+  if (
+    message.includes("render") ||
+    message.includes("React") ||
+    message.includes("Component")
+  ) {
+    return {
+      message,
+      stack,
+      code: "UI_RENDER_ERROR",
+      severity: "error",
+      component: "ui",
+    };
   }
 
   return {
@@ -145,7 +197,11 @@ function classifyError(err: unknown, defaultComponent?: ErrorComponent): Omit<Ap
 
 export async function withAutoRetry<T>(
   fn: () => Promise<T>,
-  options: { maxAttempts?: number; baseDelayMs?: number; component?: ErrorComponent } = {}
+  options: {
+    maxAttempts?: number;
+    baseDelayMs?: number;
+    component?: ErrorComponent;
+  } = {},
 ): Promise<T> {
   const { maxAttempts = 3, baseDelayMs = 500 } = options;
   let lastError: unknown;
@@ -155,7 +211,10 @@ export async function withAutoRetry<T>(
     } catch (err) {
       lastError = err;
       const delay = baseDelayMs * 2 ** (attempt - 1) + Math.random() * 200;
-      console.warn(`[SelfHealing] Attempt ${attempt}/${maxAttempts} failed. Retrying in ${Math.round(delay)}ms…`, err);
+      console.warn(
+        `[SelfHealing] Attempt ${attempt}/${maxAttempts} failed. Retrying in ${Math.round(delay)}ms…`,
+        err,
+      );
       if (attempt < maxAttempts) await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -170,20 +229,30 @@ export function useAppHealing() {
   mutationRef.current = logErrorMutation;
 
   const reportError = useCallback(
-    (raw: unknown, context?: Record<string, unknown>, defaultComponent?: ErrorComponent) => {
+    (
+      raw: unknown,
+      context?: Record<string, unknown>,
+      defaultComponent?: ErrorComponent,
+    ) => {
       try {
         const classified = classifyError(raw, defaultComponent);
 
         // Track for pattern detection
         trackError(classified.component, classified.code ?? null);
-        const repeatCount = countRecentErrors(classified.component, classified.code ?? null);
+        const repeatCount = countRecentErrors(
+          classified.component,
+          classified.code ?? null,
+        );
 
         // Escalate severity if this pattern is repeating
         let effectiveSeverity = classified.severity;
-        if (repeatCount >= PATTERN_ESCALATE_THRESHOLD && effectiveSeverity !== "critical") {
+        if (
+          repeatCount >= PATTERN_ESCALATE_THRESHOLD &&
+          effectiveSeverity !== "critical"
+        ) {
           effectiveSeverity = "critical";
           console.warn(
-            `[SelfHealing] Pattern detected: ${classified.component}/${classified.code} repeated ${repeatCount}x — escalating to CRITICAL`
+            `[SelfHealing] Pattern detected: ${classified.component}/${classified.code} repeated ${repeatCount}x — escalating to CRITICAL`,
           );
         }
 
@@ -197,7 +266,11 @@ export function useAppHealing() {
         };
 
         // Log to console
-        console.error(`[SelfHealing] ${effectiveSeverity.toUpperCase()} [${classified.component}]:`, classified.message, enrichedContext);
+        console.error(
+          `[SelfHealing] ${effectiveSeverity.toUpperCase()} [${classified.component}]:`,
+          classified.message,
+          enrichedContext,
+        );
 
         // Persist to server (best-effort, non-blocking)
         mutationRef.current
@@ -211,14 +284,20 @@ export function useAppHealing() {
           })
           .catch((persistErr) => {
             // If we can't even log to the server, just console.warn — don't recurse
-            console.warn("[SelfHealing] Could not persist error to server:", persistErr);
+            console.warn(
+              "[SelfHealing] Could not persist error to server:",
+              persistErr,
+            );
           });
       } catch (instrumentationError) {
         // Absolute last resort — instrumentation itself failed
-        console.error("[SelfHealing] Instrumentation failed:", instrumentationError);
+        console.error(
+          "[SelfHealing] Instrumentation failed:",
+          instrumentationError,
+        );
       }
     },
-    []
+    [],
   );
 
   return { reportError };

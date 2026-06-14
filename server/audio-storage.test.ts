@@ -27,7 +27,9 @@ describe("audio storage persistence", () => {
   });
 
   it("uploads recorded audio to the audio-recordings bucket", async () => {
-    const upload = vi.fn().mockResolvedValue({ data: { path: "events/1/test.webm" }, error: null });
+    const upload = vi
+      .fn()
+      .mockResolvedValue({ data: { path: "events/1/test.webm" }, error: null });
     const createSignedUrl = vi.fn().mockResolvedValue({
       data: {
         signedUrl:
@@ -42,7 +44,11 @@ describe("audio storage persistence", () => {
     const { uploadAudioToSupabase } = await loadDbWithClient(client);
     const buffer = Buffer.from("audio-bytes");
 
-    const url = await uploadAudioToSupabase("events/1/test.webm", buffer, "audio/webm");
+    const url = await uploadAudioToSupabase(
+      "events/1/test.webm",
+      buffer,
+      "audio/webm",
+    );
 
     expect(createBucket).toHaveBeenCalledWith(
       "audio-recordings",
@@ -78,7 +84,9 @@ describe("audio storage persistence", () => {
   it("reads the uploaded audio URL from classification_events.audio_url", async () => {
     const audioUrl =
       "https://animalmind.supabase.co/storage/v1/object/public/audio-recordings/events/42/test.wav";
-    const single = vi.fn().mockResolvedValue({ data: { audio_url: audioUrl }, error: null });
+    const single = vi
+      .fn()
+      .mockResolvedValue({ data: { audio_url: audioUrl }, error: null });
     const eq = vi.fn(() => ({ single }));
     const select = vi.fn(() => ({ eq }));
     const from = vi.fn(() => ({ select }));

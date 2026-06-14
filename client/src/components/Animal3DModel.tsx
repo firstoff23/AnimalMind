@@ -1,6 +1,6 @@
-import React, { Suspense, useRef, useState, useEffect } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import React, { Suspense, useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { EmotionalState } from "../../../shared/types";
 
@@ -21,8 +21,6 @@ export function getEmotionColor(state: EmotionalState | string): string {
     case "distress":
     case "aggressive":
       return "#ef4444";
-    case "alert":
-    case "neutral":
     default:
       return "#94a3b8";
   }
@@ -43,7 +41,10 @@ class GLTFErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: any) {
-    console.warn("GLTF model failed to load, falling back to primitive geometry:", error);
+    console.warn(
+      "GLTF model failed to load, falling back to primitive geometry:",
+      error,
+    );
   }
 
   render() {
@@ -130,7 +131,7 @@ function PrimitiveAnimal({
   // Adjust posture (body rotation/position) based on emotion/state
   // Relaxed/Calm -> Sitting posture
   const isSitting = emotion === "relaxed";
-  
+
   return (
     <group position={[0, -0.6, 0]}>
       {/* Body Group */}
@@ -174,22 +175,36 @@ function PrimitiveAnimal({
           {/* Eyes */}
           <mesh position={[-0.09, 0.08, -0.18]}>
             <sphereGeometry args={[0.035, 8, 8]} />
-            <meshStandardMaterial color={species === "cat" ? "#eab308" : "#0f172a"} roughness={0.1} />
+            <meshStandardMaterial
+              color={species === "cat" ? "#eab308" : "#0f172a"}
+              roughness={0.1}
+            />
           </mesh>
           <mesh position={[0.09, 0.08, -0.18]}>
             <sphereGeometry args={[0.035, 8, 8]} />
-            <meshStandardMaterial color={species === "cat" ? "#eab308" : "#0f172a"} roughness={0.1} />
+            <meshStandardMaterial
+              color={species === "cat" ? "#eab308" : "#0f172a"}
+              roughness={0.1}
+            />
           </mesh>
 
           {/* Ears */}
           {species === "dog" ? (
             // Floppy ears
             <>
-              <mesh ref={leftEarRef} position={[-0.19, 0.04, 0]} rotation={[0, 0, 0.2]}>
+              <mesh
+                ref={leftEarRef}
+                position={[-0.19, 0.04, 0]}
+                rotation={[0, 0, 0.2]}
+              >
                 <boxGeometry args={[0.08, 0.24, 0.12]} />
                 <meshStandardMaterial color={color} roughness={0.4} />
               </mesh>
-              <mesh ref={rightEarRef} position={[0.19, 0.04, 0]} rotation={[0, 0, -0.2]}>
+              <mesh
+                ref={rightEarRef}
+                position={[0.19, 0.04, 0]}
+                rotation={[0, 0, -0.2]}
+              >
                 <boxGeometry args={[0.08, 0.24, 0.12]} />
                 <meshStandardMaterial color={color} roughness={0.4} />
               </mesh>
@@ -197,11 +212,19 @@ function PrimitiveAnimal({
           ) : (
             // Pointy ears
             <>
-              <mesh ref={leftEarRef} position={[-0.12, 0.22, 0]} rotation={[0, 0, -0.2]}>
+              <mesh
+                ref={leftEarRef}
+                position={[-0.12, 0.22, 0]}
+                rotation={[0, 0, -0.2]}
+              >
                 <coneGeometry args={[0.08, 0.16, 4]} />
                 <meshStandardMaterial color={color} roughness={0.4} />
               </mesh>
-              <mesh ref={rightEarRef} position={[0.12, 0.22, 0]} rotation={[0, 0, 0.2]}>
+              <mesh
+                ref={rightEarRef}
+                position={[0.12, 0.22, 0]}
+                rotation={[0, 0, 0.2]}
+              >
                 <coneGeometry args={[0.08, 0.16, 4]} />
                 <meshStandardMaterial color={color} roughness={0.4} />
               </mesh>
@@ -221,12 +244,16 @@ function PrimitiveAnimal({
       {/* Legs (Standing vs Sitting positioning) */}
       <group>
         {/* Front Left */}
-        <mesh position={[-0.18, isSitting ? 0.15 : 0.25, isSitting ? -0.25 : -0.3]}>
+        <mesh
+          position={[-0.18, isSitting ? 0.15 : 0.25, isSitting ? -0.25 : -0.3]}
+        >
           <boxGeometry args={[0.12, isSitting ? 0.3 : 0.5, 0.12]} />
           <meshStandardMaterial color={color} roughness={0.4} />
         </mesh>
         {/* Front Right */}
-        <mesh position={[0.18, isSitting ? 0.15 : 0.25, isSitting ? -0.25 : -0.3]}>
+        <mesh
+          position={[0.18, isSitting ? 0.15 : 0.25, isSitting ? -0.25 : -0.3]}
+        >
           <boxGeometry args={[0.12, isSitting ? 0.3 : 0.5, 0.12]} />
           <meshStandardMaterial color={color} roughness={0.4} />
         </mesh>
@@ -249,7 +276,11 @@ function PrimitiveAnimal({
       </group>
 
       {/* Base Floor shadow helper */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.01, 0]}
+        receiveShadow
+      >
         <planeGeometry args={[4, 4]} />
         <meshStandardMaterial color="#0f172a" opacity={0.4} transparent />
       </mesh>
@@ -265,9 +296,9 @@ function GLTFPlaceholderModel({
 }) {
   // Fox model (representing animal model placeholder)
   const { scene } = useGLTF(
-    "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb"
+    "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Fox/glTF-Binary/Fox.glb",
   );
-  
+
   const modelRef = useRef<THREE.Group>(null);
   const color = getEmotionColor(emotion);
 
@@ -301,7 +332,7 @@ function GLTFPlaceholderModel({
     if (modelRef.current) {
       // Breathing idle animation
       modelRef.current.scale.setScalar(0.012 + Math.sin(t * 2) * 0.0003);
-      
+
       // Posture rotation adjustment based on emotion
       if (emotion === "relaxed") {
         modelRef.current.rotation.x = Math.PI / 12; // Sitting down tilt
@@ -349,7 +380,9 @@ export default function Animal3DModel({
         <GLTFErrorBoundary
           fallback={<PrimitiveAnimal species={species} emotion={emotion} />}
         >
-          <Suspense fallback={<PrimitiveAnimal species={species} emotion={emotion} />}>
+          <Suspense
+            fallback={<PrimitiveAnimal species={species} emotion={emotion} />}
+          >
             <GLTFPlaceholderModel emotion={emotion} />
           </Suspense>
         </GLTFErrorBoundary>

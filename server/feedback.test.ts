@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { updateEventFeedback, saveBreedFeedback } from "./db";
+import { saveBreedFeedback, updateEventFeedback } from "./db";
 
 // Mock the getSupabase or direct supabase client calls
 vi.mock("@supabase/supabase-js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@supabase/supabase-js")>();
-  
+
   const mockFrom = vi.fn().mockImplementation((table: string) => {
     const builder: any = {
       select: vi.fn().mockImplementation(() => builder),
@@ -117,7 +117,7 @@ describe("Feedback loop annotations (Supabase)", () => {
 
     const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+    vi.spyOn(supabase, "from").mockImplementation((_table: string) => {
       const builder: any = {
         insert: vi.fn().mockImplementation((data) => {
           insertMock(data);

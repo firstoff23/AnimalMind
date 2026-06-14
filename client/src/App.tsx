@@ -1,52 +1,51 @@
+import { motion } from "framer-motion";
+import Lenis from "lenis";
+import { useEffect } from "react";
+import { Redirect, Route, Switch, useLocation } from "wouter";
+import { CommandPalette } from "@/components/CommandPalette";
+import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
-import Lenis from "lenis";
-import { CommandPalette } from "@/components/CommandPalette";
-import { useAppStore } from "@/store/appStore";
-import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
-import NotFound from "@/pages/NotFound";
-import { Route, Switch, Redirect, useLocation } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { SelfHealingProvider } from "./contexts/SelfHealingContext";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { MoodProvider } from "./contexts/MoodContext";
-import { motion } from "framer-motion";
-import { BottomNav } from "./components/BottomNav";
-import { Sidebar } from "./components/Sidebar";
 import { cn } from "@/lib/utils";
+import NotFound from "@/pages/NotFound";
+import { useAppStore } from "@/store/appStore";
+import { BottomNav } from "./components/BottomNav";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Header } from "./components/Header";
 import { MobileOnlyGate } from "./components/MobileOnlyGate";
-import { OnboardingDialog } from "./components/OnboardingDialog";
 import { OfflineActionsSyncer } from "./components/OfflineActionsSyncer";
+import { OnboardingDialog } from "./components/OnboardingDialog";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import RecordingPage from "./pages/RecordingPage";
-import ProfilePage from "./pages/ProfilePage";
-import HistoryPage from "./pages/HistoryPage";
-import DashboardPage from "./pages/DashboardPage";
-import MindiPage from "./pages/MindiPage";
-import FoodSearchPage from "./pages/FoodSearchPage";
-import SettingsPage from "./pages/SettingsPage";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import VerifyEmailPage from "./pages/VerifyEmailPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import AnimalDetailPage from "./pages/AnimalDetailPage";
-import VetPage from "./pages/VetPage";
-import VetDashboardPage from "./pages/VetDashboardPage";
-import VetPetDetailPage from "./pages/VetPetDetailPage";
-import FamilyDashboard from "./pages/FamilyDashboard";
-import HealthPage from "./pages/HealthPage";
-import ComparisonPage from "./pages/ComparisonPage";
-import LandingPage from "./pages/LandingPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import CapturePortalPage from "./pages/CapturePortalPage";
-import CameraPage from "./pages/CameraPage";
+import { Sidebar } from "./components/Sidebar";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { MoodProvider } from "./contexts/MoodContext";
+import { SelfHealingProvider } from "./contexts/SelfHealingContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
+import AnimalDetailPage from "./pages/AnimalDetailPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
+import CameraPage from "./pages/CameraPage";
+import CapturePortalPage from "./pages/CapturePortalPage";
+import ComparisonPage from "./pages/ComparisonPage";
+import DashboardPage from "./pages/DashboardPage";
+import FamilyDashboard from "./pages/FamilyDashboard";
+import FoodSearchPage from "./pages/FoodSearchPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import HealthPage from "./pages/HealthPage";
+import HistoryPage from "./pages/HistoryPage";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import MindiPage from "./pages/MindiPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import ProfilePage from "./pages/ProfilePage";
+import RecordingPage from "./pages/RecordingPage";
+import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import SettingsPage from "./pages/SettingsPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
+import VetDashboardPage from "./pages/VetDashboardPage";
+import VetPage from "./pages/VetPage";
+import VetPetDetailPage from "./pages/VetPetDetailPage";
 
 function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
   useRealtimeNotifications(enabled);
@@ -57,10 +56,17 @@ function Router() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
   const commandPaletteOpen = useAppStore((state) => state.commandPaletteOpen);
-  const setCommandPaletteOpen = useAppStore((state) => state.setCommandPaletteOpen);
+  const setCommandPaletteOpen = useAppStore(
+    (state) => state.setCommandPaletteOpen,
+  );
 
   return (
-    <div className={cn("min-h-screen bg-background flex relative", !isAuthenticated && "flex-col")}>
+    <div
+      className={cn(
+        "min-h-screen bg-background flex relative",
+        !isAuthenticated && "flex-col",
+      )}
+    >
       {/* Background Grid */}
       {isAuthenticated && <BackgroundGrid />}
 
@@ -70,12 +76,22 @@ function Router() {
       {isAuthenticated && <Sidebar />}
 
       {/* Right container or single wrapper */}
-      <div className={cn("flex-1 flex flex-col min-w-0 relative", isAuthenticated ? "h-screen" : "min-h-screen")}>
+      <div
+        className={cn(
+          "flex-1 flex flex-col min-w-0 relative",
+          isAuthenticated ? "h-screen" : "min-h-screen",
+        )}
+      >
         {/* Header — only shown when authenticated */}
         {isAuthenticated && <Header />}
 
         {/* Page content */}
-        <main className={cn("flex-1 overflow-y-auto", isAuthenticated ? "pb-20 md:pb-0" : "")}>
+        <main
+          className={cn(
+            "flex-1 overflow-y-auto",
+            isAuthenticated ? "pb-20 md:pb-0" : "",
+          )}
+        >
           <motion.div
             key={location}
             initial={{ opacity: 0 }}
@@ -84,42 +100,130 @@ function Router() {
             className="min-h-full flex flex-col"
           >
             <Switch>
-            {/* Public routes */}
-            <Route path="/login" component={LoginPage} />
-            <Route path="/register" component={RegisterPage} />
-            <Route path="/forgot-password" component={ForgotPasswordPage} />
-            <Route path="/reset-password" component={ResetPasswordPage} />
-            <Route path="/verify-email" component={VerifyEmailPage} />
-            <Route path="/auth/callback" component={AuthCallbackPage} />
+              {/* Public routes */}
+              <Route path="/login" component={LoginPage} />
+              <Route path="/register" component={RegisterPage} />
+              <Route path="/forgot-password" component={ForgotPasswordPage} />
+              <Route path="/reset-password" component={ResetPasswordPage} />
+              <Route path="/verify-email" component={VerifyEmailPage} />
+              <Route path="/auth/callback" component={AuthCallbackPage} />
 
-            {/* Public routes */}
-            <Route path="/" component={LandingPage} />
-            <Route path="/privacidade" component={PrivacyPage} />
+              {/* Public routes */}
+              <Route path="/" component={LandingPage} />
+              <Route path="/privacidade" component={PrivacyPage} />
 
-            {/* Protected routes */}
-            <Route path="/gravar" component={(props) => <ProtectedRoute component={RecordingPage} {...props} />} />
-            <Route path="/capturar" component={(props) => <ProtectedRoute component={CapturePortalPage} {...props} />} />
-            <Route path="/camera" component={(props) => <ProtectedRoute component={CameraPage} {...props} />} />
-            <Route path="/perfil" component={(props) => <ProtectedRoute component={ProfilePage} {...props} />} />
-            <Route path="/health" component={(props) => <ProtectedRoute component={HealthPage} {...props} />} />
-            <Route path="/animal/:id" component={(props) => <ProtectedRoute component={AnimalDetailPage} {...props} />} />
-            <Route path="/historico" component={(props) => <ProtectedRoute component={HistoryPage} {...props} />} />
-            <Route path="/dashboard" component={(props) => <ProtectedRoute component={DashboardPage} {...props} />} />
-            <Route path="/mindi" component={(props) => <ProtectedRoute component={MindiPage} {...props} />} />
-            <Route path="/alimentos" component={(props) => <ProtectedRoute component={FoodSearchPage} {...props} />} />
-            <Route path="/definicoes" component={(props) => <ProtectedRoute component={SettingsPage} {...props} />} />
-            <Route path="/user-profile" component={() => <Redirect to="/definicoes" />} />
-            <Route path="/veterinario" component={(props) => <ProtectedRoute component={VetPage} {...props} />} />
-            <Route path="/vet/animal/:id" component={(props) => <ProtectedRoute component={VetPetDetailPage} {...props} />} />
-            <Route path="/vet" component={(props) => <ProtectedRoute component={VetDashboardPage} {...props} />} />
-            <Route path="/family" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
-            <Route path="/join/:code" component={(props) => <ProtectedRoute component={FamilyDashboard} {...props} />} />
-            <Route path="/comparison" component={(props) => <ProtectedRoute component={ComparisonPage} {...props} />} />
+              {/* Protected routes */}
+              <Route
+                path="/gravar"
+                component={(props) => (
+                  <ProtectedRoute component={RecordingPage} {...props} />
+                )}
+              />
+              <Route
+                path="/capturar"
+                component={(props) => (
+                  <ProtectedRoute component={CapturePortalPage} {...props} />
+                )}
+              />
+              <Route
+                path="/camera"
+                component={(props) => (
+                  <ProtectedRoute component={CameraPage} {...props} />
+                )}
+              />
+              <Route
+                path="/perfil"
+                component={(props) => (
+                  <ProtectedRoute component={ProfilePage} {...props} />
+                )}
+              />
+              <Route
+                path="/health"
+                component={(props) => (
+                  <ProtectedRoute component={HealthPage} {...props} />
+                )}
+              />
+              <Route
+                path="/animal/:id"
+                component={(props) => (
+                  <ProtectedRoute component={AnimalDetailPage} {...props} />
+                )}
+              />
+              <Route
+                path="/historico"
+                component={(props) => (
+                  <ProtectedRoute component={HistoryPage} {...props} />
+                )}
+              />
+              <Route
+                path="/dashboard"
+                component={(props) => (
+                  <ProtectedRoute component={DashboardPage} {...props} />
+                )}
+              />
+              <Route
+                path="/mindi"
+                component={(props) => (
+                  <ProtectedRoute component={MindiPage} {...props} />
+                )}
+              />
+              <Route
+                path="/alimentos"
+                component={(props) => (
+                  <ProtectedRoute component={FoodSearchPage} {...props} />
+                )}
+              />
+              <Route
+                path="/definicoes"
+                component={(props) => (
+                  <ProtectedRoute component={SettingsPage} {...props} />
+                )}
+              />
+              <Route
+                path="/user-profile"
+                component={() => <Redirect to="/definicoes" />}
+              />
+              <Route
+                path="/veterinario"
+                component={(props) => (
+                  <ProtectedRoute component={VetPage} {...props} />
+                )}
+              />
+              <Route
+                path="/vet/animal/:id"
+                component={(props) => (
+                  <ProtectedRoute component={VetPetDetailPage} {...props} />
+                )}
+              />
+              <Route
+                path="/vet"
+                component={(props) => (
+                  <ProtectedRoute component={VetDashboardPage} {...props} />
+                )}
+              />
+              <Route
+                path="/family"
+                component={(props) => (
+                  <ProtectedRoute component={FamilyDashboard} {...props} />
+                )}
+              />
+              <Route
+                path="/join/:code"
+                component={(props) => (
+                  <ProtectedRoute component={FamilyDashboard} {...props} />
+                )}
+              />
+              <Route
+                path="/comparison"
+                component={(props) => (
+                  <ProtectedRoute component={ComparisonPage} {...props} />
+                )}
+              />
 
-            {/* Not found */}
-            <Route path="/404" component={NotFound} />
-            <Route component={NotFound} />
-          </Switch>
+              {/* Not found */}
+              <Route path="/404" component={NotFound} />
+              <Route component={NotFound} />
+            </Switch>
           </motion.div>
         </main>
 
@@ -129,7 +233,10 @@ function Router() {
 
         {/* Global Command Palette */}
         {isAuthenticated && (
-          <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+          <CommandPalette
+            open={commandPaletteOpen}
+            onOpenChange={setCommandPaletteOpen}
+          />
         )}
       </div>
     </div>

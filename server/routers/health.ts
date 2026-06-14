@@ -2,19 +2,21 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
-  getVaccines,
-  addVaccine,
-  deleteVaccine,
-  getHealthRecords,
   addHealthRecord,
+  addVaccine,
   deleteHealthRecord,
+  deleteVaccine,
   getDemoUserId,
-  verifyAnimalOwner,
-  getVaccineById,
   getHealthRecordById,
+  getHealthRecords,
+  getVaccineById,
+  getVaccines,
+  verifyAnimalOwner,
 } from "../db";
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -40,7 +42,7 @@ export const healthRouter = router({
         batchNumber: z.string().nullable().optional(),
         veterinarian: z.string().nullable().optional(),
         nextDueDate: z.string().nullable().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);
@@ -91,7 +93,7 @@ export const healthRouter = router({
         licenseNumber: z.string().nullable().optional(),
         issuingAuthority: z.string().nullable().optional(),
         nextDueDate: z.string().nullable().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);

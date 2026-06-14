@@ -1,7 +1,15 @@
-export const VETERINARY_ROLES = ["vet", "veterinarian", "clinic_admin", "admin"] as const;
+export const VETERINARY_ROLES = [
+  "vet",
+  "veterinarian",
+  "clinic_admin",
+  "admin",
+] as const;
 
 export function isVeterinaryRole(role: unknown): boolean {
-  return typeof role === "string" && (VETERINARY_ROLES as readonly string[]).includes(role);
+  return (
+    typeof role === "string" &&
+    (VETERINARY_ROLES as readonly string[]).includes(role)
+  );
 }
 
 export function getVeterinaryRoleLabel(role: unknown): string {

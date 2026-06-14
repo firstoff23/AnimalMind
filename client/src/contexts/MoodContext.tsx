@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import type { EmotionalState, EventData } from "@shared/types";
+import type React from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { EventData, EmotionalState } from "@shared/types";
 
 export type Mood = "calm" | "neutral" | "concerned";
 
@@ -22,16 +23,18 @@ const MOOD_MAPPING: Record<EmotionalState, Mood> = {
 };
 
 export function MoodProvider({ children }: { children: React.ReactNode }) {
-  const { data: activeAnimal, isLoading: animalLoading } = trpc.animals.getActive.useQuery();
+  const { data: activeAnimal, isLoading: animalLoading } =
+    trpc.animals.getActive.useQuery();
 
   // Fetch the latest classification event for the active animal
-  const { data: eventsResult, isLoading: eventsLoading } = trpc.events.listForAnimal.useQuery(
-    { animalId: activeAnimal?.id ?? 0, page: 1, pageSize: 1 },
-    { enabled: !!activeAnimal }
-  );
+  const { data: eventsResult, isLoading: eventsLoading } =
+    trpc.events.listForAnimal.useQuery(
+      { animalId: activeAnimal?.id ?? 0, page: 1, pageSize: 1 },
+      { enabled: !!activeAnimal },
+    );
 
   const latestEvent = useMemo(() => {
-    if (!eventsResult || !eventsResult.events || eventsResult.events.length === 0) {
+    if (!eventsResult?.events || eventsResult.events.length === 0) {
       return null;
     }
     return eventsResult.events[0] as unknown as EventData;
@@ -51,7 +54,7 @@ export function MoodProvider({ children }: { children: React.ReactNode }) {
 
     if (latestEvent) {
       const eventTime = new Date(latestEvent.createdAt).getTime();
-      const now = new Date().getTime();
+      const now = Date.now();
       const isWithin48h = now - eventTime <= 48 * 60 * 60 * 1000;
 
       if (isWithin48h && latestEvent.state in MOOD_MAPPING) {
@@ -70,7 +73,7 @@ export function MoodProvider({ children }: { children: React.ReactNode }) {
       latestEvent,
       isLoading: animalLoading || (!!activeAnimal && eventsLoading),
     }),
-    [mood, latestEvent, animalLoading, activeAnimal, eventsLoading]
+    [mood, latestEvent, animalLoading, activeAnimal, eventsLoading],
   );
 
   return <MoodContext.Provider value={value}>{children}</MoodContext.Provider>;

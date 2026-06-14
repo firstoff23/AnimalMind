@@ -1,8 +1,8 @@
-import { useLocation } from "wouter";
-import { Mic, Camera, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Camera, Mic } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useLanguage } from "@/hooks/useLanguage";
 
 export default function CapturePortalPage() {
@@ -24,7 +24,12 @@ export default function CapturePortalPage() {
 
   const cardVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 10 },
-    show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 22 } },
+    show: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { type: "spring" as const, stiffness: 300, damping: 22 },
+    },
   };
 
   return (
@@ -72,7 +77,10 @@ export default function CapturePortalPage() {
               </div>
             </div>
             <div className="flex justify-end pt-2">
-              <Button size="sm" className="h-8 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button
+                size="sm"
+                className="h-8 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
                 {language === "pt" ? "Gravar agora" : "Record now"}
               </Button>
             </div>

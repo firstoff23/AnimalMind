@@ -1,8 +1,7 @@
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { appRouter } from "./routers";
-import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
-
+import { beforeAll, describe, expect, it } from "vitest";
+import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 function createMockContext(): TrpcContext {
   return {
@@ -30,20 +29,29 @@ describe("tRPC animals and baselines", () => {
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
     try {
       const supabase = createClient(url, key);
-      const { data: userData } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      const { data: userData } = await supabase
+        .from("users")
+        .select("id")
+        .eq("open_id", "demo-user-001")
+        .single();
       if (userData) {
         ctx.user.id = Number(userData.id);
         credentialsValid = true;
       }
-      
+
       if (credentialsValid) {
         // Fetch an animal ID that belongs to the demo user to run our integration tests
-        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ctx.user.id).limit(1);
+        const { data: animals } = await supabase
+          .from("animals")
+          .select("id")
+          .eq("user_id", ctx.user.id)
+          .limit(1);
         if (animals && animals.length > 0) {
           testAnimalId = Number(animals[0].id);
         }
@@ -56,7 +64,9 @@ describe("tRPC animals and baselines", () => {
   it("can get default baseline for an animal", async () => {
     if (!credentialsValid) return;
 
-    const baseline = await caller.animals.getBaseline({ animalId: testAnimalId });
+    const baseline = await caller.animals.getBaseline({
+      animalId: testAnimalId,
+    });
     expect(baseline).toHaveProperty("vocalizationThreshold");
     expect(baseline).toHaveProperty("normalStates");
     expect(baseline).toHaveProperty("alertSensitivity");
@@ -77,7 +87,9 @@ describe("tRPC animals and baselines", () => {
     expect(newBaseline.alertSensitivity).toBe("high");
 
     // Retrieve again to verify persistence
-    const retrieved = await caller.animals.getBaseline({ animalId: testAnimalId });
+    const retrieved = await caller.animals.getBaseline({
+      animalId: testAnimalId,
+    });
     expect(retrieved.vocalizationThreshold).toBe(15);
     expect(retrieved.alertSensitivity).toBe("high");
   });
@@ -94,7 +106,10 @@ describe("tRPC animals and baselines", () => {
   it("can get stats for animal", async () => {
     if (!credentialsValid) return;
 
-    const stats = await caller.events.statsForAnimal({ animalId: testAnimalId, days: 7 });
+    const stats = await caller.events.statsForAnimal({
+      animalId: testAnimalId,
+      days: 7,
+    });
     expect(stats).toHaveProperty("dailyActivity");
     expect(stats).toHaveProperty("stateDistribution");
     expect(stats).toHaveProperty("totalCount");
@@ -105,11 +120,13 @@ describe("tRPC animals and baselines", () => {
   it("can list paginated events for animal", async () => {
     if (!credentialsValid) return;
 
-    const res = await caller.events.listForAnimal({ animalId: testAnimalId, page: 1, pageSize: 5 });
+    const res = await caller.events.listForAnimal({
+      animalId: testAnimalId,
+      page: 1,
+      pageSize: 5,
+    });
     expect(res).toHaveProperty("events");
     expect(res).toHaveProperty("total");
     expect(Array.isArray(res.events)).toBe(true);
   });
-
-
 });

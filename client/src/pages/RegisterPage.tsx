@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import {
   AuthPasswordChecklist,
   AuthShell,
@@ -9,6 +8,7 @@ import {
   AuthTextField,
   authIcons,
 } from "@/components/auth/AuthShell";
+import { useAuth } from "@/contexts/AuthContext";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,7 +35,8 @@ export default function RegisterPage() {
   const hasUppercase = /[A-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  const isPasswordValid = hasMinLength && hasUppercase && hasNumber && hasSpecial;
+  const isPasswordValid =
+    hasMinLength && hasUppercase && hasNumber && hasSpecial;
   const isEmailValid = emailRegex.test(normalizedEmail);
   const isNameValid = name.trim().length > 1;
   const isFormValid = isNameValid && isEmailValid && isPasswordValid;
@@ -47,18 +48,22 @@ export default function RegisterPage() {
       { label: "Um número", met: hasNumber },
       { label: "Um caractere especial", met: hasSpecial },
     ],
-    [hasMinLength, hasNumber, hasSpecial, hasUppercase]
+    [hasMinLength, hasNumber, hasSpecial, hasUppercase],
   );
 
   const nameError =
-    nameBlurred && !isNameValid ? "Indique o seu nome para personalizar a conta." : "";
+    nameBlurred && !isNameValid
+      ? "Indique o seu nome para personalizar a conta."
+      : "";
   const emailError =
     apiError ||
     (emailBlurred && !isEmailValid
       ? "Introduza um email válido, por exemplo nome@exemplo.com."
       : "");
   const passwordError =
-    passwordBlurred && !isPasswordValid ? "Escolha uma palavra-passe que cumpra os requisitos." : "";
+    passwordBlurred && !isPasswordValid
+      ? "Escolha uma palavra-passe que cumpra os requisitos."
+      : "";
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,13 +77,15 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await signUp(normalizedEmail, password, name.trim());
-      toast.success("Conta criada com sucesso! Verifique o email se for pedido.");
+      toast.success(
+        "Conta criada com sucesso! Verifique o email se for pedido.",
+      );
       setLocation("/login");
     } catch (error) {
       setApiError(
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível criar a conta com este email."
+          : "Não foi possível criar a conta com este email.",
       );
     } finally {
       setLoading(false);
@@ -93,7 +100,8 @@ export default function RegisterPage() {
       showOAuth
       footer={
         <p className="text-center text-xs leading-relaxed text-muted-foreground">
-          Depois do registo, poderá confirmar o email e entrar na app com as mesmas credenciais.
+          Depois do registo, poderá confirmar o email e entrar na app com as
+          mesmas credenciais.
         </p>
       }
     >
@@ -155,10 +163,7 @@ export default function RegisterPage() {
 
         <AuthPasswordChecklist requirements={passwordRequirements} />
 
-        <AuthSubmitButton
-          loading={loading}
-          loadingLabel="A criar conta..."
-        >
+        <AuthSubmitButton loading={loading} loadingLabel="A criar conta...">
           Criar conta
         </AuthSubmitButton>
       </form>

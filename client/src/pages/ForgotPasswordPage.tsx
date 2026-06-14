@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import { MailCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { requireSupabase, useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import {
   AuthInlineNote,
   AuthShell,
@@ -11,6 +10,7 @@ import {
   authIcons,
 } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
+import { requireSupabase, useAuth } from "@/contexts/AuthContext";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -46,16 +46,21 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const { error } = await requireSupabase().auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await requireSupabase().auth.resetPasswordForEmail(
+        normalizedEmail,
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+      );
 
       if (error) throw error;
 
       setSent(true);
       toast.success("Email de recuperação enviado.");
     } catch {
-      setApiError("Não foi possível enviar o link para este email. Confirme o endereço e tente novamente.");
+      setApiError(
+        "Não foi possível enviar o link para este email. Confirme o endereço e tente novamente.",
+      );
     } finally {
       setLoading(false);
     }
@@ -104,10 +109,7 @@ export default function ForgotPasswordPage() {
             success={isEmailValid && !apiError ? "Válido" : undefined}
           />
 
-          <AuthSubmitButton
-            loading={loading}
-            loadingLabel="A enviar..."
-          >
+          <AuthSubmitButton loading={loading} loadingLabel="A enviar...">
             Enviar link de recuperação
           </AuthSubmitButton>
         </form>
@@ -119,7 +121,9 @@ export default function ForgotPasswordPage() {
             title="Link enviado"
             description={
               <>
-                Enviámos um link de recuperação para <strong>{normalizedEmail}</strong>. Verifique também a pasta de spam.
+                Enviámos um link de recuperação para{" "}
+                <strong>{normalizedEmail}</strong>. Verifique também a pasta de
+                spam.
               </>
             }
           />

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, Suspense } from "react";
 import { Loader2, PawPrint } from "lucide-react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import type { EmotionalState } from "../../../shared/types";
 
 // Dynamic import of the R3F Canvas component
@@ -14,7 +14,7 @@ function checkWebGLSupport(): boolean {
       window.WebGLRenderingContext &&
       (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
     );
-  } catch (e) {
+  } catch (_e) {
     return false;
   }
 }
@@ -59,7 +59,7 @@ export default function LazyAnimal3DModel({
       {
         rootMargin: "100px", // Trigger slightly before it enters the viewport
         threshold: 0.01,
-      }
+      },
     );
 
     observer.observe(currentRef);

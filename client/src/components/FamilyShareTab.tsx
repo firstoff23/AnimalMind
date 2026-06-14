@@ -1,9 +1,14 @@
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Home,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Users, UserPlus, Trash2, Clock, CheckCircle2, AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   AlertDialog,
@@ -15,6 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 
 interface FamilyShareTabProps {
   animalId: number;
@@ -29,7 +37,10 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
   const utils = trpc.useUtils();
 
   // Query shares list
-  const { data: shares = [], isLoading } = trpc.animals.listShares.useQuery({ animalId }, { retry: false });
+  const { data: shares = [], isLoading } = trpc.animals.listShares.useQuery(
+    { animalId },
+    { retry: false },
+  );
   const { data: familyMembers = [] } = trpc.family.getMembers.useQuery();
 
   // Mutation to invite co-tutor
@@ -90,19 +101,26 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
   return (
     <div className="space-y-6 pt-4">
       {revokeTargetId !== null && (
-        <AlertDialog open={revokeTargetId !== null} onOpenChange={(open) => !open && setRevokeTargetId(null)}>
+        <AlertDialog
+          open={revokeTargetId !== null}
+          onOpenChange={(open) => !open && setRevokeTargetId(null)}
+        >
           <AlertDialogContent className="bg-slate-900 border border-slate-800 text-white rounded-2xl max-w-sm">
             <AlertDialogHeader>
               <AlertDialogTitle>Revogar Partilha</AlertDialogTitle>
               <AlertDialogDescription className="text-slate-400 text-xs">
-                Tem a certeza que deseja revogar o acesso deste tutor a este animal? Esta ação é irreversível.
+                Tem a certeza que deseja revogar o acesso deste tutor a este
+                animal? Esta ação é irreversível.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex gap-2 mt-4">
               <AlertDialogCancel className="flex-1 border-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs active-scale tap-highlight-none">
                 Cancelar
               </AlertDialogCancel>
-              <AlertDialogAction onClick={handleRevokeConfirm} className="flex-1 bg-red-600 hover:bg-red-700 text-white border-none rounded-xl text-xs active-scale tap-highlight-none">
+              <AlertDialogAction
+                onClick={handleRevokeConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white border-none rounded-xl text-xs active-scale tap-highlight-none"
+              >
                 Revogar Acesso
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -113,7 +131,9 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
       <div className="bg-secondary/20 border border-border/80 rounded-2xl p-4 space-y-3">
         <div className="flex items-center gap-2 text-foreground">
           <Home size={16} className="text-emerald-400" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider">Família</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider">
+            Família
+          </h3>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Partilhe este animal com todos os membros da sua família ativa.
@@ -124,7 +144,9 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
             disabled={shareWithFamilyMutation.isPending}
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs active-scale tap-highlight-none font-semibold h-9"
           >
-            {shareWithFamilyMutation.isPending ? "A adicionar..." : "Adicionar à família"}
+            {shareWithFamilyMutation.isPending
+              ? "A adicionar..."
+              : "Adicionar à família"}
           </Button>
         ) : (
           <Button
@@ -141,7 +163,9 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
       <div className="bg-secondary/20 border border-border/80 rounded-2xl p-4 space-y-4">
         <div className="flex items-center gap-2 text-foreground">
           <UserPlus size={16} className="text-emerald-400" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider">Convidar Co-tutor</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider">
+            Convidar Co-tutor
+          </h3>
         </div>
         <form onSubmit={handleInviteSubmit} className="space-y-3">
           <div className="space-y-1">
@@ -165,11 +189,17 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
               </label>
               <select
                 value={permission}
-                onChange={(e) => setPermission(e.target.value as "read" | "write")}
+                onChange={(e) =>
+                  setPermission(e.target.value as "read" | "write")
+                }
                 className="w-full bg-background text-xs border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary/50 active-scale tap-highlight-none"
               >
-                <option value="read">Apenas Leitura (Estatísticas e Histórico)</option>
-                <option value="write">Leitura e Escrita (Gravar e Baseline)</option>
+                <option value="read">
+                  Apenas Leitura (Estatísticas e Histórico)
+                </option>
+                <option value="write">
+                  Leitura e Escrita (Gravar e Baseline)
+                </option>
               </select>
             </div>
 
@@ -188,7 +218,9 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-muted-foreground ml-1">
           <Users size={15} />
-          <h3 className="text-xs font-semibold uppercase tracking-wider">Tutores Associados</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wider">
+            Tutores Associados
+          </h3>
         </div>
 
         {isLoading ? (
@@ -207,7 +239,9 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
                 className="bg-card border border-border rounded-2xl p-3.5 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground truncate">{share.sharedWithEmail}</p>
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {share.sharedWithEmail}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     {share.status === "accepted" ? (
                       <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
@@ -225,8 +259,13 @@ export default function FamilyShareTab({ animalId }: FamilyShareTabProps) {
 
                     <span className="text-[10px] text-muted-foreground">•</span>
 
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-border/80 uppercase font-semibold text-muted-foreground">
-                      {share.permission === "write" ? "Leitura & Escrita" : "Apenas Leitura"}
+                    <Badge
+                      variant="outline"
+                      className="text-[9px] px-1.5 py-0 border-border/80 uppercase font-semibold text-muted-foreground"
+                    >
+                      {share.permission === "write"
+                        ? "Leitura & Escrita"
+                        : "Apenas Leitura"}
                     </Badge>
                   </div>
                 </div>
