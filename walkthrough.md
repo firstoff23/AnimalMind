@@ -442,4 +442,30 @@ Realizámos a migração completa do ecossistema de qualidade de código do Anim
 * **Testes Unitários**: Todos os 103 testes da aplicação estão verdes.
 * **Build**: O build de produção (`pnpm run build`) compilou perfeitamente e gerou as pastas de distribuição client/server sem avisos.
 
+---
+
+## 🎨 Secção 15 — Autocomplete de Raças + Validação SIAC (Round 12) ✅
+
+Nesta secção, implementámos o autocomplete de raças inteligente que consome as APIs públicas Dog API e Cat API, e adicionámos a validação de microchips no padrão português SIAC.
+
+### 1. Autocomplete de Raças com Dog/Cat API
+* **Componente Inteligente**: Criámos o componente `BreedAutocomplete` ([ProfilePage.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/pages/ProfilePage.tsx#L370-L485)) que substitui o seletor antigo:
+  - Consome dinamicamente a Dog API (`https://api.thedogapi.com/v1/breeds/search?q=[termo]`) ou Cat API (`https://api.thecatapi.com/v1/breeds/search?q=[termo]`) consoante a espécie.
+  - Se a espécie for indefinida ou não selecionada, pesquisa em ambas as APIs e junta os resultados.
+  - Filtra e mostra no máximo 6 resultados num menu dropdown flutuante estilizado.
+  - Implementa um debounce de **300ms** para controlar o volume de requisições.
+  - Trata o tempo de resposta através de um timeout de **3 segundos** com `AbortController` (se a API falhar ou demorar muito tempo, o campo funciona como input de texto normal - Graceful Fallback).
+* **Limpeza de Estados**: Removemos as variáveis obsoletas de carregamento prévio de raças e os seus respetivos `useEffect` e `localStorage` de `AddAnimalForm` e `EditAnimalForm`.
+
+### 2. Validação SIAC (Microchip com 15 dígitos)
+* **Validação em Tempo Real**: Adicionámos a validação de formato/tamanho para números de microchip nos formulários de criação (`AddAnimalForm`) e edição (`EditAnimalForm`):
+  - Verifica se o número contém exatamente 15 dígitos numéricos.
+  - Se for digitado um valor inválido, o botão "Guardar" fica desativado e exibe-se a mensagem `"O número de microchip deve ter exatamente 15 dígitos"`.
+  - O campo de microchip na aba manual (ou edição) continua opcional, mas se for preenchido, é obrigatoriamente validado. Na aba microchip, a validação é estrita e obrigatória.
+
+### 3. Verificação Técnica
+* **TypeScript & Biome Check**: Concluído com 0 erros e 0 avisos em `ProfilePage.tsx`.
+* **Testes Unitários**: Suite de testes completa com todos os **103/103 testes** a passar com sucesso.
+* **Build de Produção**: O comando `pnpm run build` gerou o bundle de produção estático e do servidor sem qualquer problema.
+
 
