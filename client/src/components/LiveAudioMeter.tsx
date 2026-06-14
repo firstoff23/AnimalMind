@@ -1,5 +1,6 @@
 // biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in Vitest
 import React from "react";
+
 interface LiveAudioMeterProps {
   level: number;
   waveform: number[];

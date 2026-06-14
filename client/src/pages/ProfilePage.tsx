@@ -367,6 +367,161 @@ function PhotoUploadZone({
   );
 }
 
+// ─── Breed Autocomplete Component ─────────────────────────────────────────────
+
+function BreedAutocomplete({
+  species,
+  value,
+  onChange,
+  placeholder,
+  className,
+  id,
+}: {
+  species: "dog" | "cat" | "" | undefined;
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  className?: string;
+  id?: string;
+}) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!value.trim()) {
+      setSuggestions([]);
+      setIsOpen(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLoading(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+      try {
+        const query = encodeURIComponent(value.trim());
+        let results: string[] = [];
+
+        if (species === "dog") {
+          const res = await fetch(
+            `https://api.thedogapi.com/v1/breeds/search?q=${query}`,
+            { signal: controller.signal },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            results = data.map((item: any) => item.name);
+          }
+        } else if (species === "cat") {
+          const res = await fetch(
+            `https://api.thecatapi.com/v1/breeds/search?q=${query}`,
+            { signal: controller.signal },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            results = data.map((item: any) => item.name);
+          }
+        } else {
+          // If species is not defined, fetch from both
+          const [dogRes, catRes] = await Promise.all([
+            fetch(`https://api.thedogapi.com/v1/breeds/search?q=${query}`, {
+              signal: controller.signal,
+            }).catch(() => null),
+            fetch(`https://api.thedogapi.com/v1/breeds/search?q=${query}`, {
+              signal: controller.signal,
+            }).catch(() => null),
+          ]);
+
+          const dogData = dogRes?.ok ? await dogRes.json() : [];
+          const catData = catRes?.ok ? await catRes.json() : [];
+
+          const dogBreeds = Array.isArray(dogData)
+            ? dogData.map((item: any) => item.name)
+            : [];
+          const catBreeds = Array.isArray(catData)
+            ? catData.map((item: any) => item.name)
+            : [];
+
+          results = [...dogBreeds, ...catBreeds];
+        }
+
+        const uniqueResults = Array.from(new Set(results))
+          .filter(Boolean)
+          .slice(0, 6);
+        setSuggestions(uniqueResults);
+        setIsOpen(uniqueResults.length > 0);
+      } catch (err) {
+        console.error("Autocomplete fetch failed or timed out:", err);
+        setSuggestions([]);
+        setIsOpen(false);
+      } finally {
+        clearTimeout(timeoutId);
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [value, species]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <Input
+        id={id}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          if (suggestions.length > 0) {
+            setIsOpen(true);
+          }
+        }}
+        placeholder={placeholder}
+        className={className}
+        autoComplete="off"
+      />
+      {isLoading && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+        </div>
+      )}
+      {isOpen && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 mt-1 bg-slate-950 border border-border rounded-xl shadow-xl overflow-hidden z-[100] max-h-56 overflow-y-auto">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                onChange(s);
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-2.5 text-left text-xs font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition-colors duration-150 border-b border-border/10 last:border-b-0 cursor-pointer"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Add Animal Form ──────────────────────────────────────────────────────────
 
 export function AddAnimalForm({ onClose }: { onClose: () => void }) {
@@ -380,7 +535,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
   // Manual / Shared fields
   const [name, setName] = useState("");
   const [species, setSpecies] = useState<"dog" | "cat">("dog");
-  const [_breed, _setBreed] = useState("");
+  const [breed, setBreed] = useState("");
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -425,20 +580,19 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
     animalType: "dog" | "cat";
   } | null>(null);
 
-  const [breeds, setBreeds] = useState<string[]>([]);
-  const [_loadingBreeds, setLoadingBreeds] = useState(false);
-  const [selectedBreed, setSelectedBreed] = useState("");
-  const [customBreed, setCustomBreed] = useState("");
-
   const isNameValid = name.trim().length > 0 && name.length <= 50;
   const isSpecialMarkingsValid = specialMarkings.length <= 500;
   const isMicrochipValid =
-    activeTab === "microchip" ? /^\d{15}$/.test(microchipNumber) : true;
+    activeTab === "microchip"
+      ? /^\d{15}$/.test(microchipNumber)
+      : microchipNumber.trim() === ""
+        ? true
+        : /^\d{15}$/.test(microchipNumber);
 
   const isFormValid =
     activeTab === "microchip"
       ? isNameValid && isMicrochipValid
-      : isNameValid && isSpecialMarkingsValid;
+      : isNameValid && isSpecialMarkingsValid && isMicrochipValid;
 
   const nameError =
     nameBlurred && !isNameValid
@@ -454,82 +608,24 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   const [microchipBlurred, setMicrochipBlurred] = useState(false);
   const microchipValidationError =
-    activeTab === "microchip" &&
+    (activeTab === "microchip" || microchipNumber.length > 0) &&
     (microchipBlurred || microchipNumber.length > 0) &&
     !/^\d{15}$/.test(microchipNumber)
-      ? "O número de microchip deve conter exatamente 15 dígitos numéricos."
+      ? "O número de microchip deve ter exatamente 15 dígitos"
       : "";
 
   const saveBreedFeedbackMutation = trpc.animals.saveBreedFeedback.useMutation({
     onError: (err) => console.error("Error saving breed feedback:", err),
   });
 
-  const _handleSelectBreedHelper = (breedName: string, breedList: string[]) => {
-    const isKnown = breedList.some(
-      (b) => b.toLowerCase() === breedName.toLowerCase(),
-    );
-    if (isKnown) {
-      const matched = breedList.find(
-        (b) => b.toLowerCase() === breedName.toLowerCase(),
-      );
-      setSelectedBreed(matched || breedName);
-      setCustomBreed("");
-    } else {
-      setSelectedBreed("other");
-      setCustomBreed(breedName);
-    }
-  };
-
-  // Fetch breeds on species change
-  useEffect(() => {
-    const fetchBreeds = async () => {
-      setLoadingBreeds(true);
-      const cacheKey = `animalmind_breeds_${species}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        try {
-          const list = JSON.parse(cached) as string[];
-          setBreeds(list);
-          setLoadingBreeds(false);
-          return;
-        } catch {}
-      }
-
-      const url =
-        species === "dog"
-          ? "https://api.thedogapi.com/v1/breeds"
-          : "https://api.thecatapi.com/v1/breeds";
-
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = (await res.json()) as Array<{ name: string }>;
-          const list = data.map((b) => b.name).sort();
-          localStorage.setItem(cacheKey, JSON.stringify(list));
-          setBreeds(list);
-        } else {
-          setBreeds([]);
-        }
-      } catch (err) {
-        console.error("Error fetching breeds:", err);
-        setBreeds([]);
-      } finally {
-        setLoadingBreeds(false);
-      }
-    };
-    fetchBreeds();
-  }, [species]);
-
   const addMutation = trpc.animals.add.useMutation({
     onSuccess: () => {
       toast.success(t("profilePage.saveSuccess"));
       if (predictionInfo) {
-        const finalBreed =
-          selectedBreed === "other" ? customBreed : selectedBreed;
         saveBreedFeedbackMutation.mutate({
           animalType: predictionInfo.animalType,
           predictedBreed: predictionInfo.predictedBreed,
-          confirmedBreed: finalBreed.trim(),
+          confirmedBreed: breed.trim(),
           confidence: predictionInfo.confidence,
         });
       }
@@ -552,7 +648,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
+    const finalBreed = breed;
     const photoUrlToSave =
       activeTab === "ocr"
         ? ocrMediaState.filePreview
@@ -833,36 +929,14 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
               <Label htmlFor="breed" className="text-xs text-muted-foreground">
                 {t("profilePage.breed")}
               </Label>
-              <select
+              <BreedAutocomplete
                 id="breed"
-                value={selectedBreed}
-                onChange={(e) => {
-                  setSelectedBreed(e.target.value);
-                  if (e.target.value !== "other") {
-                    setCustomBreed("");
-                  }
-                }}
-                className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm border-border text-foreground"
-              >
-                <option value="">{t("profilePage.breedPlaceholder")}</option>
-                {breeds.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-                <option value="other">
-                  {language === "pt" ? "Outra (digitar...)" : "Other (type...)"}
-                </option>
-              </select>
-
-              {selectedBreed === "other" && (
-                <Input
-                  value={customBreed}
-                  onChange={(e) => setCustomBreed(e.target.value)}
-                  placeholder={t("profilePage.breed")}
-                  className="bg-secondary border-border mt-1.5"
-                />
-              )}
+                species={species}
+                value={breed}
+                onChange={setBreed}
+                placeholder={t("profilePage.breedPlaceholder")}
+                className="bg-secondary border-border"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -975,9 +1049,19 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                     e.target.value.replace(/\D/g, "").slice(0, 15),
                   )
                 }
+                onBlur={() => setMicrochipBlurred(true)}
                 placeholder="Ex: 900115000678234"
-                className="bg-secondary border-border"
+                className={cn(
+                  "bg-secondary border-border",
+                  microchipValidationError && "border-red-500",
+                )}
               />
+              {microchipValidationError && (
+                <p className="text-[10px] text-red-400 font-medium mt-1 flex gap-1 items-start">
+                  <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                  <span>{microchipValidationError}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -1371,7 +1455,7 @@ export function EditAnimalForm({
   const [species, setSpecies] = useState<"dog" | "cat">(
     animal.species || "dog",
   );
-  const [_breed, _setBreed] = useState(animal.breed || "");
+  const [breed, setBreed] = useState(animal.breed || "");
   const [age, setAge] = useState(animal.age !== null ? String(animal.age) : "");
   const [weight, setWeight] = useState(animal.weight || "");
   const [dateOfBirth, setDateOfBirth] = useState(animal.dateOfBirth || "");
@@ -1403,15 +1487,15 @@ export function EditAnimalForm({
 
   const [nameBlurred, setNameBlurred] = useState(false);
   const [specialMarkingsBlurred, setSpecialMarkingsBlurred] = useState(false);
-
-  const [breeds, setBreeds] = useState<string[]>([]);
-  const [_loadingBreeds, setLoadingBreeds] = useState(false);
-  const [selectedBreed, setSelectedBreed] = useState(animal.breed || "");
-  const [customBreed, setCustomBreed] = useState("");
+  const [microchipBlurred, setMicrochipBlurred] = useState(false);
 
   const isNameValid = name.trim().length > 0 && name.length <= 50;
   const isSpecialMarkingsValid = specialMarkings.length <= 500;
-  const isFormValid = isNameValid && isSpecialMarkingsValid;
+  const isMicrochipValid =
+    microchipNumber.trim() === ""
+      ? true
+      : /^\d{15}$/.test(microchipNumber.trim());
+  const isFormValid = isNameValid && isSpecialMarkingsValid && isMicrochipValid;
 
   const nameError =
     nameBlurred && !isNameValid
@@ -1423,6 +1507,13 @@ export function EditAnimalForm({
   const specialMarkingsError =
     specialMarkingsBlurred && !isSpecialMarkingsValid
       ? "Os sinais particulares devem ter no máximo 500 caracteres."
+      : "";
+
+  const microchipValidationError =
+    (microchipBlurred || microchipNumber.length > 0) &&
+    microchipNumber.length > 0 &&
+    !/^\d{15}$/.test(microchipNumber)
+      ? "O número de microchip deve ter exatamente 15 dígitos"
       : "";
 
   const updateMutation = trpc.animals.update.useMutation({
@@ -1439,64 +1530,10 @@ export function EditAnimalForm({
     onError: () => toast.error(t("profilePage.saveError")),
   });
 
-  useEffect(() => {
-    const fetchBreeds = async () => {
-      setLoadingBreeds(true);
-      const cacheKey = `animalmind_breeds_${species}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        try {
-          const list = JSON.parse(cached) as string[];
-          setBreeds(list);
-          setLoadingBreeds(false);
-          return;
-        } catch {}
-      }
-
-      const url =
-        species === "dog"
-          ? "https://api.thedogapi.com/v1/breeds"
-          : "https://api.thecatapi.com/v1/breeds";
-
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = (await res.json()) as Array<{ name: string }>;
-          const list = data.map((b) => b.name).sort();
-          localStorage.setItem(cacheKey, JSON.stringify(list));
-          setBreeds(list);
-        } else {
-          setBreeds([]);
-        }
-      } catch (err) {
-        console.error("Error fetching breeds:", err);
-        setBreeds([]);
-      } finally {
-        setLoadingBreeds(false);
-      }
-    };
-    fetchBreeds();
-  }, [species]);
-
-  useEffect(() => {
-    if (breeds.length > 0 && animal.breed) {
-      const isKnown = breeds.some(
-        (b) => b.toLowerCase() === animal.breed.toLowerCase(),
-      );
-      if (isKnown) {
-        setSelectedBreed(animal.breed);
-        setCustomBreed("");
-      } else {
-        setSelectedBreed("other");
-        setCustomBreed(animal.breed);
-      }
-    }
-  }, [breeds, animal.breed]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
-    const finalBreed = selectedBreed === "other" ? customBreed : selectedBreed;
+    const finalBreed = breed;
 
     updateMutation.mutate({
       animalId: animal.id,
@@ -1654,35 +1691,14 @@ export function EditAnimalForm({
           <Label htmlFor="edit-breed" className="text-xs text-muted-foreground">
             {t("profilePage.breed")}
           </Label>
-          <select
+          <BreedAutocomplete
             id="edit-breed"
-            value={selectedBreed}
-            onChange={(e) => {
-              setSelectedBreed(e.target.value);
-              if (e.target.value !== "other") {
-                setCustomBreed("");
-              }
-            }}
-            className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm border-border text-foreground"
-          >
-            <option value="">{t("profilePage.breedPlaceholder")}</option>
-            {breeds.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-            <option value="other">
-              {language === "pt" ? "Outra (digitar...)" : "Other (type...)"}
-            </option>
-          </select>
-          {selectedBreed === "other" && (
-            <Input
-              value={customBreed}
-              onChange={(e) => setCustomBreed(e.target.value)}
-              placeholder={t("profilePage.breed")}
-              className="bg-secondary border-border mt-1.5"
-            />
-          )}
+            species={species}
+            value={breed}
+            onChange={setBreed}
+            placeholder={t("profilePage.breedPlaceholder")}
+            className="bg-secondary border-border"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -1787,9 +1803,19 @@ export function EditAnimalForm({
             onChange={(e) =>
               setMicrochipNumber(e.target.value.replace(/\D/g, "").slice(0, 15))
             }
+            onBlur={() => setMicrochipBlurred(true)}
             placeholder="Ex: 900115000678234"
-            className="bg-secondary border-border"
+            className={cn(
+              "bg-secondary border-border",
+              microchipValidationError && "border-red-500",
+            )}
           />
+          {microchipValidationError && (
+            <p className="text-[10px] text-red-400 font-medium mt-1 flex gap-1 items-start">
+              <AlertCircle size={12} className="shrink-0 mt-0.5" />
+              <span>{microchipValidationError}</span>
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">

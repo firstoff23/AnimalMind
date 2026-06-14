@@ -6,11 +6,11 @@
 - [ ] Skill de ciência animal — consulta PubMed/VetSRev quando estado concerned
 
 ## Features de produto
-- [ ] Notificações push — alertar dono quando animal em estado concerned por X horas
-- [ ] Relatório semanal automático — PDF gerado e enviado por email
-- [ ] Partilha com veterinário — link temporário com historial do animal
-- [ ] Multi-animal melhorado — dashboard comparativo entre animais
-- [ ] Widget iOS/Android — mood do animal no ecrã inicial
+- [ ] Notificações push — alertar dono quando animal em estado concerned por X horas *(fazer após beta com utilizadores reais)*
+- [ ] Relatório semanal automático — PDF gerado e enviado por email *(fazer após ter histórico real de dados)*
+- [ ] Partilha com veterinário — link temporário com historial do animal *(fazer após feedback de donos reais)*
+- [ ] Multi-animal melhorado — dashboard comparativo entre animais *(fazer após beta)*
+- [ ] Widget iOS/Android — mood do animal no ecrã inicial *(fazer após publicar nas stores)*
 
 ## Dados e IA
 - [ ] Kaggle datasets — enriquecer classificador com dados de raças/comportamentos
@@ -31,3 +31,5 @@
 - [x] Auditoria UI/UX completa (Round 8)
 - [x] Remoção botão de pesquisa (Round 9)
 - [x] Migração ESLint + Prettier → Biome (Round 10)
+- [x] The Dog API + The Cat API — autocomplete de raça no perfil (Round 12)
+- [x] Validação SIAC — microchip 15 dígitos (Round 12)
