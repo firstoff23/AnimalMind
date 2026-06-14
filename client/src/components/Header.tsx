@@ -46,6 +46,8 @@ export function Header() {
       setLocation("/historico");
     } else if (location === "/family" || location.startsWith("/join/")) {
       setLocation("/dashboard");
+    } else if (location === "/gravar" || location === "/camera") {
+      setLocation("/capturar");
     } else {
       window.history.back();
     }

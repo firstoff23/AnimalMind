@@ -160,7 +160,7 @@ export function TrendCard({ animalId }: TrendCardProps) {
                   key={idx}
                   className="text-xs bg-indigo-950/20 text-indigo-300 border border-indigo-500/10 px-3 py-1.5 rounded-xl leading-normal flex items-start gap-1.5"
                 >
-                  <span className="mt-0.5 text-indigo-400">✨</span>
+                  <Sparkles className="w-3.5 h-3.5 mt-0.5 text-indigo-400 shrink-0" />
                   <span>{p}</span>
                 </div>
               ))}

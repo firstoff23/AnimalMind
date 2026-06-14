@@ -570,8 +570,9 @@ export default function HealthBulletinTab({
             {/* Secção Antirrábica Especial (Obrigatória em PT) */}
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider">
-                  ⚠️ {t("bulletin.vaccineTypeRabies")} (DGAV Obrigatória)
+                <h4 className="text-[11px] font-bold text-primary uppercase tracking-wider flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{t("bulletin.vaccineTypeRabies")} (DGAV Obrigatória)</span>
                 </h4>
               </div>
               {rabiesVaccinations.length > 0 ? (

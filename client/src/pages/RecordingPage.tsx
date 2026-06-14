@@ -937,11 +937,11 @@ export default function RecordingPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleDelete}
+                onClick={handleRetry}
                 className="flex-1 text-xs font-semibold h-11 border-white/10 text-foreground hover:bg-white/5"
               >
                 <RefreshCw size={14} className="mr-1.5" />
-                {language === "pt" ? "Gravar de novo" : "Record again"}
+                {language === "pt" ? "Repetir" : "Retry"}
               </Button>
               <Button
                 type="button"
@@ -1248,10 +1248,13 @@ export default function RecordingPage() {
                 : t("recordingPage.continuousDesc")}
             </p>
             {isAutoMode && lastAutoResult && (
-              <p className="text-[11px] text-cyan-300 mt-1 truncate max-w-[220px]">
-                {t("recordingPage.lastClass")} {lastAutoResult.emoji}{" "}
-                {t(`states.${lastAutoResult.state}` as any) || STATE_LABELS[lastAutoResult.state]} ·{" "}
-                {Math.round(lastAutoResult.confidence * 100)}%
+              <p className="text-[11px] text-cyan-300 mt-1 truncate max-w-[220px] flex items-center gap-1.5">
+                <span>{t("recordingPage.lastClass")}</span>
+                <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATE_COLORS[lastAutoResult.state] }} />
+                <span>
+                  {t(`states.${lastAutoResult.state}` as any) || STATE_LABELS[lastAutoResult.state]} ·{" "}
+                  {Math.round(lastAutoResult.confidence * 100)}%
+                </span>
               </p>
             )}
           </div>

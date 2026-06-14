@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 type CallbackStatus = "loading" | "success" | "error";
 
-const successMessage = "✅ Email verificado com sucesso! Já podes fazer login.";
+const successMessage = "Email verificado com sucesso! Já podes fazer login.";
 
 function readCallbackParams() {
   const query = new URLSearchParams(window.location.search);

@@ -54,7 +54,7 @@ export default function CapturePortalPage() {
           onClick={() => setLocation("/gravar")}
           className="cursor-pointer"
         >
-          <Card className="bg-card hover:bg-card/90 border-primary/20 overflow-hidden shadow-lg transition-all duration-300 relative group h-52 flex flex-col justify-between p-4 rounded-3xl">
+          <Card className="bg-card hover:bg-card/90 border-primary/20 overflow-hidden shadow-lg transition-all duration-300 relative group h-52 flex flex-col justify-between p-4 rounded-2xl">
             <div className="absolute top-0 right-0 w-36 h-36 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/15 transition-all duration-300" />
             <div className="space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
@@ -87,7 +87,7 @@ export default function CapturePortalPage() {
           onClick={() => setLocation("/camera")}
           className="cursor-pointer"
         >
-          <Card className="bg-card hover:bg-card/90 border-border overflow-hidden shadow-md transition-all duration-300 relative group h-32 flex items-center justify-between p-4 rounded-xl">
+          <Card className="bg-card hover:bg-card/90 border-border overflow-hidden shadow-md transition-all duration-300 relative group h-32 flex items-center justify-between p-4 rounded-2xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all duration-300" />
             <div className="flex items-center gap-4 min-w-0">
               <div className="w-11 h-11 shrink-0 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">

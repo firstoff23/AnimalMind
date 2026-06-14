@@ -38,6 +38,7 @@ import {
   Camera,
   PawPrint,
   FileText,
+  Globe,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { toast } from "sonner";
@@ -357,7 +358,7 @@ export default function SettingsPage() {
         <Card className="bg-card border-border overflow-hidden">
           <CardHeader className="pb-3 border-b border-border bg-muted/30">
             <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
-              <span className="w-4 h-4 text-center text-xs flex items-center justify-center font-bold text-primary">🌐</span>
+              <Globe className="w-4 h-4 text-primary" />
               {t("settingsPage.language")}
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
@@ -926,26 +927,15 @@ export default function SettingsPage() {
               <p className="text-[11px] font-semibold text-foreground px-1 mb-1">
                 {language === "pt" ? "Documentos e Políticas" : "Documents & Policies"}
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setLocation("/privacidade")}
-                  className="h-9 rounded-xl border-border/60 hover:bg-muted text-xs justify-start gap-2 text-muted-foreground hover:text-foreground"
-                >
-                  <Shield size={14} className="text-primary" />
-                  {language === "pt" ? "Privacidade" : "Privacidade"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setLocation("/privacidade")}
-                  className="h-9 rounded-xl border-border/60 hover:bg-muted text-xs justify-start gap-2 text-muted-foreground hover:text-foreground"
-                >
-                  <FileText size={14} className="text-indigo-400" />
-                  {language === "pt" ? "Termos de Uso" : "Terms of Use"}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation("/privacidade")}
+                className="h-9 w-full rounded-xl border-border/60 hover:bg-muted text-xs justify-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <Shield size={14} className="text-primary" />
+                {language === "pt" ? "Termos e Privacidade" : "Terms & Privacy"}
+              </Button>
             </div>
           </CardContent>
         </Card>

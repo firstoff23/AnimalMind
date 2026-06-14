@@ -377,3 +377,31 @@ Nesta secção, implementámos o Mood System dinâmico que reage ao estado emoci
   - **Transições de Página**: Aplicado um crossfade suave de 200ms na transição entre rotas no [App.tsx](file:///C:/Users/Alexandre/Documents/AnimalMind/client/src/App.tsx).
   - **Botão de Gravação**: Mantém a animação de respiração (breathing animation) ativada durante a captação de áudio através do `GlowingButton`.
 
+---
+
+## 🎨 Secção 13 — Auditoria Completa de UI & UX (Round 8) ✅
+
+Realizámos uma auditoria completa a todos os ecrãs e botões da aplicação para maximizar a consistência, usabilidade e responsividade em ecrãs estreitos de dispositivos móveis (375px), eliminando redundâncias e uniformizando comportamentos de navegação.
+
+### O que foi corrigido:
+1. **Gravar de Novo (`RecordingPage.tsx`)**: O botão de "Gravar de novo" no painel de revisão de gravação de áudio estava incorretamente configurado para chamar o handler `handleDelete` (que simplesmente regressava ao estado inicial sem começar a gravar). Atualizámos o botão para chamar `handleRetry`, iniciando o ciclo de gravação imediatamente.
+2. **Navegação de Voltar do Header (`Header.tsx`)**: Atualizámos a navegação do botão de voltar para redirecionar explicitamente para o portal `/capturar` quando o utilizador se encontra no gravador de áudio (`/gravar`) ou na câmara (`/camera`), evitando retrocessos inesperados na pilha de histórico do browser.
+3. **Consolidação de Termos e Privacidade (`SettingsPage.tsx`)**: A secção de "Documentos e Políticas" continha dois botões separados ("Privacidade" e "Termos de Uso") que redirecionavam para o mesmo destino (`/privacidade`). Consolidámos ambos num único botão elegante "Termos e Privacidade" de largura completa.
+4. **Resolução de Emojis em jsPDF (`AnimalDetailPage.tsx`)**: Removemos os caracteres de emoji (`🐾`, `🐕`, `🐈`) das strings do gerador de PDF jsPDF, uma vez que fontes Helvetica padrão não os suportam e causavam caixas pretas ou falhas visuais nos relatórios clínicos exportados.
+5. **Polimento de Emojis Restantes**:
+   - **`DashboardPage.tsx`**: Substituição do emoji de boas-vindas `✨` pelo ícone `<Sparkles />` oficial da Lucide e remoção do emoji `🐾` do banner de estado diário do animal.
+   - **`CameraPage.tsx`**: Remoção do emoji `📷` do botão de ativação da câmara e substituição do emoji de classificação na Badge de sucesso por um círculo dinâmico colorido estilizado nativo com base na cor de estado `STATE_COLORS` e tradução apropriada da emoção.
+   - **`RecordingPage.tsx`**: Substituição do emoji no indicador do histórico da última classificação contínua por um círculo de estado de cor nativo.
+   - **`HealthBulletinTab.tsx`**: Substituição do emoji `⚠️` na barra antirrábica DGAV por um ícone `<AlertCircle />` Lucide.
+   - **`TrendCard.tsx`**: Substituição do emoji de padrão `✨` pelo ícone `<Sparkles />` Lucide.
+   - **`ProfilePage.tsx`**: Simplificação dos botões de seleção de sexo (Masculino, Feminino, Desconhecido) para texto simples localizado (removendo `♂️`, `♀️` e `❓`) e eliminação do caractere de checkmark `✓` redundante que aparecia colado ao ícone `<Check />` da validação de nomes.
+
+### O que foi removido e porquê:
+* **Botão "Termos de Uso" individual (`SettingsPage.tsx`)**: Removido para evitar um link redundante com o mesmo destino que "Privacidade", uma vez que ambos apontavam para a mesma página `/privacidade`.
+* **Câmara Emoji e Pata Decorativa**: Removidos elementos emoji redundantes da interface do utilizador, alinhando a aplicação com as decisões tomadas em rondas anteriores de abolir emojis literais a favor de SVG/Lucide de alta fidelidade e design premium.
+
+### Verificação Técnica:
+* **TypeScript Check**: `pnpm run check` correu sem qualquer erro.
+* **Testes Unitários**: Suite de testes com 103/103 testes verdes.
+* **Build de Produção**: `pnpm run build` compilou perfeitamente.
+

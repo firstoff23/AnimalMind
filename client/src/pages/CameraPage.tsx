@@ -8,6 +8,8 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
+import { STATE_COLORS } from "../../../shared/types";
+import type { EmotionalState } from "../../../shared/types";
 
 type UploadState = "idle" | "uploading" | "processing" | "success" | "error";
 type CameraPermissionState = "prompt" | "allowed" | "denied" | "error";
@@ -282,9 +284,9 @@ export default function CameraPage() {
                     <span className="text-base font-bold text-foreground">
                       {language === "pt" ? "Concluído!" : "Success!"}
                     </span>
-                    <Badge className="mt-2 text-xl px-3 py-1.5 bg-card/80 border border-border/50 text-foreground flex gap-1.5">
-                      <span>{classificationResult.emoji}</span>
-                      <span>{classificationResult.state.toUpperCase()}</span>
+                    <Badge className="mt-2 text-xl px-3 py-1.5 bg-card/80 border border-border/50 text-foreground flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 rounded-full inline-block shrink-0 animate-pulse" style={{ backgroundColor: STATE_COLORS[classificationResult.state as EmotionalState] }} />
+                      <span>{t(`states.${classificationResult.state}` as any)?.toUpperCase() || classificationResult.state.toUpperCase()}</span>
                     </Badge>
                     <p className="text-[10px] text-muted-foreground mt-2">
                       Confiança: {Math.round(classificationResult.confidence * 100)}%
@@ -469,7 +471,7 @@ export default function CameraPage() {
                         onClick={startCamera}
                         className="bg-primary text-primary-foreground font-semibold text-xs h-10 px-5 rounded-xl active-scale"
                       >
-                        {language === "pt" ? "Ativar Câmara 📷" : "Enable Camera 📷"}
+                        {language === "pt" ? "Ativar Câmara" : "Enable Camera"}
                       </Button>
                     </>
                   )}

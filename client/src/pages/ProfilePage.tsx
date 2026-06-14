@@ -715,7 +715,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 <div className="flex items-center gap-2">
                   {isNameValid && (
                     <span className="text-emerald-400 text-[10px] flex items-center gap-0.5">
-                      <Check size={10} /> ✓
+                      <Check size={10} />
                     </span>
                   )}
                   <span className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
@@ -827,9 +827,9 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
               <Label className="text-xs text-muted-foreground">{t("profilePage.sex")}</Label>
               <div className="flex gap-2">
                 {([
-                  { value: "male", label: `♂️ ${t("profilePage.sexMale")}` },
-                  { value: "female", label: `♀️ ${t("profilePage.sexFemale")}` },
-                  { value: "unknown", label: `❓ ${t("profilePage.sexUnknown")}` }
+                  { value: "male", label: t("profilePage.sexMale") },
+                  { value: "female", label: t("profilePage.sexFemale") },
+                  { value: "unknown", label: t("profilePage.sexUnknown") }
                 ] as const).map((s) => (
                   <button
                     key={s.value}
@@ -948,7 +948,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                 <div className="flex items-center gap-2">
                   {isNameValid && (
                     <span className="text-emerald-400 text-[10px] flex items-center gap-0.5">
-                      <Check size={10} /> ✓
+                      <Check size={10} />
                     </span>
                   )}
                   <span className={`text-[10px] ${name.length > 45 ? "text-red-500 font-semibold animate-pulse" : "text-muted-foreground"}`}>
@@ -1478,9 +1478,9 @@ export function EditAnimalForm({ animal, onClose }: { animal: any; onClose: () =
           <Label className="text-xs text-muted-foreground">{t("profilePage.sex")}</Label>
           <div className="flex gap-2">
             {([
-              { value: "male", label: `♂️ ${t("profilePage.sexMale")}` },
-              { value: "female", label: `♀️ ${t("profilePage.sexFemale")}` },
-              { value: "unknown", label: `❓ ${t("profilePage.sexUnknown")}` }
+              { value: "male", label: t("profilePage.sexMale") },
+              { value: "female", label: t("profilePage.sexFemale") },
+              { value: "unknown", label: t("profilePage.sexUnknown") }
             ] as const).map((s) => (
               <button
                 key={s.value}

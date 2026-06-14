@@ -12,7 +12,7 @@ import { useMotionValue, animate, motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMood } from "@/contexts/MoodContext";
 import { getCachedData, setCachedData, CACHE_KEYS } from "@/lib/offlineCache";
-import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck, Apple, Mail } from "lucide-react";
+import { AlertCircle, PawPrint, Loader2, Mic, Clock3, ChevronRight, HeartPulse, ShieldCheck, Apple, Mail, Sparkles } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { cn } from "@/lib/utils";
 import { AlertBanner } from "@/components/AlertBanner";
@@ -433,7 +433,7 @@ export default function DashboardPage() {
                   <p className="mt-1 text-sm text-muted-foreground leading-snug">
                     {activeAnimal
                       ? mood === "calm"
-                        ? (language === "pt" ? `O ${activeAnimal.name} está bem hoje 🐾` : `${activeAnimal.name} is doing well today 🐾`)
+                        ? (language === "pt" ? `O ${activeAnimal.name} está bem hoje` : `${activeAnimal.name} is doing well today`)
                         : mood === "concerned"
                         ? (language === "pt" ? `O ${activeAnimal.name} pode precisar de atenção — vê os detalhes` : `${activeAnimal.name} might need attention — see details`)
                         : (language === "pt" ? `Sem novidades com o ${activeAnimal.name}` : `No updates for ${activeAnimal.name}`)
@@ -614,7 +614,7 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants} className="flex flex-col items-center justify-center py-12 text-center space-y-8 bg-slate-900/30 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm max-w-lg mx-auto">
           <div className="relative">
             <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse" />
-            <span className="relative text-6xl">✨</span>
+            <Sparkles className="w-12 h-12 text-indigo-400 relative" />
           </div>
           
           <div className="space-y-2">
