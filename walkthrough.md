@@ -532,4 +532,28 @@ Nesta ronda, implementámos um conjunto completo de medidas de conformidade com 
 * **Build de Produção:** O comando `pnpm run build` gerou a build final sem falhas.
 * **Git:** Commits registados com sucesso e alterações enviadas para a branch `main`.
 
+---
+
+## 🌟 Ronda 14c: Rebranding de PetSense para Pawra (Correção Urgente) ✅
+
+### 1. Novo Nome Único e Disponível
+* O nome anterior ("PetSense") foi alterado para **Pawra** por questões de registo e disponibilidade nas lojas de aplicações (Google Play e App Store).
+
+### 2. Configurações de Rebranding
+* **package.json:** Nome atualizado para `"pawra"` com uma nova descrição correspondente.
+* **capacitor.config.ts:** Alterado `appId` para `"com.pawra.app"` e `appName` to `"Pawra"`.
+* **strings.xml (Android):** Atualizado `app_name` e `title_activity_main` para `"Pawra"`, além das propriedades de pacote e esquema URL para `"com.pawra.app"`.
+* **client/index.html:** Atualizado o título principal para exatamente `"Pawra"`.
+* **vite.config.ts (PWA Manifest):** Atualizadas as configurações do manifest do PWA (`name` e `short_name` para `"Pawra"`, descrição para *"Pawra: Monitorização inteligente do bem-estar animal"*).
+
+### 3. Rebranding na Interface do Utilizador (UI) e Docs
+* Efetuada substituição em massa de todas as ocorrências de `"PetSense"` e `"petsense"` para `"Pawra"` e `"pawra"` respetivamente nos ficheiros de ecrãs, componentes, hooks, APIs e documentação.
+
+### 4. Verificação Técnica Total
+* **Compilação TypeScript:** `pnpm run check` correu com **0 erros**.
+* **Testes Unitários:** Todos os **104 testes unitários** do Vitest passaram com sucesso.
+* **Build de Produção:** O comando `pnpm run build` gerou a build final sem falhas.
+* **Git:** Commits registados com sucesso e alterações enviadas para a branch `main`.
+
+
 
