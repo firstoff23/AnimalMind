@@ -234,8 +234,8 @@ export default function AnimalDetailPage({
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(
         language === "pt"
-          ? "PetSense - Relatório Clínico"
-          : "PetSense - Clinical Report",
+          ? "Pawra - Relatório Clínico"
+          : "Pawra - Clinical Report",
         15,
         20,
       );
@@ -421,8 +421,8 @@ export default function AnimalDetailPage({
       doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
       doc.text(
         language === "pt"
-          ? "PetSense — Monitorização de Bem-Estar Animal em Tempo Real"
-          : "PetSense — Real-Time Animal Well-Being Monitoring",
+          ? "Pawra — Monitorização de Bem-Estar Animal em Tempo Real"
+          : "Pawra — Real-Time Animal Well-Being Monitoring",
         15,
         275,
       );

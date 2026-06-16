@@ -1,6 +1,6 @@
-# PetSense — Walkthrough das Novas Funcionalidades e Self-Healing
+# Pawra — Walkthrough das Novas Funcionalidades e Self-Healing
 
-Este documento resume a migração, implementação, verificação e persistência de dados para as últimas atualizações do PetSense, com destaque especial para o **Modo Veterinário**, **Modo Família**, **Landing Page**, **Segurança de Endpoints**, **Sistema de Self-Healing com Aprendizagem**, **Dicionário de Alimentos** e o **Registo de Sintomas (Symptom Logger) & Exportação PDF**.
+Este documento resume a migração, implementação, verificação e persistência de dados para as últimas atualizações do Pawra, com destaque especial para o **Modo Veterinário**, **Modo Família**, **Landing Page**, **Segurança de Endpoints**, **Sistema de Self-Healing com Aprendizagem**, **Dicionário de Alimentos** e o **Registo de Sintomas (Symptom Logger) & Exportação PDF**.
 
 ---
 
@@ -101,15 +101,15 @@ Com a aplicação bem-sucedida do ficheiro de migração `20260605_self_healing_
 ## 📱 7. Conetividade Android Capacitor & Configurações de Segurança ✅
 
 ### O que foi feito:
-* **Capacitor Configuration:** O arquivo [capacitor.config.ts](file:///D:/PetSense/capacitor.config.ts) foi configurado com `server.url` apontando para `https://PetSense.vercel.app` para que os assets e requisições da web app carreguem a partir do servidor de produção no ambiente nativo.
-* **Network Security Configuration:** Criamos o arquivo [network_security_config.xml](file:///D:/PetSense/android/app/src/main/res/xml/network_security_config.xml) habilitando tráfego claro (cleartext) e HTTPS de forma segura para os domínios `PetSense.vercel.app` e `yuzqxrmtbqlnalpjehno.supabase.co`.
-* **Android Manifest:** Vinculamos a configuração de segurança em [AndroidManifest.xml](file:///D:/PetSense/android/app/src/main/AndroidManifest.xml) usando `android:networkSecurityConfig="@xml/network_security_config"` no `<application>` e validamos que a permissão `android.permission.INTERNET` está devidamente declarada.
-* **Resolução Dinâmica de URL do tRPC:** Modificamos o arquivo [main.tsx](file:///D:/PetSense/client/src/main.tsx) utilizando a biblioteca core do Capacitor para detectar se o app está rodando de forma nativa (`Capacitor.isNativePlatform()`), resolvendo a URL do tRPC de forma absoluta (`https://PetSense.vercel.app/api/trpc`) apenas na app Android, mantendo o fallback relativo `/api/trpc` no navegador web convencional.
+* **Capacitor Configuration:** O arquivo [capacitor.config.ts](file:///D:/Pawra/capacitor.config.ts) foi configurado com `server.url` apontando para `https://Pawra.vercel.app` para que os assets e requisições da web app carreguem a partir do servidor de produção no ambiente nativo.
+* **Network Security Configuration:** Criamos o arquivo [network_security_config.xml](file:///D:/Pawra/android/app/src/main/res/xml/network_security_config.xml) habilitando tráfego claro (cleartext) e HTTPS de forma segura para os domínios `Pawra.vercel.app` e `yuzqxrmtbqlnalpjehno.supabase.co`.
+* **Android Manifest:** Vinculamos a configuração de segurança em [AndroidManifest.xml](file:///D:/Pawra/android/app/src/main/AndroidManifest.xml) usando `android:networkSecurityConfig="@xml/network_security_config"` no `<application>` e validamos que a permissão `android.permission.INTERNET` está devidamente declarada.
+* **Resolução Dinâmica de URL do tRPC:** Modificamos o arquivo [main.tsx](file:///D:/Pawra/client/src/main.tsx) utilizando a biblioteca core do Capacitor para detectar se o app está rodando de forma nativa (`Capacitor.isNativePlatform()`), resolvendo a URL do tRPC de forma absoluta (`https://Pawra.vercel.app/api/trpc`) apenas na app Android, mantendo o fallback relativo `/api/trpc` no navegador web convencional.
 
 ### Verificação Técnica:
 * **Commit do Código:** Todas as alterações foram adicionadas e salvas com a mensagem de commit correspondente.
 * **Build local e Capacitor Sync:** O comando `pnpm run build && npx cap sync` foi executado com sucesso, sincronizando todos os assets gerados para a pasta nativa do projeto Android.
-* **Gradle Build:** Compilamos a aplicação Android localmente executando `.\gradlew.bat assembleDebug` de dentro da pasta `android`, gerando com sucesso o arquivo APK final em [app-debug.apk](file:///D:/PetSense/android/app/build/outputs/apk/debug/app-debug.apk) (tamanho aproximado de ~33.5 MB).
+* **Gradle Build:** Compilamos a aplicação Android localmente executando `.\gradlew.bat assembleDebug` de dentro da pasta `android`, gerando com sucesso o arquivo APK final em [app-debug.apk](file:///D:/Pawra/android/app/build/outputs/apk/debug/app-debug.apk) (tamanho aproximado de ~33.5 MB).
 * **Suite de Testes Unitários:** Todos os **102 testes do Vitest** passam com 100% de sucesso.
 
 ---
@@ -118,7 +118,7 @@ Com a aplicação bem-sucedida do ficheiro de migração `20260605_self_healing_
 
 ### O que foi feito:
 * **Base de Dados:** Criada a tabela `foods` com o ficheiro de migração `20260608_food_dictionary.sql`, contendo restrições de severidade (`safe`, `caution`, `dangerous`, `toxic`), Row Level Security (RLS) protegendo gravações por administrador, e populada com um seed de 30 alimentos em português e inglês detalhados com sintomas clínicos e diretrizes médicas reais.
-* **Interface Web e Mobile:** Criada a página [FoodSearchPage.tsx](file:///D:/PetSense/client/src/pages/FoodSearchPage.tsx) para consulta em tempo real:
+* **Interface Web e Mobile:** Criada a página [FoodSearchPage.tsx](file:///D:/Pawra/client/src/pages/FoodSearchPage.tsx) para consulta em tempo real:
   - O utilizador pode selecionar a espécie do seu animal (Cão, Gato, Coelho, Ave) com auto-seleção inteligente baseada no perfil do animal ativo.
   - Caixa de pesquisa responsiva com sugestões rápidas e badges de cores dinâmicas indicando o risco e o nível de severidade clínica.
   - Alerta de emergência destacado ("O que fazer") para alimentos perigosos ou tóxicos.
@@ -154,7 +154,7 @@ Com a aplicação bem-sucedida do ficheiro de migração `20260605_self_healing_
 ## 🍏 11. Dicionário de Alimentos Otimizado & Filtragem por Espécie ✅
 
 ### O que foi feito:
-* **Filtros Simplificados**: Limitamos a seleção de espécies apenas a **Cão** (dog) e **Gato** (cat) na página [FoodSearchPage.tsx](file:///D:/PetSense/client/src/pages/FoodSearchPage.tsx), removendo as categorias secundárias de Aves e Coelhos para simplificar a usabilidade.
+* **Filtros Simplificados**: Limitamos a seleção de espécies apenas a **Cão** (dog) e **Gato** (cat) na página [FoodSearchPage.tsx](file:///D:/Pawra/client/src/pages/FoodSearchPage.tsx), removendo as categorias secundárias de Aves e Coelhos para simplificar a usabilidade.
 * **Divisão Visual Clara**: Os resultados da pesquisa agora são agrupados e mostrados em duas secções distintas com cores claras e design premium:
   - **Alimentos Seguros (Safe Foods)**: Card agrupador com margem e fundo verde suave (`emerald`).
   - **Alimentos Perigosos ou com Atenção (Dangerous or Caution Foods)**: Card agrupador com margem e fundo vermelho/rosa suave (`rose`).
@@ -165,14 +165,14 @@ Com a aplicação bem-sucedida do ficheiro de migração `20260605_self_healing_
 ## 🐕 12. Gestão do Perfil do Animal nas Definições & Limpeza de Navegação ✅
 
 ### O que foi feito:
-* **Persistência do Peso**: Criamos a migração SQL [20260611_add_animal_weight.sql](file:///D:/PetSense/supabase-migrations/20260611_add_animal_weight.sql) para adicionar a coluna `weight VARCHAR(50)` na tabela `animals` no Supabase. Adicionamos suporte completo no backend (`db.ts`, mapeamento `mapDbAnimal`, e procedimentos de atualização/criação) e esquemas Zod (`routers.ts`).
-* **Painel Centralizado nas Definições**: Desenvolvemos uma secção dedicada **Os Meus Animais (My Pets)** na página de [SettingsPage.tsx](file:///D:/PetSense/client/src/pages/SettingsPage.tsx):
+* **Persistência do Peso**: Criamos a migração SQL [20260611_add_animal_weight.sql](file:///D:/Pawra/supabase-migrations/20260611_add_animal_weight.sql) para adicionar a coluna `weight VARCHAR(50)` na tabela `animals` no Supabase. Adicionamos suporte completo no backend (`db.ts`, mapeamento `mapDbAnimal`, e procedimentos de atualização/criação) e esquemas Zod (`routers.ts`).
+* **Painel Centralizado nas Definições**: Desenvolvemos uma secção dedicada **Os Meus Animais (My Pets)** na página de [SettingsPage.tsx](file:///D:/Pawra/client/src/pages/SettingsPage.tsx):
   - **Carrossel de Seleção**: Permite escolher visualmente o animal ativo para edição rápida.
   - **Criação de Novos Animais**: Botão "+ Adicionar" integrado com a Drawer deslizante reutilizando o `AddAnimalForm` de forma responsiva.
   - **Edição Direta**: Formulário de alteração de Nome, Espécie, Raça (com dropdown dinâmico e opção "Outra"), Idade, Peso (ex: "12 kg") e Foto (conversão local imediata para base64 com preview circular e botão de câmara).
 * **Navegação Simplificada**:
-  - Removemos os separadores redundantes de `/perfil` (Animais) e `/user-profile` (Perfil do Utilizador) do [BottomNav.tsx](file:///D:/PetSense/client/src/components/BottomNav.tsx) e do [Sidebar.tsx](file:///D:/PetSense/client/src/components/Sidebar.tsx).
-  - Atualizamos as rotas em [App.tsx](file:///D:/PetSense/client/src/App.tsx) para que acessos diretos aos links `/perfil` e `/user-profile` redirecionem instantaneamente para `/definicoes` de forma limpa.
+  - Removemos os separadores redundantes de `/perfil` (Animais) e `/user-profile` (Perfil do Utilizador) do [BottomNav.tsx](file:///D:/Pawra/client/src/components/BottomNav.tsx) e do [Sidebar.tsx](file:///D:/Pawra/client/src/components/Sidebar.tsx).
+  - Atualizamos as rotas em [App.tsx](file:///D:/Pawra/client/src/App.tsx) para que acessos diretos aos links `/perfil` e `/user-profile` redirecionem instantaneamente para `/definicoes` de forma limpa.
   - Atualizamos os botões de voltar e redirecionamentos no dashboard e na página de detalhes do animal para usar `/definicoes`.
 
 ---
@@ -255,7 +255,7 @@ Nesta fase final de polimento e consistência visual, removemos todos os emojis 
   - Toasts e alertas foram limpos de caracteres emoji redundantes.
 
 ### 2. Resolução de Erros JSX e Compilação
-* Corrigimos um erro de balanceamento de tags HTML/JSX no ficheiro [DashboardPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/DashboardPage.tsx) nos cartões de estado dominante e de crença consolidada POMDP. Os elementos de texto foram colocados novamente dentro do wrapper `<div>` correspondente, resolvendo a quebra do parser do compilador TypeScript.
+* Corrigimos um erro de balanceamento de tags HTML/JSX no ficheiro [DashboardPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/DashboardPage.tsx) nos cartões de estado dominante e de crença consolidada POMDP. Os elementos de texto foram colocados novamente dentro do wrapper `<div>` correspondente, resolvendo a quebra do parser do compilador TypeScript.
 
 ### 3. Suite de Testes & Build
 * **TypeScript Check**: O comando `pnpm run check` conclui com **0 erros de compilação**.
@@ -263,7 +263,7 @@ Nesta fase final de polimento e consistência visual, removemos todos os emojis 
 * **Production Build**: A compilação final da aplicação (`pnpm run build`) termina com sucesso tanto para os assets estáticos do cliente como para o bundle de servidor.
 
 ### 4. Auditoria Visual & Capturas de Ecrã
-* Corrigimos o script de auditoria [run_audit_screenshots.js](file:///C:/Users/Alexandre/Documents/PetSense/scratch/run_audit_screenshots.js) para simular com sucesso uma sessão autenticada do Supabase no `localStorage` do browser e para simular `window.matchMedia` bypassando o `MobileOnlyGate`.
+* Corrigimos o script de auditoria [run_audit_screenshots.js](file:///C:/Users/Alexandre/Documents/Pawra/scratch/run_audit_screenshots.js) para simular com sucesso uma sessão autenticada do Supabase no `localStorage` do browser e para simular `window.matchMedia` bypassando o `MobileOnlyGate`.
 * Capturámos com sucesso novas imagens de ecrã para todas as rotas (Dashboard, Histórico, Alimentos, Definições, Gravação e Detalhe de Animal) sem qualquer emoji visível, mostrando os novos componentes e ícones de design premium.
 
 ---
@@ -273,27 +273,27 @@ Nesta fase final de polimento e consistência visual, removemos todos os emojis 
 Nesta ronda, focámo-nos na unificação do cabeçalho da aplicação, remoção de duplicados locais, diferenciação visual no portal de captura, melhorias no menu de navegação inferior para evitar scrolling horizontal a 390px, e eliminação de texto decorativo nos fundos das páginas de detalhes.
 
 ### 1. Eliminação de Texto Decorativo "DOG" / "CAT"
-* Substituímos os textos decorativos em segundo plano nas páginas de detalhes de animais e de veterinário ([AnimalDetailPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/AnimalDetailPage.tsx) e [VetPetDetailPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/VetPetDetailPage.tsx)) por um ícone de pata neutro estilizado e rodado `<PawPrint size={140} />` com opacidade ultra reduzida.
+* Substituímos os textos decorativos em segundo plano nas páginas de detalhes de animais e de veterinário ([AnimalDetailPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/AnimalDetailPage.tsx) e [VetPetDetailPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/VetPetDetailPage.tsx)) por um ícone de pata neutro estilizado e rodado `<PawPrint size={140} />` com opacidade ultra reduzida.
 
 ### 2. Redesenho da Secção "Sobre" em Definições (`SettingsPage.tsx`)
-* Redesenhámos por completo a secção de informações institucionais, removendo emojis e introduzindo o logótipo oficial do projeto em SVG ([Logo.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/components/ui/Logo.tsx)).
+* Redesenhámos por completo a secção de informações institucionais, removendo emojis e introduzindo o logótipo oficial do projeto em SVG ([Logo.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/components/ui/Logo.tsx)).
 * Adicionámos uma grelha limpa com a versão (`v1.0.0 (offline-ready)`) e os modelos locais de IA (YAMNet, YOLOv8, ResNet), além de dois botões premium com bordas e preenchimento adequados ligando diretamente aos Termos e Políticas de Privacidade em `/privacidade` (usando os ícones `Shield` e `FileText`).
 
 ### 3. Padronização de Cabeçalhos Globais
-* **Navegação Sem Setas**: Mapeámos as 6 rotas principais (`/dashboard`, `/perfil`, `/capturar`, `/alimentos`, `/historico`, `/definicoes`) em [Header.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/components/Header.tsx) para ocultar automaticamente o botão/seta de voltar. As páginas secundárias exibem a seta de voltar normalmente.
-* **Títulos Dinâmicos**: O `Header` agora renderiza títulos amigáveis localizados em português/inglês para cada rota (ex: "Animais", "Capturar", "Câmara Visão") em vez do genérico "PetSense".
-* **Eliminação de Cabeçalhos Locais Duplicados**: Removemos cabeçalhos e botões redundantes que estavam implementados localmente em [CameraPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/CameraPage.tsx), [VetPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/VetPage.tsx) e [VetDashboardPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/VetDashboardPage.tsx).
+* **Navegação Sem Setas**: Mapeámos as 6 rotas principais (`/dashboard`, `/perfil`, `/capturar`, `/alimentos`, `/historico`, `/definicoes`) em [Header.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/components/Header.tsx) para ocultar automaticamente o botão/seta de voltar. As páginas secundárias exibem a seta de voltar normalmente.
+* **Títulos Dinâmicos**: O `Header` agora renderiza títulos amigáveis localizados em português/inglês para cada rota (ex: "Animais", "Capturar", "Câmara Visão") em vez do genérico "Pawra".
+* **Eliminação de Cabeçalhos Locais Duplicados**: Removemos cabeçalhos e botões redundantes que estavam implementados localmente em [CameraPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/CameraPage.tsx), [VetPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/VetPage.tsx) e [VetDashboardPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/VetDashboardPage.tsx).
 
 ### 4. Otimização do Portal de Captura (`/capturar`)
-* **Layout Assimétrico e Diferenciado**: Redesenhámos a página [CapturePortalPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/CapturePortalPage.tsx):
+* **Layout Assimétrico e Diferenciado**: Redesenhámos a página [CapturePortalPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/CapturePortalPage.tsx):
   - O cartão de **Gravar Áudio** é agora um bloco vertical de destaque (`h-52`) com um botão CTA direto "Gravar agora".
   - O cartão de **Câmara Visão** é um bloco horizontal secundário compacto (`h-32`) com o CTA direto "Analisar →".
 * **Textos Curtos**: Assegurámos que todas as descrições dos cartões ocupam exatamente uma única linha para manter o aspeto premium e focado.
 * **Remoção de Elementos Desnecessários**: Eliminámos emojis nos botões e o botão redundante "Voltar ao Dashboard", guiando o utilizador a navegar naturalmente pelos menus.
 
 ### 5. Reestruturação do Menu de Navegação Inferior (BottomNav)
-* **Visual Consistente**: Unificámos o `strokeWidth` dos ícones no [BottomNav.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/components/BottomNav.tsx) para exatamente `2.0` em todos os estados.
-* **Otimização Layout 390px (Mobile-First)**: Reescrevemos as classes de estilo em [index.css](file:///C:/Users/Alexandre/Documents/PetSense/client/src/index.css):
+* **Visual Consistente**: Unificámos o `strokeWidth` dos ícones no [BottomNav.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/components/BottomNav.tsx) para exatamente `2.0` em todos os estados.
+* **Otimização Layout 390px (Mobile-First)**: Reescrevemos as classes de estilo em [index.css](file:///C:/Users/Alexandre/Documents/Pawra/client/src/index.css):
   - Mudámos o comportamento dos itens para `flex: 1 1 0%` sem largura mínima estrita, permitindo que caibam perfeitamente em ecrãs estreitos como viewports de 390px sem causar scrolling horizontal na barra.
   - Removemos o destaque de fundo arredondado (highlight blocky) que aparecia na tab ativa, mantendo apenas a mudança de cor do ícone e da legenda.
   - Alinhámos verticalmente todas as legendas à base inferior (bottom baseline).
@@ -309,15 +309,15 @@ Nesta ronda, focámo-nos na unificação do cabeçalho da aplicação, remoção
 
 ## 📦 10. Ronda 5: TWA, Play Store e Assets de Lançamento (Round 5 TWA & Play Store) ✅
 
-Nesta ronda final, empacotámos a aplicação PWA do PetSense como uma Trusted Web Activity (TWA) oficial para Android, gerámos o pacote de lançamento assinado de produção e estruturámos a presença de loja para a Google Play Store.
+Nesta ronda final, empacotámos a aplicação PWA do Pawra como uma Trusted Web Activity (TWA) oficial para Android, gerámos o pacote de lançamento assinado de produção e estruturámos a presença de loja para a Google Play Store.
 
 ### 1. Inicialização e Configuração do Projeto TWA
 * **Estrutura**: Criámos o diretório dedicado `android/twa/` e inicializámos o projeto utilizando o Bubblewrap:
-  - `bubblewrap init --manifest https://PetSense.vercel.app/manifest.webmanifest`
+  - `bubblewrap init --manifest https://Pawra.vercel.app/manifest.webmanifest`
 * **Parâmetros de Projeto**:
-  - **Nome e Short Name**: `PetSense`
-  - **Package ID / Application ID**: `com.PetSense.app`
-  - **Host**: `PetSense.vercel.app`
+  - **Nome e Short Name**: `Pawra`
+  - **Package ID / Application ID**: `com.Pawra.app`
+  - **Host**: `Pawra.vercel.app`
   - **Start Path**: `/`
   - **Status Bar Color**: `#22C55E`
   - **Splash Screen Color**: `#0A0A0B`
@@ -325,20 +325,20 @@ Nesta ronda final, empacotámos a aplicação PWA do PetSense como uma Trusted W
 
 ### 2. Compilação e Assinatura Digital do Pacote (.aab)
 * **Compilação Gradle**: Compilámos o projeto através do Gradle Wrapper diretamente, especificando a versão JDK 17 instalada no Bubblewrap e apontando o `ANDROID_HOME` para o SDK local do Bubblewrap. O build gerou com sucesso o pacote não assinado em `app/build/outputs/bundle/release/app-release.aab`.
-* **Assinatura Digital**: Assinámos o pacote de lançamento com o certificado de produção gerado anteriormente (`PetSense-release.jks`) com o alias `PetSense`, utilizando o utilitário `jarsigner`:
-  - `jarsigner -keystore ..\PetSense-release.jks -storepass PetSensepwd app-release.aab PetSense`
-* **Armazenamento de Builds**: Criámos o diretório `android/builds/` e copiámos o pacote assinado final como `PetSense-v1.0.0.aab`.
+* **Assinatura Digital**: Assinámos o pacote de lançamento com o certificado de produção gerado anteriormente (`Pawra-release.jks`) com o alias `Pawra`, utilizando o utilitário `jarsigner`:
+  - `jarsigner -keystore ..\Pawra-release.jks -storepass Pawrapwd app-release.aab Pawra`
+* **Armazenamento de Builds**: Criámos o diretório `android/builds/` e copiámos o pacote assinado final como `Pawra-v1.0.0.aab`.
 
 ### 3. Metadados e Presença de Loja
-* Criámos o ficheiro de documentação [play-store-assets.md](file:///C:/Users/Alexandre/Documents/PetSense/play-store-assets.md) na raiz do projeto com toda a informação requerida para a publicação em duas línguas (Português de Portugal e Inglês dos EUA), respeitando os limites estritos de tamanho do Google Play Console e listando apenas as funcionalidades reais da aplicação (Mindi AI, Classificador Offline, Dicionário de Alimentos, Registo de Sintomas).
+* Criámos o ficheiro de documentação [play-store-assets.md](file:///C:/Users/Alexandre/Documents/Pawra/play-store-assets.md) na raiz do projeto com toda a informação requerida para a publicação em duas línguas (Português de Portugal e Inglês dos EUA), respeitando os limites estritos de tamanho do Google Play Console e listando apenas as funcionalidades reais da aplicação (Mindi AI, Classificador Offline, Dicionário de Alimentos, Registo de Sintomas).
 
 ### 4. Passos Manuais de Publicação (Guia do Programador)
 Para lançar a aplicação na Google Play Store, o programador deve seguir as seguintes etapas:
 1. **Registo na Google Play Console**: Criar uma conta de programador na Google Play Console.
-2. **Criar Nova Aplicação**: Introduzir o nome `PetSense`, definir como Aplicação Gratuita (Free) e selecionar o idioma principal (PT-PT).
-3. **Carregar o Pacote (.aab)**: No separador "Versões de produção" ou "Testes fechados", carregar o ficheiro `android/builds/PetSense-v1.0.0.aab` assinado.
+2. **Criar Nova Aplicação**: Introduzir o nome `Pawra`, definir como Aplicação Gratuita (Free) e selecionar o idioma principal (PT-PT).
+3. **Carregar o Pacote (.aab)**: No separador "Versões de produção" ou "Testes fechados", carregar o ficheiro `android/builds/Pawra-v1.0.0.aab` assinado.
 4. **Metadados e Imagens**: Preencher os campos de Título, Descrição Curta e Longa com os textos definidos em `play-store-assets.md`, e carregar o ícone de 512x512px gerado na ronda anterior.
-5. **Digital Asset Links**: Como a app é uma TWA, a barra de navegação do browser desaparecerá assim que a relação de confiança for ativada pelo Google Play. O ficheiro [assetlinks.json](file:///C:/Users/Alexandre/Documents/PetSense/client/public/.well-known/assetlinks.json) já está live em `https://PetSense.vercel.app/.well-known/assetlinks.json` contendo o fingerprint SHA-256 correto.
+5. **Digital Asset Links**: Como a app é uma TWA, a barra de navegação do browser desaparecerá assim que a relação de confiança for ativada pelo Google Play. O ficheiro [assetlinks.json](file:///C:/Users/Alexandre/Documents/Pawra/client/public/.well-known/assetlinks.json) já está live em `https://Pawra.vercel.app/.well-known/assetlinks.json` contendo o fingerprint SHA-256 correto.
 6. **Enviar para Revisão**: Concluir o questionário de classificação de conteúdo (PEGI 3) e enviar a aplicação para aprovação final pela Google.
 
 ---
@@ -351,10 +351,10 @@ Para lançar a aplicação na Google Play Store, o programador deve seguir as se
 
 ## 🎨 Secção 12 — Mood System & UI Dinâmica (Round 7) ✅
 
-Nesta secção, implementámos o Mood System dinâmico que reage ao estado emocional do animal ativo. A interface do PetSense agora adapta as suas cores, mensagens e animações com base no humor do animal, mantendo um tom de confiança e calma (como um consultório de veterinário), sem ser alarmista.
+Nesta secção, implementámos o Mood System dinâmico que reage ao estado emocional do animal ativo. A interface do Pawra agora adapta as suas cores, mensagens e animações com base no humor do animal, mantendo um tom de confiança e calma (como um consultório de veterinário), sem ser alarmista.
 
 ### 1. Criação do MoodContext
-* **Localização**: [MoodContext.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/contexts/MoodContext.tsx)
+* **Localização**: [MoodContext.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/contexts/MoodContext.tsx)
 * **Estados**: Três estados emocionais suportados: `calm` | `neutral` | `concerned`.
 * **Mapeamento de Emoções**:
   - `relaxed`, `excitement` ➔ `calm` (tons verdes/teal suaves, animações lentas)
@@ -366,7 +366,7 @@ Nesta secção, implementámos o Mood System dinâmico que reage ao estado emoci
   - O último humor é guardado no `localStorage` e aplicado de forma síncrona na inicialização no `document.documentElement` para evitar cintilação (flash) ao carregar.
 
 ### 2. Adaptação Dinâmica da UI (Dashboard)
-* **Cores**: Definição de variáveis CSS HSL (`--mood-primary`, `--mood-bg-subtle`, `--mood-color-rgb`) para light e dark modes em [index.css](file:///C:/Users/Alexandre/Documents/PetSense/client/src/index.css), registadas como `--color-mood-primary` e `--color-mood-bg` no Tailwind CSS.
+* **Cores**: Definição de variáveis CSS HSL (`--mood-primary`, `--mood-bg-subtle`, `--mood-color-rgb`) para light e dark modes em [index.css](file:///C:/Users/Alexandre/Documents/Pawra/client/src/index.css), registadas como `--color-mood-primary` e `--color-mood-bg` no Tailwind CSS.
 * **Mensagens Contextuais**:
   - `calm` ➔ `"O [Nome] está bem hoje 🐾"` (onde [Nome] é substituído pelo nome do animal ativo, ex: "O Rex está bem hoje 🐾")
   - `neutral` ➔ `"Sem novidades com o [Nome]"` (ex: "Sem novidades com o Rex")
@@ -374,7 +374,7 @@ Nesta secção, implementámos o Mood System dinâmico que reage ao estado emoci
 * **Animações (Framer Motion)**:
   - **Pulsar do Avatar**: O avatar do animal ativo no cabeçalho do dashboard e na lista de animais pulsa suavemente com escalas e sombras (box-shadow glow) que variam de velocidade consoante o humor: 3.0s para `calm`, 2.0s para `neutral` e 1.2s para `concerned`.
   - **Cards de Estatísticas & Secções**: Entram com uma animação combinada de fade-in e slide-up progressiva e escalonada (staggered) usando variantes do Framer Motion ao abrir a página do Dashboard.
-  - **Transições de Página**: Aplicado um crossfade suave de 200ms na transição entre rotas no [App.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/App.tsx).
+  - **Transições de Página**: Aplicado um crossfade suave de 200ms na transição entre rotas no [App.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/App.tsx).
   - **Botão de Gravação**: Mantém a animação de respiração (breathing animation) ativada durante a captação de áudio através do `GlowingButton`.
 
 ---
@@ -409,7 +409,7 @@ Realizámos uma auditoria completa a todos os ecrãs e botões da aplicação pa
 
 ## 🛠️ Secção 14 — Migração para Biome ✅
 
-Realizámos a migração completa do ecossistema de qualidade de código do PetSense de ESLint + Prettier para o Biome, unificando as tarefas de linting, formatação e ordenação automática de imports numa única ferramenta de alto desempenho.
+Realizámos a migração completa do ecossistema de qualidade de código do Pawra de ESLint + Prettier para o Biome, unificando as tarefas de linting, formatação e ordenação automática de imports numa única ferramenta de alto desempenho.
 
 ### O que foi feito:
 1. **Instalação e Inicialização**:
@@ -449,7 +449,7 @@ Realizámos a migração completa do ecossistema de qualidade de código do PetS
 Nesta secção, implementámos o autocomplete de raças inteligente que consome as APIs públicas Dog API e Cat API, e adicionámos a validação de microchips no padrão português SIAC.
 
 ### 1. Autocomplete de Raças com Dog/Cat API
-* **Componente Inteligente**: Criámos o componente `BreedAutocomplete` ([ProfilePage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/ProfilePage.tsx#L370-L485)) que substitui o seletor antigo:
+* **Componente Inteligente**: Criámos o componente `BreedAutocomplete` ([ProfilePage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/ProfilePage.tsx#L370-L485)) que substitui o seletor antigo:
   - Consome dinamicamente a Dog API (`https://api.thedogapi.com/v1/breeds/search?q=[termo]`) ou Cat API (`https://api.thecatapi.com/v1/breeds/search?q=[termo]`) consoante a espécie.
   - Se a espécie for indefinida ou não selecionada, pesquisa em ambas as APIs e junta os resultados.
   - Filtra e mostra no máximo 6 resultados num menu dropdown flutuante estilizado.
@@ -473,14 +473,14 @@ Nesta secção, implementámos o autocomplete de raças inteligente que consome 
 Nesta ronda, implementámos um conjunto completo de medidas de conformidade com o Regulamento Geral sobre a Proteção de Dados (RGPD), incluindo uma nova página de Política de Privacidade, links e modais de consentimento nos ecrãs de registo e definições, e a funcionalidade de apagamento permanente de conta (com cascade delete no Supabase e remoção de áudios no Storage).
 
 ### 1. Página de Política de Privacidade Pública (/privacidade)
-* **Componente**: Criámos o ficheiro [PrivacyPolicyPage.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/pages/PrivacyPolicyPage.tsx) contendo as secções exigidas pelo RGPD (português):
-  - **Identificação da App & Responsáveis**: PetSense e placeholders para o tutor preencher.
+* **Componente**: Criámos o ficheiro [PrivacyPolicyPage.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/pages/PrivacyPolicyPage.tsx) contendo as secções exigidas pelo RGPD (português):
+  - **Identificação da App & Responsáveis**: Pawra e placeholders para o tutor preencher.
   - **Dados Recolhidos**: Nome, email, dados do animal, áudios, câmara e localização.
   - **Finalidades e Bases Jurídicas**: Prestação de serviço de tradução emocional de vocalizações baseada no consentimento explícito do utilizador (Artigo 6.º, n.º 1, alínea a) do RGPD).
   - **Alojamento e Segurança**: Dados guardados na região da UE (Frankfurt) através do Supabase com cifragem AES-256 em repouso e Row Level Security (RLS) ativo.
   - **Direitos do Tutor**: Acesso, retificação, eliminação ("direito ao esquecimento"), portabilidade e oposição.
   - **Retenção de Dados**: Eliminação imediata dos servidores após o apagamento da conta e remoção dos registos de autenticação em 30 dias.
-* **Design**: Consistente com o tema dark e estética premium da app, com secções colapsáveis (`Accordion`) e rodapé com link de contacto. A rota foi adicionada publicamente em [App.tsx](file:///C:/Users/Alexandre/Documents/PetSense/client/src/App.tsx) de forma a não exigir autenticação prévia.
+* **Design**: Consistente com o tema dark e estética premium da app, com secções colapsáveis (`Accordion`) e rodapé com link de contacto. A rota foi adicionada publicamente em [App.tsx](file:///C:/Users/Alexandre/Documents/Pawra/client/src/App.tsx) de forma a não exigir autenticação prévia.
 
 ### 2. Consentimento e Políticas no Registo e Definições
 * **Ecrã de Registo (`RegisterPage.tsx`)**: Adicionámos o texto explicativo abaixo do botão de submissão do formulário: *"Ao criar conta, aceitas os nossos Termos de Uso e a nossa Política de Privacidade."*
@@ -499,21 +499,21 @@ Nesta ronda, implementámos um conjunto completo de medidas de conformidade com 
 
 ### 4. Verificação Técnica
 * **TypeScript & Biome Check**: TypeScript compilado com sucesso e lint do Biome executado sem erros.
-* **Testes Unitários**: Criámos um novo teste em [auth.deleteAccount.test.ts](file:///C:/Users/Alexandre/Documents/PetSense/server/auth.deleteAccount.test.ts) que valida todo o fluxo de eliminação da conta (remoção de áudios, chamada ao Auth Admin do Supabase, remoção de BD e remoção de cookies). A suite completa correu e passou com sucesso (**104/104 testes**).
+* **Testes Unitários**: Criámos um novo teste em [auth.deleteAccount.test.ts](file:///C:/Users/Alexandre/Documents/Pawra/server/auth.deleteAccount.test.ts) que valida todo o fluxo de eliminação da conta (remoção de áudios, chamada ao Auth Admin do Supabase, remoção de BD e remoção de cookies). A suite completa correu e passou com sucesso (**104/104 testes**).
 
 ---
 
-## 🌟 Ronda 14b: Rebranding para PetSense & Novo Ícone Profissional ✅
+## 🌟 Ronda 14b: Rebranding para Pawra & Novo Ícone Profissional ✅
 
 ### 1. Novo Nome do Projeto
-* **PetSense** foi o nome selecionado por representar idealmente a monitorização acústica e visual de animais de estimação, mantendo-se premium, fácil de pronunciar em Português e Inglês, e muito focado no valor do produto.
+* **Pawra** foi o nome selecionado por representar idealmente a monitorização acústica e visual de animais de estimação, mantendo-se premium, fácil de pronunciar em Português e Inglês, e muito focado no valor do produto.
 
 ### 2. Configurações de Rebranding
-* **package.json:** Nome atualizado para `"petsense"` com uma nova descrição descritiva.
-* **capacitor.config.ts:** Alterado `appName` para `"PetSense"`.
-* **strings.xml (Android):** Atualizado `app_name` e `title_activity_main` para `"PetSense"`.
-* **client/index.html:** Atualizado o título principal para `"PetSense 🐾 - Compreenda o Seu Animal de Estimação"`, atualizadas as meta tags de Open Graph/Twitter, definido o `theme-color` como `#22c55e` (verde do tema) e adicionado o link para o ícone favicon `icon.svg`.
-* **vite.config.ts (PWA Manifest):** Atualizadas as configurações do manifest do PWA (`name` e `short_name` para `"PetSense"`, descrição para *"PetSense: Monitorização inteligente do bem-estar animal"* e o `theme_color` ajustado).
+* **package.json:** Nome atualizado para `"pawra"` com uma nova descrição descritiva.
+* **capacitor.config.ts:** Alterado `appName` para `"Pawra"`.
+* **strings.xml (Android):** Atualizado `app_name` e `title_activity_main` para `"Pawra"`.
+* **client/index.html:** Atualizado o título principal para `"Pawra 🐾 - Compreenda o Seu Animal de Estimação"`, atualizadas as meta tags de Open Graph/Twitter, definido o `theme-color` como `#22c55e` (verde do tema) e adicionado o link para o ícone favicon `icon.svg`.
+* **vite.config.ts (PWA Manifest):** Atualizadas as configurações do manifest do PWA (`name` e `short_name` para `"Pawra"`, descrição para *"Pawra: Monitorização inteligente do bem-estar animal"* e o `theme_color` ajustado).
 
 ### 3. Logótipos e Ícones Profissionais SVG
 * **client/public/icon.svg:** Ícone completo com cantos arredondados, fundo gradiente e a pata central estilizada com ondas sonoras.
@@ -522,8 +522,8 @@ Nesta ronda, implementámos um conjunto completo de medidas de conformidade com 
 * **docs/icon-export.md:** Manual detalhado ensinando o programador a exportar os ficheiros SVG para o formato de loja PNG 512x512px.
 
 ### 4. Rebranding na Interface do Utilizador (UI) e Docs
-* Alteradas todas as menções de marca de "AnimalMind" para "PetSense" nos ecrãs de **Landing Page**, **Autenticação (Login, Registo, Recuperação, Verificação de Email, Callback)**, **Dashboard**, **Histórico**, **Gravação/Captura**, **Câmara**, **Páginas de Privacidade** e **Definições**.
-* Atualizado o domínio principal nas configurações internas de CORS da API e URL padrão do Capacitor para `petsense.vercel.app` (mantendo retrocompatibilidade no backend).
+* Alteradas todas as menções de marca de "AnimalMind" para "Pawra" nos ecrãs de **Landing Page**, **Autenticação (Login, Registo, Recuperação, Verificação de Email, Callback)**, **Dashboard**, **Histórico**, **Gravação/Captura**, **Câmara**, **Páginas de Privacidade** e **Definições**.
+* Atualizado o domínio principal nas configurações internas de CORS da API e URL padrão do Capacitor para `pawra.vercel.app` (mantendo retrocompatibilidade no backend).
 * Atualizada toda a documentação de suporte do projeto: `README.md`, `walkthrough.md`, `docs/API.md` e `docs/backlog.md`.
 
 ### 5. Verificação Técnica Total

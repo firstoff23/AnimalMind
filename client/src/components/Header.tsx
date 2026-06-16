@@ -76,7 +76,7 @@ export function Header() {
           : fallbackEn;
     };
 
-    if (location === "/dashboard") return "PetSense";
+    if (location === "/dashboard") return "Pawra";
     if (location === "/perfil") return language === "pt" ? "Animais" : "Pets";
     if (location === "/capturar")
       return language === "pt" ? "Capturar" : "Capture";
@@ -106,7 +106,7 @@ export function Header() {
         "Family Mode",
       );
     }
-    return "PetSense";
+    return "Pawra";
   };
 
   return (

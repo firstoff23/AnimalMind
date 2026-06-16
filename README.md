@@ -1,6 +1,6 @@
-# PetSense 🐾
+# Pawra 🐾
 
-O **PetSense** é uma aplicação web premium e interativa desenvolvida para monitorizar e traduzir o estado emocional de animais de estimação (cães e gatos) a partir de sinais sonoros e acústicos. A aplicação utiliza modelos avançados de IA para classificar vocalizações animais e oferece um painel estatístico em tempo real para os tutores.
+O **Pawra** é uma aplicação web premium e interativa desenvolvida para monitorizar e traduzir o estado emocional de animais de estimação (cães e gatos) a partir de sinais sonoros e acústicos. A aplicação utiliza modelos avançados de IA para classificar vocalizações animais e oferece um painel estatístico em tempo real para os tutores.
 
 ---
 
@@ -40,7 +40,7 @@ O **PetSense** é uma aplicação web premium e interativa desenvolvida para mon
 * **Mapeamento Emocional:** Mapeia as classes acústicas do YAMNet e sinais físicos auxiliares para os 6 estados emocionais da aplicação.
 * **Fallback Interno:** Se TensorFlow/YAMNet não estiver disponível no servidor Python, o backend cai para análise `numpy`/`scipy` com RMS, Zero Crossing Rate e frequência dominante.
 * **Resiliência & Fallback:** Se a variável de ambiente `FASTAPI_BACKEND_URL` não estiver definida ou o servidor FastAPI estiver offline, a API tRPC do Node.js cai de forma transparente e resiliente para o simulador heurístico sem afetar a usabilidade da aplicação.
-* **Deploy ML:** O backend Python foi preparado para Hugging Face Spaces via `ml_backend/Dockerfile`. Depois do Space estar live, atualizar `FASTAPI_BACKEND_URL` na Vercel para `https://<owner>-PetSense-ml-backend.hf.space`.
+* **Deploy ML:** O backend Python foi preparado para Hugging Face Spaces via `ml_backend/Dockerfile`. Depois do Space estar live, atualizar `FASTAPI_BACKEND_URL` na Vercel para `https://<owner>-Pawra-ml-backend.hf.space`.
 
 ### 8. Página de Detalhe por Animal
 * **Painel Dedicado (`/animal/:id`):** Acessível a partir da página de Perfil, reúne todas as informações históricas e estatísticas de um único animal de estimação.
@@ -65,7 +65,7 @@ O **PetSense** é uma aplicação web premium e interativa desenvolvida para mon
 
 ## 🧩 Como foi construído
 
-O PetSense é uma aplicação **React/PWA** com um gateway **Node.js + Express + tRPC** e um backend de ML separado em **FastAPI**. O frontend fala com o gateway por `/api/trpc`, o gateway valida sessão e permissões, persiste dados no **Supabase**, envia áudio para classificação acústica e devolve resultados tipados ao cliente.
+O Pawra é uma aplicação **React/PWA** com um gateway **Node.js + Express + tRPC** e um backend de ML separado em **FastAPI**. O frontend fala com o gateway por `/api/trpc`, o gateway valida sessão e permissões, persiste dados no **Supabase**, envia áudio para classificação acústica e devolve resultados tipados ao cliente.
 
 O desenho é deliberadamente resiliente: `FASTAPI_BACKEND_URL` pode apontar para o Hugging Face Space principal, mas o gateway mantém fallbacks conhecidos para Fly.dev e Hugging Face antes de devolver erro ao frontend. No browser, a app ainda consegue degradar para classificação local com TF.js quando o servidor ML está indisponível.
 
@@ -145,7 +145,7 @@ FASTAPI_BACKEND_URL="http://localhost:8000"
 Para usar o Hugging Face Space já publicado em vez do backend local:
 
 ```env
-FASTAPI_BACKEND_URL="https://firstoff-PetSense-backend.hf.space"
+FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
 ```
 
 Arrancar o backend ML local:
@@ -206,14 +206,14 @@ Depois aplica as migrações conforme a configuração local do Supabase CLI. No
    SUPABASE_URL="https://seu-projeto.supabase.co"
    SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
    JWT_SECRET="segredo-producao-longo"
-   OAUTH_SERVER_URL="https://PetSense.vercel.app"
-   FASTAPI_BACKEND_URL="https://firstoff-PetSense-backend.hf.space"
+   OAUTH_SERVER_URL="https://Pawra.vercel.app"
+   FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
    ```
 
 2. Confirmar em Supabase Auth que o redirect de email permite:
 
    ```text
-   https://PetSense.vercel.app/auth/callback
+   https://Pawra.vercel.app/auth/callback
    ```
 
 3. Fazer deploy pela integração GitHub/Vercel ou pela CLI:
@@ -239,20 +239,20 @@ O diretório `ml_backend/` está preparado para Space Docker:
 No Hugging Face, cria/usa um Space Docker com o conteúdo de `ml_backend/`. Depois valida:
 
 ```text
-https://firstoff-PetSense-backend.hf.space/health
+https://firstoff-Pawra-backend.hf.space/health
 ```
 
 Quando `/health` responder `200`, usa a raiz do Space como `FASTAPI_BACKEND_URL`, sem `/classify` no fim:
 
 ```env
-FASTAPI_BACKEND_URL="https://firstoff-PetSense-backend.hf.space"
+FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
 ```
 
 ---
 
 ## ⚠️ Limitações e Trabalho Futuro
 
-O **PetSense** baseia-se num classificador acústico genérico (YAMNet) e em estimativas comportamentais aproximadas. É fundamental salientar os seguintes aspetos éticos e científicos:
+O **Pawra** baseia-se num classificador acústico genérico (YAMNet) e em estimativas comportamentais aproximadas. É fundamental salientar os seguintes aspetos éticos e científicos:
 1. **Classificação Genérica:** O YAMNet é um classificador genérico de eventos de áudio treinado na base de dados AudioSet. Por isso, a deteção e tradução de emoções caninas ou felinas são estimativas estatísticas baseadas em indícios de vocalização geral e não mapeamentos neurobiológicos absolutos.
 2. **Estimativas de Bem-Estar:** As classes de emoções apresentadas pela aplicação (angústia, excitação, etc.) são aproximações comportamentais baseadas em padrões sonoros históricos e na postura corporal indicada. Devem ser consideradas como sinais ou indícios, e nunca como diagnósticos definitivos.
 3. **Não Substituição Médica:** Esta aplicação é uma ferramenta de apoio e entretenimento informativo para tutores. Não substitui, sob qualquer circunstância, o aconselhamento, diagnóstico clínico e acompanhamento por um médico veterinário qualificado.

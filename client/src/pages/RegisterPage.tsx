@@ -104,7 +104,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       mode="register"
-      title="Criar conta PetSense"
+      title="Criar conta Pawra"
       subtitle="Comece a acompanhar o bem-estar emocional dos seus animais com uma conta segura."
       showOAuth
       footer={

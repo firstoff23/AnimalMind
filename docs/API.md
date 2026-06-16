@@ -1,4 +1,4 @@
-# PetSense API Reference
+# Pawra API Reference
 
 Referencia dos procedimentos tRPC e das principais funcoes de persistencia usadas pelo servidor.
 

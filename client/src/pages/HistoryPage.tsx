@@ -953,7 +953,7 @@ export default function HistoryPage() {
       downloadTextFile(
         `\uFEFF${csv}`,
         "text/csv;charset=utf-8",
-        `petsense-historico-${exportFileDate()}.csv`,
+        `pawra-historico-${exportFileDate()}.csv`,
       );
       toast.success(t("historyPage.csvExported"));
     } catch (error) {
@@ -1020,8 +1020,8 @@ export default function HistoryPage() {
         doc.setFontSize(16);
         doc.text(
           language === "pt"
-            ? "PetSense - Histórico de classificações"
-            : "PetSense - Classification History",
+            ? "Pawra - Histórico de classificações"
+            : "Pawra - Classification History",
           14,
           16,
         );
@@ -1220,7 +1220,7 @@ export default function HistoryPage() {
       );
       doc.line(chartX - 5, chartY, chartX - 5, chartY - chartHeight - 10);
 
-      doc.save(`petsense-historico-${exportFileDate()}.pdf`);
+      doc.save(`pawra-historico-${exportFileDate()}.pdf`);
       toast.success(t("historyPage.pdfExported"));
     } catch (error) {
       console.error("PDF export failed:", error);

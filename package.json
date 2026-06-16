@@ -1,6 +1,6 @@
 {
-  "name": "petsense",
-  "description": "PetSense - Monitorização inteligente do bem-estar animal",
+  "name": "pawra",
+  "description": "Pawra - Monitorização inteligente do bem-estar animal",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",

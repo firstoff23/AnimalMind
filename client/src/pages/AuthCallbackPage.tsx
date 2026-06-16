@@ -111,7 +111,7 @@ export default function AuthCallbackPage() {
       }
       subtitle={
         isSuccess
-          ? "A confirmação foi concluída dentro da experiência PetSense."
+          ? "A confirmação foi concluída dentro da experiência Pawra."
           : isLoading
             ? "Estamos a validar o link de confirmação em segurança."
             : "Não conseguimos validar este link."

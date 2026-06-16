@@ -1,5 +1,5 @@
 /**
- * ErrorBoundary — Self-healing React error boundary for PetSense
+ * ErrorBoundary — Self-healing React error boundary for Pawra
  *
  * Features:
  * - Auto-retry the failed subtree up to MAX_AUTO_RETRIES times

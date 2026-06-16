@@ -1,5 +1,5 @@
 /**
- * SelfHealingProvider — Global error capture bridge for PetSense
+ * SelfHealingProvider — Global error capture bridge for Pawra
  *
  * Intercepts:
  * - window.onerror  (uncaught JS errors)

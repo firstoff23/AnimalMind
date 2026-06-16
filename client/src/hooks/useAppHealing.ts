@@ -1,5 +1,5 @@
 /**
- * useAppHealing — Core self-healing hook for PetSense
+ * useAppHealing — Core self-healing hook for Pawra
  *
  * Responsibilities:
  * - Capture and classify errors (network, auth, camera, UI, Supabase/RLS)

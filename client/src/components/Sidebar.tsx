@@ -91,7 +91,7 @@ export function Sidebar() {
                 exit={{ opacity: 0, x: -10 }}
                 className="font-satoshi font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent truncate"
               >
-                PetSense
+                Pawra
               </motion.span>
             )}
           </AnimatePresence>
@@ -192,7 +192,7 @@ export function Sidebar() {
                     {dbUser?.name || "Tutor"}
                   </p>
                   <p className="text-[9px] text-muted-foreground truncate mt-0.5 leading-none">
-                    {dbUser?.email || "tutor@petsense.app"}
+                    {dbUser?.email || "tutor@pawra.app"}
                   </p>
                 </motion.div>
               )}
