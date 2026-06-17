@@ -2,8 +2,6 @@
   "version": 2,
   "buildCommand": "pnpm install && pnpm build",
   "outputDirectory": "dist/public",
-  "framework": null,
-  "public": true,
   "trailingSlash": false,
   "headers": [
     {
