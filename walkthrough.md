@@ -555,5 +555,45 @@ Nesta ronda, implementámos um conjunto completo de medidas de conformidade com 
 * **Build de Produção:** O comando `pnpm run build` gerou a build final sem falhas.
 * **Git:** Commits registados com sucesso e alterações enviadas para a branch `main`.
 
+---
+
+## 🤖 15. Novo Pipeline de ML: Classificação de Imagens e Ferramentas de Anotação (Ronda 15) ✅
+
+Implementámos e integramos com sucesso os três componentes previstos para o pipeline e backend de Machine Learning da aplicação Pawra.
+
+### 1. Opção 1: Fine-tuning de Classificador de Espécie/Raça (ViT)
+* **Script de Treino (`data/scripts/train_species_classifier.py`)**:
+  * Desenvolvemos um script completo de fine-tuning usando a API `transformers.Trainer` do Hugging Face.
+  * O modelo base é um ViT (`google/vit-base-patch16-224`) com uma arquitetura de duas cabeças de classificação lineares (`head_species` para 2 classes, `head_breed` para 37 classes).
+  * Suporta execução em CPU/GPU, modo "linear probe" (congelando o backbone ViT para treino rápido) e push direto do modelo treinado para o Hugging Face Hub (`--push-to-hub`).
+  * Trata automaticamente a conversão de datasets no formato do Oxford-IIIT Pet.
+* **Segurança no Controlo de Versões**:
+  * Adicionámos `ml_backend/models/` ao `.gitignore` para garantir que ficheiros de pesos grandes (como `pytorch_model.bin` de 330MB) não sejam rastreados pelo Git, mantendo o histórico limpo.
+
+### 2. Opção 2: Ferramentas de Anotação Manual e Automática
+* **Anotador Manual CLI (`data/scripts/annotate_batch.py`)**:
+  * Script interativo que permite ao utilizador carregar imagens de uma pasta local e anotá-las manualmente indicando o comportamento (`behavior`) e emoção (`emotion`).
+  * Guarda os resultados no formato JSONL (`data/annotations/batch_XXX.jsonl`) com suporte a continuar o progresso de onde parou.
+* **Auto-Anotador VLM (`data/scripts/auto_annotate.py`)**:
+  * Ferramenta de anotação automática que consome a API do Gemini (`gemini-2.5-flash`) para inferir comportamento, emoção, ambiente, qualidade da imagem e confiança do rótulo, gerando metadados ricos estruturados para cada imagem.
+
+### 3. Opção 3: API do Servidor `/classify-image` (FastAPI)
+* **Endpoint (`POST /classify-image`)**:
+  * Adicionado ao servidor FastAPI em `ml_backend/app.py`. Aceita o upload de ficheiros de imagem (JPEG/PNG/WebP) e retorna a espécie, a raça inferida e um nível de confiança combinado (média geométrica das probabilidades).
+  * Inclui fallback gracioso para o classificador pré-treinado na ausência de pesos finetunados locais.
+* **Endpoint de Diagnóstico (`GET /model-health`)**:
+  * Fornece o estado atual do modelo (se está carregado em memória, a origem dos pesos, o dispositivo de hardware ativo e número de classes).
+* **Testes de Qualidade da API (`ml_backend/tests/test_classify.py`)**:
+  * Escrevemos 18 testes automatizados focados na API de classificação, testando desde tipos de dados suportados, validações de erros 415/400, até o tempo de processamento.
+  * Todos os pesos e processadores pesados são simulados (mocked) para execução rápida em ambientes de Integração Contínua (CI) sem necessidade de GPU ou downloads de 300 MB.
+
+### 4. Verificação e Integração Contínua (CI)
+* **API FastAPI local**: Todos os 18 testes de rotas ML passaram com sucesso (`pytest`).
+* **Testes Globais do Ecossistema**: Todos os 104 testes de integração e frontend do Vitest continuam a passar com 100% de sucesso.
+* **Sincronização e Deploy**:
+  * Efetuámos o rebase e push de todas as alterações para o repositório principal no GitHub (`origin/main`).
+  * Realizámos o deploy automático do backend de ML para o Hugging Face Spaces (`huggingface/main`) através do comando `git subtree push`.
+
+
 
 
