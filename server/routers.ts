@@ -12,6 +12,7 @@ import { notifyN8N } from "./_core/notification";
 import { checkRateLimit } from "./_core/rateLimiter";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { sanitizedString } from "./_core/sanitize";
 import {
   addAnimal,
   addDeworming,
@@ -546,7 +547,18 @@ export const appRouter = router({
           pitch: z.number().optional(),
           spectralEnergy: z.number().optional(),
           tonalBrightness: z.number().optional(),
-        }),
+        }).refine((val) => {
+          if (val.audio) {
+            const ALLOWED_AUDIO = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/aac", "audio/ogg", "audio/webm"];
+            const mime = val.audioMimeType || "audio/webm";
+            if (!ALLOWED_AUDIO.includes(mime.toLowerCase())) return false;
+            const size = (val.audio.length * 3) / 4;
+            if (size > 50 * 1024 * 1024) return false; // 50MB
+          }
+          return true;
+        }, {
+          message: "Ficheiro de áudio inválido ou demasiado grande. Máximo 50MB (MP3, WAV, M4A, WebM, OGG)."
+        })
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.run", 30);
@@ -690,7 +702,10 @@ export const appRouter = router({
     detectPosture: protectedProcedure
       .input(
         z.object({
-          image: z.string(), // base64 JPEG
+          image: z.string().refine((val) => {
+            const size = (val.length * 3) / 4;
+            return size <= 5 * 1024 * 1024; // 5MB
+          }, { message: "A imagem excede o tamanho máximo de 5MB." }),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -713,7 +728,10 @@ export const appRouter = router({
     detectSpecies: protectedProcedure
       .input(
         z.object({
-          image: z.string(), // base64 JPEG
+          image: z.string().refine((val) => {
+            const size = (val.length * 3) / 4;
+            return size <= 5 * 1024 * 1024; // 5MB
+          }, { message: "A imagem excede o tamanho máximo de 5MB." }),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -849,20 +867,30 @@ export const appRouter = router({
     add: protectedProcedure
       .input(
         z.object({
-          name: z.string().min(1).max(100),
+          name: sanitizedString(100),
           species: z.enum(["dog", "cat"]),
-          breed: z.string().max(100).optional().nullable(),
+          breed: sanitizedString(100).optional().nullable(),
           age: z.number().int().min(0).max(30).optional().nullable(),
           dateOfBirth: z.string().optional().nullable(),
           sex: z.enum(["male", "female", "unknown"]).optional(),
-          color: z.string().optional().nullable(),
+          color: sanitizedString(100).optional().nullable(),
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
-          photoUrl: z.string().optional().nullable(),
-          microchipNumber: z.string().max(15).optional().nullable(),
-          height: z.string().max(50).optional().nullable(),
-          tail: z.string().max(50).optional().nullable(),
-          specialMarkings: z.string().optional().nullable(),
-          weight: z.string().max(50).optional().nullable(),
+          photoUrl: z.string().optional().nullable().refine((val) => {
+            if (!val) return true;
+            if (val.startsWith("http://") || val.startsWith("https://")) return true;
+            const match = val.match(/^data:([^;]+);base64,/);
+            if (!match) return false;
+            const mime = match[1];
+            const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+            if (!ALLOWED.includes(mime.toLowerCase())) return false;
+            const size = (val.length * 3) / 4;
+            return size <= 5 * 1024 * 1024; // 5MB
+          }, { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." }),
+          microchipNumber: sanitizedString(15).optional().nullable(),
+          height: sanitizedString(50).optional().nullable(),
+          tail: sanitizedString(50).optional().nullable(),
+          specialMarkings: sanitizedString(500).optional().nullable(),
+          weight: sanitizedString(50).optional().nullable(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -874,20 +902,30 @@ export const appRouter = router({
       .input(
         z.object({
           animalId: z.number(),
-          name: z.string().min(1).max(100).optional(),
+          name: sanitizedString(100).optional(),
           species: z.enum(["dog", "cat"]).optional(),
-          breed: z.string().max(100).optional().nullable(),
+          breed: sanitizedString(100).optional().nullable(),
           age: z.number().int().min(0).max(30).optional().nullable(),
           dateOfBirth: z.string().optional().nullable(),
           sex: z.enum(["male", "female", "unknown"]).optional(),
-          color: z.string().optional().nullable(),
+          color: sanitizedString(100).optional().nullable(),
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
-          photoUrl: z.string().optional().nullable(),
-          microchipNumber: z.string().max(15).optional().nullable(),
-          height: z.string().max(50).optional().nullable(),
-          tail: z.string().max(50).optional().nullable(),
-          specialMarkings: z.string().optional().nullable(),
-          weight: z.string().max(50).optional().nullable(),
+          photoUrl: z.string().optional().nullable().refine((val) => {
+            if (!val) return true;
+            if (val.startsWith("http://") || val.startsWith("https://")) return true;
+            const match = val.match(/^data:([^;]+);base64,/);
+            if (!match) return false;
+            const mime = match[1];
+            const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+            if (!ALLOWED.includes(mime.toLowerCase())) return false;
+            const size = (val.length * 3) / 4;
+            return size <= 5 * 1024 * 1024; // 5MB
+          }, { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." }),
+          microchipNumber: sanitizedString(15).optional().nullable(),
+          height: sanitizedString(50).optional().nullable(),
+          tail: sanitizedString(50).optional().nullable(),
+          specialMarkings: sanitizedString(500).optional().nullable(),
+          weight: sanitizedString(50).optional().nullable(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1349,7 +1387,7 @@ export const appRouter = router({
       .input(
         z.object({
           eventId: z.number(),
-          notes: z.string(),
+          notes: sanitizedString(500),
         }),
       )
       .mutation(async ({ input }) => {

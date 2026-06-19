@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { useLocation } from "wouter";
+import { validateUploadedFile } from "@/lib/fileValidation";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -674,28 +675,11 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   // Photo selection zone (Manual / Microchip)
   const handlePhotoUpload = (file: File) => {
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "application/pdf",
-    ];
-    if (!validTypes.includes(file.type)) {
+    if (!validateUploadedFile(file, "image", language)) {
       setPhotoMediaState({
         status: "error",
         progress: 0,
-        error: "Formato não suportado. Usa JPG, PNG ou PDF.",
-        filePreview: null,
-        fileName: file.name,
-      });
-      return;
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      setPhotoMediaState({
-        status: "error",
-        progress: 0,
-        error: "Ficheiro demasiado grande. Máximo 20 MB.",
+        error: language === "pt" ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP)." : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP).",
         filePreview: null,
         fileName: file.name,
       });
@@ -756,28 +740,11 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
 
   // Bulletin selection zone (OCR)
   const handleOcrUpload = (file: File) => {
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "application/pdf",
-    ];
-    if (!validTypes.includes(file.type)) {
+    if (!validateUploadedFile(file, "bulletin", language)) {
       setOcrMediaState({
         status: "error",
         progress: 0,
-        error: "Formato não suportado. Usa JPG, PNG ou PDF.",
-        filePreview: null,
-        fileName: file.name,
-      });
-      return;
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      setOcrMediaState({
-        status: "error",
-        progress: 0,
-        error: "Ficheiro demasiado grande. Máximo 20 MB.",
+        error: language === "pt" ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP, PDF)." : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP, PDF).",
         filePreview: null,
         fileName: file.name,
       });
@@ -1555,28 +1522,11 @@ export function EditAnimalForm({
   };
 
   const handlePhotoUpload = (file: File) => {
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "application/pdf",
-    ];
-    if (!validTypes.includes(file.type)) {
+    if (!validateUploadedFile(file, "image", language)) {
       setPhotoMediaState({
         status: "error",
         progress: 0,
-        error: "Formato não suportado. Usa JPG, PNG ou PDF.",
-        filePreview: null,
-        fileName: file.name,
-      });
-      return;
-    }
-
-    if (file.size > 20 * 1024 * 1024) {
-      setPhotoMediaState({
-        status: "error",
-        progress: 0,
-        error: "Ficheiro demasiado grande. Máximo 20 MB.",
+        error: language === "pt" ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP)." : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP).",
         filePreview: null,
         fileName: file.name,
       });

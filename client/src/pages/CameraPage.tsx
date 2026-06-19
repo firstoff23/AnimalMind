@@ -189,15 +189,30 @@ export default function CameraPage() {
       return;
     }
 
-    // Size check (standardized error)
+    // Size and MIME type check
     const base64Image = capturedImage.split(",")[1];
     const sizeInBytes = (base64Image.length * 3) / 4;
-    if (sizeInBytes > 20 * 1024 * 1024) {
+    
+    const mimeMatch = capturedImage.match(/^data:(image\/[a-zA-Z+.-]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "";
+    const ALLOWED_IMAGE = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+    if (mimeType && !ALLOWED_IMAGE.includes(mimeType.toLowerCase())) {
       setUploadState("error");
       setErrorMessage(
         language === "pt"
-          ? "Ficheiro demasiado grande. Máximo 20 MB."
-          : "File too large. Maximum 20 MB.",
+          ? "Formato de imagem não suportado."
+          : "Unsupported image format.",
+      );
+      return;
+    }
+
+    if (sizeInBytes > 5 * 1024 * 1024) {
+      setUploadState("error");
+      setErrorMessage(
+        language === "pt"
+          ? "Ficheiro demasiado grande. Máximo 5 MB."
+          : "File too large. Maximum 5 MB.",
       );
       return;
     }

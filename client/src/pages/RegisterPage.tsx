@@ -17,8 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { validateEmailAddress } from "@/lib/disposableEmails";
 
 export default function RegisterPage() {
   const { user, signUp } = useAuth();
@@ -46,7 +45,11 @@ export default function RegisterPage() {
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
   const isPasswordValid =
     hasMinLength && hasUppercase && hasNumber && hasSpecial;
-  const isEmailValid = emailRegex.test(normalizedEmail);
+
+  const emailValidationResult = validateEmailAddress(normalizedEmail);
+  const isEmailValid = emailValidationResult.isValid;
+  const isDisposable = emailValidationResult.errorKey === "disposable";
+
   const isNameValid = name.trim().length > 1;
   const isFormValid = isNameValid && isEmailValid && isPasswordValid;
 
@@ -66,9 +69,11 @@ export default function RegisterPage() {
       : "";
   const emailError =
     apiError ||
-    (emailBlurred && !isEmailValid
-      ? "Introduza um email válido, por exemplo nome@exemplo.com."
-      : "");
+    (emailBlurred && isDisposable
+      ? "Este tipo de email não é aceite. Usa o teu email pessoal ou profissional."
+      : emailBlurred && !isEmailValid
+        ? "Introduza um email válido, por exemplo nome@exemplo.com."
+        : "");
   const passwordError =
     passwordBlurred && !isPasswordValid
       ? "Escolha uma palavra-passe que cumpra os requisitos."

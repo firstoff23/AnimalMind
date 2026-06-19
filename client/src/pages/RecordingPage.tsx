@@ -732,12 +732,36 @@ export default function RecordingPage() {
   }, [recordState, stopAndGetBlobLiveAudio, language, uploadAndProcess]);
 
   async function uploadAndProcess(blob: Blob, mimeType: string) {
-    if (blob.size > 20 * 1024 * 1024) {
+    const ALLOWED_AUDIO = [
+      "audio/mpeg",
+      "audio/mp3",
+      "audio/wav",
+      "audio/x-wav",
+      "audio/mp4",
+      "audio/x-m4a",
+      "audio/m4a",
+      "audio/aac",
+      "audio/ogg",
+      "audio/webm"
+    ];
+
+    if (blob.size > 50 * 1024 * 1024) {
       setRecordState("error");
       setErrorMessage(
         language === "pt"
-          ? "Ficheiro demasiado grande. Máximo 20 MB."
-          : "File too large. Maximum 20 MB.",
+          ? "Ficheiro demasiado grande. Máximo 50 MB."
+          : "File too large. Maximum 50 MB.",
+      );
+      return;
+    }
+
+    const checkMime = mimeType || blob.type;
+    if (checkMime && !ALLOWED_AUDIO.includes(checkMime.toLowerCase())) {
+      setRecordState("error");
+      setErrorMessage(
+        language === "pt"
+          ? "Formato de áudio não suportado."
+          : "Unsupported audio format.",
       );
       return;
     }
