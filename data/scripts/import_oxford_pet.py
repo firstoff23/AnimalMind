@@ -1,19 +1,27 @@
 """
 Oxford-IIIT Pet Dataset Import Pipeline
 ========================================
-Imports the Oxford-IIIT Pet dataset from Hugging Face, normalises it to the
-AnimalMind schema (image, species, breed, split, source) and optionally
-exports it as a new Hugging Face Dataset ready for vision model training.
+Imports the Oxford-IIIT Pet dataset from Hugging Face (pcuenq/oxford-pets),
+normalises it to the AnimalMind schema and saves it locally as a HF Dataset.
+
+Real schema of pcuenq/oxford-pets:
+  - path   : string   (original filename)
+  - label  : string   (breed name, e.g. "Siamese")
+  - dog    : bool     (True = dog, False = cat)
+  - image  : Image    (PIL image)
+
+Output columns (AnimalMind standard):
+  image | species | breed | split | source
 
 Usage
 -----
-  python data/scripts/import_oxford_pet.py \
-      --output data/processed/oxford_pet \
-      [--push-to-hub firstoff/animalmind-oxford-pet]
+  python data/scripts/import_oxford_pet.py --output data/processed/oxford_pet
+  python data/scripts/import_oxford_pet.py --output data/processed/oxford_pet \\
+      --push-to-hub firstoff/animalmind-oxford-pet
 
-Dependencies (install once)
----------------------------
-  pip install datasets huggingface_hub Pillow torch torchvision
+Dependencies
+------------
+  pip install datasets huggingface_hub Pillow
 """
 
 from __future__ import annotations
@@ -28,40 +36,16 @@ from typing import Any
 # Constants
 # ---------------------------------------------------------------------------
 
-HF_OXFORD_REPO = "pcuenq/oxford-pets"   # canonical HF mirror of Oxford-IIIT Pet
-
-# Oxford label_id → (species, breed)
-# The dataset ships breed names via the "label" feature; species is derived
-# from the breed name convention: uppercase first letter → Cat, else → Dog.
-# We build a lookup at runtime directly from the ClassLabel names.
-
-IMAGE_SIZE = (224, 224)   # resize target for vision models
+HF_OXFORD_REPO = "pcuenq/oxford-pets"
+IMAGE_SIZE = (224, 224)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def derive_species(breed_name: str) -> str:
-    """
-    In the Oxford-IIIT Pet naming convention, cat breeds start with an
-    uppercase letter (Abyssinian, Bengal …) while dog breeds start with a
-    lowercase letter after the underscore split OR are all lowercase.
-    The HF mirror exposes breed names already in title case, so we rely on
-    the original dataset README: cats are the first 12 classes.
-    Instead we check against a known cat breed list derived from the paper.
-    """
-    CAT_BREEDS = {
-        "Abyssinian", "Bengal", "Birman", "Bombay", "British_Shorthair",
-        "Egyptian_Mau", "Maine_Coon", "Persian", "Ragdoll", "Russian_Blue",
-        "Siamese", "Sphynx",
-    }
-    normalised = breed_name.replace(" ", "_").strip()
-    return "cat" if normalised in CAT_BREEDS else "dog"
-
-
 def normalise_breed(raw_label: str) -> str:
-    """Replace underscores with spaces and title-case the breed name."""
+    """Replace underscores with spaces and strip whitespace."""
     return raw_label.replace("_", " ").strip()
 
 
@@ -71,7 +55,7 @@ def normalise_breed(raw_label: str) -> str:
 
 def build_pipeline(output_dir: Path) -> None:
     try:
-        from datasets import load_dataset, DatasetDict, Features, ClassLabel, Image, Value
+        from datasets import load_dataset, DatasetDict
         from PIL import Image as PILImage
     except ImportError:
         sys.exit(
@@ -79,56 +63,59 @@ def build_pipeline(output_dir: Path) -> None:
             "  pip install datasets huggingface_hub Pillow"
         )
 
-    print("📥  Loading Oxford-IIIT Pet from Hugging Face …")
-    raw: DatasetDict = load_dataset(HF_OXFORD_REPO, trust_remote_code=True)  # type: ignore[arg-type]
+    print("[>>] Loading Oxford-IIIT Pet from Hugging Face ...")
+    # trust_remote_code is no longer supported in datasets >= 2.20
+    raw: DatasetDict = load_dataset(HF_OXFORD_REPO)  # type: ignore[arg-type]
 
-    # The HF mirror ships train/test splits
     print(f"    Splits available: {list(raw.keys())}")
 
-    label_names: list[str] = raw["train"].features["label"].names  # type: ignore[index]
-    print(f"    Found {len(label_names)} breed classes.")
+    # The HF mirror only ships a single 'train' split — we create our own
+    # train/test 90/10 split deterministically.
+    full_split = raw["train"]
+    print(f"    Total records: {len(full_split)}")
+
+    split_ds = full_split.train_test_split(test_size=0.1, seed=42)
+    print(f"    train: {len(split_ds['train'])}  |  test: {len(split_ds['test'])}")
 
     def transform(batch: dict[str, Any], split_name: str) -> dict[str, Any]:
-        images = batch["image"]
-        labels = batch["label"]
+        images_out  = []
+        species_out = []
+        breeds_out  = []
+        splits_out  = []
+        sources_out = []
 
-        out_images = []
-        out_species = []
-        out_breeds = []
-        out_splits = []
-        out_sources = []
+        for img, label, is_dog in zip(
+            batch["image"], batch["label"], batch["dog"]
+        ):
+            breed   = normalise_breed(str(label))
+            species = "dog" if is_dog else "cat"
 
-        for img, lbl in zip(images, labels):
-            raw_breed = label_names[lbl]
-            breed = normalise_breed(raw_breed)
-            species = derive_species(raw_breed)
-
-            # Resize for vision model compatibility
+            # Resize to standard vision-model input
             if isinstance(img, PILImage.Image):
                 img = img.convert("RGB").resize(IMAGE_SIZE, PILImage.LANCZOS)
 
-            out_images.append(img)
-            out_species.append(species)
-            out_breeds.append(breed)
-            out_splits.append(split_name)
-            out_sources.append("oxford_iiit_pet")
+            images_out.append(img)
+            species_out.append(species)
+            breeds_out.append(breed)
+            splits_out.append(split_name)
+            sources_out.append("oxford_iiit_pet")
 
         return {
-            "image": out_images,
-            "species": out_species,
-            "breed": out_breeds,
-            "split": out_splits,
-            "source": out_sources,
+            "image":   images_out,
+            "species": species_out,
+            "breed":   breeds_out,
+            "split":   splits_out,
+            "source":  sources_out,
         }
 
     processed_splits = {}
-    for split_name, split_ds in raw.items():
-        print(f"    Processing split '{split_name}' ({len(split_ds)} examples) …")
-        processed = split_ds.map(
-            lambda batch: transform(batch, split_name),
+    for split_name, ds in split_ds.items():
+        print(f"    Processing split '{split_name}' ({len(ds)} examples) ...")
+        processed = ds.map(
+            lambda batch, sn=split_name: transform(batch, sn),
             batched=True,
             batch_size=64,
-            remove_columns=split_ds.column_names,
+            remove_columns=ds.column_names,
             desc=f"Transforming {split_name}",
         )
         processed_splits[split_name] = processed
@@ -140,26 +127,32 @@ def build_pipeline(output_dir: Path) -> None:
     # -------------------------------------------------------------------
     output_dir.mkdir(parents=True, exist_ok=True)
     save_path = output_dir / "dataset"
-    print(f"\n💾  Saving processed dataset to {save_path} …")
+    print(f"\n[SAVE] Saving processed dataset to {save_path} ...")
     final_dataset.save_to_disk(str(save_path))
 
-    # Also export a small JSON manifest for quick inspection
+    # Collect unique breeds from the raw dataset
+    all_breeds = sorted(set(normalise_breed(str(x)) for x in full_split["label"]))
+
     manifest = {
-        "source": HF_OXFORD_REPO,
+        "source":     HF_OXFORD_REPO,
         "image_size": list(IMAGE_SIZE),
-        "columns": ["image", "species", "breed", "split", "source"],
-        "splits": {
-            split: len(ds) for split, ds in final_dataset.items()
-        },
-        "breeds": sorted(set(normalise_breed(n) for n in label_names)),
-        "species": ["cat", "dog"],
+        "columns":    ["image", "species", "breed", "split", "source"],
+        "splits":     {s: len(d) for s, d in final_dataset.items()},
+        "num_breeds": len(all_breeds),
+        "breeds":     all_breeds,
+        "species":    ["cat", "dog"],
     }
     manifest_path = output_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
-    print(f"📋  Manifest written to {manifest_path}")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"[INFO] Manifest written to {manifest_path}")
 
-    print("\n✅  Oxford-IIIT Pet import complete!")
-    print(f"    Total examples: {sum(len(ds) for ds in final_dataset.values())}")
+    total = sum(len(d) for d in final_dataset.values())
+    print(f"\n[OK] Oxford-IIIT Pet import complete!")
+    print(f"    Total examples : {total}")
+    print(f"    Breeds         : {len(all_breeds)}")
+    print(f"    Output dir     : {output_dir}")
 
 
 def push_to_hub(output_dir: Path, hub_repo: str) -> None:
@@ -168,10 +161,10 @@ def push_to_hub(output_dir: Path, hub_repo: str) -> None:
     except ImportError:
         sys.exit("Missing 'datasets'. Run: pip install datasets")
 
-    print(f"\n🚀  Pushing to Hugging Face Hub: {hub_repo} …")
+    print(f"\n[>>] Pushing to Hugging Face Hub: {hub_repo} ...")
     ds = load_from_disk(str(output_dir / "dataset"))
     ds.push_to_hub(hub_repo, private=True)
-    print("✅  Push complete!")
+    print("[OK] Push complete!")
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +172,9 @@ def push_to_hub(output_dir: Path, hub_repo: str) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Import Oxford-IIIT Pet dataset")
+    parser = argparse.ArgumentParser(
+        description="Import Oxford-IIIT Pet dataset into AnimalMind schema"
+    )
     parser.add_argument(
         "--output",
         type=Path,
@@ -190,7 +185,7 @@ def main() -> None:
         "--push-to-hub",
         metavar="REPO_ID",
         default=None,
-        help="Optional: push processed dataset to HF Hub (e.g. firstoff/animalmind-oxford-pet)",
+        help="Optional: push processed dataset to HF Hub",
     )
     args = parser.parse_args()
 
