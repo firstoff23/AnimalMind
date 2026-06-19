@@ -74,3 +74,7 @@ supabase/.temp/
 *.keystore
 android/builds/
 android/twa/
+
+# Dataset — raw images and processed HF datasets (can be large)
+data/raw/
+data/processed/
