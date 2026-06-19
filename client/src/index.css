@@ -468,9 +468,10 @@
   justify-content: center;
 }
 
-.active-scale:active {
-  transform: scale(0.96);
-  transition: transform 0.1s ease-out;
+.active-scale:active,
+button:active:not(:disabled) {
+  transform: scale(0.97) !important;
+  transition: transform 100ms ease-out !important;
 }
 
 @keyframes shimmer {

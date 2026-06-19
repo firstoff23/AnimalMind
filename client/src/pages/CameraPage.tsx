@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import AnimatedCheckmark from "@/components/AnimatedCheckmark";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -346,9 +347,7 @@ export default function CameraPage() {
                     className="absolute inset-0 bg-black/70 backdrop-blur-xs flex flex-col items-center justify-center p-6"
                     aria-live="polite"
                   >
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 mb-3 animate-bounce">
-                      <Check size={24} strokeWidth={2.5} />
-                    </div>
+                    <AnimatedCheckmark size={56} className="mb-3" />
                     <span className="text-base font-bold text-foreground">
                       {language === "pt" ? "Concluído!" : "Success!"}
                     </span>
