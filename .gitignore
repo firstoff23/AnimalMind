@@ -78,3 +78,10 @@ android/twa/
 # Dataset — raw images and processed HF datasets (can be large)
 data/raw/
 data/processed/
+
+# ML model weights — published to HF Hub, not stored in git
+# Use: python data/scripts/train_species_classifier.py --push-to-hub firstoff/animalmind-species-classifier
+ml_backend/models/species_classifier/pytorch_model.bin
+ml_backend/models/species_classifier/*.safetensors
+*.bin
+*.safetensors
