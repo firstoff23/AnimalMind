@@ -747,11 +747,183 @@ async def analyze_audio_advanced(file: UploadFile = File(...)):
             os.remove(tmp_wav_path)
 
 
+# ─── Vision Classifier (Species & Breed) ─────────────────────────────────────
+
+import io
+import time as _time
+import pathlib as _pathlib
+import torch as _torch
+import torch.nn as _nn
+
+_MODEL_DIR = _pathlib.Path(__file__).parent / "models" / "species_classifier"
+_VIT_BASE  = "google/vit-base-patch16-224"
+
+_SPECIES_LABELS = ["cat", "dog"]
+_BREED_LABELS = [
+    "Abyssinian", "Bengal", "Birman", "Bombay", "British Shorthair",
+    "Egyptian Mau", "Maine Coon", "Persian", "Ragdoll", "Russian Blue",
+    "Siamese", "Sphynx", "american bulldog", "american pit bull terrier",
+    "basset hound", "beagle", "boxer", "chihuahua", "english cocker spaniel",
+    "english setter", "german shorthaired", "great pyrenees", "havanese",
+    "japanese chin", "keeshond", "leonberger", "miniature pinscher",
+    "newfoundland", "pomeranian", "pug", "saint bernard", "samoyed",
+    "scottish terrier", "shiba inu", "staffordshire bull terrier",
+    "wheaten terrier", "yorkshire terrier",
+]
+
+# Lazy-loaded singletons
+_vit_model      = None
+_vit_processor  = None
+_vit_loaded_at  = None
+_vit_source     = None   # "fine-tuned" | "pretrained-fallback"
+
+
+class _DualHeadViT(_nn.Module):
+    """Same architecture as in train_species_classifier.py."""
+    def __init__(self, backbone, num_species: int, num_breeds: int):
+        super().__init__()
+        self.backbone     = backbone
+        hidden_size       = backbone.config.hidden_size
+        self.head_species = _nn.Linear(hidden_size, num_species)
+        self.head_breed   = _nn.Linear(hidden_size, num_breeds)
+
+    def forward(self, pixel_values):
+        outputs  = self.backbone(pixel_values=pixel_values)
+        cls_tok  = outputs.last_hidden_state[:, 0, :]
+        return {
+            "logits_species": self.head_species(cls_tok),
+            "logits_breed":   self.head_breed(cls_tok),
+        }
+
+
+def _load_vision_model():
+    global _vit_model, _vit_processor, _vit_loaded_at, _vit_source
+    if _vit_model is not None:
+        return
+
+    from transformers import ViTModel, ViTImageProcessor
+
+    device = _torch.device("cpu")
+    processor = ViTImageProcessor.from_pretrained(_VIT_BASE)
+    backbone  = ViTModel.from_pretrained(_VIT_BASE)
+    model     = _DualHeadViT(backbone, len(_SPECIES_LABELS), len(_BREED_LABELS))
+
+    weights_path = _MODEL_DIR / "pytorch_model.bin"
+    if weights_path.exists():
+        state_dict = _torch.load(str(weights_path), map_location=device)
+        model.load_state_dict(state_dict, strict=False)
+        _vit_source = "fine-tuned"
+        print(f"[Vision] Loaded fine-tuned model from {weights_path}")
+    else:
+        _vit_source = "pretrained-fallback"
+        print(f"[Vision] Fine-tuned weights not found. Using pretrained ViT backbone (no breed training).")
+
+    model.eval()
+    _vit_model     = model
+    _vit_processor = processor
+    _vit_loaded_at = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+
+
+class ImageClassificationResponse(BaseModel):
+    species:             str
+    breed:               str
+    confidence:          float
+    processing_time_ms:  float
+    model_source:        str
+
+
+class ModelHealthResponse(BaseModel):
+    loaded:        bool
+    model_source:  Optional[str]
+    loaded_at:     Optional[str]
+    num_species:   int
+    num_breeds:    int
+    device:        str
+
+
+@app.post("/classify-image", response_model=ImageClassificationResponse)
+async def classify_image(file: UploadFile = File(...)):
+    """
+    Classify a pet image, returning species, breed and confidence.
+
+    - **file**: JPEG or PNG image (multipart/form-data)
+
+    Returns JSON with `species`, `breed`, `confidence`, `processing_time_ms`.
+    """
+    # ── Validate content type ─────────────────────────────────────────────
+    allowed_types = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
+    ct = (file.content_type or "").lower()
+    if ct not in allowed_types:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported media type '{ct}'. Allowed: {sorted(allowed_types)}",
+        )
+
+    # ── Load model lazily ─────────────────────────────────────────────────
+    try:
+        _load_vision_model()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Model load failed: {exc}")
+
+    # ── Read & decode image ───────────────────────────────────────────────
+    t_start = _time.perf_counter()
+    try:
+        from PIL import Image as _PIL_Image
+        contents = await file.read()
+        img = _PIL_Image.open(io.BytesIO(contents)).convert("RGB")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot decode image: {exc}")
+
+    # ── Inference ─────────────────────────────────────────────────────────
+    try:
+        with _torch.no_grad():
+            inputs  = _vit_processor(images=img, return_tensors="pt")
+            outputs = _vit_model(**inputs)
+
+        import torch.nn.functional as F
+        prob_species = F.softmax(outputs["logits_species"], dim=-1)[0]
+        prob_breed   = F.softmax(outputs["logits_breed"],   dim=-1)[0]
+
+        species_idx = int(prob_species.argmax())
+        breed_idx   = int(prob_breed.argmax())
+
+        species    = _SPECIES_LABELS[species_idx]
+        breed      = _BREED_LABELS[breed_idx]
+        # Combined confidence: geometric mean of top species & top breed prob
+        confidence = float((prob_species[species_idx] * prob_breed[breed_idx]) ** 0.5)
+
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Inference error: {exc}")
+
+    elapsed_ms = (_time.perf_counter() - t_start) * 1000.0
+
+    return ImageClassificationResponse(
+        species            = species,
+        breed              = breed,
+        confidence         = round(confidence, 4),
+        processing_time_ms = round(elapsed_ms, 1),
+        model_source       = _vit_source or "unknown",
+    )
+
+
+@app.get("/model-health", response_model=ModelHealthResponse)
+def model_health():
+    """Returns whether the vision model is loaded and its metadata."""
+    return ModelHealthResponse(
+        loaded       = _vit_model is not None,
+        model_source = _vit_source,
+        loaded_at    = _vit_loaded_at,
+        num_species  = len(_SPECIES_LABELS),
+        num_breeds   = len(_BREED_LABELS),
+        device       = "cpu",
+    )
+
+
 # ─── Root & Health ────────────────────────────────────────────────────────────
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "AnimalMind API", "version": "1.3.0"}
+    return {"status": "ok", "service": "AnimalMind API", "version": "1.4.0"}
 
 
 @app.get("/health")
@@ -762,3 +934,4 @@ def health():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7860)
+
