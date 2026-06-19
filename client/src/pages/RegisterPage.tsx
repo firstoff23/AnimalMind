@@ -92,9 +92,9 @@ export default function RegisterPage() {
     try {
       await signUp(normalizedEmail, password, name.trim());
       toast.success(
-        "Conta criada com sucesso! Verifique o email se for pedido.",
+        "Conta criada com sucesso! Introduza o código enviado por email.",
       );
-      setLocation("/login");
+      setLocation(`/verify-otp?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (error) {
       setApiError(
         error instanceof Error && error.message

@@ -48,6 +48,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  verifyOtp: (email: string, token: string, type?: "signup" | "recovery") => Promise<void>;
   isAuthenticated: boolean;
   isEmailVerified: boolean;
   resendVerificationEmail: (email: string) => Promise<void>;
@@ -120,6 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) throw error;
   };
+  
+  const verifyOtp = async (email: string, token: string, type: "signup" | "recovery" = "signup") => {
+    const { error } = await requireSupabase().auth.verifyOtp({
+      email,
+      token,
+      type,
+    });
+    if (error) throw error;
+  };
 
   const signOut = async () => {
     const { error } = await requireSupabase().auth.signOut();
@@ -149,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
+    verifyOtp,
     isAuthenticated: !!user,
     isEmailVerified,
     resendVerificationEmail,
