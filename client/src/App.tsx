@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Lenis from "lenis";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { CommandPalette } from "@/components/CommandPalette";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
@@ -22,30 +22,58 @@ import { MoodProvider } from "./contexts/MoodContext";
 import { SelfHealingProvider } from "./contexts/SelfHealingContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
-import AnimalDetailPage from "./pages/AnimalDetailPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
-import CameraPage from "./pages/CameraPage";
-import CapturePortalPage from "./pages/CapturePortalPage";
-import ComparisonPage from "./pages/ComparisonPage";
-import DashboardPage from "./pages/DashboardPage";
-import FamilyDashboard from "./pages/FamilyDashboard";
-import FoodSearchPage from "./pages/FoodSearchPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import HealthPage from "./pages/HealthPage";
-import HistoryPage from "./pages/HistoryPage";
-import LandingPage from "./pages/LandingPage";
-import LoginPage from "./pages/LoginPage";
-import MindiPage from "./pages/MindiPage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import ProfilePage from "./pages/ProfilePage";
-import RecordingPage from "./pages/RecordingPage";
-import RegisterPage from "./pages/RegisterPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import SettingsPage from "./pages/SettingsPage";
-import VerifyEmailPage from "./pages/VerifyEmailPage";
-import VetDashboardPage from "./pages/VetDashboardPage";
-import VetPage from "./pages/VetPage";
-import VetPetDetailPage from "./pages/VetPetDetailPage";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+
+const AnimalDetailPage = lazy(() => import("./pages/AnimalDetailPage"));
+const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
+const CameraPage = lazy(() => import("./pages/CameraPage"));
+const CapturePortalPage = lazy(() => import("./pages/CapturePortalPage"));
+const ComparisonPage = lazy(() => import("./pages/ComparisonPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const FamilyDashboard = lazy(() => import("./pages/FamilyDashboard"));
+const FoodSearchPage = lazy(() => import("./pages/FoodSearchPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const HealthPage = lazy(() => import("./pages/HealthPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const MindiPage = lazy(() => import("./pages/MindiPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const RecordingPage = lazy(() => import("./pages/RecordingPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
+const VerifyOtpPage = lazy(() => import("./pages/VerifyOtpPage"));
+const VetDashboardPage = lazy(() => import("./pages/VetDashboardPage"));
+const VetPage = lazy(() => import("./pages/VetPage"));
+const VetPetDetailPage = lazy(() => import("./pages/VetPetDetailPage"));
+
+// Helper component to dry up Lazy + Suspense routes
+function LazyRoute({
+  component: LazyComponent,
+  variant = "content",
+  isProtected = false,
+  ...props
+}: {
+  component: React.ComponentType<any>;
+  variant?: "dashboard" | "profile" | "history" | "detail" | "settings" | "comparison" | "health" | "family" | "vet" | "content" | "mindi";
+  isProtected?: boolean;
+  [key: string]: any;
+}) {
+  const content = (
+    <Suspense fallback={<AppShellSkeleton variant={variant} />}>
+      <LazyComponent {...props} />
+    </Suspense>
+  );
+
+  if (isProtected) {
+    return <ProtectedRoute component={() => content} {...props} />;
+  }
+
+  return content;
+}
 
 function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
   useRealtimeNotifications(enabled);
@@ -92,139 +120,108 @@ function Router() {
             isAuthenticated ? "pb-20 md:pb-0" : "",
           )}
         >
-          <motion.div
-            key={location}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-            className="min-h-full flex flex-col"
-          >
-            <Switch>
-              {/* Public routes */}
-              <Route path="/login" component={LoginPage} />
-              <Route path="/register" component={RegisterPage} />
-              <Route path="/forgot-password" component={ForgotPasswordPage} />
-              <Route path="/reset-password" component={ResetPasswordPage} />
-              <Route path="/verify-email" component={VerifyEmailPage} />
-              <Route path="/auth/callback" component={AuthCallbackPage} />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+              className="min-h-full flex flex-col"
+            >
+              <Switch>
+                {/* Public routes */}
+                <Route path="/login">
+                  <LazyRoute component={LoginPage} variant="settings" />
+                </Route>
+                <Route path="/register">
+                  <LazyRoute component={RegisterPage} variant="settings" />
+                </Route>
+                <Route path="/forgot-password">
+                  <LazyRoute component={ForgotPasswordPage} variant="settings" />
+                </Route>
+                <Route path="/reset-password">
+                  <LazyRoute component={ResetPasswordPage} variant="settings" />
+                </Route>
+                <Route path="/verify-email">
+                  <LazyRoute component={VerifyEmailPage} variant="settings" />
+                </Route>
+                <Route path="/verify-otp">
+                  <LazyRoute component={VerifyOtpPage} variant="settings" />
+                </Route>
+                <Route path="/auth/callback">
+                  <LazyRoute component={AuthCallbackPage} variant="content" />
+                </Route>
+                <Route path="/">
+                  <LazyRoute component={LandingPage} variant="content" />
+                </Route>
+                <Route path="/privacidade">
+                  <LazyRoute component={PrivacyPolicyPage} variant="content" />
+                </Route>
 
-              {/* Public routes */}
-              <Route path="/" component={LandingPage} />
-              <Route path="/privacidade" component={PrivacyPolicyPage} />
+                {/* Protected routes */}
+                <Route path="/gravar">
+                  {(params) => <LazyRoute component={RecordingPage} variant="content" isProtected {...params} />}
+                </Route>
+                <Route path="/capturar">
+                  {(params) => <LazyRoute component={CapturePortalPage} variant="content" isProtected {...params} />}
+                </Route>
+                <Route path="/camera">
+                  {(params) => <LazyRoute component={CameraPage} variant="content" isProtected {...params} />}
+                </Route>
+                <Route path="/perfil">
+                  {(params) => <LazyRoute component={ProfilePage} variant="profile" isProtected {...params} />}
+                </Route>
+                <Route path="/health">
+                  {(params) => <LazyRoute component={HealthPage} variant="health" isProtected {...params} />}
+                </Route>
+                <Route path="/animal/:id">
+                  {(params) => <LazyRoute component={AnimalDetailPage} variant="detail" isProtected {...params} />}
+                </Route>
+                <Route path="/historico">
+                  {(params) => <LazyRoute component={HistoryPage} variant="history" isProtected {...params} />}
+                </Route>
+                <Route path="/dashboard">
+                  {(params) => <LazyRoute component={DashboardPage} variant="dashboard" isProtected {...params} />}
+                </Route>
+                <Route path="/mindi">
+                  {(params) => <LazyRoute component={MindiPage} variant="mindi" isProtected {...params} />}
+                </Route>
+                <Route path="/alimentos">
+                  {(params) => <LazyRoute component={FoodSearchPage} variant="health" isProtected {...params} />}
+                </Route>
+                <Route path="/definicoes">
+                  {(params) => <LazyRoute component={SettingsPage} variant="settings" isProtected {...params} />}
+                </Route>
+                <Route
+                  path="/user-profile"
+                  component={() => <Redirect to="/definicoes" />}
+                />
+                <Route path="/veterinario">
+                  {(params) => <LazyRoute component={VetPage} variant="vet" isProtected {...params} />}
+                </Route>
+                <Route path="/vet/animal/:id">
+                  {(params) => <LazyRoute component={VetPetDetailPage} variant="detail" isProtected {...params} />}
+                </Route>
+                <Route path="/vet">
+                  {(params) => <LazyRoute component={VetDashboardPage} variant="vet" isProtected {...params} />}
+                </Route>
+                <Route path="/family">
+                  {(params) => <LazyRoute component={FamilyDashboard} variant="family" isProtected {...params} />}
+                </Route>
+                <Route path="/join/:code">
+                  {(params) => <LazyRoute component={FamilyDashboard} variant="family" isProtected {...params} />}
+                </Route>
+                <Route path="/comparison">
+                  {(params) => <LazyRoute component={ComparisonPage} variant="comparison" isProtected {...params} />}
+                </Route>
 
-              {/* Protected routes */}
-              <Route
-                path="/gravar"
-                component={(props) => (
-                  <ProtectedRoute component={RecordingPage} {...props} />
-                )}
-              />
-              <Route
-                path="/capturar"
-                component={(props) => (
-                  <ProtectedRoute component={CapturePortalPage} {...props} />
-                )}
-              />
-              <Route
-                path="/camera"
-                component={(props) => (
-                  <ProtectedRoute component={CameraPage} {...props} />
-                )}
-              />
-              <Route
-                path="/perfil"
-                component={(props) => (
-                  <ProtectedRoute component={ProfilePage} {...props} />
-                )}
-              />
-              <Route
-                path="/health"
-                component={(props) => (
-                  <ProtectedRoute component={HealthPage} {...props} />
-                )}
-              />
-              <Route
-                path="/animal/:id"
-                component={(props) => (
-                  <ProtectedRoute component={AnimalDetailPage} {...props} />
-                )}
-              />
-              <Route
-                path="/historico"
-                component={(props) => (
-                  <ProtectedRoute component={HistoryPage} {...props} />
-                )}
-              />
-              <Route
-                path="/dashboard"
-                component={(props) => (
-                  <ProtectedRoute component={DashboardPage} {...props} />
-                )}
-              />
-              <Route
-                path="/mindi"
-                component={(props) => (
-                  <ProtectedRoute component={MindiPage} {...props} />
-                )}
-              />
-              <Route
-                path="/alimentos"
-                component={(props) => (
-                  <ProtectedRoute component={FoodSearchPage} {...props} />
-                )}
-              />
-              <Route
-                path="/definicoes"
-                component={(props) => (
-                  <ProtectedRoute component={SettingsPage} {...props} />
-                )}
-              />
-              <Route
-                path="/user-profile"
-                component={() => <Redirect to="/definicoes" />}
-              />
-              <Route
-                path="/veterinario"
-                component={(props) => (
-                  <ProtectedRoute component={VetPage} {...props} />
-                )}
-              />
-              <Route
-                path="/vet/animal/:id"
-                component={(props) => (
-                  <ProtectedRoute component={VetPetDetailPage} {...props} />
-                )}
-              />
-              <Route
-                path="/vet"
-                component={(props) => (
-                  <ProtectedRoute component={VetDashboardPage} {...props} />
-                )}
-              />
-              <Route
-                path="/family"
-                component={(props) => (
-                  <ProtectedRoute component={FamilyDashboard} {...props} />
-                )}
-              />
-              <Route
-                path="/join/:code"
-                component={(props) => (
-                  <ProtectedRoute component={FamilyDashboard} {...props} />
-                )}
-              />
-              <Route
-                path="/comparison"
-                component={(props) => (
-                  <ProtectedRoute component={ComparisonPage} {...props} />
-                )}
-              />
-
-              {/* Not found */}
-              <Route path="/404" component={NotFound} />
-              <Route component={NotFound} />
-            </Switch>
-          </motion.div>
+                {/* Not found */}
+                <Route path="/404" component={NotFound} />
+                <Route component={NotFound} />
+              </Switch>
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {isAuthenticated && <OnboardingDialog />}

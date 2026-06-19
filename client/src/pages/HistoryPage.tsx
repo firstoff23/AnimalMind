@@ -25,16 +25,8 @@ import {
   X,
 } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { type PointerEvent, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+const HistoryChart = lazy(() => import("@/components/HistoryChart"));
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
@@ -1722,60 +1714,13 @@ export default function HistoryPage() {
                 {t("historyPage.noClassificationsPeriod")}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="oklch(0.22 0.012 264)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 8 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={50}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={[0, 5]}
-                    tickCount={6}
-                    tickFormatter={formatYAxis}
-                    tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 9 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-xl space-y-1">
-                          <p className="text-muted-foreground">{data.date}</p>
-                          <p className="font-bold text-foreground">
-                            {t("historyPage.tableState")}: {data.emoji}{" "}
-                            {data.stateName}
-                          </p>
-                          <p className="text-primary font-semibold">
-                            {t("historyPage.tableConf")}: {data.confidence}%
-                          </p>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="stateValue"
-                    stroke="#10b981"
-                    strokeWidth={3}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<Skeleton className="h-[320px] w-full rounded-lg" />}>
+                <HistoryChart
+                  chartData={chartData}
+                  formatYAxis={formatYAxis}
+                  t={t}
+                />
+              </Suspense>
             )}
           </div>
         )}
