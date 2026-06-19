@@ -144,7 +144,7 @@ export default function VerifyOtpPage() {
           {code.map((digit, index) => (
             <motion.input
               key={index}
-              ref={(el) => (inputsRef.current[index] = el)}
+              ref={(el) => { inputsRef.current[index] = el; }}
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -163,6 +163,7 @@ export default function VerifyOtpPage() {
 
         <AuthSubmitButton
           loading={loading}
+          loadingLabel={language === "pt" ? "A verificar..." : "Verifying..."}
           disabled={!isComplete}
         >
           {language === "pt" ? "Verificar Código" : "Verify Code"}
