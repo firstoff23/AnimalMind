@@ -594,6 +594,38 @@ Implementámos e integramos com sucesso os três componentes previstos para o pi
   * Efetuámos o rebase e push de todas as alterações para o repositório principal no GitHub (`origin/main`).
   * Realizámos o deploy automático do backend de ML para o Hugging Face Spaces (`huggingface/main`) através do comando `git subtree push`.
 
+---
+
+## 🎨 16. Demo Space Público no Hugging Face (Ronda 16) ✅
+
+Criámos e colocámos em produção o Space público **firstoff/animalmind-demo** no Hugging Face para servir como montra da aplicação.
+
+### 1. Estrutura de Ficheiros Criada (`demo_space/`)
+* **Gradio UI (`demo_space/app.py`)**:
+  * Desenvolvemos uma interface web bonita, responsiva e moderna com tema escuro adaptado à marca.
+  * Suporta upload manual de imagens do cão/gato e exibe os resultados após clique no botão **Analisar 🔍**.
+  * Mostra a espécie detetada (com o emoji adequado 🐶/🐱), raça identificada, barra/slider de confiança (%) e o tempo total de processamento no servidor backend.
+  * Lida com erros graciosamente (ex: servidor indisponível ou imagem inválida) exibindo alertas informativos claros na interface.
+* **Exemplos Pré-Carregados (`demo_space/examples/`)**:
+  * Gerámos 4 imagens de alta qualidade com IA (`generate_image`) representando as principais raças para testes imediatos: Golden Retriever (`golden.png`), Gato Siamês (`siamese.png`), Bulldog Francês (`bulldog.png`) e Gato Persa (`persian.png`).
+* **Dependências (`demo_space/requirements.txt`)**:
+  * Declaradas as dependências mínimas necessárias: `gradio`, `requests` e `Pillow`.
+* **Metadata Card (`demo_space/README.md`)**:
+  * Criada a descrição do Space com metadados YAML de configuração obrigatória (SDK Gradio, visibilidade pública, etc.).
+  * Adicionada a instrução `python_version: 3.11` para contornar problemas de compatibilidade da remoção da biblioteca legada `audioop` nas versões mais recentes do Python (3.13) usadas por omissão pelo Hugging Face.
+
+### 2. Sincronização e Deploy
+* **Deploy no Hugging Face**:
+  * Usámos o script `scratch/deploy_space.py` com o pacote `huggingface_hub` para criar o repositório público `firstoff/animalmind-demo` e carregar todos os ficheiros locais da pasta `demo_space/`.
+  * O Space compilou com sucesso com a versão do Python 3.11 e está totalmente operacional (`RUNNING`).
+* **Sincronização no GitHub**:
+  * Todos os ficheiros da demo foram adicionados e submetidos num único commit limpo na branch principal (`origin/main`).
+
+### 3. Links Públicos de Acesso
+* **Demo Space Público**: [firstoff/animalmind-demo](https://huggingface.co/spaces/firstoff/animalmind-demo)
+* **Backend API Oficial**: [firstoff/animalmind-backend](https://huggingface.co/spaces/firstoff/animalmind-backend)
+
+
 
 
 
