@@ -1,3 +1,12 @@
+---
+title: AnimalMind Backend
+emoji: 🐾
+colorFrom: pink
+colorTo: indigo
+sdk: docker
+app_port: 7860
+---
+
 # AnimalMind ML Backend
 
 FastAPI backend for AnimalMind — pet audio classification, breed identification, and vision-based species/behaviour analysis.
