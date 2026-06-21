@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
@@ -923,7 +924,7 @@ def model_health():
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "AnimalMind API", "version": "1.4.0"}
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")
