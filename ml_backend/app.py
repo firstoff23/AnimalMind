@@ -924,15 +924,277 @@ def model_health():
 
 @app.get("/", response_class=HTMLResponse)
 def root():
-    html_content = """
-    <html>
-        <head>
-            <meta http-equiv="refresh" content="0; url=/docs" />
-            <title>Redirecting...</title>
-        </head>
-        <body>
-            <p>Redirecting to <a href="/docs">API documentation</a>...</p>
-        </body>
+    db_status = "Connected" if db_pool is not None else "Disconnected"
+    db_dot_class = "dot-connected" if db_pool is not None else "dot-disconnected"
+    
+    redis_status = "Connected" if redis_conn is not None else "Disconnected"
+    redis_dot_class = "dot-connected" if redis_conn is not None else "dot-disconnected"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AnimalMind Backend Gateway</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            :root {{
+                --bg-color: #090d16;
+                --card-bg: rgba(17, 25, 40, 0.6);
+                --border-color: rgba(255, 255, 255, 0.08);
+                --text-primary: #f3f4f6;
+                --text-secondary: #9ca3af;
+                --accent-emerald: #10b981;
+                --accent-indigo: #6366f1;
+                --glow-emerald: rgba(16, 185, 129, 0.15);
+            }}
+            
+            * {{
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }}
+            
+            body {{
+                background-color: var(--bg-color);
+                color: var(--text-primary);
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                position: relative;
+            }}
+
+            .blob {{
+                position: absolute;
+                width: 500px;
+                height: 500px;
+                border-radius: 50%;
+                filter: blur(120px);
+                z-index: 0;
+                opacity: 0.35;
+                pointer-events: none;
+            }}
+            .blob-1 {{
+                background: var(--accent-indigo);
+                top: -10%;
+                left: -10%;
+            }}
+            .blob-2 {{
+                background: var(--accent-emerald);
+                bottom: -10%;
+                right: -10%;
+            }}
+
+            .container {{
+                z-index: 1;
+                width: 100%;
+                max-width: 520px;
+                padding: 24px;
+            }}
+
+            .card {{
+                background: var(--card-bg);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid var(--border-color);
+                border-radius: 24px;
+                padding: 40px;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                position: relative;
+                overflow: hidden;
+            }}
+
+            .card::before {{
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--accent-indigo), var(--accent-emerald));
+            }}
+
+            .logo-area {{
+                font-size: 48px;
+                margin-bottom: 16px;
+                display: inline-block;
+                animation: float 4s ease-in-out infinite;
+            }}
+
+            @keyframes float {{
+                0%, 100% {{ transform: translateY(0px); }}
+                50% {{ transform: translateY(-8px); }}
+            }}
+
+            h1 {{
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                letter-spacing: -0.5px;
+                background: linear-gradient(135deg, #ffffff 60%, #a5b4fc);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }}
+
+            .version-badge {{
+                display: inline-block;
+                background: rgba(99, 102, 241, 0.15);
+                color: #a5b4fc;
+                padding: 4px 12px;
+                border-radius: 99px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 24px;
+                border: 1px solid rgba(99, 102, 241, 0.2);
+            }}
+
+            .description {{
+                color: var(--text-secondary);
+                font-size: 15px;
+                line-height: 1.6;
+                margin-bottom: 32px;
+            }}
+
+            .status-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                margin-bottom: 36px;
+            }}
+
+            .status-item {{
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid var(--border-color);
+                border-radius: 16px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }}
+
+            .status-label {{
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: var(--text-secondary);
+            }}
+
+            .status-value {{
+                font-size: 14px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }}
+
+            .dot {{
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                display: inline-block;
+            }}
+
+            .dot-connected {{
+                background-color: var(--accent-emerald);
+                box-shadow: 0 0 10px var(--accent-emerald);
+                animation: pulse 2s infinite;
+            }}
+
+            .dot-disconnected {{
+                background-color: #ef4444;
+                box-shadow: 0 0 10px #ef4444;
+            }}
+
+            @keyframes pulse {{
+                0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }}
+                70% {{ transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }}
+                100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }}
+            }}
+
+            .btn {{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                padding: 14px 24px;
+                background: linear-gradient(90deg, var(--accent-indigo), var(--accent-emerald));
+                border: none;
+                border-radius: 14px;
+                color: white;
+                font-size: 15px;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+            }}
+
+            .btn:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+                filter: brightness(1.1);
+            }}
+
+            .btn:active {{
+                transform: translateY(0);
+            }}
+
+            .footer {{
+                margin-top: 24px;
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.2);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        
+        <div class="container">
+            <div class="card">
+                <span class="logo-area">🐾</span>
+                <h1>AnimalMind Backend</h1>
+                <span class="version-badge">v1.4.0 • Gateway</span>
+                <p class="description">
+                    FastAPI machine learning engine for pet voice classification, breed detection, and posture analysis.
+                </p>
+                
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">PostgreSQL</span>
+                        <span class="status-value">
+                            <span class="dot {db_dot_class}"></span>
+                            {db_status}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Redis Cache</span>
+                        <span class="status-value">
+                            <span class="dot {redis_dot_class}"></span>
+                            {redis_status}
+                        </span>
+                    </div>
+                </div>
+                
+                <a href="/docs" class="btn">
+                    <span>Access API Documentation</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </a>
+                
+                <div class="footer">
+                    Running in Hugging Face Spaces Sandbox
+                </div>
+            </div>
+        </div>
+    </body>
     </html>
     """
     return HTMLResponse(content=html_content, status_code=200)
