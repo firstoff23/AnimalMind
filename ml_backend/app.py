@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
@@ -922,9 +922,20 @@ def model_health():
 
 # ─── Root & Health ────────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return RedirectResponse(url="/docs")
+    html_content = """
+    <html>
+        <head>
+            <meta http-equiv="refresh" content="0; url=/docs" />
+            <title>Redirecting...</title>
+        </head>
+        <body>
+            <p>Redirecting to <a href="/docs">API documentation</a>...</p>
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 
 @app.get("/health")
