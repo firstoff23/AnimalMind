@@ -922,6 +922,11 @@ def model_health():
 
 # ─── Root & Health ────────────────────────────────────────────────────────────
 
+@app.head("/", response_class=HTMLResponse)
+def root_head():
+    return HTMLResponse(content="", status_code=200)
+
+
 @app.get("/", response_class=HTMLResponse)
 def root():
     db_status = "Connected" if db_pool is not None else "Disconnected"
@@ -1201,6 +1206,7 @@ def root():
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
     return {"status": "healthy"}
 
