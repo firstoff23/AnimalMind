@@ -16,6 +16,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   lastSignedIn: Date;
+  onboardingCompleted: boolean;
 }
 
 export type InsertUser = Partial<User> & { openId: string };

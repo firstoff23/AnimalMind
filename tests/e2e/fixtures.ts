@@ -383,9 +383,19 @@ async function mockTrpc(page: Page) {
 async function installBrowserMocks(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem("animalmind-onboarding-seen", "true");
+    localStorage.setItem("pawra-onboarding-seen", "true");
     localStorage.setItem("theme", "dark");
     indexedDB.deleteDatabase("animalmind-offline-queue");
     indexedDB.deleteDatabase("animalmind-offline-queue-meta");
+
+    // Disable WebGL in E2E to prevent headless crashes of Three.js / Canvas
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (type === "webgl" || type === "experimental-webgl") {
+        return null;
+      }
+      return originalGetContext.apply(this, [type, ...args]);
+    };
 
     class MockWebSocket extends EventTarget {
       static CONNECTING = 0;
@@ -502,6 +512,14 @@ async function installBrowserMocks(page: Page) {
 
 export const test = base.extend({
   page: async ({ page }, use) => {
+    page.on("pageerror", (err) => {
+      console.error("[PAGE ERROR]", err.message, err.stack);
+    });
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        console.error("[BROWSER ERROR LOG]", msg.text());
+      }
+    });
     await installBrowserMocks(page);
     await mockSupabase(page);
     await mockTrpc(page);

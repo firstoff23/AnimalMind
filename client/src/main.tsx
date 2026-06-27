@@ -26,7 +26,32 @@ if (analyticsEndpoint && analyticsWebsiteId) {
   document.body.appendChild(script);
 }
 
-const queryClient = new QueryClient();
+// ─── React Query Caching Strategy ────────────────────────────────────────────
+// • staleTime: how long data is considered fresh (no re-fetch on mount/focus)
+// • gcTime:    how long unused cache entries are kept in memory
+//
+// Defaults are conservative (5 min stale / 10 min gc).
+// Per-query overrides are done via query-key conventions in individual
+// trpc.*.useQuery() calls (see ProfilePage, HistoryPage, DashboardPage).
+// ─────────────────────────────────────────────────────────────────────────────
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Data is fresh for 5 minutes — no re-fetch when switching pages
+      staleTime: 5 * 60 * 1000,
+      // Keep unused cache entries for 10 minutes before GC
+      gcTime: 10 * 60 * 1000,
+      // Don't refetch on window focus (mobile PWA behaviour)
+      refetchOnWindowFocus: false,
+      // Retry failed queries once before surfacing the error
+      retry: 1,
+    },
+    mutations: {
+      // Mutations don't retry by default to avoid double-submits
+      retry: false,
+    },
+  },
+});
 const trpcUrl =
   import.meta.env.VITE_TRPC_URL ??
   (Capacitor.isNativePlatform()

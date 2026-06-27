@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Lenis from "lenis";
 import { useEffect, lazy, Suspense } from "react";
+import { trpc } from "@/lib/trpc";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { CommandPalette } from "@/components/CommandPalette";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
@@ -14,7 +15,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { Header } from "./components/Header";
 import { MobileOnlyGate } from "./components/MobileOnlyGate";
 import { OfflineActionsSyncer } from "./components/OfflineActionsSyncer";
-import { OnboardingDialog } from "./components/OnboardingDialog";
+import { OnboardingFlow } from "./components/OnboardingFlow";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Sidebar } from "./components/Sidebar";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -80,13 +81,56 @@ function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+function PushNotificationsBridge({ enabled }: { enabled: boolean }) {
+  const subscribeMutation = trpc.push.subscribe.useMutation();
+
+  useEffect(() => {
+    if (enabled) {
+      import("@/lib/pushSetup").then(({ subscribeUserToPush }) => {
+        subscribeUserToPush(subscribeMutation.mutateAsync).catch((err) => {
+          console.error("[Push Setup] Failed to register push subscription:", err);
+        });
+      });
+    }
+  }, [enabled]);
+
+  return null;
+}
+
 function Router() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
+
+  // Query database user to check onboarding status
+  const { data: dbUser, isLoading: dbUserLoading } = trpc.auth.me.useQuery(
+    undefined,
+    { enabled: isAuthenticated, retry: false }
+  );
+
   const commandPaletteOpen = useAppStore((state) => state.commandPaletteOpen);
   const setCommandPaletteOpen = useAppStore(
     (state) => state.setCommandPaletteOpen,
   );
+
+  const isPublicRoute = [
+    "/",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/verify-email",
+    "/verify-otp",
+    "/auth/callback",
+    "/privacidade"
+  ].includes(location);
+
+  if (isAuthenticated && dbUserLoading && !isPublicRoute) {
+    return <AppShellSkeleton />;
+  }
+
+  if (isAuthenticated && dbUser && dbUser.onboardingCompleted === false && !isPublicRoute) {
+    return <OnboardingFlow />;
+  }
 
   return (
     <div
@@ -99,6 +143,7 @@ function Router() {
       {isAuthenticated && <BackgroundGrid />}
 
       <RealtimeNotificationsBridge enabled={isAuthenticated} />
+      <PushNotificationsBridge enabled={isAuthenticated} />
 
       {/* Sidebar Desktop — only shown when authenticated */}
       {isAuthenticated && <Sidebar />}
@@ -224,7 +269,6 @@ function Router() {
           </AnimatePresence>
         </main>
 
-        {isAuthenticated && <OnboardingDialog />}
         {isAuthenticated && <OfflineActionsSyncer />}
         {isAuthenticated && <BottomNav />}
 

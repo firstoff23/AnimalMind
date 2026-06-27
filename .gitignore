@@ -85,3 +85,5 @@ ml_backend/models/species_classifier/pytorch_model.bin
 ml_backend/models/species_classifier/*.safetensors
 *.bin
 *.safetensors
+models/
+

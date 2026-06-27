@@ -103,3 +103,53 @@ self.addEventListener("message", (event) => {
     event.waitUntil(processPendingRecordingsFromServiceWorker());
   }
 });
+
+self.addEventListener("push", (event) => {
+  if (!event.data) {
+    console.log("[Service Worker] Push event received but no data payload found.");
+    return;
+  }
+
+  try {
+    const payload = event.data.json();
+    const notification = payload.notification;
+
+    if (notification) {
+      const title = notification.title || "Pawra";
+      const options = {
+        body: notification.body || "",
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        data: notification.data || {},
+      };
+
+      event.waitUntil(self.registration.showNotification(title, options));
+    }
+  } catch (err) {
+    console.error("[Service Worker] Failed to parse push notification payload:", err);
+  }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const data = event.notification.data || {};
+  const destinationUrl = data.url || "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          return client.focus().then((focusedClient) => {
+            if ("navigate" in focusedClient) {
+              return focusedClient.navigate(destinationUrl);
+            }
+          });
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(destinationUrl);
+      }
+    })
+  );
+});

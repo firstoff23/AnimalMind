@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { TRPCError } from "@trpc/server";
 import type {
   AppError,
   AppHealingAction,
@@ -13,7 +14,7 @@ import { type EmotionalState, STATE_LABELS } from "../shared/types";
 import { ENV } from "./_core/env";
 
 let _supabase: SupabaseClient<any> | null = null;
-export const AUDIO_RECORDINGS_BUCKET = "audio-recordings";
+export const AUDIO_RECORDINGS_BUCKET = "audio-analysis";
 
 // Lazy init Supabase client
 // Use Service Role Key for backend operations (has full permissions)
@@ -45,6 +46,7 @@ function mapDbUser(user: any): User {
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
     lastSignedIn: new Date(user.last_signed_in),
+    onboardingCompleted: !!user.onboarding_completed,
   };
 }
 
@@ -80,12 +82,16 @@ export async function updateUser(
   data: {
     name?: string | null;
     email?: string | null;
+    onboardingCompleted?: boolean;
   },
 ): Promise<void> {
   const supabase = getSupabase();
   const updates: Record<string, any> = {};
   if (data.name !== undefined) updates.name = data.name;
   if (data.email !== undefined) updates.email = data.email;
+  if (data.onboardingCompleted !== undefined) {
+    updates.onboarding_completed = data.onboardingCompleted;
+  }
 
   const { error } = await supabase
     .from("users")
@@ -3836,4 +3842,132 @@ export async function getTrendsEvents(animalId: number, days = 30) {
 
   if (error) throw error;
   return data || [];
+}
+
+export async function getAnalysisUsage(userId: number) {
+  const supabase = getSupabase();
+  const now = new Date();
+  
+  const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  // Clean up old entries
+  try {
+    await supabase
+      .from("rate_limits")
+      .delete()
+      .eq("user_id", userId)
+      .lt("window_start", dayAgo.toISOString());
+  } catch (err) {
+    console.error("[RateLimit] Cleanup failed:", err);
+  }
+
+  const { data: limits, error } = await supabase
+    .from("rate_limits")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("endpoint", "analysis");
+
+  if (error) {
+    console.error("[RateLimit] Error fetching rate limits:", error);
+    return { hourlyCount: 0, dailyCount: 0, remainingHour: 10, remainingDay: 50, maxHour: 10, maxDay: 50 };
+  }
+
+  let hourlyCount = 0;
+  let dailyCount = 0;
+
+  for (const row of (limits || [])) {
+    const start = new Date(row.window_start);
+    if (start >= hourAgo) {
+      hourlyCount += row.count;
+    }
+    if (start >= dayAgo) {
+      dailyCount += row.count;
+    }
+  }
+
+  return {
+    hourlyCount,
+    dailyCount,
+    remainingHour: Math.max(0, 10 - hourlyCount),
+    remainingDay: Math.max(0, 50 - dailyCount),
+    maxHour: 10,
+    maxDay: 50
+  };
+}
+
+export async function checkAndIncrementAnalysisLimit(userId: number): Promise<{ remainingToday: number }> {
+  const usage = await getAnalysisUsage(userId);
+  const now = new Date();
+
+  // Hourly limit check
+  if (usage.hourlyCount >= 10) {
+    const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const supabase = getSupabase();
+    const { data: windowRows } = await supabase
+      .from("rate_limits")
+      .select("window_start")
+      .eq("user_id", userId)
+      .eq("endpoint", "analysis")
+      .gte("window_start", hourAgo.toISOString())
+      .order("window_start", { ascending: true })
+      .limit(1);
+    
+    let minutesToWait = 60;
+    if (windowRows && windowRows.length > 0) {
+      const earliestStart = new Date(windowRows[0].window_start);
+      const elapsedMs = now.getTime() - earliestStart.getTime();
+      minutesToWait = Math.max(1, Math.ceil((60 * 60 * 1000 - elapsedMs) / (60 * 1000)));
+    }
+    
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: `Atingiste o limite de análises. Tenta novamente em ${minutesToWait} minutos.`,
+    });
+  }
+
+  // Daily limit check
+  if (usage.dailyCount >= 50) {
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const supabase = getSupabase();
+    const { data: windowRows } = await supabase
+      .from("rate_limits")
+      .select("window_start")
+      .eq("user_id", userId)
+      .eq("endpoint", "analysis")
+      .gte("window_start", dayAgo.toISOString())
+      .order("window_start", { ascending: true })
+      .limit(1);
+
+    let minutesToWait = 24 * 60;
+    if (windowRows && windowRows.length > 0) {
+      const earliestStart = new Date(windowRows[0].window_start);
+      const elapsedMs = now.getTime() - earliestStart.getTime();
+      minutesToWait = Math.max(1, Math.ceil((24 * 60 * 60 * 1000 - elapsedMs) / (60 * 1000)));
+    }
+
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: `Atingiste o limite de análises diário. Tenta novamente em ${Math.ceil(minutesToWait / 60)} horas.`,
+    });
+  }
+
+  // Increment limit
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("rate_limits")
+    .insert([
+      {
+        user_id: userId,
+        endpoint: "analysis",
+        count: 1,
+        window_start: now.toISOString(),
+      }
+    ]);
+
+  if (error) {
+    console.error("[RateLimit] Failed to increment rate limit:", error);
+  }
+
+  return { remainingToday: Math.max(0, 50 - (usage.dailyCount + 1)) };
 }

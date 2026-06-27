@@ -199,6 +199,8 @@ export default function SettingsPage() {
           ? "Perfil atualizado com sucesso!"
           : "Profile updated successfully!",
       );
+      // Invalidate the cache entry and refetch to pick up the new data
+      utils.auth.me.invalidate();
       refetchUser();
     },
     onError: (err) => {

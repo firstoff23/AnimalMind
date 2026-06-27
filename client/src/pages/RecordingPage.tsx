@@ -491,7 +491,12 @@ export default function RecordingPage() {
     setResult(res);
 
     if (!offlineMode) {
+      // Invalidate all event-related caches so history page and dashboard
+      // reflect the new classification immediately when the user navigates.
       utils.events.recent.invalidate();
+      utils.events.list.invalidate();
+      utils.events.listForAnimal.invalidate();
+      utils.events.statsForAnimal.invalidate();
     }
 
     sendClassificationNotification(

@@ -4,6 +4,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import {
   addVetNote,
   getDemoUserId,
+  getSupabase,
   getVetDashboardData,
   getVetPetDetail,
   getVetReportData,
@@ -15,6 +16,7 @@ import {
   type VetCaseStatus,
   verifyAnimalOwner,
 } from "../db";
+import { sendPushNotification } from "../_core/pushNotification";
 
 async function effectiveUserId(
   ctxUser: { id: number } | null,
@@ -97,7 +99,31 @@ export const vetRouter = router({
     .mutation(async ({ ctx, input }) => {
       requireVetRole(ctx.user);
       const vetUserId = await effectiveUserId(ctx.user);
-      return addVetNote(vetUserId, input.animalId, input.note);
+      const noteResult = await addVetNote(vetUserId, input.animalId, input.note);
+
+      // Enviar notificação push ao tutor do animal
+      try {
+        const supabase = getSupabase();
+        const { data: animal } = await supabase
+          .from("animals")
+          .select("user_id, name")
+          .eq("id", input.animalId)
+          .single();
+
+        if (animal?.user_id) {
+          const ownerId = Number(animal.user_id);
+          const animalName = animal.name || "animal";
+          await sendPushNotification(ownerId, {
+            title: "Nova Nota Clínica do Veterinário",
+            body: `O veterinário adicionou uma nova nota clínica para ${animalName}!`,
+            data: { url: "/perfil", animalId: input.animalId },
+          });
+        }
+      } catch (err) {
+        console.error("[Push] Falha ao enviar notificação push de nota do veterinário:", err);
+      }
+
+      return noteResult;
     }),
 
   setCaseStatus: protectedProcedure

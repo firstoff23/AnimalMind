@@ -802,26 +802,38 @@ def _load_vision_model():
     if _vit_model is not None:
         return
 
-    from transformers import ViTModel, ViTImageProcessor
+    from transformers import ViTForImageClassification, ViTImageProcessor, ViTModel
 
     device = _torch.device("cpu")
-    processor = ViTImageProcessor.from_pretrained(_VIT_BASE)
-    backbone  = ViTModel.from_pretrained(_VIT_BASE)
-    model     = _DualHeadViT(backbone, len(_SPECIES_LABELS), len(_BREED_LABELS))
+    local_path = _pathlib.Path("models/animalmind-breed-classifier")
+    model_name = "firstoff/animalmind-breed-classifier"
 
-    weights_path = _MODEL_DIR / "pytorch_model.bin"
-    if weights_path.exists():
-        state_dict = _torch.load(str(weights_path), map_location=device)
-        model.load_state_dict(state_dict, strict=False)
-        _vit_source = "fine-tuned"
-        print(f"[Vision] Loaded fine-tuned model from {weights_path}")
-    else:
-        _vit_source = "pretrained-fallback"
-        print(f"[Vision] Fine-tuned weights not found. Using pretrained ViT backbone (no breed training).")
+    try:
+        # Try local first
+        if local_path.exists():
+            _vit_processor = ViTImageProcessor.from_pretrained(str(local_path))
+            _vit_model = ViTForImageClassification.from_pretrained(str(local_path))
+            _vit_source = "fine-tuned-local"
+            print(f"[Vision] Loaded local fine-tuned model from {local_path}")
+        else:
+            # Try Hugging Face Hub
+            _vit_processor = ViTImageProcessor.from_pretrained(model_name)
+            _vit_model = ViTForImageClassification.from_pretrained(model_name)
+            _vit_source = "fine-tuned-hub"
+            print(f"[Vision] Loaded fine-tuned breed classifier from Hugging Face: {model_name}")
+    except Exception as exc:
+        print(f"[Vision] Failed to load fine-tuned model ({exc}). Falling back to pretrained ViT backbone...")
+        try:
+            _vit_processor = ViTImageProcessor.from_pretrained(_VIT_BASE)
+            backbone  = ViTModel.from_pretrained(_VIT_BASE)
+            _vit_model = _DualHeadViT(backbone, len(_SPECIES_LABELS), len(_BREED_LABELS))
+            _vit_source = "pretrained-fallback"
+            print("[Vision] Pretrained fallback loaded successfully.")
+        except Exception as exc_fallback:
+            print(f"[Vision] Critical error during fallback: {exc_fallback}")
+            raise exc_fallback
 
-    model.eval()
-    _vit_model     = model
-    _vit_processor = processor
+    _vit_model.eval()
     _vit_loaded_at = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
 
 
@@ -882,16 +894,35 @@ async def classify_image(file: UploadFile = File(...)):
             outputs = _vit_model(**inputs)
 
         import torch.nn.functional as F
-        prob_species = F.softmax(outputs["logits_species"], dim=-1)[0]
-        prob_breed   = F.softmax(outputs["logits_breed"],   dim=-1)[0]
+        
+        # Check if the output has 'logits' attribute/key (standard ViTForImageClassification)
+        if hasattr(outputs, "logits") or "logits" in outputs:
+            logits = outputs.logits if hasattr(outputs, "logits") else outputs["logits"]
+            prob_breed = F.softmax(logits, dim=-1)[0]
+            breed_idx = int(prob_breed.argmax())
+            
+            # Resolve breed label via id2label if available, mapping to backend format
+            if hasattr(_vit_model, "config") and hasattr(_vit_model.config, "id2label") and _vit_model.config.id2label:
+                raw_breed = _vit_model.config.id2label[breed_idx]
+                norm_map = {b.lower().replace(" ", "_"): b for b in _BREED_LABELS}
+                breed = norm_map.get(raw_breed.lower().replace(" ", "_"), raw_breed)
+            else:
+                breed = _BREED_LABELS[breed_idx]
+            
+            # Map breed to species
+            species = "cat" if breed[0].isupper() else "dog"
+            confidence = float(prob_breed[breed_idx])
+        else:
+            # Fallback to the legacy dual-head/mock model format
+            prob_species = F.softmax(outputs["logits_species"], dim=-1)[0]
+            prob_breed   = F.softmax(outputs["logits_breed"],   dim=-1)[0]
 
-        species_idx = int(prob_species.argmax())
-        breed_idx   = int(prob_breed.argmax())
+            species_idx = int(prob_species.argmax())
+            breed_idx   = int(prob_breed.argmax())
 
-        species    = _SPECIES_LABELS[species_idx]
-        breed      = _BREED_LABELS[breed_idx]
-        # Combined confidence: geometric mean of top species & top breed prob
-        confidence = float((prob_species[species_idx] * prob_breed[breed_idx]) ** 0.5)
+            species    = _SPECIES_LABELS[species_idx]
+            breed      = _BREED_LABELS[breed_idx]
+            confidence = float((prob_species[species_idx] * prob_breed[breed_idx]) ** 0.5)
 
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Inference error: {exc}")

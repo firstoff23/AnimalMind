@@ -45,6 +45,8 @@ vi.mock("@supabase/supabase-js", () => {
             _lastEqValue = val;
             return builder;
           }),
+          delete: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
           gte: vi.fn().mockReturnThis(),
           not: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),

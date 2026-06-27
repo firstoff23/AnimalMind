@@ -12,7 +12,10 @@ vi.mock("@supabase/supabase-js", () => {
           insert: vi.fn().mockReturnThis(),
           update: vi.fn().mockReturnThis(),
           upsert: vi.fn().mockReturnThis(),
+          delete: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
           single: vi.fn().mockImplementation(() => {
             if (table === "users") {

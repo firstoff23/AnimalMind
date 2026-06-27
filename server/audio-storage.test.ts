@@ -26,14 +26,14 @@ describe("audio storage persistence", () => {
     vi.restoreAllMocks();
   });
 
-  it("uploads recorded audio to the audio-recordings bucket", async () => {
+  it("uploads recorded audio to the audio-analysis bucket", async () => {
     const upload = vi
       .fn()
       .mockResolvedValue({ data: { path: "events/1/test.webm" }, error: null });
     const createSignedUrl = vi.fn().mockResolvedValue({
       data: {
         signedUrl:
-          "https://animalmind.supabase.co/storage/v1/object/sign/audio-recordings/events/1/test.webm?token=xyz",
+          "https://animalmind.supabase.co/storage/v1/object/sign/audio-analysis/events/1/test.webm?token=xyz",
       },
       error: null,
     });
@@ -51,18 +51,18 @@ describe("audio storage persistence", () => {
     );
 
     expect(createBucket).toHaveBeenCalledWith(
-      "audio-recordings",
+      "audio-analysis",
       expect.objectContaining({
         public: false,
         allowedMimeTypes: expect.arrayContaining(["audio/webm", "audio/wav"]),
       }),
     );
-    expect(from).toHaveBeenCalledWith("audio-recordings");
+    expect(from).toHaveBeenCalledWith("audio-analysis");
     expect(upload).toHaveBeenCalledWith("events/1/test.webm", buffer, {
       contentType: "audio/webm",
       upsert: false,
     });
-    expect(url).toContain("/audio-recordings/events/1/test.webm?token=xyz");
+    expect(url).toContain("/audio-analysis/events/1/test.webm?token=xyz");
   });
 
   it("stores the uploaded audio URL on classification_events.audio_url", async () => {
@@ -71,7 +71,7 @@ describe("audio storage persistence", () => {
     const from = vi.fn(() => ({ update }));
     const client = { from };
     const audioUrl =
-      "https://animalmind.supabase.co/storage/v1/object/public/audio-recordings/events/42/test.wav";
+      "https://animalmind.supabase.co/storage/v1/object/public/audio-analysis/events/42/test.wav";
 
     const { updateEventAudio } = await loadDbWithClient(client);
 
@@ -83,7 +83,7 @@ describe("audio storage persistence", () => {
 
   it("reads the uploaded audio URL from classification_events.audio_url", async () => {
     const audioUrl =
-      "https://animalmind.supabase.co/storage/v1/object/public/audio-recordings/events/42/test.wav";
+      "https://animalmind.supabase.co/storage/v1/object/public/audio-analysis/events/42/test.wav";
     const single = vi
       .fn()
       .mockResolvedValue({ data: { audio_url: audioUrl }, error: null });

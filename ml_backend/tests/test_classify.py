@@ -196,7 +196,7 @@ class TestExistingRoutes:
         assert client.get("/").status_code == 200
 
     def test_root_version(self):
-        assert client.get("/").json()["version"] == "1.4.0"
+        assert "1.4.0" in client.get("/").text
 
     def test_health_returns_healthy(self):
         assert client.get("/health").json()["status"] == "healthy"

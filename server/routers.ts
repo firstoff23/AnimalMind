@@ -68,6 +68,8 @@ import {
   uploadAudioToSupabase,
   upsertSettings,
   verifyAnimalOwner,
+  checkAndIncrementAnalysisLimit,
+  getAnalysisUsage,
 } from "./db";
 import { familyRouter } from "./routers/family";
 import { foodsRouter } from "./routers/foods";
@@ -75,6 +77,8 @@ import { healingRouter } from "./routers/healing";
 import { healthRouter } from "./routers/health";
 import { trendsRouter } from "./routers/trends";
 import { vetRouter } from "./routers/vet";
+import { pushRouter } from "./routers/push";
+import { sendPushNotification } from "./_core/pushNotification";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -470,6 +474,12 @@ export const appRouter = router({
         await updateUser(userId, input);
         return { success: true };
       }),
+    completeOnboarding: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const userId = await effectiveUserId(ctx.user);
+        await updateUser(userId, { onboardingCompleted: true });
+        return { success: true };
+      }),
     deleteAccount: protectedProcedure
       .mutation(async ({ ctx }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -562,6 +572,8 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.run", 30);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
         let result: {
           state: EmotionalState;
           confidence: number;
@@ -621,7 +633,7 @@ export const appRouter = router({
           });
         }
 
-        const userId = await effectiveUserId(ctx.user);
+        const openId = ctx.user.openId;
         const targetAnimalId = input.animalId || 1;
         await verifyAnimalOwner(targetAnimalId, userId, true);
         const targetAnimal = await getAnimalById(targetAnimalId, userId);
@@ -647,7 +659,7 @@ export const appRouter = router({
         let audioUrl = null;
         if (eventId && buffer) {
           try {
-            const fileName = `audio_${eventId}_${Date.now()}.${ext}`;
+            const fileName = `${openId}/${Date.now()}-audio_${eventId}.${ext}`;
             audioUrl = await uploadAudioToSupabase(fileName, buffer, mime);
             await updateEventAudio(eventId, audioUrl);
           } catch (err) {
@@ -688,6 +700,39 @@ export const appRouter = router({
           } catch (err) {
             console.error("[n8n] Failed to send classification webhook:", err);
           }
+
+          // Enviar notificações push
+          try {
+            const animalName = targetAnimal?.name ?? "animal";
+            const stateLabel = STATE_LABELS[result.state];
+            
+            // 1. Notificação de conclusão de análise de áudio
+            await sendPushNotification(userId, {
+              title: "Análise de Áudio Concluída",
+              body: `A análise de áudio de ${animalName} terminou! Estado: ${stateLabel}.`,
+              data: { url: "/historico", animalId: targetAnimalId },
+            });
+
+            // 2. Alertas de Saúde por IA (estado crítico ou desvio do baseline)
+            const isCritical = result.state === "distress" || result.state === "alert";
+            const baseline = await getAnimalBaseline(targetAnimalId);
+            const baselineFrequency = baseline.stateDistribution?.[result.state] ?? 0;
+            const isRare = baseline.sampleSize >= 5 && baselineFrequency < 0.1;
+
+            if (isCritical || isRare) {
+              const bodyText = isCritical
+                ? `Alerta de Saúde: ${animalName} está com sinais de ${stateLabel}!`
+                : `Alerta de Saúde: ${animalName} apresentou um estado atípico de ${stateLabel} (desvio de baseline)!`;
+              
+              await sendPushNotification(userId, {
+                title: "Alerta de Saúde de IA",
+                body: bodyText,
+                data: { url: "/historico", animalId: targetAnimalId },
+              });
+            }
+          } catch (pushErr) {
+            console.error("[Push] Falha ao enviar notificações de áudio:", pushErr);
+          }
         }
 
         return {
@@ -697,6 +742,12 @@ export const appRouter = router({
           beliefState,
           posture: input.posture || null,
         };
+      }),
+
+    getUsage: protectedProcedure
+      .query(async ({ ctx }) => {
+        const userId = await effectiveUserId(ctx.user);
+        return getAnalysisUsage(userId);
       }),
 
     detectPosture: protectedProcedure
@@ -710,6 +761,8 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.detectPosture", 45);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
         const buffer = Buffer.from(input.image, "base64");
         const data = await tryVisionBackend(
           "/detect-posture",
@@ -736,6 +789,8 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.detectSpecies", 45);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
         const buffer = Buffer.from(input.image, "base64");
         const data = await tryVisionBackend(
           "/detect-species",
@@ -844,6 +899,39 @@ export const appRouter = router({
               "[Baseline] Failed to recalculate behavior baseline:",
               err,
             );
+          }
+
+          // Enviar notificações push
+          try {
+            const animalName = _targetAnimal?.name ?? "animal";
+            const stateLabel = STATE_LABELS[state];
+
+            // 1. Notificação de conclusão de análise de vídeo
+            await sendPushNotification(userId, {
+              title: "Análise de Vídeo Concluída",
+              body: `A análise de vídeo de ${animalName} terminou! Postura: ${input.posture}.`,
+              data: { url: "/historico", animalId: input.animalId },
+            });
+
+            // 2. Alerta de Saúde por IA (estado crítico ou desvio do baseline)
+            const isCritical = state === "distress" || state === "alert";
+            const baseline = await getAnimalBaseline(input.animalId);
+            const baselineFrequency = baseline.stateDistribution?.[state] ?? 0;
+            const isRare = baseline.sampleSize >= 5 && baselineFrequency < 0.1;
+
+            if (isCritical || isRare) {
+              const bodyText = isCritical
+                ? `Alerta de Saúde: ${animalName} está com sinais de ${stateLabel}!`
+                : `Alerta de Saúde: ${animalName} apresentou um estado atípico de ${stateLabel} (desvio de baseline)!`;
+              
+              await sendPushNotification(userId, {
+                title: "Alerta de Saúde de IA",
+                body: bodyText,
+                data: { url: "/historico", animalId: input.animalId },
+              });
+            }
+          } catch (pushErr) {
+            console.error("[Push] Falha ao enviar notificações de vídeo:", pushErr);
           }
         }
 
@@ -1479,6 +1567,7 @@ export const appRouter = router({
   trends: trendsRouter,
   healing: healingRouter,
   foods: foodsRouter,
+  push: pushRouter,
 });
 
 export type AppRouter = typeof appRouter;

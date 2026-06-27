@@ -63,10 +63,13 @@ const STATES: EmotionalState[] = [
 
 export default function AnimalDetailPage({
   params,
+  id,
 }: {
-  params: { id: string };
+  params?: { id: string };
+  id?: string;
 }) {
-  const animalId = parseInt(params.id, 10);
+  const rawId = id ?? params?.id;
+  const animalId = rawId ? parseInt(rawId, 10) : 0;
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<
     "stats" | "history" | "bulletin" | "share"

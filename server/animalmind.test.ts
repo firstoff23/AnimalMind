@@ -166,6 +166,20 @@ vi.mock("./db", () => ({
   getSharedAnimalsForUser: vi.fn().mockResolvedValue([]),
   getAnimalShares: vi.fn().mockResolvedValue([]),
   removeAnimalShare: vi.fn().mockResolvedValue(true),
+  checkAndIncrementAnalysisLimit: vi.fn().mockResolvedValue({ remainingToday: 49 }),
+  getAnalysisUsage: vi.fn().mockResolvedValue({
+    hourlyCount: 0,
+    dailyCount: 0,
+    remainingHour: 10,
+    remainingDay: 50,
+    maxHour: 10,
+    maxDay: 50,
+  }),
+  getSupabase: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+  }),
 }));
 
 vi.mock("./_core/notification", () => ({

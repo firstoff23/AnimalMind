@@ -1,4 +1,4 @@
-package com.animalmind.app;
+package com.pawra.app;
 
 import com.getcapacitor.BridgeActivity;
 

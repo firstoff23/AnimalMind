@@ -625,7 +625,40 @@ Criámos e colocámos em produção o Space público **firstoff/animalmind-demo*
 * **Demo Space Público**: [firstoff/animalmind-demo](https://huggingface.co/spaces/firstoff/animalmind-demo)
 * **Backend API Oficial**: [firstoff/animalmind-backend](https://huggingface.co/spaces/firstoff/animalmind-backend)
 
+---
 
+## 🔔 17. Notificações Push FCM e Integração Capacitor (Ronda 17) ✅
 
+Implementámos com sucesso o suporte a **Notificações Push Nativas** via Firebase Cloud Messaging (FCM) na aplicação nativa Android (Capacitor) e a sua integração com o servidor.
 
+### 1. Configurações Android Nativas
+* **google-services.json**: Colocado o ficheiro de configuração do Firebase em `android/app/google-services.json`.
+* **Gradle Build (App)**: 
+  * Atualizado o `namespace` e o `applicationId` para `"com.pawra.app"` em `android/app/build.gradle` para alinhar com o pacote registado no Firebase.
+  * Adicionada a dependência do Firebase Messaging (`implementation 'com.google.firebase:firebase-messaging:24.0.0'`) sob a secção de dependências.
+  * O plugin do Google Services é aplicado automaticamente ao detetar o ficheiro `google-services.json`.
+* **MainActivity & Estrutura Java**:
+  * Movida a `MainActivity.java` de `com.animalmind.app` para o novo caminho de pacotes `com.pawra.app` (`android/app/src/main/java/com/pawra/app/MainActivity.java`).
+  * Atualizada a declaração de pacote no cabeçalho do ficheiro para `package com.pawra.app;`.
+* **Permissões de Android**:
+  * Adicionada a permissão `<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />` no ficheiro `AndroidManifest.xml` para garantir suporte total a pedidos de notificação em dispositivos modernos com Android 13+.
 
+### 2. Integração no Cliente (Capacitor)
+* **@capacitor/push-notifications**: Instalado o plugin nativo do Capacitor.
+* **pushSetup.ts (`client/src/lib/pushSetup.ts`)**:
+  * Expandida a lógica de `subscribeUserToPush` para intercetar se a aplicação está a correr numa plataforma nativa (`Capacitor.isNativePlatform()`).
+  * No ecossistema nativo, pede permissões de receção ao utilizador via Capacitor API e, se autorizadas, executa o registo na Firebase.
+  * Captura o token de registo FCM (`registration` event listener) e envia-o ao servidor utilizando o router tRPC `push.subscribe` mapeando o `endpoint` como `https://fcm.googleapis.com/fcm/send/${token}` e assinalando chaves especiais `{ p256dh: "native-fcm", auth: "native-fcm" }` para diferenciação no backend.
+
+### 3. Integração no Servidor (FCM Delivery Engine)
+* **firebase-admin**: Instalado o SDK administrativo oficial do Firebase.
+* **pushNotification.ts (`server/_core/pushNotification.ts`)**:
+  * Criada a rotina de carregamento dinâmico e singleton do Firebase Admin SDK a partir de variáveis de ambiente (`FIREBASE_SERVICE_ACCOUNT_JSON` contendo a string da chave privada ou `FIREBASE_SERVICE_ACCOUNT_PATH`).
+  * Desenvolvido o helper `sendNativeFcmNotification` que despacha notificações para os tokens nativos usando o SDK Admin (FCM HTTP v1 API) e implementa um fallback automático usando o legacy HTTP API se apenas a chave string simples `FCM_SERVER_KEY` estiver configurada.
+  * Integração transparente: Se a subscrição no base de dados tiver o campo `p256dh === "native-fcm"`, o servidor processa o envio usando a pilha nativa da Firebase em vez de cifrar o payload por Web Push tradicional.
+  * Tratamento de Erros e Limpeza: Adicionada lógica de auto-limpeza de tokens inválidos ou expirados (respostas 404/410 ou erros de token não registado) removendo-os da base de dados Supabase imediatamente.
+
+### 4. Sincronização e Validação
+* **Compilação e Tipos**: O projeto compila com sucesso total e sem erros de tipos TypeScript (`npx tsc --noEmit`).
+* **Compilação Web**: `npx vite build` gerou a build de produção limpa.
+* **Sincronização**: Executado `npx cap sync` com sucesso, integrando todos os ficheiros compilados e os novos plugins ao projeto nativo Android.

@@ -115,10 +115,13 @@ function SectionHeader({
 
 export default function VetPetDetailPage({
   params,
+  id,
 }: {
-  params: { id: string };
+  params?: { id: string };
+  id?: string;
 }) {
-  const animalId = Number.parseInt(params.id, 10);
+  const rawId = id ?? params?.id;
+  const animalId = rawId ? Number.parseInt(rawId, 10) : 0;
   const [, setLocation] = useLocation();
   const [periodDays, setPeriodDays] = useState(30);
   const [clinicalNote, setClinicalNote] = useState("");
