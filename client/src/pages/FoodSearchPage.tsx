@@ -64,6 +64,8 @@ export default function FoodSearchPage() {
   } = trpc.foods.search.useQuery({
     query,
     species: selectedSpecies,
+  }, {
+    staleTime: 60 * 60 * 1000, // 1 hour
   });
 
   const getSeverityConfig = (

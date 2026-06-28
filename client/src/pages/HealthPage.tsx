@@ -259,6 +259,7 @@ export default function HealthPage() {
               <img
                 src={selectedAnimal.photoUrl}
                 alt={selectedAnimal.name}
+                loading="lazy"
                 className="w-14 h-14 rounded-2xl object-cover border border-slate-700 shadow-md flex-shrink-0"
               />
             ) : (

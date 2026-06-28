@@ -25,7 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { type PointerEvent, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { type PointerEvent, useEffect, useMemo, useRef, useState, lazy, Suspense, memo } from "react";
 const HistoryChart = lazy(() => import("@/components/HistoryChart"));
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
@@ -108,7 +108,7 @@ interface HistoryEvent {
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
 
-function EventRow({
+const EventRow = memo(function EventRow({
   event,
   onFeedback,
   onOpenRawData,
@@ -321,7 +321,7 @@ function EventRow({
       </motion.div>
     </div>
   );
-}
+});
 
 function formatRawEvent(event: HistoryEvent): string {
   return JSON.stringify(

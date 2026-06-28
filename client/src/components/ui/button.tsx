@@ -1,6 +1,6 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import type * as React from "react";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,7 @@ const buttonVariants = cva(
   },
 );
 
-function Button({
+const Button = React.memo(function Button({
   className,
   variant,
   size,
@@ -55,6 +55,6 @@ function Button({
       {...props}
     />
   );
-}
+});
 
 export { Button, buttonVariants };

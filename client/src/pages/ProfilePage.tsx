@@ -40,6 +40,48 @@ const STATES: EmotionalState[] = [
   "relaxed",
 ];
 
+function compressImageToWebP(file: File, maxWidth = 400, maxHeight = 400): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/webp", 0.8);
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        reject(new Error("Failed to load image"));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
 // ─── Animal Card ─────────────────────────────────────────────────────────────
 
 function AnimalCard({
@@ -276,6 +318,7 @@ function PhotoUploadZone({
               <img
                 src={mediaState.filePreview}
                 alt="Uploaded preview"
+                loading="lazy"
                 className="w-12 h-12 rounded-xl object-cover border border-border"
               />
             ) : (
@@ -720,20 +763,36 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
       if (curProgress >= 100) {
         clearInterval(interval);
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPhotoMediaState({
-            status: "success",
-            progress: 100,
-            error: null,
-            filePreview: reader.result as string,
-            fileName: file.name,
+        compressImageToWebP(file)
+          .then((compressedDataUrl) => {
+            setPhotoMediaState({
+              status: "success",
+              progress: 100,
+              error: null,
+              filePreview: compressedDataUrl,
+              fileName: file.name.replace(/\.[^/.]+$/, "") + ".webp",
+            });
+            toast.success(
+              language === "pt" ? "Foto carregada!" : "Photo uploaded!",
+            );
+          })
+          .catch((err) => {
+            console.error("Compression failed, using fallback", err);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setPhotoMediaState({
+                status: "success",
+                progress: 100,
+                error: null,
+                filePreview: reader.result as string,
+                fileName: file.name,
+              });
+              toast.success(
+                language === "pt" ? "Foto carregada!" : "Photo uploaded!",
+              );
+            };
+            reader.readAsDataURL(file);
           });
-          toast.success(
-            language === "pt" ? "Foto carregada!" : "Photo uploaded!",
-          );
-        };
-        reader.readAsDataURL(file);
       }
     }, step);
   };
@@ -1298,6 +1357,7 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
                       <img
                         src={ocrMediaState.filePreview}
                         alt="Bulletin Preview"
+                        loading="lazy"
                         className="w-full h-full object-contain"
                       />
                     )}
@@ -1567,20 +1627,36 @@ export function EditAnimalForm({
       if (curProgress >= 100) {
         clearInterval(interval);
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPhotoMediaState({
-            status: "success",
-            progress: 100,
-            error: null,
-            filePreview: reader.result as string,
-            fileName: file.name,
+        compressImageToWebP(file)
+          .then((compressedDataUrl) => {
+            setPhotoMediaState({
+              status: "success",
+              progress: 100,
+              error: null,
+              filePreview: compressedDataUrl,
+              fileName: file.name.replace(/\.[^/.]+$/, "") + ".webp",
+            });
+            toast.success(
+              language === "pt" ? "Foto atualizada!" : "Photo updated!",
+            );
+          })
+          .catch((err) => {
+            console.error("Compression failed, using fallback", err);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setPhotoMediaState({
+                status: "success",
+                progress: 100,
+                error: null,
+                filePreview: reader.result as string,
+                fileName: file.name,
+              });
+              toast.success(
+                language === "pt" ? "Foto atualizada!" : "Photo updated!",
+              );
+            };
+            reader.readAsDataURL(file);
           });
-          toast.success(
-            language === "pt" ? "Foto atualizada!" : "Photo updated!",
-          );
-        };
-        reader.readAsDataURL(file);
       }
     }, step);
   };

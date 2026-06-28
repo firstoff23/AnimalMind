@@ -65,7 +65,7 @@ export function OnboardingFlow() {
   const handleRequestNotifications = async () => {
     try {
       const result = await Notification.requestPermission();
-      setNotiStatus(result);
+      setNotiStatus(result === "default" ? "prompt" : result);
     } catch (err) {
       console.warn("Notifications permission denied:", err);
       setNotiStatus("denied");
@@ -99,12 +99,12 @@ export function OnboardingFlow() {
     animate: {
       opacity: 1,
       x: 0,
-      transition: { duration: 0.35, ease: "easeOut" },
+      transition: { duration: 0.35, ease: "easeOut" as const },
     },
     exit: (direction: number) => ({
       opacity: 0,
       x: direction > 0 ? -300 : 300,
-      transition: { duration: 0.25, ease: "easeIn" },
+      transition: { duration: 0.25, ease: "easeIn" as const },
     }),
   };
 
