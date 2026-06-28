@@ -92,3 +92,10 @@
 - [x] Sincronização com tabela users
 - [x] Exibição de estado de verificação de email
 - [x] Todos os 24 testes Vitest a passar
+
+## Fluxo de Onboarding
+- [x] Componente React/TypeScript: OnboardingFlow.tsx em client/src/components/
+- [x] Uso de Framer Motion para transições animadas entre os 4 ecrãs
+- [x] Persistência da flag onboarding_completed na tabela users do Supabase
+- [x] Integração com as páginas e autenticação em App.tsx
+
