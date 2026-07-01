@@ -47,6 +47,55 @@ app.use((req, _res, next) => {
   next();
 });
 
+// ── Content Security Policy ─────────────────────────────────────────────────
+// Strict CSP for a React PWA. Adjusted per environment:
+//   - dev:  script-src includes 'unsafe-eval' for Vite HMR hot-reload
+//   - prod: script-src is 'self' only (no eval, no inline)
+app.use((_req, res, next) => {
+  const isDev = process.env.NODE_ENV === "development";
+  const scriptSrc = isDev
+    ? `'self' 'unsafe-eval'` // Vite HMR requires eval in dev
+    : `'self'`;
+
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      `default-src 'self'`,
+      `script-src ${scriptSrc}`,
+      // Inline styles are needed by React/Radix UI component libraries
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+      `font-src 'self' https://fonts.gstatic.com data:`,
+      // Images: allow self, data URIs (base64 previews), and Supabase storage
+      `img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in`,
+      // XHR/fetch targets: own API, Supabase, Hugging Face backends
+      `connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://firstoff-animalmind-backend.hf.space https://firstoff-animalmind-demo.hf.space https://animalmind-backend.fly.dev`,
+      // Media (audio recording blobs)
+      `media-src 'self' blob:`,
+      // Workers (service worker, Vite workers)
+      `worker-src 'self' blob:`,
+      // Manifest for PWA install
+      `manifest-src 'self'`,
+      // Never allow this page to be embedded in a frame (clickjacking)
+      `frame-ancestors 'none'`,
+      // Disallow <form> from submitting to external URLs
+      `form-action 'self'`,
+      // Upgrade any accidental http:// sub-resources to https://
+      `upgrade-insecure-requests`,
+    ].join("; "),
+  );
+
+  // Additional security headers
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(self), microphone=(self), geolocation=()",
+  );
+
+  next();
+});
+
 // Configure body parser with larger size limit for file uploads
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));

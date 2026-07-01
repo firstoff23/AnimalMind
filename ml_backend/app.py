@@ -859,17 +859,46 @@ async def classify_image(file: UploadFile = File(...)):
     """
     Classify a pet image, returning species, breed and confidence.
 
-    - **file**: JPEG or PNG image (multipart/form-data)
+    - **file**: JPEG, PNG or WebP image (multipart/form-data), max 10 MB
 
     Returns JSON with `species`, `breed`, `confidence`, `processing_time_ms`.
     """
     # ── Validate content type ─────────────────────────────────────────────
-    allowed_types = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
+    allowed_types = {"image/jpeg", "image/png", "image/webp"}
     ct = (file.content_type or "").lower()
     if ct not in allowed_types:
         raise HTTPException(
             status_code=415,
             detail=f"Unsupported media type '{ct}'. Allowed: {sorted(allowed_types)}",
+        )
+
+    # ── Validate file size (≤ 10 MB) ──────────────────────────────────────
+    MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB in bytes
+    # Read one byte more than the limit; if we get that many back, it's too large
+    peek = await file.read(MAX_IMAGE_SIZE + 1)
+    if len(peek) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is 10 MB.",
+        )
+    # Rewind so downstream code can re-read the full contents
+    contents = peek
+
+    # ── Validate MIME magic bytes (defence-in-depth, ignores client Content-Type) ──
+    _MAGIC = {
+        b"\xff\xd8\xff": "image/jpeg",
+        b"\x89PNG\r\n": "image/png",
+        b"RIFF": None,  # WebP starts with RIFF...WEBP
+    }
+    is_valid_magic = (
+        contents[:3] == b"\xff\xd8\xff"          # JPEG
+        or contents[:8] == b"\x89PNG\r\n\x1a\n"  # PNG
+        or (contents[:4] == b"RIFF" and contents[8:12] == b"WEBP")  # WebP
+    )
+    if not is_valid_magic:
+        raise HTTPException(
+            status_code=415,
+            detail="File content does not match a valid image format.",
         )
 
     # ── Load model lazily ─────────────────────────────────────────────────
@@ -882,7 +911,7 @@ async def classify_image(file: UploadFile = File(...)):
     t_start = _time.perf_counter()
     try:
         from PIL import Image as _PIL_Image
-        contents = await file.read()
+        # `contents` is already populated by the size-check block above
         img = _PIL_Image.open(io.BytesIO(contents)).convert("RGB")
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Cannot decode image: {exc}")

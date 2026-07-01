@@ -181,7 +181,16 @@ class TestClassifyImage:
             "/classify-image",
             files={"file": ("bad.jpg", b"not-an-image", "image/jpeg")},
         )
-        assert resp.status_code in (400, 500)
+        assert resp.status_code in (400, 415, 500)
+
+    def test_rejects_large_image(self):
+        large_content = b"\xff\xd8\xff" + b"0" * (10 * 1024 * 1024 + 10)
+        resp = client.post(
+            "/classify-image",
+            files={"file": ("large.jpg", large_content, "image/jpeg")},
+        )
+        assert resp.status_code == 413
+        assert "too large" in resp.json()["detail"].lower()
 
     def test_model_loaded_after_classify(self):
         self._post()
