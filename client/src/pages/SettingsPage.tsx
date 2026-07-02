@@ -96,7 +96,7 @@ export default function SettingsPage() {
   const [distressAlerts, setDistressAlerts] = useState(true);
   const [hungerAlerts, setHungerAlerts] = useState(true);
   const [sensitivity, setSensitivity] = useState<Sensitivity>("medium");
-  const [shareDiagnosticData, setShareDiagnosticData] = useState(true);
+  const [shareDiagnosticData, setShareDiagnosticData] = useState(false);
   const [localHistoryOnly, setLocalHistoryOnly] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -189,6 +189,9 @@ export default function SettingsPage() {
     if (settingsData) {
       setNotifications(settingsData.notificationsEnabled);
       setSensitivity(settingsData.alertSensitivity as Sensitivity);
+      if (settingsData.shareDiagnosticData !== undefined) {
+        setShareDiagnosticData(settingsData.shareDiagnosticData);
+      }
     }
   }, [settingsData]);
 
@@ -709,6 +712,7 @@ export default function SettingsPage() {
                 checked={shareDiagnosticData}
                 onCheckedChange={(val) => {
                   setShareDiagnosticData(val);
+                  updateSettingsMutation.mutate({ shareDiagnosticData: val });
                   toast.success(
                     language === "pt"
                       ? `Partilha de diagnóstico ${val ? "autorizada" : "desativada"}`
@@ -1143,7 +1147,9 @@ export default function SettingsPage() {
                   className="h-9 flex-1 rounded-xl border-border/60 hover:bg-muted text-xs justify-center gap-2 text-muted-foreground hover:text-foreground active-scale tap-highlight-none"
                 >
                   <Shield size={14} className="text-primary" />
-                  {language === "pt" ? "Política de Privacidade" : "Privacy Policy"}
+                  {language === "pt"
+                    ? "Política de Privacidade"
+                    : "Privacy Policy"}
                 </Button>
                 <Button
                   variant="outline"
@@ -1295,8 +1301,10 @@ export default function SettingsPage() {
                   <Loader2 className="w-3 h-3 animate-spin mr-2" />
                   {language === "pt" ? "A apagar..." : "Deleting..."}
                 </>
+              ) : language === "pt" ? (
+                "Apagar conta"
               ) : (
-                language === "pt" ? "Apagar conta" : "Delete account"
+                "Delete account"
               )}
             </Button>
           </DialogFooter>

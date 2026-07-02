@@ -46,7 +46,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string, ageConfirmed: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string, type?: "signup" | "recovery") => Promise<void>;
   isAuthenticated: boolean;
@@ -108,13 +108,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string, ageConfirmed: boolean) => {
     const { error } = await requireSupabase().auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: name,
+          age_confirmed: ageConfirmed,
         },
         emailRedirectTo: getAuthCallbackUrl(),
       },

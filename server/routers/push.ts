@@ -15,20 +15,18 @@ export const pushRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const supabase = getSupabase();
-      
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .upsert(
-          {
-            user_id: ctx.user.id,
-            endpoint: input.endpoint,
-            p256dh: input.keys.p256dh,
-            auth: input.keys.auth,
-          },
-          {
-            onConflict: "endpoint",
-          },
-        );
+
+      const { error } = await supabase.from("push_subscriptions").upsert(
+        {
+          user_id: ctx.user.id,
+          endpoint: input.endpoint,
+          p256dh: input.keys.p256dh,
+          auth: input.keys.auth,
+        },
+        {
+          onConflict: "endpoint",
+        },
+      );
 
       if (error) {
         throw error;

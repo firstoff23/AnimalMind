@@ -23,11 +23,27 @@
       "type": "string",
       "required": true,
       "enum": [
-        "alert", "barking", "begging", "eating", "exploring",
-        "grooming", "growling", "hiding", "hissing", "jumping",
-        "lying_down", "meowing", "playing", "resting", "running",
-        "sitting", "sleeping", "socialising", "standing",
-        "unknown", "wagging_tail"
+        "alert",
+        "barking",
+        "begging",
+        "eating",
+        "exploring",
+        "grooming",
+        "growling",
+        "hiding",
+        "hissing",
+        "jumping",
+        "lying_down",
+        "meowing",
+        "playing",
+        "resting",
+        "running",
+        "sitting",
+        "sleeping",
+        "socialising",
+        "standing",
+        "unknown",
+        "wagging_tail"
       ]
     },
     "emotion": {
@@ -35,17 +51,34 @@
       "required": false,
       "description": "Inferred emotional state. null when confidence < 0.6.",
       "enum": [
-        "aggressive", "anxious", "attention_seeking", "content",
-        "curious", "distress", "excited", "fearful", "hungry",
-        "playful", "relaxed", "sad", "unknown", null
+        "aggressive",
+        "anxious",
+        "attention_seeking",
+        "content",
+        "curious",
+        "distress",
+        "excited",
+        "fearful",
+        "hungry",
+        "playful",
+        "relaxed",
+        "sad",
+        "unknown",
+        null
       ]
     },
     "environment": {
       "type": "string",
       "required": true,
       "enum": [
-        "car", "indoor_home", "outdoor_garden", "outdoor_park",
-        "outdoor_street", "shelter", "unknown", "veterinary_clinic"
+        "car",
+        "indoor_home",
+        "outdoor_garden",
+        "outdoor_park",
+        "outdoor_street",
+        "shelter",
+        "unknown",
+        "veterinary_clinic"
       ]
     },
     "image_quality": {

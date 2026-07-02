@@ -747,7 +747,7 @@ export default function RecordingPage() {
       "audio/m4a",
       "audio/aac",
       "audio/ogg",
-      "audio/webm"
+      "audio/webm",
     ];
 
     if (blob.size > 50 * 1024 * 1024) {
@@ -1495,9 +1495,8 @@ export default function RecordingPage() {
       <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5 shadow-sm text-left">
         <span className="text-base select-none mt-0.5">⚠️</span>
         <p className="leading-relaxed">
-          <strong>Aviso:</strong> Pawra não substitui avaliação
-          veterinária. Os resultados são estimativas comportamentais baseadas em
-          áudio.
+          <strong>Aviso:</strong> Pawra não substitui avaliação veterinária. Os
+          resultados são estimativas comportamentais baseadas em áudio.
         </p>
       </div>
 

@@ -52,7 +52,10 @@ export default function VerifyOtpPage() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
     if (e.key === "Backspace") {
       const newCode = [...code];
       if (newCode[index]) {
@@ -93,7 +96,7 @@ export default function VerifyOtpPage() {
       toast.error(
         language === "pt"
           ? "Por favor, introduza o código de 6 dígitos."
-          : "Please enter the 6-digit code."
+          : "Please enter the 6-digit code.",
       );
       setShake(true);
       setTimeout(() => setShake(false), 500);
@@ -106,7 +109,7 @@ export default function VerifyOtpPage() {
       toast.success(
         language === "pt"
           ? "Email verificado com sucesso!"
-          : "Email successfully verified!"
+          : "Email successfully verified!",
       );
       setLocation("/dashboard");
     } catch (err) {
@@ -114,7 +117,7 @@ export default function VerifyOtpPage() {
       toast.error(
         language === "pt"
           ? "Código inválido ou expirado. Tenta novamente."
-          : "Invalid or expired code. Please try again."
+          : "Invalid or expired code. Please try again.",
       );
       setShake(true);
       setTimeout(() => setShake(false), 500);
@@ -144,7 +147,9 @@ export default function VerifyOtpPage() {
           {code.map((digit, index) => (
             <motion.input
               key={index}
-              ref={(el) => { inputsRef.current[index] = el; }}
+              ref={(el) => {
+                inputsRef.current[index] = el;
+              }}
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -155,7 +160,12 @@ export default function VerifyOtpPage() {
               onKeyDown={(e) => handleKeyDown(e, index)}
               initial={{ opacity: 0, scale: 0.7 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 20 }}
+              transition={{
+                delay: index * 0.05,
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+              }}
               className="h-14 w-12 text-center text-xl font-bold bg-zinc-900/50 dark:bg-zinc-900/80 border-2 border-slate-200 dark:border-zinc-800 focus:border-teal-500 dark:focus:border-teal-400 rounded-2xl focus:outline-none focus:ring-0 transition-colors"
             />
           ))}

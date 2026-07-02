@@ -10,27 +10,24 @@ export const ALLOWED_AUDIO_MIME = [
   "audio/m4a",
   "audio/aac",
   "audio/ogg",
-  "audio/webm"
+  "audio/webm",
 ];
 
 export const ALLOWED_VIDEO_MIME = [
   "video/mp4",
   "video/quicktime",
   "video/webm",
-  "video/ogg"
+  "video/ogg",
 ];
 
 export const ALLOWED_IMAGE_MIME = [
   "image/jpeg",
   "image/jpg",
   "image/png",
-  "image/webp"
+  "image/webp",
 ];
 
-export const ALLOWED_BULLETIN_MIME = [
-  ...ALLOWED_IMAGE_MIME,
-  "application/pdf"
-];
+export const ALLOWED_BULLETIN_MIME = [...ALLOWED_IMAGE_MIME, "application/pdf"];
 
 export const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 50MB
 export const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200MB
@@ -39,7 +36,7 @@ export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 export function validateUploadedFile(
   file: File,
   type: "audio" | "video" | "image" | "bulletin",
-  language: "pt" | "en" = "pt"
+  language: "pt" | "en" = "pt",
 ): boolean {
   let allowedMime: string[] = [];
   let maxSize = 0;

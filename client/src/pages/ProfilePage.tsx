@@ -19,13 +19,13 @@ import {
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { useLocation } from "wouter";
-import { validateUploadedFile } from "@/lib/fileValidation";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/hooks/useLanguage";
+import { validateUploadedFile } from "@/lib/fileValidation";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import type { EmotionalState } from "../../../shared/types";
@@ -40,7 +40,11 @@ const STATES: EmotionalState[] = [
   "relaxed",
 ];
 
-function compressImageToWebP(file: File, maxWidth = 400, maxHeight = 400): Promise<string> {
+function compressImageToWebP(
+  file: File,
+  maxWidth = 400,
+  maxHeight = 400,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -722,7 +726,10 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
       setPhotoMediaState({
         status: "error",
         progress: 0,
-        error: language === "pt" ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP)." : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP).",
+        error:
+          language === "pt"
+            ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP)."
+            : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP).",
         filePreview: null,
         fileName: file.name,
       });
@@ -803,7 +810,10 @@ export function AddAnimalForm({ onClose }: { onClose: () => void }) {
       setOcrMediaState({
         status: "error",
         progress: 0,
-        error: language === "pt" ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP, PDF)." : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP, PDF).",
+        error:
+          language === "pt"
+            ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP, PDF)."
+            : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP, PDF).",
         filePreview: null,
         fileName: file.name,
       });
@@ -1586,7 +1596,10 @@ export function EditAnimalForm({
       setPhotoMediaState({
         status: "error",
         progress: 0,
-        error: language === "pt" ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP)." : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP).",
+        error:
+          language === "pt"
+            ? "Ficheiro inválido ou demasiado grande. Máximo 5MB (JPG, PNG, WEBP)."
+            : "Invalid file or too large. Max 5MB (JPG, PNG, WEBP).",
         filePreview: null,
         fileName: file.name,
       });

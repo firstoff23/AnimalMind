@@ -9,10 +9,11 @@ import {
 } from "../shared/types";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { notifyN8N } from "./_core/notification";
+import { sendPushNotification } from "./_core/pushNotification";
 import { checkRateLimit } from "./_core/rateLimiter";
+import { sanitizedString } from "./_core/sanitize";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { sanitizedString } from "./_core/sanitize";
 import {
   addAnimal,
   addDeworming,
@@ -20,6 +21,7 @@ import {
   addLicensing,
   addOtherTreatment,
   addVaccination,
+  checkAndIncrementAnalysisLimit,
   createShareInvitation,
   deleteDeworming,
   deleteDiagnosticTest,
@@ -28,6 +30,7 @@ import {
   deleteVaccination,
   getActiveAnimal,
   getAllEventsForExport,
+  getAnalysisUsage,
   getAnimalBaseline,
   getAnimalById,
   getAnimalShares,
@@ -48,6 +51,7 @@ import {
   getSettings,
   getSignedAudioUrl,
   getStatsForAnimal,
+  getSupabase,
   getVaccinations,
   getWeeklyStats,
   insertEvent,
@@ -63,22 +67,18 @@ import {
   updateEventAudio,
   updateEventFeedback,
   updateEventNotes,
-  getSupabase,
   updateUser,
   uploadAudioToSupabase,
   upsertSettings,
   verifyAnimalOwner,
-  checkAndIncrementAnalysisLimit,
-  getAnalysisUsage,
 } from "./db";
 import { familyRouter } from "./routers/family";
 import { foodsRouter } from "./routers/foods";
 import { healingRouter } from "./routers/healing";
 import { healthRouter } from "./routers/health";
+import { pushRouter } from "./routers/push";
 import { trendsRouter } from "./routers/trends";
 import { vetRouter } from "./routers/vet";
-import { pushRouter } from "./routers/push";
-import { sendPushNotification } from "./_core/pushNotification";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -474,101 +474,132 @@ export const appRouter = router({
         await updateUser(userId, input);
         return { success: true };
       }),
-    completeOnboarding: protectedProcedure
-      .mutation(async ({ ctx }) => {
-        const userId = await effectiveUserId(ctx.user);
-        await updateUser(userId, { onboardingCompleted: true });
-        return { success: true };
-      }),
-    deleteAccount: protectedProcedure
-      .mutation(async ({ ctx }) => {
-        const userId = await effectiveUserId(ctx.user);
-        const openId = ctx.user.openId;
+    completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await updateUser(userId, { onboardingCompleted: true });
+      return { success: true };
+    }),
+    deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const openId = ctx.user.openId;
 
-        const supabase = getSupabase();
+      const supabase = getSupabase();
 
-        // 1. Get all events with audio_url for this user to delete from storage
-        const { data: events, error: eventsError } = await supabase
-          .from("classification_events")
-          .select("audio_url")
-          .eq("user_id", userId);
+      // 1. Get all events with audio_url for this user to delete from storage
+      const { data: events, error: eventsError } = await supabase
+        .from("classification_events")
+        .select("audio_url")
+        .eq("user_id", userId);
 
-        if (eventsError) {
-          console.error("[DeleteAccount] Error fetching user events for audio deletion:", eventsError);
+      if (eventsError) {
+        console.error(
+          "[DeleteAccount] Error fetching user events for audio deletion:",
+          eventsError,
+        );
+      }
+
+      const fileNames = (events || [])
+        .map((e: any) => e.audio_url)
+        .filter((url: any): url is string =>
+          Boolean(url && url.includes("audio-recordings/")),
+        )
+        .map((url: string) => url.split("audio-recordings/").pop() as string);
+
+      if (fileNames.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from("audio-recordings")
+          .remove(fileNames);
+        if (storageError) {
+          console.error(
+            "[DeleteAccount] Error removing audio files from storage:",
+            storageError,
+          );
+        } else {
+          console.log(
+            `[DeleteAccount] Successfully removed ${fileNames.length} audio files from storage.`,
+          );
         }
+      }
 
-        const fileNames = (events || [])
-          .map((e: any) => e.audio_url)
-          .filter((url: any): url is string => Boolean(url && url.includes("audio-recordings/")))
-          .map((url: string) => url.split("audio-recordings/").pop() as string);
+      // 2. Delete from Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(openId);
+      if (authError) {
+        console.error(
+          "[DeleteAccount] Error deleting user from Supabase Auth:",
+          authError,
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao eliminar utilizador no Supabase Auth: ${authError.message}`,
+        });
+      }
 
-        if (fileNames.length > 0) {
-          const { error: storageError } = await supabase.storage
-            .from("audio-recordings")
-            .remove(fileNames);
-          if (storageError) {
-            console.error("[DeleteAccount] Error removing audio files from storage:", storageError);
-          } else {
-            console.log(`[DeleteAccount] Successfully removed ${fileNames.length} audio files from storage.`);
-          }
-        }
+      // 3. Delete from public.users table (cascades to all other tables)
+      const { error: dbError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
 
-        // 2. Delete from Supabase Auth
-        const { error: authError } = await supabase.auth.admin.deleteUser(openId);
-        if (authError) {
-          console.error("[DeleteAccount] Error deleting user from Supabase Auth:", authError);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Erro ao eliminar utilizador no Supabase Auth: ${authError.message}`,
-          });
-        }
+      if (dbError) {
+        console.error(
+          "[DeleteAccount] Error deleting user from database:",
+          dbError,
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao eliminar dados do utilizador na base de dados: ${dbError.message}`,
+        });
+      }
 
-        // 3. Delete from public.users table (cascades to all other tables)
-        const { error: dbError } = await supabase
-          .from("users")
-          .delete()
-          .eq("id", userId);
+      // 4. Clear session cookies (logout)
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
 
-        if (dbError) {
-          console.error("[DeleteAccount] Error deleting user from database:", dbError);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Erro ao eliminar dados do utilizador na base de dados: ${dbError.message}`,
-          });
-        }
-
-        // 4. Clear session cookies (logout)
-        const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-
-        return { success: true };
-      }),
+      return { success: true };
+    }),
   }),
 
   // ── Classify ────────────────────────────────────────────────────────────────
   classify: router({
     run: protectedProcedure
       .input(
-        z.object({
-          animalId: z.number().optional(),
-          audio: z.string().optional(),
-          audioMimeType: z.string().optional(),
-          posture: z.string().optional(),
-          pitch: z.number().optional(),
-          spectralEnergy: z.number().optional(),
-          tonalBrightness: z.number().optional(),
-        }).refine((val) => {
-          if (val.audio) {
-            const ALLOWED_AUDIO = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/aac", "audio/ogg", "audio/webm"];
-            const mime = val.audioMimeType || "audio/webm";
-            if (!ALLOWED_AUDIO.includes(mime.toLowerCase())) return false;
-            const size = (val.audio.length * 3) / 4;
-            if (size > 50 * 1024 * 1024) return false; // 50MB
-          }
-          return true;
-        }, {
-          message: "Ficheiro de áudio inválido ou demasiado grande. Máximo 50MB (MP3, WAV, M4A, WebM, OGG)."
-        })
+        z
+          .object({
+            animalId: z.number().optional(),
+            audio: z.string().optional(),
+            audioMimeType: z.string().optional(),
+            posture: z.string().optional(),
+            pitch: z.number().optional(),
+            spectralEnergy: z.number().optional(),
+            tonalBrightness: z.number().optional(),
+          })
+          .refine(
+            (val) => {
+              if (val.audio) {
+                const ALLOWED_AUDIO = [
+                  "audio/mpeg",
+                  "audio/mp3",
+                  "audio/wav",
+                  "audio/x-wav",
+                  "audio/mp4",
+                  "audio/x-m4a",
+                  "audio/m4a",
+                  "audio/aac",
+                  "audio/ogg",
+                  "audio/webm",
+                ];
+                const mime = val.audioMimeType || "audio/webm";
+                if (!ALLOWED_AUDIO.includes(mime.toLowerCase())) return false;
+                const size = (val.audio.length * 3) / 4;
+                if (size > 50 * 1024 * 1024) return false; // 50MB
+              }
+              return true;
+            },
+            {
+              message:
+                "Ficheiro de áudio inválido ou demasiado grande. Máximo 50MB (MP3, WAV, M4A, WebM, OGG).",
+            },
+          ),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.run", 30);
@@ -705,7 +736,7 @@ export const appRouter = router({
           try {
             const animalName = targetAnimal?.name ?? "animal";
             const stateLabel = STATE_LABELS[result.state];
-            
+
             // 1. Notificação de conclusão de análise de áudio
             await sendPushNotification(userId, {
               title: "Análise de Áudio Concluída",
@@ -714,16 +745,18 @@ export const appRouter = router({
             });
 
             // 2. Alertas de Saúde por IA (estado crítico ou desvio do baseline)
-            const isCritical = result.state === "distress" || result.state === "alert";
+            const isCritical =
+              result.state === "distress" || result.state === "alert";
             const baseline = await getAnimalBaseline(targetAnimalId);
-            const baselineFrequency = baseline.stateDistribution?.[result.state] ?? 0;
+            const baselineFrequency =
+              baseline.stateDistribution?.[result.state] ?? 0;
             const isRare = baseline.sampleSize >= 5 && baselineFrequency < 0.1;
 
             if (isCritical || isRare) {
               const bodyText = isCritical
                 ? `Alerta de Saúde: ${animalName} está com sinais de ${stateLabel}!`
                 : `Alerta de Saúde: ${animalName} apresentou um estado atípico de ${stateLabel} (desvio de baseline)!`;
-              
+
               await sendPushNotification(userId, {
                 title: "Alerta de Saúde de IA",
                 body: bodyText,
@@ -731,7 +764,10 @@ export const appRouter = router({
               });
             }
           } catch (pushErr) {
-            console.error("[Push] Falha ao enviar notificações de áudio:", pushErr);
+            console.error(
+              "[Push] Falha ao enviar notificações de áudio:",
+              pushErr,
+            );
           }
         }
 
@@ -744,19 +780,21 @@ export const appRouter = router({
         };
       }),
 
-    getUsage: protectedProcedure
-      .query(async ({ ctx }) => {
-        const userId = await effectiveUserId(ctx.user);
-        return getAnalysisUsage(userId);
-      }),
+    getUsage: protectedProcedure.query(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      return getAnalysisUsage(userId);
+    }),
 
     detectPosture: protectedProcedure
       .input(
         z.object({
-          image: z.string().refine((val) => {
-            const size = (val.length * 3) / 4;
-            return size <= 5 * 1024 * 1024; // 5MB
-          }, { message: "A imagem excede o tamanho máximo de 5MB." }),
+          image: z.string().refine(
+            (val) => {
+              const size = (val.length * 3) / 4;
+              return size <= 5 * 1024 * 1024; // 5MB
+            },
+            { message: "A imagem excede o tamanho máximo de 5MB." },
+          ),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -781,10 +819,13 @@ export const appRouter = router({
     detectSpecies: protectedProcedure
       .input(
         z.object({
-          image: z.string().refine((val) => {
-            const size = (val.length * 3) / 4;
-            return size <= 5 * 1024 * 1024; // 5MB
-          }, { message: "A imagem excede o tamanho máximo de 5MB." }),
+          image: z.string().refine(
+            (val) => {
+              const size = (val.length * 3) / 4;
+              return size <= 5 * 1024 * 1024; // 5MB
+            },
+            { message: "A imagem excede o tamanho máximo de 5MB." },
+          ),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -923,7 +964,7 @@ export const appRouter = router({
               const bodyText = isCritical
                 ? `Alerta de Saúde: ${animalName} está com sinais de ${stateLabel}!`
                 : `Alerta de Saúde: ${animalName} apresentou um estado atípico de ${stateLabel} (desvio de baseline)!`;
-              
+
               await sendPushNotification(userId, {
                 title: "Alerta de Saúde de IA",
                 body: bodyText,
@@ -931,7 +972,10 @@ export const appRouter = router({
               });
             }
           } catch (pushErr) {
-            console.error("[Push] Falha ao enviar notificações de vídeo:", pushErr);
+            console.error(
+              "[Push] Falha ao enviar notificações de vídeo:",
+              pushErr,
+            );
           }
         }
 
@@ -963,17 +1007,31 @@ export const appRouter = router({
           sex: z.enum(["male", "female", "unknown"]).optional(),
           color: sanitizedString(100).optional().nullable(),
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
-          photoUrl: z.string().optional().nullable().refine((val) => {
-            if (!val) return true;
-            if (val.startsWith("http://") || val.startsWith("https://")) return true;
-            const match = val.match(/^data:([^;]+);base64,/);
-            if (!match) return false;
-            const mime = match[1];
-            const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
-            if (!ALLOWED.includes(mime.toLowerCase())) return false;
-            const size = (val.length * 3) / 4;
-            return size <= 5 * 1024 * 1024; // 5MB
-          }, { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." }),
+          photoUrl: z
+            .string()
+            .optional()
+            .nullable()
+            .refine(
+              (val) => {
+                if (!val) return true;
+                if (val.startsWith("http://") || val.startsWith("https://"))
+                  return true;
+                const match = val.match(/^data:([^;]+);base64,/);
+                if (!match) return false;
+                const mime = match[1];
+                const ALLOWED = [
+                  "image/jpeg",
+                  "image/jpg",
+                  "image/png",
+                  "image/webp",
+                  "application/pdf",
+                ];
+                if (!ALLOWED.includes(mime.toLowerCase())) return false;
+                const size = (val.length * 3) / 4;
+                return size <= 5 * 1024 * 1024; // 5MB
+              },
+              { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." },
+            ),
           microchipNumber: sanitizedString(15).optional().nullable(),
           height: sanitizedString(50).optional().nullable(),
           tail: sanitizedString(50).optional().nullable(),
@@ -998,17 +1056,31 @@ export const appRouter = router({
           sex: z.enum(["male", "female", "unknown"]).optional(),
           color: sanitizedString(100).optional().nullable(),
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
-          photoUrl: z.string().optional().nullable().refine((val) => {
-            if (!val) return true;
-            if (val.startsWith("http://") || val.startsWith("https://")) return true;
-            const match = val.match(/^data:([^;]+);base64,/);
-            if (!match) return false;
-            const mime = match[1];
-            const ALLOWED = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
-            if (!ALLOWED.includes(mime.toLowerCase())) return false;
-            const size = (val.length * 3) / 4;
-            return size <= 5 * 1024 * 1024; // 5MB
-          }, { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." }),
+          photoUrl: z
+            .string()
+            .optional()
+            .nullable()
+            .refine(
+              (val) => {
+                if (!val) return true;
+                if (val.startsWith("http://") || val.startsWith("https://"))
+                  return true;
+                const match = val.match(/^data:([^;]+);base64,/);
+                if (!match) return false;
+                const mime = match[1];
+                const ALLOWED = [
+                  "image/jpeg",
+                  "image/jpg",
+                  "image/png",
+                  "image/webp",
+                  "application/pdf",
+                ];
+                if (!ALLOWED.includes(mime.toLowerCase())) return false;
+                const size = (val.length * 3) / 4;
+                return size <= 5 * 1024 * 1024; // 5MB
+              },
+              { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." },
+            ),
           microchipNumber: sanitizedString(15).optional().nullable(),
           height: sanitizedString(50).optional().nullable(),
           tail: sanitizedString(50).optional().nullable(),
@@ -1541,11 +1613,13 @@ export const appRouter = router({
         return {
           notificationsEnabled: true,
           alertSensitivity: "medium" as const,
+          shareDiagnosticData: false,
         };
       }
       return {
         notificationsEnabled: s.notifications_enabled,
         alertSensitivity: s.alert_sensitivity as "low" | "medium" | "high",
+        shareDiagnosticData: !!s.share_diagnostic_data,
       };
     }),
 
@@ -1554,6 +1628,7 @@ export const appRouter = router({
         z.object({
           notificationsEnabled: z.boolean().optional(),
           alertSensitivity: z.enum(["low", "medium", "high"]).optional(),
+          shareDiagnosticData: z.boolean().optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {

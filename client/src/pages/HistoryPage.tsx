@@ -25,8 +25,19 @@ import {
   X,
 } from "lucide-react";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { type PointerEvent, useEffect, useMemo, useRef, useState, lazy, Suspense, memo } from "react";
+import {
+  lazy,
+  memo,
+  type PointerEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 const HistoryChart = lazy(() => import("@/components/HistoryChart"));
+
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
@@ -1714,7 +1725,9 @@ export default function HistoryPage() {
                 {t("historyPage.noClassificationsPeriod")}
               </div>
             ) : (
-              <Suspense fallback={<Skeleton className="h-[320px] w-full rounded-lg" />}>
+              <Suspense
+                fallback={<Skeleton className="h-[320px] w-full rounded-lg" />}
+              >
                 <HistoryChart
                   chartData={chartData}
                   formatYAxis={formatYAxis}

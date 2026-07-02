@@ -632,6 +632,7 @@ export async function getSettings(userId: number) {
           user_id: userId,
           notifications_enabled: true,
           alert_sensitivity: "medium",
+          share_diagnostic_data: false,
         },
       ])
       .select()
@@ -650,6 +651,7 @@ export async function upsertSettings(
   data: {
     notificationsEnabled?: boolean;
     alertSensitivity?: "low" | "medium" | "high";
+    shareDiagnosticData?: boolean;
   },
 ) {
   const supabase = getSupabase();
@@ -659,6 +661,8 @@ export async function upsertSettings(
     updates.notifications_enabled = data.notificationsEnabled;
   if (data.alertSensitivity !== undefined)
     updates.alert_sensitivity = data.alertSensitivity;
+  if (data.shareDiagnosticData !== undefined)
+    updates.share_diagnostic_data = data.shareDiagnosticData;
 
   const { data: result, error } = await supabase
     .from("settings")
@@ -3847,7 +3851,7 @@ export async function getTrendsEvents(animalId: number, days = 30) {
 export async function getAnalysisUsage(userId: number) {
   const supabase = getSupabase();
   const now = new Date();
-  
+
   const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -3870,13 +3874,20 @@ export async function getAnalysisUsage(userId: number) {
 
   if (error) {
     console.error("[RateLimit] Error fetching rate limits:", error);
-    return { hourlyCount: 0, dailyCount: 0, remainingHour: 10, remainingDay: 50, maxHour: 10, maxDay: 50 };
+    return {
+      hourlyCount: 0,
+      dailyCount: 0,
+      remainingHour: 10,
+      remainingDay: 50,
+      maxHour: 10,
+      maxDay: 50,
+    };
   }
 
   let hourlyCount = 0;
   let dailyCount = 0;
 
-  for (const row of (limits || [])) {
+  for (const row of limits || []) {
     const start = new Date(row.window_start);
     if (start >= hourAgo) {
       hourlyCount += row.count;
@@ -3892,11 +3903,13 @@ export async function getAnalysisUsage(userId: number) {
     remainingHour: Math.max(0, 10 - hourlyCount),
     remainingDay: Math.max(0, 50 - dailyCount),
     maxHour: 10,
-    maxDay: 50
+    maxDay: 50,
   };
 }
 
-export async function checkAndIncrementAnalysisLimit(userId: number): Promise<{ remainingToday: number }> {
+export async function checkAndIncrementAnalysisLimit(
+  userId: number,
+): Promise<{ remainingToday: number }> {
   const usage = await getAnalysisUsage(userId);
   const now = new Date();
 
@@ -3912,14 +3925,17 @@ export async function checkAndIncrementAnalysisLimit(userId: number): Promise<{ 
       .gte("window_start", hourAgo.toISOString())
       .order("window_start", { ascending: true })
       .limit(1);
-    
+
     let minutesToWait = 60;
     if (windowRows && windowRows.length > 0) {
       const earliestStart = new Date(windowRows[0].window_start);
       const elapsedMs = now.getTime() - earliestStart.getTime();
-      minutesToWait = Math.max(1, Math.ceil((60 * 60 * 1000 - elapsedMs) / (60 * 1000)));
+      minutesToWait = Math.max(
+        1,
+        Math.ceil((60 * 60 * 1000 - elapsedMs) / (60 * 1000)),
+      );
     }
-    
+
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
       message: `Atingiste o limite de análises. Tenta novamente em ${minutesToWait} minutos.`,
@@ -3943,7 +3959,10 @@ export async function checkAndIncrementAnalysisLimit(userId: number): Promise<{ 
     if (windowRows && windowRows.length > 0) {
       const earliestStart = new Date(windowRows[0].window_start);
       const elapsedMs = now.getTime() - earliestStart.getTime();
-      minutesToWait = Math.max(1, Math.ceil((24 * 60 * 60 * 1000 - elapsedMs) / (60 * 1000)));
+      minutesToWait = Math.max(
+        1,
+        Math.ceil((24 * 60 * 60 * 1000 - elapsedMs) / (60 * 1000)),
+      );
     }
 
     throw new TRPCError({
@@ -3954,16 +3973,14 @@ export async function checkAndIncrementAnalysisLimit(userId: number): Promise<{ 
 
   // Increment limit
   const supabase = getSupabase();
-  const { error } = await supabase
-    .from("rate_limits")
-    .insert([
-      {
-        user_id: userId,
-        endpoint: "analysis",
-        count: 1,
-        window_start: now.toISOString(),
-      }
-    ]);
+  const { error } = await supabase.from("rate_limits").insert([
+    {
+      user_id: userId,
+      endpoint: "analysis",
+      count: 1,
+      window_start: now.toISOString(),
+    },
+  ]);
 
   if (error) {
     console.error("[RateLimit] Failed to increment rate limit:", error);

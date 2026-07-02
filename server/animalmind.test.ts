@@ -166,7 +166,9 @@ vi.mock("./db", () => ({
   getSharedAnimalsForUser: vi.fn().mockResolvedValue([]),
   getAnimalShares: vi.fn().mockResolvedValue([]),
   removeAnimalShare: vi.fn().mockResolvedValue(true),
-  checkAndIncrementAnalysisLimit: vi.fn().mockResolvedValue({ remainingToday: 49 }),
+  checkAndIncrementAnalysisLimit: vi
+    .fn()
+    .mockResolvedValue({ remainingToday: 49 }),
   getAnalysisUsage: vi.fn().mockResolvedValue({
     hourlyCount: 0,
     dailyCount: 0,

@@ -1,5 +1,4 @@
 -- Create weekly_animal_summary view
-DROP VIEW IF EXISTS weekly_animal_summary;
 CREATE OR REPLACE VIEW weekly_animal_summary AS
 SELECT
   animal_id,

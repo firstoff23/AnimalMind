@@ -18,7 +18,7 @@ export const DISPOSABLE_EMAIL_DOMAINS = [
   "tempmail.dev",
   "mailnesia.com",
   "mailinator.net",
-  "mailnator.com"
+  "mailnator.com",
 ];
 
 export function isDisposableEmail(email: string): boolean {

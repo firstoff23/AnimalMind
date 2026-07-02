@@ -168,8 +168,7 @@ const plugins = [
     manifest: {
       name: "Pawra",
       short_name: "Pawra",
-      description:
-        "Pawra: Monitorização inteligente do bem-estar animal",
+      description: "Pawra: Monitorização inteligente do bem-estar animal",
       theme_color: "#22c55e",
       background_color: "#0a0a0b",
       display: "standalone",

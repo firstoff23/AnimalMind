@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
-import { appRouter } from "./routers";
 import * as db from "./db";
+import { appRouter } from "./routers";
 
 // Mock database module's getSupabase
 const mockDeleteUser = vi.fn().mockResolvedValue({ error: null });
@@ -11,7 +11,12 @@ const mockDelete = vi.fn().mockReturnValue({
 });
 const mockSelect = vi.fn().mockReturnValue({
   eq: vi.fn().mockResolvedValue({
-    data: [{ audio_url: "https://yuzqxrmtbqlnalpjehno.supabase.co/storage/v1/object/public/audio-recordings/audio_1_2.webm" }],
+    data: [
+      {
+        audio_url:
+          "https://yuzqxrmtbqlnalpjehno.supabase.co/storage/v1/object/public/audio-recordings/audio_1_2.webm",
+      },
+    ],
     error: null,
   }),
 });
@@ -91,7 +96,7 @@ describe("auth.deleteAccount", () => {
     const result = await caller.auth.deleteAccount();
 
     expect(result).toEqual({ success: true });
-    
+
     // Verify audio files removal
     expect(mockSelect).toHaveBeenCalledWith("audio_url");
     expect(mockRemove).toHaveBeenCalledWith(["audio_1_2.webm"]);

@@ -1,21 +1,21 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowRight,
+  Bell,
+  Check,
+  Heart,
+  Mic,
+  PawPrint,
+  Shield,
+  Sparkles,
+  Volume2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
-import { 
-  Mic, 
-  Sparkles, 
-  Heart, 
-  Bell, 
-  Shield, 
-  ArrowRight, 
-  Check, 
-  PawPrint,
-  Volume2
-} from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 export function OnboardingFlow() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -33,22 +33,33 @@ export function OnboardingFlow() {
       await utils.auth.me.invalidate();
       // Redirect to the dashboard
       setLocation("/dashboard");
-    }
+    },
   });
 
   // Query permissions on mount
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.permissions || !navigator.permissions.query) return;
+    if (
+      typeof window === "undefined" ||
+      !navigator.permissions ||
+      !navigator.permissions.query
+    )
+      return;
 
-    navigator.permissions.query({ name: "microphone" as any }).then((result) => {
-      setMicStatus(result.state);
-      result.onchange = () => setMicStatus(result.state);
-    }).catch(() => {});
+    navigator.permissions
+      .query({ name: "microphone" as any })
+      .then((result) => {
+        setMicStatus(result.state);
+        result.onchange = () => setMicStatus(result.state);
+      })
+      .catch(() => {});
 
-    navigator.permissions.query({ name: "notifications" as any }).then((result) => {
-      setNotiStatus(result.state);
-      result.onchange = () => setNotiStatus(result.state);
-    }).catch(() => {});
+    navigator.permissions
+      .query({ name: "notifications" as any })
+      .then((result) => {
+        setNotiStatus(result.state);
+        result.onchange = () => setNotiStatus(result.state);
+      })
+      .catch(() => {});
   }, []);
 
   const handleRequestMic = async () => {
@@ -172,7 +183,8 @@ export function OnboardingFlow() {
                 </span>
               </h1>
               <p className="text-neutral-400 text-lg leading-relaxed mb-10 max-w-sm">
-                Entende o teu pet com IA. Descobre o que os sons do teu companheiro significam em segundos.
+                Entende o teu pet com IA. Descobre o que os sons do teu
+                companheiro significam em segundos.
               </p>
 
               <Button
@@ -196,9 +208,15 @@ export function OnboardingFlow() {
             >
               {/* Pet Illustration / Animation */}
               <div className="relative flex items-center justify-center w-32 h-32 mb-8">
-                <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" style={{ animationDuration: "3s" }} />
+                <div
+                  className="absolute inset-0 bg-primary/20 rounded-full animate-ping"
+                  style={{ animationDuration: "3s" }}
+                />
                 <div className="relative flex items-center justify-center w-24 h-24 rounded-full bg-neutral-900 border border-neutral-800 text-primary shadow-xl">
-                  <PawPrint size={44} className="animate-pulse text-emerald-400" />
+                  <PawPrint
+                    size={44}
+                    className="animate-pulse text-emerald-400"
+                  />
                 </div>
                 <div className="absolute top-2 right-2 bg-neutral-900 border border-neutral-800 p-2 rounded-full text-neutral-400">
                   <Volume2 size={16} />
@@ -209,7 +227,9 @@ export function OnboardingFlow() {
                 Conhece o teu animal
               </h2>
               <p className="text-neutral-400 text-base leading-relaxed mb-8 max-w-md">
-                Cada cão e gato tem vocalizações únicas. O Pawra analisa o tom e a acústica para criar um perfil emocional detalhado do teu pet, ajudando-te a responder às suas necessidades reais.
+                Cada cão e gato tem vocalizações únicas. O Pawra analisa o tom e
+                a acústica para criar um perfil emocional detalhado do teu pet,
+                ajudando-te a responder às suas necessidades reais.
               </p>
 
               <div className="w-full flex gap-3 justify-center">
@@ -254,20 +274,20 @@ export function OnboardingFlow() {
                     icon: Mic,
                     color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
                     title: "1. Grava",
-                    desc: "Regista um som curto (latido, miado, ganido) do teu pet diretamente na app."
+                    desc: "Regista um som curto (latido, miado, ganido) do teu pet diretamente na app.",
                   },
                   {
                     icon: Sparkles,
                     color: "bg-primary/10 text-primary border-primary/20",
                     title: "2. Analisa",
-                    desc: "A nossa IA avançada processa a acústica em tempo real comparando com a base científica."
+                    desc: "A nossa IA avançada processa a acústica em tempo real comparando com a base científica.",
                   },
                   {
                     icon: Heart,
                     color: "bg-red-500/10 text-red-400 border-red-500/20",
                     title: "3. Entende",
-                    desc: "Descobre as emoções do teu pet (alerta, fome, afeto) e recebe conselhos úteis."
-                  }
+                    desc: "Descobre as emoções do teu pet (alerta, fome, afeto) e recebe conselhos úteis.",
+                  },
                 ].map((item, idx) => {
                   const Icon = item.icon;
                   return (
@@ -282,8 +302,12 @@ export function OnboardingFlow() {
                           <Icon size={20} />
                         </div>
                         <div className="space-y-1">
-                          <h4 className="text-sm font-bold text-neutral-200">{item.title}</h4>
-                          <p className="text-xs leading-relaxed text-neutral-400">{item.desc}</p>
+                          <h4 className="text-sm font-bold text-neutral-200">
+                            {item.title}
+                          </h4>
+                          <p className="text-xs leading-relaxed text-neutral-400">
+                            {item.desc}
+                          </p>
                         </div>
                       </SpotlightCard>
                     </motion.div>
@@ -327,7 +351,8 @@ export function OnboardingFlow() {
                 Configura as permissões
               </h2>
               <p className="text-neutral-400 text-sm text-center mb-8 max-w-sm mx-auto">
-                Ativa o microfone e as notificações para tirar o máximo partido do Pawra.
+                Ativa o microfone e as notificações para tirar o máximo partido
+                do Pawra.
               </p>
 
               {/* Permission Buttons / Indicators */}
@@ -339,7 +364,9 @@ export function OnboardingFlow() {
                       <Mic size={20} />
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-neutral-200">Microfone</h4>
+                      <h4 className="text-sm font-bold text-neutral-200">
+                        Microfone
+                      </h4>
                       <p className="text-xs text-neutral-400 max-w-[220px] md:max-w-xs leading-relaxed">
                         Necessário para gravar as vocalizações de cães e gatos.
                       </p>
@@ -350,14 +377,16 @@ export function OnboardingFlow() {
                     variant={micStatus === "granted" ? "outline" : "default"}
                     onClick={handleRequestMic}
                     className={`h-9 px-4 rounded-lg font-bold text-xs ${
-                      micStatus === "granted" 
-                        ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400" 
+                      micStatus === "granted"
+                        ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
                         : "bg-primary text-primary-foreground hover:bg-primary/95"
                     }`}
                     disabled={micStatus === "granted"}
                   >
                     {micStatus === "granted" ? (
-                      <span className="flex items-center gap-1"><Check size={12} /> Ativo</span>
+                      <span className="flex items-center gap-1">
+                        <Check size={12} /> Ativo
+                      </span>
                     ) : (
                       "Ativar"
                     )}
@@ -371,9 +400,12 @@ export function OnboardingFlow() {
                       <Bell size={20} />
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-neutral-200">Notificações</h4>
+                      <h4 className="text-sm font-bold text-neutral-200">
+                        Notificações
+                      </h4>
                       <p className="text-xs text-neutral-400 max-w-[220px] md:max-w-xs leading-relaxed">
-                        Alertas instantâneos de comportamento e saúde do teu pet.
+                        Alertas instantâneos de comportamento e saúde do teu
+                        pet.
                       </p>
                     </div>
                   </div>
@@ -382,14 +414,16 @@ export function OnboardingFlow() {
                     variant={notiStatus === "granted" ? "outline" : "default"}
                     onClick={handleRequestNotifications}
                     className={`h-9 px-4 rounded-lg font-bold text-xs ${
-                      notiStatus === "granted" 
-                        ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400" 
+                      notiStatus === "granted"
+                        ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
                         : "bg-primary text-primary-foreground hover:bg-primary/95"
                     }`}
                     disabled={notiStatus === "granted"}
                   >
                     {notiStatus === "granted" ? (
-                      <span className="flex items-center gap-1"><Check size={12} /> Ativo</span>
+                      <span className="flex items-center gap-1">
+                        <Check size={12} /> Ativo
+                      </span>
                     ) : (
                       "Ativar"
                     )}
@@ -411,7 +445,9 @@ export function OnboardingFlow() {
                   disabled={completeOnboardingMutation.isPending}
                   className="flex-1 max-w-[200px] h-12 text-base font-bold bg-primary hover:bg-primary/95 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform duration-200"
                 >
-                  {completeOnboardingMutation.isPending ? "A entrar..." : "Permitir e Entrar"}
+                  {completeOnboardingMutation.isPending
+                    ? "A entrar..."
+                    : "Permitir e Entrar"}
                 </Button>
               </div>
             </motion.div>
@@ -428,7 +464,9 @@ export function OnboardingFlow() {
               key={idx}
               onClick={() => handleStepChange(idx)}
               className={`h-2 rounded-full transition-all duration-300 ${
-                idx === currentStep ? "w-6 bg-primary" : "w-2 bg-neutral-800 hover:bg-neutral-700"
+                idx === currentStep
+                  ? "w-6 bg-primary"
+                  : "w-2 bg-neutral-800 hover:bg-neutral-700"
               }`}
             />
           ))}

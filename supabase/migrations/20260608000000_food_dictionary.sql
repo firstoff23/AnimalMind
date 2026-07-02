@@ -400,5 +400,4 @@ VALUES
     ARRAY[]::TEXT[],
     'Sirva cozidos em água simples ou crus cortados, livres de sal ou cebola.',
     ARRAY['AKC']
-  )
-ON CONFLICT (name) DO NOTHING;
+  );

@@ -8,7 +8,7 @@ import {
   AuthTextField,
   authIcons,
 } from "@/components/auth/AuthShell";
-import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { validateEmailAddress } from "@/lib/disposableEmails";
 
 export default function RegisterPage() {
@@ -25,6 +25,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [nameBlurred, setNameBlurred] = useState(false);
   const [emailBlurred, setEmailBlurred] = useState(false);
@@ -51,7 +52,7 @@ export default function RegisterPage() {
   const isDisposable = emailValidationResult.errorKey === "disposable";
 
   const isNameValid = name.trim().length > 1;
-  const isFormValid = isNameValid && isEmailValid && isPasswordValid;
+  const isFormValid = isNameValid && isEmailValid && isPasswordValid && ageConfirmed;
 
   const passwordRequirements = useMemo(
     () => [
@@ -90,7 +91,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await signUp(normalizedEmail, password, name.trim());
+      await signUp(normalizedEmail, password, name.trim(), ageConfirmed);
       toast.success(
         "Conta criada com sucesso! Introduza o código enviado por email.",
       );
@@ -177,7 +178,24 @@ export default function RegisterPage() {
 
         <AuthPasswordChecklist requirements={passwordRequirements} />
 
-        <AuthSubmitButton loading={loading} loadingLabel="A criar conta...">
+        <div className="flex items-start gap-2.5 my-2">
+          <input
+            id="register-age-gate"
+            type="checkbox"
+            checked={ageConfirmed}
+            onChange={(e) => {
+              setAgeConfirmed(e.target.checked);
+              setApiError("");
+            }}
+            disabled={loading}
+            className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950 accent-primary cursor-pointer disabled:opacity-50"
+          />
+          <label htmlFor="register-age-gate" className="text-xs text-muted-foreground leading-snug select-none cursor-pointer">
+            Confirmo que tenho 16 ou mais anos
+          </label>
+        </div>
+
+        <AuthSubmitButton loading={loading} loadingLabel="A criar conta..." disabled={!ageConfirmed}>
           Criar conta
         </AuthSubmitButton>
         <p className="text-center text-[10px] sm:text-xs leading-relaxed text-muted-foreground mt-4">
@@ -190,7 +208,10 @@ export default function RegisterPage() {
             Termos de Uso
           </button>{" "}
           e a nossa{" "}
-          <Link href="/privacidade" className="text-primary hover:underline font-semibold">
+          <Link
+            href="/privacidade"
+            className="text-primary hover:underline font-semibold"
+          >
             Política de Privacidade
           </Link>
           .
@@ -201,12 +222,12 @@ export default function RegisterPage() {
         <DialogContent className="max-w-md border-border bg-card text-card-foreground">
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-xl">Termos de Uso</DialogTitle>
-            <DialogDescription>
-              Termos de Uso — Em breve
-            </DialogDescription>
+            <DialogDescription>Termos de Uso — Em breve</DialogDescription>
           </DialogHeader>
           <div className="py-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Os nossos termos de utilização completos serão disponibilizados em breve. O uso do serviço é atualmente gratuito para testes de bem-estar animal sob consentimento do tutor.
+            Os nossos termos de utilização completos serão disponibilizados em
+            breve. O uso do serviço é atualmente gratuito para testes de
+            bem-estar animal sob consentimento do tutor.
           </div>
           <Button onClick={() => setTermsDialogOpen(false)} className="w-full">
             Fechar

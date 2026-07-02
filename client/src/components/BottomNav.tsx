@@ -67,7 +67,9 @@ export function BottomNav() {
               onClick={() => navigate(path)}
               className={cn(
                 "relative flex-1 flex flex-col items-center justify-center py-2 px-1 focus:outline-none transition-colors tap-highlight-none",
-                active ? "text-teal-400" : "text-muted-foreground hover:text-foreground"
+                active
+                  ? "text-teal-400"
+                  : "text-muted-foreground hover:text-foreground",
               )}
               aria-label={label}
               aria-current={active ? "page" : undefined}
@@ -87,7 +89,7 @@ export function BottomNav() {
                     "relative z-10 flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-300",
                     active
                       ? "bg-teal-500 border-teal-500 text-slate-950 shadow-lg shadow-teal-500/20 scale-105"
-                      : "bg-secondary border-border/80 text-foreground hover:border-teal-500/30"
+                      : "bg-secondary border-border/80 text-foreground hover:border-teal-500/30",
                   )}
                 >
                   <Icon size={18} strokeWidth={2.5} />

@@ -61,12 +61,15 @@ export default function FoodSearchPage() {
     data: foods = [],
     isLoading,
     error,
-  } = trpc.foods.search.useQuery({
-    query,
-    species: selectedSpecies,
-  }, {
-    staleTime: 60 * 60 * 1000, // 1 hour
-  });
+  } = trpc.foods.search.useQuery(
+    {
+      query,
+      species: selectedSpecies,
+    },
+    {
+      staleTime: 60 * 60 * 1000, // 1 hour
+    },
+  );
 
   const getSeverityConfig = (
     severity: "safe" | "caution" | "dangerous" | "toxic",

@@ -9,8 +9,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { Badge } from "@/components/ui/badge";
 import AnimatedCheckmark from "@/components/AnimatedCheckmark";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -193,10 +193,17 @@ export default function CameraPage() {
     // Size and MIME type check
     const base64Image = capturedImage.split(",")[1];
     const sizeInBytes = (base64Image.length * 3) / 4;
-    
-    const mimeMatch = capturedImage.match(/^data:(image\/[a-zA-Z+.-]+);base64,/);
+
+    const mimeMatch = capturedImage.match(
+      /^data:(image\/[a-zA-Z+.-]+);base64,/,
+    );
     const mimeType = mimeMatch ? mimeMatch[1] : "";
-    const ALLOWED_IMAGE = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const ALLOWED_IMAGE = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+    ];
 
     if (mimeType && !ALLOWED_IMAGE.includes(mimeType.toLowerCase())) {
       setUploadState("error");

@@ -106,7 +106,9 @@ self.addEventListener("message", (event) => {
 
 self.addEventListener("push", (event) => {
   if (!event.data) {
-    console.log("[Service Worker] Push event received but no data payload found.");
+    console.log(
+      "[Service Worker] Push event received but no data payload found.",
+    );
     return;
   }
 
@@ -126,7 +128,10 @@ self.addEventListener("push", (event) => {
       event.waitUntil(self.registration.showNotification(title, options));
     }
   } catch (err) {
-    console.error("[Service Worker] Failed to parse push notification payload:", err);
+    console.error(
+      "[Service Worker] Failed to parse push notification payload:",
+      err,
+    );
   }
 });
 
@@ -137,19 +142,21 @@ self.addEventListener("notificationclick", (event) => {
   const destinationUrl = data.url || "/";
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          return client.focus().then((focusedClient) => {
-            if ("navigate" in focusedClient) {
-              return focusedClient.navigate(destinationUrl);
-            }
-          });
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            return client.focus().then((focusedClient) => {
+              if ("navigate" in focusedClient) {
+                return focusedClient.navigate(destinationUrl);
+              }
+            });
+          }
         }
-      }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(destinationUrl);
-      }
-    })
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(destinationUrl);
+        }
+      }),
   );
 });

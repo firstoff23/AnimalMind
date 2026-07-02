@@ -14,7 +14,11 @@ interface HistoryChartProps {
   t: (key: string) => string;
 }
 
-export default function HistoryChart({ chartData, formatYAxis, t }: HistoryChartProps) {
+export default function HistoryChart({
+  chartData,
+  formatYAxis,
+  t,
+}: HistoryChartProps) {
   return (
     <ResponsiveContainer width="100%" height={320}>
       <LineChart

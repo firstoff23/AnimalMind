@@ -310,9 +310,8 @@ export default function LandingPage() {
                   Honestidade Científica &amp; Limitações
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  O <strong className="text-slate-300">Pawra</strong>{" "}
-                  utiliza o modelo{" "}
-                  <strong className="text-slate-300">YAMNet</strong>{" "}
+                  O <strong className="text-slate-300">Pawra</strong> utiliza o
+                  modelo <strong className="text-slate-300">YAMNet</strong>{" "}
                   (classificador genérico de eventos de áudio) para estimar
                   estados emocionais como aproximações comportamentais. Os
                   resultados devem ser interpretados como{" "}
@@ -403,8 +402,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-xs text-slate-500">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <p>
-              © {new Date().getFullYear()} Pawra. Todos os direitos
-              reservados.
+              © {new Date().getFullYear()} Pawra. Todos os direitos reservados.
             </p>
             <div className="flex items-center gap-4">
               <button

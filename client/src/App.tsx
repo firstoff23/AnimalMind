@@ -1,12 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Lenis from "lenis";
-import { useEffect, lazy, Suspense } from "react";
-import { trpc } from "@/lib/trpc";
+import { lazy, Suspense, useEffect } from "react";
 import { Redirect, Route, Switch, useLocation } from "wouter";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { CommandPalette } from "@/components/CommandPalette";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import NotFound from "@/pages/NotFound";
 import { useAppStore } from "@/store/appStore";
@@ -18,12 +19,12 @@ import { OfflineActionsSyncer } from "./components/OfflineActionsSyncer";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Sidebar } from "./components/Sidebar";
+import { CookieBanner } from "./components/CookieBanner";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MoodProvider } from "./contexts/MoodContext";
 import { SelfHealingProvider } from "./contexts/SelfHealingContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 
 const AnimalDetailPage = lazy(() => import("./pages/AnimalDetailPage"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
@@ -59,7 +60,18 @@ function LazyRoute({
   ...props
 }: {
   component: React.ComponentType<any>;
-  variant?: "dashboard" | "profile" | "history" | "detail" | "settings" | "comparison" | "health" | "family" | "vet" | "content" | "mindi";
+  variant?:
+    | "dashboard"
+    | "profile"
+    | "history"
+    | "detail"
+    | "settings"
+    | "comparison"
+    | "health"
+    | "family"
+    | "vet"
+    | "content"
+    | "mindi";
   isProtected?: boolean;
   [key: string]: any;
 }) {
@@ -88,7 +100,10 @@ function PushNotificationsBridge({ enabled }: { enabled: boolean }) {
     if (enabled) {
       import("@/lib/pushSetup").then(({ subscribeUserToPush }) => {
         subscribeUserToPush(subscribeMutation.mutateAsync).catch((err) => {
-          console.error("[Push Setup] Failed to register push subscription:", err);
+          console.error(
+            "[Push Setup] Failed to register push subscription:",
+            err,
+          );
         });
       });
     }
@@ -104,7 +119,7 @@ function Router() {
   // Query database user to check onboarding status
   const { data: dbUser, isLoading: dbUserLoading } = trpc.auth.me.useQuery(
     undefined,
-    { enabled: isAuthenticated, retry: false }
+    { enabled: isAuthenticated, retry: false },
   );
 
   const commandPaletteOpen = useAppStore((state) => state.commandPaletteOpen);
@@ -121,14 +136,19 @@ function Router() {
     "/verify-email",
     "/verify-otp",
     "/auth/callback",
-    "/privacidade"
+    "/privacidade",
   ].includes(location);
 
   if (isAuthenticated && dbUserLoading && !isPublicRoute) {
     return <AppShellSkeleton />;
   }
 
-  if (isAuthenticated && dbUser && dbUser.onboardingCompleted === false && !isPublicRoute) {
+  if (
+    isAuthenticated &&
+    dbUser &&
+    dbUser.onboardingCompleted === false &&
+    !isPublicRoute
+  ) {
     return <OnboardingFlow />;
   }
 
@@ -183,7 +203,10 @@ function Router() {
                   <LazyRoute component={RegisterPage} variant="settings" />
                 </Route>
                 <Route path="/forgot-password">
-                  <LazyRoute component={ForgotPasswordPage} variant="settings" />
+                  <LazyRoute
+                    component={ForgotPasswordPage}
+                    variant="settings"
+                  />
                 </Route>
                 <Route path="/reset-password">
                   <LazyRoute component={ResetPasswordPage} variant="settings" />
@@ -206,59 +229,178 @@ function Router() {
 
                 {/* Protected routes */}
                 <Route path="/gravar">
-                  {(params) => <LazyRoute component={RecordingPage} variant="content" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={RecordingPage}
+                      variant="content"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/capturar">
-                  {(params) => <LazyRoute component={CapturePortalPage} variant="content" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={CapturePortalPage}
+                      variant="content"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/camera">
-                  {(params) => <LazyRoute component={CameraPage} variant="content" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={CameraPage}
+                      variant="content"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/perfil">
-                  {(params) => <LazyRoute component={ProfilePage} variant="profile" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={ProfilePage}
+                      variant="profile"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/health">
-                  {(params) => <LazyRoute component={HealthPage} variant="health" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={HealthPage}
+                      variant="health"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/animal/:id">
-                  {(params) => <LazyRoute component={AnimalDetailPage} variant="detail" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={AnimalDetailPage}
+                      variant="detail"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/historico">
-                  {(params) => <LazyRoute component={HistoryPage} variant="history" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={HistoryPage}
+                      variant="history"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/dashboard">
-                  {(params) => <LazyRoute component={DashboardPage} variant="dashboard" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={DashboardPage}
+                      variant="dashboard"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/mindi">
-                  {(params) => <LazyRoute component={MindiPage} variant="mindi" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={MindiPage}
+                      variant="mindi"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/alimentos">
-                  {(params) => <LazyRoute component={FoodSearchPage} variant="health" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={FoodSearchPage}
+                      variant="health"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/definicoes">
-                  {(params) => <LazyRoute component={SettingsPage} variant="settings" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={SettingsPage}
+                      variant="settings"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route
                   path="/user-profile"
                   component={() => <Redirect to="/definicoes" />}
                 />
                 <Route path="/veterinario">
-                  {(params) => <LazyRoute component={VetPage} variant="vet" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={VetPage}
+                      variant="vet"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/vet/animal/:id">
-                  {(params) => <LazyRoute component={VetPetDetailPage} variant="detail" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={VetPetDetailPage}
+                      variant="detail"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/vet">
-                  {(params) => <LazyRoute component={VetDashboardPage} variant="vet" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={VetDashboardPage}
+                      variant="vet"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/family">
-                  {(params) => <LazyRoute component={FamilyDashboard} variant="family" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={FamilyDashboard}
+                      variant="family"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/join/:code">
-                  {(params) => <LazyRoute component={FamilyDashboard} variant="family" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={FamilyDashboard}
+                      variant="family"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
                 <Route path="/comparison">
-                  {(params) => <LazyRoute component={ComparisonPage} variant="comparison" isProtected {...params} />}
+                  {(params) => (
+                    <LazyRoute
+                      component={ComparisonPage}
+                      variant="comparison"
+                      isProtected
+                      {...params}
+                    />
+                  )}
                 </Route>
 
                 {/* Not found */}
@@ -271,6 +413,8 @@ function Router() {
 
         {isAuthenticated && <OfflineActionsSyncer />}
         {isAuthenticated && <BottomNav />}
+
+        <CookieBanner />
 
         {/* Global Command Palette */}
         {isAuthenticated && (

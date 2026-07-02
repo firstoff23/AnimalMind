@@ -4,9 +4,7 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -25,21 +23,25 @@ export async function subscribeUserToPush(
   subscribeMutation: (variables: {
     endpoint: string;
     keys: { p256dh: string; auth: string };
-  }) => Promise<any>
+  }) => Promise<any>,
 ) {
   if (Capacitor.isNativePlatform()) {
     try {
-      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const { PushNotifications } = await import(
+        "@capacitor/push-notifications"
+      );
       let permStatus = await PushNotifications.checkPermissions();
       if (permStatus.receive === "prompt") {
         permStatus = await PushNotifications.requestPermissions();
       }
       if (permStatus.receive !== "granted") {
-        console.warn("[Push Setup] Native notification permission not granted.");
+        console.warn(
+          "[Push Setup] Native notification permission not granted.",
+        );
         return;
       }
       await PushNotifications.register();
-      
+
       // Clear listeners before adding to avoid duplicates
       await PushNotifications.removeAllListeners();
 
@@ -59,9 +61,15 @@ export async function subscribeUserToPush(
         console.error("[Push Setup] Native registration error:", err);
       });
 
-      await PushNotifications.addListener("pushNotificationReceived", (notification) => {
-        console.log("[Push Setup] Native notification received:", notification);
-      });
+      await PushNotifications.addListener(
+        "pushNotificationReceived",
+        (notification) => {
+          console.log(
+            "[Push Setup] Native notification received:",
+            notification,
+          );
+        },
+      );
     } catch (error) {
       console.error("[Push Setup] Failed to setup Capacitor push:", error);
     }
@@ -69,7 +77,9 @@ export async function subscribeUserToPush(
   }
 
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    console.warn("[Push Setup] Push notifications are not supported in this browser.");
+    console.warn(
+      "[Push Setup] Push notifications are not supported in this browser.",
+    );
     return;
   }
 
@@ -92,7 +102,9 @@ export async function subscribeUserToPush(
 
     if (!subscription) {
       if (!VAPID_PUBLIC_KEY) {
-        console.error("[Push Setup] VITE_VAPID_PUBLIC_KEY is not defined in client environment.");
+        console.error(
+          "[Push Setup] VITE_VAPID_PUBLIC_KEY is not defined in client environment.",
+        );
         return;
       }
 
@@ -112,12 +124,19 @@ export async function subscribeUserToPush(
           auth: subJSON.keys.auth,
         },
       });
-      console.log("[Push Setup] Successfully registered push subscription with backend.");
+      console.log(
+        "[Push Setup] Successfully registered push subscription with backend.",
+      );
     } else {
-      console.error("[Push Setup] Push subscription is missing endpoint or keys.");
+      console.error(
+        "[Push Setup] Push subscription is missing endpoint or keys.",
+      );
     }
   } catch (error) {
-    console.error("[Push Setup] Failed to subscribe to push notifications:", error);
+    console.error(
+      "[Push Setup] Failed to subscribe to push notifications:",
+      error,
+    );
   }
 }
 
@@ -125,7 +144,7 @@ export async function subscribeUserToPush(
  * Unsubscribes from push notifications locally and calls trpc mutation to remove from backend.
  */
 export async function unsubscribeUserFromPush(
-  unsubscribeMutation: (variables: { endpoint: string }) => Promise<any>
+  unsubscribeMutation: (variables: { endpoint: string }) => Promise<any>,
 ) {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     return;
@@ -142,6 +161,9 @@ export async function unsubscribeUserFromPush(
       console.log("[Push Setup] Successfully unregistered push subscription.");
     }
   } catch (error) {
-    console.error("[Push Setup] Failed to unsubscribe from push notifications:", error);
+    console.error(
+      "[Push Setup] Failed to unsubscribe from push notifications:",
+      error,
+    );
   }
 }

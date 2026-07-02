@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
 import { sanitizedString } from "../_core/sanitize";
+import { protectedProcedure, router } from "../_core/trpc";
 import {
   addHealthRecord,
   addVaccine,

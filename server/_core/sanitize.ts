@@ -15,7 +15,8 @@ export function sanitizeHtml(input: string): string {
  * Zod schema helper for sanitized strings with max length validation.
  */
 export const sanitizedString = (maxLength = 255) =>
-  z.string()
+  z
+    .string()
     .trim()
     .max(maxLength)
     .transform((val) => sanitizeHtml(val));
