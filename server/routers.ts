@@ -71,6 +71,8 @@ import {
   uploadAudioToSupabase,
   upsertSettings,
   verifyAnimalOwner,
+  saveFeedbackAnnotation,
+  getFeedbackAnnotations,
 } from "./db";
 import { familyRouter } from "./routers/family";
 import { foodsRouter } from "./routers/foods";
@@ -370,6 +372,43 @@ function buildFallbackMindiResponse(
 
   return `Com base no perfil de ${animalName} e no histórico recente, posso ajudar-te a interpretar sinais de comportamento, alimentação e bem-estar.${recentState} Diz-me o que observaste, há quanto tempo acontece e se existem sinais físicos como dor, vómitos, diarreia, apatia ou dificuldade respiratória. Para sintomas sérios, a avaliação veterinária é indispensável.`;
 }
+
+const feedbackRouter = router({
+  save: publicProcedure
+    .input(
+      z.object({
+        animal_type: z.enum(["dog", "cat"]),
+        predicted_breed: z.string().nullable().optional(),
+        confirmed_breed: z.string().nullable().optional(),
+        predicted_state: z.string().nullable().optional(),
+        confirmed_state: z.string().nullable().optional(),
+        confidence: z.number().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      await saveFeedbackAnnotation(input);
+      return { success: true };
+    }),
+
+  list: protectedProcedure
+    .input(
+      z.object({
+        animal_type: z.string().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      }).optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const accessToken = ctx.accessToken;
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Token de acesso em falta na sessão",
+        });
+      }
+      return getFeedbackAnnotations(accessToken, input);
+    }),
+});
 
 // ─── Router ──────────────────────────────────────────────────────────────────
 
@@ -1643,6 +1682,7 @@ export const appRouter = router({
   healing: healingRouter,
   foods: foodsRouter,
   push: pushRouter,
+  feedback: feedbackRouter,
 });
 
 export type AppRouter = typeof appRouter;

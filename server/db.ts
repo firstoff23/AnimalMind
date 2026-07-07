@@ -18,19 +18,40 @@ export const AUDIO_RECORDINGS_BUCKET = "audio-analysis";
 
 // Lazy init Supabase client
 // Use Service Role Key for backend operations (has full permissions)
-export function getSupabase() {
+export function getSupabase(accessToken?: string) {
+  const url = process.env.SUPABASE_URL;
+  if (!url) throw new Error("Missing SUPABASE_URL");
+
+  if (accessToken) {
+    return createClient<any>(url, process.env.SUPABASE_ANON_KEY || "", {
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    });
+  }
+
   if (!_supabase) {
-    const url = process.env.SUPABASE_URL;
     const key =
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-    if (!url || !key) {
+    if (!key) {
       throw new Error(
-        "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY",
+        "Missing SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY",
       );
     }
     _supabase = createClient<any>(url, key);
   }
   return _supabase;
+}
+
+export function getSupabaseAnon() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY");
+  }
+  return createClient<any>(url, key);
 }
 
 // ─── User operations ──────────────────────────────────────────────────────────
@@ -3987,4 +4008,54 @@ export async function checkAndIncrementAnalysisLimit(
   }
 
   return { remainingToday: Math.max(0, 50 - (usage.dailyCount + 1)) };
+}
+
+export async function saveFeedbackAnnotation(data: {
+  animal_type: "dog" | "cat";
+  predicted_breed?: string | null;
+  confirmed_breed?: string | null;
+  predicted_state?: string | null;
+  confirmed_state?: string | null;
+  confidence?: number | null;
+}) {
+  const supabase = getSupabaseAnon();
+  const { error } = await supabase.from("feedback_annotations").insert([
+    {
+      animal_type: data.animal_type,
+      predicted_breed: data.predicted_breed ?? null,
+      confirmed_breed: data.confirmed_breed ?? null,
+      predicted_state: data.predicted_state ?? null,
+      confirmed_state: data.confirmed_state ?? null,
+      confidence: data.confidence ?? null,
+    },
+  ]);
+  if (error) throw error;
+}
+
+export async function getFeedbackAnnotations(
+  accessToken: string,
+  filters?: {
+    animal_type?: string;
+    from?: string;
+    to?: string;
+  },
+) {
+  const supabase = getSupabase(accessToken);
+  let query = supabase
+    .from("feedback_annotations")
+    .select("*");
+
+  if (filters?.animal_type && filters.animal_type !== "all") {
+    query = query.eq("animal_type", filters.animal_type);
+  }
+  if (filters?.from) {
+    query = query.gte("created_at", filters.from);
+  }
+  if (filters?.to) {
+    query = query.lte("created_at", filters.to);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
 }

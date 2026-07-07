@@ -7,17 +7,20 @@ export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User | null;
+  accessToken?: string;
 };
 
 export async function createContext(
   opts: CreateExpressContextOptions,
 ): Promise<TrpcContext> {
   let user: User | null = null;
+  let accessToken: string | undefined = undefined;
 
   // 1. Try to authenticate via Authorization header (Supabase JWT token)
   const authHeader = opts.req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
+    accessToken = token;
     try {
       const supabase = getSupabase();
       const {
@@ -76,5 +79,6 @@ export async function createContext(
     req: opts.req,
     res: opts.res,
     user,
+    accessToken,
   };
 }

@@ -11,6 +11,7 @@ import {
   Play,
   RefreshCw,
   Settings,
+  Sparkles,
   ThumbsDown,
   ThumbsUp,
   Trash2,
@@ -61,6 +62,7 @@ interface ActiveAnimal {
   id: number;
   name: string;
   species: "dog" | "cat";
+  breed?: string | null;
 }
 
 interface RecentEvent {
@@ -76,9 +78,11 @@ interface RecentEvent {
 function ResultCard({
   result,
   onFeedback,
+  activeAnimal,
 }: {
   result: ClassifyResult;
   onFeedback: (feedback: "correct" | "incorrect") => void;
+  activeAnimal: ActiveAnimal | null | undefined;
 }) {
   const { t } = useLanguage();
   const [feedbackSent, setFeedbackSent] = useState<
@@ -88,6 +92,18 @@ function ResultCard({
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  const [confirmedBreed, setConfirmedBreed] = useState("");
+  const [confirmedState, setConfirmedState] = useState<EmotionalState>(result.state);
+  const [showCorrectionForm, setShowCorrectionForm] = useState(false);
+
+  useEffect(() => {
+    if (activeAnimal?.breed) {
+      setConfirmedBreed(activeAnimal.breed);
+    } else {
+      setConfirmedBreed("");
+    }
+  }, [activeAnimal]);
+
   const utils = trpc.useUtils();
   const updateNotesMutation = trpc.events.updateNotes.useMutation({
     onSuccess: () => {
@@ -96,6 +112,16 @@ function ResultCard({
     },
     onError: () => {
       toast.error(t("recordingPage.noteSaveError"));
+    },
+  });
+
+  const saveFeedback = trpc.feedback.save.useMutation({
+    onSuccess: () => {
+      toast.success("Feedback guardado!");
+      setShowCorrectionForm(false);
+    },
+    onError: (err) => {
+      toast.error("Erro ao guardar feedback: " + err.message);
     },
   });
 
@@ -157,6 +183,18 @@ function ResultCard({
     }
   };
 
+  const handleSaveFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveFeedback.mutate({
+      animal_type: activeAnimal?.species || "dog",
+      predicted_breed: activeAnimal?.breed || null,
+      confirmed_breed: confirmedBreed.trim() || null,
+      predicted_state: result.state,
+      confirmed_state: confirmedState,
+      confidence: result.confidence,
+    });
+  };
+
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -200,6 +238,65 @@ function ResultCard({
           <ThumbsDown size={16} />
           {t("recordingPage.incorrect")}
         </Button>
+      </div>
+
+      <div className="pt-3 border-t border-border space-y-3">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          className="w-full gap-2 text-xs"
+          onClick={() => setShowCorrectionForm(!showCorrectionForm)}
+        >
+          <Sparkles size={14} />
+          {showCorrectionForm ? "Ocultar Correção" : "Confirmar / Corrigir Detalhes"}
+        </Button>
+
+        {showCorrectionForm && (
+          <form onSubmit={handleSaveFeedback} className="space-y-3 p-3 rounded-xl bg-secondary/20 border border-border">
+            <div className="space-y-1">
+              <label htmlFor="confirmed-breed-input" className="text-xs font-semibold text-muted-foreground block">
+                Confirmar/Corrigir Raça
+              </label>
+              <input
+                id="confirmed-breed-input"
+                type="text"
+                value={confirmedBreed}
+                onChange={(e) => setConfirmedBreed(e.target.value)}
+                placeholder="Ex: Labrador, Persa..."
+                className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="confirmed-state-select" className="text-xs font-semibold text-muted-foreground block">
+                Confirmar/Corrigir Estado Emocional
+              </label>
+              <select
+                id="confirmed-state-select"
+                value={confirmedState}
+                onChange={(e) => setConfirmedState(e.target.value as EmotionalState)}
+                className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
+              >
+                <option value="relaxed">Relaxado</option>
+                <option value="distress">Angústia</option>
+                <option value="attention">Atenção</option>
+                <option value="excitement">Excitação</option>
+                <option value="hunger">Fome</option>
+                <option value="alert">Alerta</option>
+              </select>
+            </div>
+
+            <Button
+              type="submit"
+              size="sm"
+              className="w-full text-xs font-semibold h-8 rounded-xl"
+              disabled={saveFeedback.isPending}
+            >
+              {saveFeedback.isPending ? "A guardar..." : "Submeter Feedback"}
+            </Button>
+          </form>
+        )}
       </div>
 
       <div className="space-y-2 pt-3 border-t border-border">
@@ -1399,6 +1496,7 @@ export default function RecordingPage() {
                 )}
                 <ResultCard
                   result={result}
+                  activeAnimal={activeAnimal}
                   onFeedback={(feedback) => {
                     if (result.eventId) {
                       feedbackMutation.mutate({

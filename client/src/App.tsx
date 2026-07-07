@@ -34,6 +34,7 @@ const ComparisonPage = lazy(() => import("./pages/ComparisonPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const FamilyDashboard = lazy(() => import("./pages/FamilyDashboard"));
 const FoodSearchPage = lazy(() => import("./pages/FoodSearchPage"));
+const FeedbackAuditPage = lazy(() => import("./pages/FeedbackAuditPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const HealthPage = lazy(() => import("./pages/HealthPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
@@ -397,6 +398,16 @@ function Router() {
                     <LazyRoute
                       component={ComparisonPage}
                       variant="comparison"
+                      isProtected
+                      {...params}
+                    />
+                  )}
+                </Route>
+                <Route path="/feedback-audit">
+                  {(params) => (
+                    <LazyRoute
+                      component={FeedbackAuditPage}
+                      variant="content"
                       isProtected
                       {...params}
                     />
