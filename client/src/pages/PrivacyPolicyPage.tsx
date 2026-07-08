@@ -390,11 +390,39 @@ export default function PrivacyPolicyPage() {
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md mt-12">
-        <div className="max-w-4xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-slate-500">
+        <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>
             © {new Date().getFullYear()} Pawra. Todos os direitos reservados.
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setLocation("/termos")}
+              className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
+            >
+              Termos de Uso
+            </button>
+            <span aria-hidden="true" className="text-slate-700">·</span>
+            <button
+              onClick={() => setLocation("/cookies")}
+              className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
+            >
+              Política de Cookies
+            </button>
+            <span aria-hidden="true" className="text-slate-700">·</span>
+            <button
+              onClick={() => {
+                const w = window as any;
+                if (w.displayPreferenceModal) {
+                  w.displayPreferenceModal();
+                } else if (w.Termly) {
+                  w.Termly.showConsentModal();
+                }
+              }}
+              className="hover:text-slate-300 transition-colors font-medium text-emerald-400 focus-visible:outline-none focus-visible:underline"
+            >
+              Consentimento
+            </button>
+            <span aria-hidden="true" className="text-slate-700">·</span>
             <span className="text-[10px] text-muted-foreground">
               Última atualização: Junho de 2026
             </span>

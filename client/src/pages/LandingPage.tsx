@@ -19,6 +19,7 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
@@ -404,14 +405,44 @@ export default function LandingPage() {
             <p>
               © {new Date().getFullYear()} Pawra. Todos os direitos reservados.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1.5 mt-2 sm:mt-0">
               <button
                 onClick={() => setLocation("/privacidade")}
                 className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
               >
                 Política de Privacidade
               </button>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true" className="text-slate-700">·</span>
+              <button
+                onClick={() => setLocation("/termos")}
+                className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
+              >
+                Termos de Uso
+              </button>
+              <span aria-hidden="true" className="text-slate-700">·</span>
+              <button
+                onClick={() => setLocation("/cookies")}
+                className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
+              >
+                Política de Cookies
+              </button>
+              <span aria-hidden="true" className="text-slate-700">·</span>
+              <button
+                onClick={() => {
+                  const w = window as any;
+                  if (w.displayPreferenceModal) {
+                    w.displayPreferenceModal();
+                  } else if (w.Termly) {
+                    w.Termly.showConsentModal();
+                  } else {
+                    toast.info("Termly consent window is initializing...");
+                  }
+                }}
+                className="hover:text-slate-300 transition-colors font-medium text-emerald-400 focus-visible:outline-none focus-visible:underline"
+              >
+                Preferências de Consentimento
+              </button>
+              <span aria-hidden="true" className="text-slate-700">·</span>
               <a
                 href="mailto:suporte@pawra.app"
                 className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"

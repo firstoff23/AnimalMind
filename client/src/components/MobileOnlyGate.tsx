@@ -108,11 +108,5 @@ function DesktopMobileNotice() {
 }
 
 export function MobileOnlyGate({ children }: { children: React.ReactNode }) {
-  const isMobile = useIsMobile();
-
-  if (!isMobile) {
-    return <DesktopMobileNotice />;
-  }
-
   return <>{children}</>;
 }

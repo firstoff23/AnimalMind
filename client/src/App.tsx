@@ -42,6 +42,8 @@ const LandingPage = lazy(() => import("./pages/LandingPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const MindiPage = lazy(() => import("./pages/MindiPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
+const TermsOfUsePage = lazy(() => import("./pages/TermsOfUsePage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const RecordingPage = lazy(() => import("./pages/RecordingPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -138,6 +140,8 @@ function Router() {
     "/verify-otp",
     "/auth/callback",
     "/privacidade",
+    "/termos",
+    "/cookies",
   ].includes(location);
 
   if (isAuthenticated && dbUserLoading && !isPublicRoute) {
@@ -226,6 +230,12 @@ function Router() {
                 </Route>
                 <Route path="/privacidade">
                   <LazyRoute component={PrivacyPolicyPage} variant="content" />
+                </Route>
+                <Route path="/termos">
+                  <LazyRoute component={TermsOfUsePage} variant="content" />
+                </Route>
+                <Route path="/cookies">
+                  <LazyRoute component={CookiePolicyPage} variant="content" />
                 </Route>
 
                 {/* Protected routes */}
