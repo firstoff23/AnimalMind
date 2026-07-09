@@ -52,35 +52,28 @@ app.use((req, _res, next) => {
 // Strict CSP for a React PWA. Adjusted per environment:
 //   - dev:  script-src includes 'unsafe-eval' for Vite HMR hot-reload
 //   - prod: script-src is 'self' only (no eval, no inline)
+
 app.use((_req, res, next) => {
   const isDev = process.env.NODE_ENV === "development";
   const scriptSrc = isDev
-    ? `'self' 'unsafe-eval'` // Vite HMR requires eval in dev
-    : `'self'`;
+    ? `'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io https://*.termly.co`
+    : `'self' 'unsafe-inline' https://app.termly.io https://*.termly.co`;
 
   res.setHeader(
     "Content-Security-Policy",
     [
       `default-src 'self'`,
       `script-src ${scriptSrc}`,
-      // Inline styles are needed by React/Radix UI component libraries
-      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-      `font-src 'self' https://fonts.gstatic.com data:`,
-      // Images: allow self, data URIs (base64 previews), and Supabase storage
-      `img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in`,
-      // XHR/fetch targets: own API, Supabase, Hugging Face backends
-      `connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://firstoff-animalmind-backend.hf.space https://firstoff-animalmind-demo.hf.space https://animalmind-backend.fly.dev`,
-      // Media (audio recording blobs)
+      `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com`,
+      `font-src 'self' https://fonts.gstatic.com https://*.fontshare.com data:`,
+      `img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://app.termly.io https://*.termly.co`,
+      `connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://firstoff-animalmind-backend.hf.space https://firstoff-animalmind-demo.hf.space https://animalmind-backend.fly.dev https://app.termly.io https://*.termly.co`,
       `media-src 'self' blob:`,
-      // Workers (service worker, Vite workers)
       `worker-src 'self' blob:`,
-      // Manifest for PWA install
       `manifest-src 'self'`,
-      // Never allow this page to be embedded in a frame (clickjacking)
+      `frame-src 'self' https://app.termly.io https://*.termly.co`,
       `frame-ancestors 'none'`,
-      // Disallow <form> from submitting to external URLs
       `form-action 'self'`,
-      // Upgrade any accidental http:// sub-resources to https://
       `upgrade-insecure-requests`,
     ].join("; "),
   );
