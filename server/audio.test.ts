@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeAll, beforeEach, vi } from "vitest";
-import { appRouter } from "./routers";
-import type { TrpcContext } from "./_core/context";
 import { createClient } from "@supabase/supabase-js";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 vi.mock("@supabase/supabase-js", () => {
   return {
@@ -12,20 +12,28 @@ vi.mock("@supabase/supabase-js", () => {
           insert: vi.fn().mockReturnThis(),
           update: vi.fn().mockReturnThis(),
           upsert: vi.fn().mockReturnThis(),
+          delete: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
+          gte: vi.fn().mockReturnThis(),
+          lt: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
           single: vi.fn().mockImplementation(() => {
             if (table === "users") {
               return Promise.resolve({ data: { id: 1 }, error: null });
             }
             if (table === "animals") {
-              return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
+              return Promise.resolve({
+                data: { id: 1, user_id: 1, name: "Bobi", species: "dog" },
+                error: null,
+              });
             }
             return Promise.resolve({ data: null, error: null });
           }),
           limit: vi.fn().mockImplementation(() => {
             if (table === "animals") {
-              return Promise.resolve({ data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }] });
+              return Promise.resolve({
+                data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }],
+              });
             }
             return builder;
           }),
@@ -62,19 +70,28 @@ describe("tRPC classify.run with audio", () => {
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
     try {
       const supabase = createClient(url, key);
-      const { data: userData } = await supabase.from("users").select("id").eq("open_id", "demo-user-001").single();
+      const { data: userData } = await supabase
+        .from("users")
+        .select("id")
+        .eq("open_id", "demo-user-001")
+        .single();
       if (userData) {
         ctx.user.id = Number(userData.id);
         credentialsValid = true;
       }
-      
+
       if (credentialsValid) {
-        const { data: animals } = await supabase.from("animals").select("id").eq("user_id", ctx.user.id).limit(1);
+        const { data: animals } = await supabase
+          .from("animals")
+          .select("id")
+          .eq("user_id", ctx.user.id)
+          .limit(1);
         if (animals && animals.length > 0) {
           testAnimalId = Number(animals[0].id);
         }
@@ -88,15 +105,19 @@ describe("tRPC classify.run with audio", () => {
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
       const url = typeof input === "string" ? input : input.url;
-      if (url.includes("classify") || url.includes("fly.dev") || url.includes("hf.space")) {
+      if (
+        url.includes("classify") ||
+        url.includes("fly.dev") ||
+        url.includes("hf.space")
+      ) {
         return Promise.resolve({
           ok: true,
           json: async () => ({
             state: "relaxed",
             confidence: 0.95,
             emoji: "⚪",
-            model_used: "yamnet"
-          })
+            model_used: "yamnet",
+          }),
         });
       }
       return originalFetch(input, init);
@@ -106,9 +127,10 @@ describe("tRPC classify.run with audio", () => {
 
   it("accepts base64 audio and runs without crashing", async () => {
     if (!credentialsValid) return; // Skip gracefully if Supabase credentials are not valid (e.g. local dev without keys)
-    
-    const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
-    
+
+    const mockBase64Audio =
+      "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
+
     const result = await caller.classify.run({
       animalId: testAnimalId,
       audio: mockBase64Audio,

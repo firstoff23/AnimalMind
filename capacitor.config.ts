@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.animalmind.app",
-  appName: "AnimalMind",
+  appId: "com.pawra.app",
+  appName: "Pawra",
   webDir: "dist/public",
   server: {
     androidScheme: "https",

@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0.0",
+  "description": "AnimalMind proprietary dataset schema — dogs and cats behaviour/emotion classification.",
+  "columns": {
+    "image_path": {
+      "type": "string",
+      "description": "Relative path to the image file from the dataset root.",
+      "required": true,
+      "example": "raw/user_uploads/2024-06/img_0001.jpg"
+    },
+    "species": {
+      "type": "string",
+      "enum": ["dog", "cat"],
+      "required": true
+    },
+    "breed": {
+      "type": ["string", "null"],
+      "description": "English breed name in title case. null if unknown or mixed.",
+      "required": false,
+      "examples": ["Golden Retriever", "Domestic Shorthair", null]
+    },
+    "behavior": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "alert",
+        "barking",
+        "begging",
+        "eating",
+        "exploring",
+        "grooming",
+        "growling",
+        "hiding",
+        "hissing",
+        "jumping",
+        "lying_down",
+        "meowing",
+        "playing",
+        "resting",
+        "running",
+        "sitting",
+        "sleeping",
+        "socialising",
+        "standing",
+        "unknown",
+        "wagging_tail"
+      ]
+    },
+    "emotion": {
+      "type": ["string", "null"],
+      "required": false,
+      "description": "Inferred emotional state. null when confidence < 0.6.",
+      "enum": [
+        "aggressive",
+        "anxious",
+        "attention_seeking",
+        "content",
+        "curious",
+        "distress",
+        "excited",
+        "fearful",
+        "hungry",
+        "playful",
+        "relaxed",
+        "sad",
+        "unknown",
+        null
+      ]
+    },
+    "environment": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "car",
+        "indoor_home",
+        "outdoor_garden",
+        "outdoor_park",
+        "outdoor_street",
+        "shelter",
+        "unknown",
+        "veterinary_clinic"
+      ]
+    },
+    "image_quality": {
+      "type": "string",
+      "required": true,
+      "enum": ["high", "medium", "low"],
+      "description": "high: sharp+well-lit, ≥50% body visible. medium: minor issues. low: significant blur/occlusion."
+    },
+    "label_confidence": {
+      "type": "number",
+      "format": "float",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "required": true,
+      "description": "Annotator confidence [0.0–1.0] in all labels. Records < 0.5 excluded from training."
+    },
+    "source": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "annotator_capture",
+        "oxford_iiit_pet",
+        "partner_dataset",
+        "synthetic",
+        "user_upload"
+      ]
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "required": false,
+      "maxLength": 500,
+      "description": "Free-text annotation notes. null if empty."
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 // Sample mock data for foods
 const mockFoods = [
@@ -45,13 +45,13 @@ const mockFoods = [
     what_to_do: "Evite lacticínios normais.",
     sources: ["Cornell Vet"],
     created_at: new Date().toISOString(),
-  }
+  },
 ];
 
 vi.mock("@supabase/supabase-js", () => {
   return {
     createClient: vi.fn().mockReturnValue({
-      from: vi.fn().mockImplementation((table: string) => {
+      from: vi.fn().mockImplementation((_table: string) => {
         const builder: any = {
           select: vi.fn().mockReturnThis(),
           order: vi.fn().mockImplementation(() => {
@@ -89,11 +89,11 @@ describe("tRPC foodsRouter", () => {
 
   it("can list all foods and compute severity for a specific species (dog)", async () => {
     const foods = await caller.foods.getAll({ species: "dog" });
-    const cenoura = foods.find(f => f.name === "Cenoura");
+    const cenoura = foods.find((f) => f.name === "Cenoura");
     expect(cenoura).toBeDefined();
     expect(cenoura!.computedSeverity).toBe("safe");
 
-    const leite = foods.find(f => f.name === "Leite");
+    const leite = foods.find((f) => f.name === "Leite");
     expect(leite).toBeDefined();
     expect(leite!.computedSeverity).toBe("dangerous");
   });
@@ -111,7 +111,10 @@ describe("tRPC foodsRouter", () => {
   });
 
   it("can search for foods by alias/synonym", async () => {
-    const results = await caller.foods.search({ query: "carrot", species: "rabbit" });
+    const results = await caller.foods.search({
+      query: "carrot",
+      species: "rabbit",
+    });
     expect(results.length).toBe(1);
     expect(results[0].name).toBe("Cenoura");
     expect(results[0].computedSeverity).toBe("safe");

@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import {
   AuthShell,
   AuthSubmitButton,
   AuthTextField,
   authIcons,
 } from "@/components/auth/AuthShell";
+import { useAuth } from "@/contexts/AuthContext";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,7 +38,9 @@ export default function LoginPage() {
       : "";
   const passwordError =
     apiError ||
-    (passwordBlurred && !isPasswordValid ? "Introduza a palavra-passe da sua conta." : "");
+    (passwordBlurred && !isPasswordValid
+      ? "Introduza a palavra-passe da sua conta."
+      : "");
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,7 +56,9 @@ export default function LoginPage() {
       toast.success("Bem-vindo de volta!");
       setLocation("/dashboard");
     } catch {
-      setApiError("Email ou palavra-passe incorretos. Verifique os dados e tente novamente.");
+      setApiError(
+        "Email ou palavra-passe incorretos. Verifique os dados e tente novamente.",
+      );
     } finally {
       setLoading(false);
     }
@@ -63,7 +67,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       mode="login"
-      title="Entrar no AnimalMind"
+      title="Entrar no Pawra"
       subtitle="Aceda ao histórico, gravações e perfil dos seus animais com uma sessão segura."
       showOAuth
       footer={
@@ -119,10 +123,7 @@ export default function LoginPage() {
           success={isPasswordValid && !apiError ? "Preenchida" : undefined}
         />
 
-        <AuthSubmitButton
-          loading={loading}
-          loadingLabel="A entrar..."
-        >
+        <AuthSubmitButton loading={loading} loadingLabel="A entrar...">
           Entrar
         </AuthSubmitButton>
       </form>

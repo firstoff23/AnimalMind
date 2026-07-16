@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#22c55e" />
+      <stop offset="60%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#022c22" />
+    </radialGradient>
+  </defs>
+  
+  <!-- App Icon Background with Rounded Corners (Play Store spec) -->
+  <rect width="512" height="512" rx="100" fill="url(#bg-grad)" />
+
+  <!-- Metacarpal Pad (Paw Center) -->
+  <path d="M 256 385 C 196 385, 176 335, 201 300 C 216 280, 240 295, 256 295 C 272 295, 296 280, 311 300 C 336 335, 316 385, 256 385 Z" fill="#ffffff" />
+
+  <!-- Outer sound wave toes -->
+  <!-- Toe 1 (Left-most) -->
+  <path d="M 125 240 A 35 35 0 0 1 170 210" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Toe 2 (Center-Left) -->
+  <path d="M 190 205 A 30 30 0 0 1 230 180" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+  <path d="M 175 165 A 55 55 0 0 1 240 130" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Toe 3 (Center-Right) -->
+  <path d="M 282 180 A 30 30 0 0 1 322 205" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+  <path d="M 272 130 A 55 55 0 0 1 337 165" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Toe 4 (Right-most) -->
+  <path d="M 342 210 A 35 35 0 0 1 387 240" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" />
+</svg>

@@ -37,7 +37,7 @@ export async function storagePut(
   const key = appendHashSuffix(normalizeKey(relKey));
 
   // 1. Get presigned PUT URL from Forge
-  const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
+  const presignUrl = new URL("v1/storage/presign/put", `${forgeUrl}/`);
   presignUrl.searchParams.set("path", key);
 
   const presignResp = await fetch(presignUrl, {
@@ -71,7 +71,9 @@ export async function storagePut(
   return { key, url: `/manus-storage/${key}` };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(
+  relKey: string,
+): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
   return { key, url: `/manus-storage/${key}` };
 }
@@ -80,7 +82,7 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
   const { forgeUrl, forgeKey } = getForgeConfig();
   const key = normalizeKey(relKey);
 
-  const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
+  const getUrl = new URL("v1/storage/presign/get", `${forgeUrl}/`);
   getUrl.searchParams.set("path", key);
 
   const resp = await fetch(getUrl, {

@@ -1,21 +1,32 @@
+import { Activity, Filter, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/contexts/AuthContext";
 import VetReport from "@/components/VetReport";
-import { Activity, Filter, Stethoscope } from "lucide-react";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { trpc } from "@/lib/trpc";
 
-const STATES = ["all", "distress", "attention", "excitement", "hunger", "alert", "relaxed"];
+const STATES = [
+  "all",
+  "distress",
+  "attention",
+  "excitement",
+  "hunger",
+  "alert",
+  "relaxed",
+];
 
 function VetAnimalListSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+        <div
+          key={index}
+          className="rounded-lg border border-slate-800 bg-slate-900/60 p-4"
+        >
           <div className="flex items-center justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-4 w-28 rounded-lg bg-slate-800" />
@@ -64,8 +75,7 @@ export default function VetDashboard() {
 
   const meQuery = trpc.auth.me.useQuery();
   const role =
-    meQuery.data?.role ||
-    (user?.app_metadata?.role as string | undefined);
+    meQuery.data?.role || (user?.app_metadata?.role as string | undefined);
   const isVet = role === "vet" || role === "admin";
 
   useEffect(() => {
@@ -75,8 +85,13 @@ export default function VetDashboard() {
   }, [isVet, meQuery.isLoading, setLocation]);
 
   const animalsQuery = trpc.vet.getAnimals.useQuery(
-    { species, state, dateFrom: dateFrom || undefined, dateTo: dateTo || undefined },
-    { enabled: isVet }
+    {
+      species,
+      state,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+    },
+    { enabled: isVet },
   );
 
   useEffect(() => {
@@ -87,8 +102,10 @@ export default function VetDashboard() {
   }, [animalsQuery.error, setLocation]);
 
   const selectedAnimal = useMemo(
-    () => animalsQuery.data?.find((animal) => animal.id === selectedAnimalId) ?? animalsQuery.data?.[0],
-    [animalsQuery.data, selectedAnimalId]
+    () =>
+      animalsQuery.data?.find((animal) => animal.id === selectedAnimalId) ??
+      animalsQuery.data?.[0],
+    [animalsQuery.data, selectedAnimalId],
   );
 
   useEffect(() => {
@@ -99,7 +116,7 @@ export default function VetDashboard() {
 
   const reportQuery = trpc.vet.getReport.useQuery(
     { animalId: selectedAnimal?.id ?? 0, days: periodDays },
-    { enabled: isVet && !!selectedAnimal?.id }
+    { enabled: isVet && !!selectedAnimal?.id },
   );
 
   useEffect(() => {
@@ -132,10 +149,15 @@ export default function VetDashboard() {
             </p>
             <h1 className="mt-2 text-3xl font-bold">Dashboard clínico</h1>
             <p className="mt-1 max-w-2xl text-sm text-slate-400">
-              Animais partilhados consigo, histórico clínico, notas veterinárias e relatórios exportáveis.
+              Animais partilhados consigo, histórico clínico, notas veterinárias
+              e relatórios exportáveis.
             </p>
           </div>
-          <Button onClick={() => setLocation("/dashboard")} variant="outline" className="border-slate-700">
+          <Button
+            onClick={() => setLocation("/dashboard")}
+            variant="outline"
+            className="border-slate-700"
+          >
             Voltar ao dashboard
           </Button>
         </header>
@@ -212,9 +234,12 @@ export default function VetDashboard() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-slate-100">{animal.name}</p>
+                      <p className="font-semibold text-slate-100">
+                        {animal.name}
+                      </p>
                       <p className="text-xs text-slate-400">
-                        {animal.species === "dog" ? "Cão" : "Gato"} · Tutor: {animal.ownerName}
+                        {animal.species === "dog" ? "Cão" : "Gato"} · Tutor:{" "}
+                        {animal.ownerName}
                       </p>
                     </div>
                     <Activity size={18} className="text-emerald-400" />
@@ -229,16 +254,16 @@ export default function VetDashboard() {
 
           <main className="space-y-4">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-slate-400">
-                Período do relatório
-              </p>
+              <p className="text-sm text-slate-400">Período do relatório</p>
               <div className="flex rounded-lg border border-slate-800 bg-slate-900 p-1">
                 {[30, 60, 90].map((days) => (
                   <button
                     key={days}
                     onClick={() => setPeriodDays(days)}
                     className={`rounded-md px-3 py-1 text-xs ${
-                      periodDays === days ? "bg-emerald-500 text-white" : "text-slate-400"
+                      periodDays === days
+                        ? "bg-emerald-500 text-white"
+                        : "text-slate-400"
                     }`}
                   >
                     {days}d

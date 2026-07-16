@@ -1,8 +1,8 @@
-import React, { createContext, useContext } from "react";
 import i18n from "i18next";
+import React, { createContext, useContext } from "react";
 import { initReactI18next, useTranslation } from "react-i18next";
-import pt from "../locales/pt.json";
 import en from "../locales/en.json";
+import pt from "../locales/pt.json";
 
 type Language = "pt" | "en";
 
@@ -12,7 +12,9 @@ interface LanguageContextProps {
   t: (key: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextProps | undefined>(
+  undefined,
+);
 
 // Initialize i18next
 const savedLang = (() => {
@@ -24,31 +26,31 @@ const savedLang = (() => {
 })();
 
 if (!i18n.isInitialized) {
-  i18n
-    .use(initReactI18next)
-    .init({
-      resources: {
-        pt: { translation: pt },
-        en: { translation: en },
-      },
-      lng: savedLang,
-      fallbackLng: "pt",
-      interpolation: {
-        escapeValue: false, // react already safes from xss
-      },
-      react: {
-        useSuspense: false,
-      },
-    });
+  i18n.use(initReactI18next).init({
+    resources: {
+      pt: { translation: pt },
+      en: { translation: en },
+    },
+    lng: savedLang,
+    fallbackLng: "pt",
+    interpolation: {
+      escapeValue: false, // react already safes from xss
+    },
+    react: {
+      useSuspense: false,
+    },
+  });
 }
 
 import { useAppStore } from "@/store/appStore";
 
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { t, i18n: i18nInstance } = useTranslation();
   const storeLanguage = useAppStore((state) => state.language);
   const setStoreLanguage = useAppStore((state) => state.setLanguage);
-  
+
   const language = (i18nInstance.language || "pt") as Language;
 
   React.useEffect(() => {

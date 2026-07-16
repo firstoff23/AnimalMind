@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { PawPrint, Home } from "lucide-react";
+import { Home, PawPrint } from "lucide-react";
 import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
@@ -10,16 +10,26 @@ export default function NotFound() {
       <div className="flex flex-col items-center text-center space-y-6 max-w-sm">
         {/* Icon */}
         <div className="relative">
-          <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-2xl scale-150" aria-hidden="true" />
+          <div
+            className="absolute inset-0 bg-emerald-500/10 rounded-full blur-2xl scale-150"
+            aria-hidden="true"
+          />
           <div className="relative grid h-20 w-20 place-items-center rounded-full bg-slate-900 border border-slate-800">
-            <PawPrint className="h-10 w-10 text-emerald-400" aria-hidden="true" />
+            <PawPrint
+              className="h-10 w-10 text-emerald-400"
+              aria-hidden="true"
+            />
           </div>
         </div>
 
         {/* Copy */}
         <div className="space-y-2">
-          <h1 className="text-6xl font-black text-slate-800 select-none">404</h1>
-          <h2 className="text-lg font-bold text-foreground">Página não encontrada</h2>
+          <h1 className="text-6xl font-black text-slate-800 select-none">
+            404
+          </h1>
+          <h2 className="text-lg font-bold text-foreground">
+            Página não encontrada
+          </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             A página que está a procurar não existe ou foi movida.
             <br />

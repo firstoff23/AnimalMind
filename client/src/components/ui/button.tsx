@@ -1,6 +1,6 @@
-import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:opacity-95 shadow-md shadow-emerald-500/5 hover:shadow-emerald-500/10",
+        default:
+          "bg-primary text-primary-foreground hover:opacity-95 shadow-md shadow-emerald-500/5 hover:shadow-emerald-500/10",
         destructive:
           "bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/5 hover:shadow-rose-500/10",
         outline:
           "border border-border/60 bg-transparent shadow-xs hover:bg-muted/40 hover:text-primary",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/90",
-        ghost:
-          "hover:bg-muted/40 text-muted-foreground hover:text-primary",
+        ghost: "hover:bg-muted/40 text-muted-foreground hover:text-primary",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -33,10 +33,10 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
-function Button({
+const Button = React.memo(function Button({
   className,
   variant,
   size,
@@ -55,6 +55,6 @@ function Button({
       {...props}
     />
   );
-}
+});
 
 export { Button, buttonVariants };

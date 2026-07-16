@@ -11,6 +11,7 @@ dist/
 .env.development
 .env.production
 .env.*.local
+.env*
 
 # Vercel
 .vercel/
@@ -40,7 +41,6 @@ test-results/
 skills-lock.json
 query-vet-shares.js
 
-
 # Python
 __pycache__/
 *.pyc
@@ -59,8 +59,9 @@ server/postures.json
 server/vet_shares.json
 server/vet_clinical_notes.json
 server/families.json
-
-.env*
+server/notes.json
+server/audio.json
+server/family_shares.json
 
 # Backups and temporary files
 *.bak
@@ -68,7 +69,21 @@ server/families.json
 scratch/
 supabase/.temp/
 
-# Local database files
-server/notes.json
-server/audio.json
-server/family_shares.json
+# Keystores and Android Builds
+*.jks
+*.keystore
+android/builds/
+android/twa/
+
+# Dataset — raw images and processed HF datasets (can be large)
+data/raw/
+data/processed/
+
+# ML model weights — published to HF Hub, not stored in git
+# Use: python data/scripts/train_species_classifier.py --push-to-hub firstoff/animalmind-species-classifier
+ml_backend/models/species_classifier/pytorch_model.bin
+ml_backend/models/species_classifier/*.safetensors
+*.bin
+*.safetensors
+models/
+

@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS settings (
   user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   notifications_enabled BOOLEAN DEFAULT TRUE,
   alert_sensitivity VARCHAR(50) DEFAULT 'medium',
+  share_diagnostic_data BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );

@@ -14,7 +14,9 @@ vi.mock("@supabase/supabase-js", () => ({
         return builder;
       });
       builder.select = vi.fn().mockImplementation(() => builder);
-      builder.single = vi.fn().mockImplementation(() => Promise.resolve(singleResponses.shift()));
+      builder.single = vi
+        .fn()
+        .mockImplementation(() => Promise.resolve(singleResponses.shift()));
       return builder;
     }),
   }),
@@ -35,7 +37,8 @@ describe("animal physical fields database compatibility", () => {
         data: null,
         error: {
           code: "PGRST204",
-          message: "Could not find the 'tail' column of 'animals' in the schema cache",
+          message:
+            "Could not find the 'tail' column of 'animals' in the schema cache",
         },
       },
       {

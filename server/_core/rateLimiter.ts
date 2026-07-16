@@ -19,34 +19,39 @@ export function checkRateLimit(
   ctx: TrpcContext,
   routeName: string,
   limit = 30,
-  windowMs = 60000
+  windowMs = 60000,
 ) {
   const now = Date.now();
-  
+
   // Extract identifier (User ID if logged in, otherwise client IP)
   const userId = ctx.user?.id;
   const ip =
-    (ctx.req?.headers?.["x-forwarded-for"] as string | undefined)?.split(",")[0].trim() ||
+    (ctx.req?.headers?.["x-forwarded-for"] as string | undefined)
+      ?.split(",")[0]
+      .trim() ||
     ctx.req?.socket?.remoteAddress ||
     "anonymous";
-    
+
   const key = `${userId ? `user_${userId}` : `ip_${ip}`}:${routeName}`;
-  
+
   let entry = rateLimitMap.get(key);
-  
+
   // Reset entry if window has expired
   if (!entry || now > entry.resetTime) {
     entry = { count: 0, resetTime: now + windowMs };
   }
-  
+
   entry.count++;
   rateLimitMap.set(key, entry);
-  
+
   if (entry.count > limit) {
-    console.warn(`[RateLimit] Limit exceeded for key "${key}" (${entry.count}/${limit})`);
+    console.warn(
+      `[RateLimit] Limit exceeded for key "${key}" (${entry.count}/${limit})`,
+    );
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
-      message: "Demasiados pedidos. Tente novamente dentro de alguns instantes.",
+      message:
+        "Demasiados pedidos. Tente novamente dentro de alguns instantes.",
     });
   }
 }

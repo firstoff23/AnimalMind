@@ -1,7 +1,8 @@
 import { base64ToBlob, blobToBase64 } from "@/lib/blobEncoding";
 import type { PendingRecording } from "@/lib/offlineQueue";
 
-type SQLiteDBConnection = import("@capacitor-community/sqlite").SQLiteDBConnection;
+type SQLiteDBConnection =
+  import("@capacitor-community/sqlite").SQLiteDBConnection;
 
 const DATABASE_NAME = "animalmind_offline";
 const DATABASE_VERSION = 1;
@@ -26,12 +27,17 @@ async function getDatabase() {
 
   dbPromise ??= (async () => {
     try {
-      const { CapacitorSQLite, SQLiteConnection } = await import("@capacitor-community/sqlite");
+      const { CapacitorSQLite, SQLiteConnection } = await import(
+        "@capacitor-community/sqlite"
+      );
       const sqlite = new SQLiteConnection(CapacitorSQLite);
 
       await sqlite.checkConnectionsConsistency();
 
-      const existingConnection = await sqlite.isConnection(DATABASE_NAME, false);
+      const existingConnection = await sqlite.isConnection(
+        DATABASE_NAME,
+        false,
+      );
       const db = existingConnection.result
         ? await sqlite.retrieveConnection(DATABASE_NAME, false)
         : await sqlite.createConnection(
@@ -39,7 +45,7 @@ async function getDatabase() {
             false,
             "no-encryption",
             DATABASE_VERSION,
-            false
+            false,
           );
 
       const openState = await db.isDBOpen();
@@ -72,12 +78,15 @@ async function getDatabase() {
 
         CREATE INDEX IF NOT EXISTS idx_pending_recordings_timestamp
           ON pending_recordings(timestamp);
-        `
+        `,
       );
 
       return db;
     } catch (error) {
-      console.warn("[NativeOfflineQueue] SQLite unavailable, using IndexedDB fallback:", error);
+      console.warn(
+        "[NativeOfflineQueue] SQLite unavailable, using IndexedDB fallback:",
+        error,
+      );
       return null;
     }
   })();
@@ -100,7 +109,9 @@ function rowToPendingRecording(row: Record<string, unknown>): PendingRecording {
     spectralEnergy:
       typeof row.spectral_energy === "number" ? row.spectral_energy : undefined,
     tonalBrightness:
-      typeof row.tonal_brightness === "number" ? row.tonal_brightness : undefined,
+      typeof row.tonal_brightness === "number"
+        ? row.tonal_brightness
+        : undefined,
     attempts: Number(row.attempts),
     nextAttemptAt: Number(row.next_attempt_at),
     status: row.status === "failed" ? "failed" : "pending",
@@ -156,7 +167,7 @@ export async function saveNativePendingRecording(recording: PendingRecording) {
       recording.id,
       now,
       now,
-    ]
+    ],
   );
 
   return true;
@@ -184,11 +195,11 @@ export async function getNativePendingRecordings() {
       last_error
     FROM pending_recordings
     ORDER BY timestamp ASC
-    `
+    `,
   );
 
   return (result.values ?? []).map((row) =>
-    rowToPendingRecording(row as Record<string, unknown>)
+    rowToPendingRecording(row as Record<string, unknown>),
   );
 }
 
@@ -200,6 +211,8 @@ export async function deleteNativePendingRecording(id: string) {
   return true;
 }
 
-export async function updateNativePendingRecording(recording: PendingRecording) {
+export async function updateNativePendingRecording(
+  recording: PendingRecording,
+) {
   return saveNativePendingRecording(recording);
 }

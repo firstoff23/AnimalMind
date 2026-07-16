@@ -38,7 +38,12 @@ Este documento descreve as prioridades de desenvolvimento da aplicação AnimalM
   - [x] Rota `/veterinario` com dossiê clínico, cálculo de indicadores (Distress Index, Agitação), recomendações automatizadas e partilha local/PDF.
 - [x] **9. Multi-utilizador / Modo Família**
   - Co-tutoria para partilha de perfis de animais em tempo real.
-- [ ] **10. Submissão às lojas**
+- [x] **10. Fluxo de Onboarding Sequencial**
+  - [x] Desenvolver componente de onboarding com 4 ecrãs e animações em Framer Motion.
+  - [x] Integrar persistência da flag `onboarding_completed` na base de dados Supabase.
+- [x] **11. Notificações Push**
+  - [x] Configurar Service Worker, chaves VAPID, persistência de subscrições e rotas de envio com anti-spam (limite de 10 min).
+- [ ] **12. Submissão às lojas**
   - Empacotamento do frontend (ex: Capacitor/PWA) e publicação na Google Play Store e Apple App Store.
 
 ### 📋 Prioridade 4 — Próximas Features (Planeado pós-produção 2026-06-08)

@@ -18,7 +18,11 @@ export function createWaveform(samples: Uint8Array, buckets = 16): number[] {
   const bucketSize = Math.max(1, Math.floor(samples.length / buckets));
   const waveform: number[] = [];
 
-  for (let start = 0; start < samples.length && waveform.length < buckets; start += bucketSize) {
+  for (
+    let start = 0;
+    start < samples.length && waveform.length < buckets;
+    start += bucketSize
+  ) {
     const end = Math.min(samples.length, start + bucketSize);
     let peak = 0;
 

@@ -1,22 +1,22 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClient } from "@supabase/supabase-js";
-import { appRouter } from "./routers";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
+import { appRouter } from "./routers";
 
 vi.mock("@supabase/supabase-js", () => {
   return {
     createClient: vi.fn().mockReturnValue({
       from: vi.fn().mockImplementation((table: string) => {
-        let lastEqColumn: string | null = null;
-        let lastEqValue: any = null;
+        let _lastEqColumn: string | null = null;
+        let _lastEqValue: any = null;
         const builder: any = {
           select: vi.fn().mockReturnThis(),
           insert: vi.fn().mockReturnThis(),
           update: vi.fn().mockReturnThis(),
           upsert: vi.fn().mockReturnThis(),
           eq: vi.fn().mockImplementation((col: string, val: any) => {
-            lastEqColumn = col;
-            lastEqValue = val;
+            _lastEqColumn = col;
+            _lastEqValue = val;
             return builder;
           }),
           gte: vi.fn().mockReturnThis(),
@@ -27,14 +27,21 @@ vi.mock("@supabase/supabase-js", () => {
               return Promise.resolve({ data: { id: 1 }, error: null });
             }
             if (table === "animals") {
-              return Promise.resolve({ data: { id: 1, user_id: 1, name: "Bobi", species: "dog" }, error: null });
+              return Promise.resolve({
+                data: { id: 1, user_id: 1, name: "Bobi", species: "dog" },
+                error: null,
+              });
             }
             return Promise.resolve({ data: null, error: null });
           }),
           maybeSingle: vi.fn().mockImplementation(() => {
             if (table === "classification_events") {
               return Promise.resolve({
-                data: { state: "relaxed", confidence: 0.95, created_at: new Date().toISOString() },
+                data: {
+                  state: "relaxed",
+                  confidence: 0.95,
+                  created_at: new Date().toISOString(),
+                },
                 error: null,
               });
             }
@@ -42,7 +49,9 @@ vi.mock("@supabase/supabase-js", () => {
           }),
           limit: vi.fn().mockImplementation(() => {
             if (table === "animals") {
-              return Promise.resolve({ data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }] });
+              return Promise.resolve({
+                data: [{ id: 1, name: "Bobi", species: "dog", user_id: 1 }],
+              });
             }
             return builder;
           }),
@@ -58,10 +67,10 @@ vi.mock("@supabase/supabase-js", () => {
                     vet_email: "vet-router@animalmind.local",
                     vet_name: "Dr. Teste",
                     owner_note: "Observar ansiedade em consultas futuras.",
-                    shared_at: new Date().toISOString()
-                  }
+                    shared_at: new Date().toISOString(),
+                  },
                 ],
-                error: null
+                error: null,
               });
             }
             return resolve({ data: [], error: null });
@@ -73,12 +82,10 @@ vi.mock("@supabase/supabase-js", () => {
   };
 });
 
-
-
 function createMockContext(
   id: number,
   email: string,
-  role: "owner" | "vet" | "veterinarian" | "clinic_admin" | "admin" | "user"
+  role: "owner" | "vet" | "veterinarian" | "clinic_admin" | "admin" | "user",
 ): TrpcContext {
   return {
     user: {
@@ -105,11 +112,14 @@ describe("tRPC vetRouter", () => {
   const vetCtx = createMockContext(2, vetEmail, "vet");
   const ownerCaller = appRouter.createCaller(ownerCtx);
   const vetCaller = appRouter.createCaller(vetCtx);
-  const nonVetCaller = appRouter.createCaller(createMockContext(3, "owner@animalmind.local", "owner"));
+  const nonVetCaller = appRouter.createCaller(
+    createMockContext(3, "owner@animalmind.local", "owner"),
+  );
 
   beforeAll(async () => {
     const url = process.env.SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!url || !key) return;
 
     try {
@@ -122,7 +132,11 @@ describe("tRPC vetRouter", () => {
       if (!owner) return;
       ownerCtx.user.id = Number(owner.id);
 
-      let { data: vet } = await supabase.from("users").select("id").eq("email", vetEmail).single();
+      let { data: vet } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", vetEmail)
+        .single();
       if (!vet) {
         const { data: inserted, error } = await supabase
           .from("users")
@@ -176,7 +190,10 @@ describe("tRPC vetRouter", () => {
     const animals = await vetCaller.vet.getAnimals({});
     expect(animals.some((animal) => animal.id === ownerAnimalId)).toBe(true);
 
-    const report = await vetCaller.vet.getReport({ animalId: ownerAnimalId, days: 30 });
+    const report = await vetCaller.vet.getReport({
+      animalId: ownerAnimalId,
+      days: 30,
+    });
     expect(report.animal.id).toBe(ownerAnimalId);
     expect(Array.isArray(report.events)).toBe(true);
 
@@ -189,6 +206,4 @@ describe("tRPC vetRouter", () => {
       notes: "Sem sinais clínicos urgentes no relatório.",
     });
   });
-
-
 });

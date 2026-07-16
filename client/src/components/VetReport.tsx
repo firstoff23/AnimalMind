@@ -1,6 +1,5 @@
-import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { Download, FileText, Save } from "lucide-react";
+import { useMemo } from "react";
 import {
   CartesianGrid,
   Line,
@@ -10,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import { STATE_LABELS } from "../../../shared/types";
 
 interface VetReportProps {
@@ -57,7 +57,13 @@ export default function VetReport({
   savingNotes,
 }: VetReportProps) {
   const csv = useMemo(() => {
-    const header = ["data", "estado", "confianca", "duracao_segundos", "notas_do_tutor"];
+    const header = [
+      "data",
+      "estado",
+      "confianca",
+      "duracao_segundos",
+      "notas_do_tutor",
+    ];
     const rows = report.events.map((event) => [
       new Date(event.createdAt).toISOString(),
       event.state,
@@ -65,7 +71,9 @@ export default function VetReport({
       event.durationSeconds,
       event.notes,
     ]);
-    return [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\n");
+    return [header, ...rows]
+      .map((row) => row.map(csvEscape).join(","))
+      .join("\n");
   }, [report.events]);
 
   const exportCsv = () => {
@@ -79,7 +87,10 @@ export default function VetReport({
   };
 
   return (
-    <section className="space-y-5 print:bg-white print:text-slate-950" id="vet-report">
+    <section
+      className="space-y-5 print:bg-white print:text-slate-950"
+      id="vet-report"
+    >
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -105,16 +116,24 @@ export default function VetReport({
             {report.animal.name}
           </h2>
           <p className="text-xs text-muted-foreground print:text-slate-700">
-            {report.animal.species === "dog" ? "Cão" : "Gato"} · {report.animal.breed || "Raça não definida"} ·{" "}
+            {report.animal.species === "dog" ? "Cão" : "Gato"} ·{" "}
+            {report.animal.breed || "Raça não definida"} ·{" "}
             {report.animal.age ?? "?"} anos · Tutor: {report.animal.ownerName}
           </p>
         </div>
         <div className="no-print flex gap-2">
-          <Button onClick={() => window.print()} className="bg-emerald-500 text-white hover:bg-emerald-600">
+          <Button
+            onClick={() => window.print()}
+            className="bg-emerald-500 text-white hover:bg-emerald-600"
+          >
             <FileText size={16} />
             PDF
           </Button>
-          <Button onClick={exportCsv} variant="outline" className="border-slate-700 text-slate-200">
+          <Button
+            onClick={exportCsv}
+            variant="outline"
+            className="border-slate-700 text-slate-200"
+          >
             <Download size={16} />
             CSV
           </Button>
@@ -130,8 +149,14 @@ export default function VetReport({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={report.trend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} domain={[0, 1]} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "#94a3b8", fontSize: 11 }}
+                />
+                <YAxis
+                  tick={{ fill: "#94a3b8", fontSize: 11 }}
+                  domain={[0, 1]}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "#020617",
@@ -153,16 +178,23 @@ export default function VetReport({
         </div>
 
         <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-4 print:border-slate-300 print:bg-white">
-          <h3 className="text-sm font-semibold text-slate-200 print:text-slate-950">Notas</h3>
+          <h3 className="text-sm font-semibold text-slate-200 print:text-slate-950">
+            Notas
+          </h3>
           <div className="mt-3 space-y-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase text-slate-500">Tutor</p>
+              <p className="text-[11px] font-semibold uppercase text-slate-500">
+                Tutor
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-slate-300 print:text-slate-700">
-                {report.animal.ownerNote || "Sem notas do tutor associadas à partilha."}
+                {report.animal.ownerNote ||
+                  "Sem notas do tutor associadas à partilha."}
               </p>
             </div>
             <div className="no-print">
-              <p className="text-[11px] font-semibold uppercase text-slate-500">Notas clínicas</p>
+              <p className="text-[11px] font-semibold uppercase text-slate-500">
+                Notas clínicas
+              </p>
               <textarea
                 value={clinicalNotes}
                 onChange={(event) => onClinicalNotesChange(event.target.value)}
@@ -179,7 +211,9 @@ export default function VetReport({
               </Button>
             </div>
             <div className="hidden print:block">
-              <p className="text-[11px] font-semibold uppercase text-slate-500">Notas clínicas</p>
+              <p className="text-[11px] font-semibold uppercase text-slate-500">
+                Notas clínicas
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-slate-700">
                 {clinicalNotes || "Sem notas clínicas registadas."}
               </p>
@@ -206,13 +240,19 @@ export default function VetReport({
                   {new Date(event.createdAt).toLocaleString("pt-PT")}
                 </td>
                 <td className="px-3 py-2 text-slate-100 print:text-slate-950">
-                  {event.emoji} {STATE_LABELS[event.state as keyof typeof STATE_LABELS] ?? event.state}
+                  {event.emoji}{" "}
+                  {STATE_LABELS[event.state as keyof typeof STATE_LABELS] ??
+                    event.state}
                 </td>
                 <td className="px-3 py-2 text-emerald-400 print:text-slate-800">
                   {Math.round(event.confidence * 100)}%
                 </td>
-                <td className="px-3 py-2 text-slate-300 print:text-slate-800">{event.durationSeconds}s</td>
-                <td className="px-3 py-2 text-slate-400 print:text-slate-700">{event.notes || "-"}</td>
+                <td className="px-3 py-2 text-slate-300 print:text-slate-800">
+                  {event.durationSeconds}s
+                </td>
+                <td className="px-3 py-2 text-slate-400 print:text-slate-700">
+                  {event.notes || "-"}
+                </td>
               </tr>
             ))}
           </tbody>

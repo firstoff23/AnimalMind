@@ -1,0 +1,9 @@
+[
+  {
+    "epoch": 1,
+    "train_loss": 4.496,
+    "acc_species": 0.8125,
+    "acc_breed": 0.125,
+    "elapsed_s": 7.2
+  }
+]

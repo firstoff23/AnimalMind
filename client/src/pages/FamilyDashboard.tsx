@@ -1,24 +1,24 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import FamilyInvite from "@/components/FamilyInvite";
-import { trpc } from "@/lib/trpc";
 import {
-  PawPrint,
-  Users,
   AlertCircle,
-  Crown,
-  UserRound,
-  LogOut,
   ChevronDown,
   ChevronUp,
-  Plus,
+  Crown,
   Link,
+  LogOut,
+  PawPrint,
+  Plus,
+  UserRound,
+  Users,
 } from "lucide-react";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import FamilyInvite from "@/components/FamilyInvite";
+import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { trpc } from "@/lib/trpc";
 
 // Maps raw role values from the DB to readable Portuguese labels
 function getRoleLabel(role: string): { label: string; className: string } {
@@ -69,7 +69,10 @@ function LeaveConfirmModal({
             <LogOut size={18} className="text-red-400" aria-hidden="true" />
           </div>
           <div>
-            <h2 id="leave-family-title" className="text-sm font-bold text-foreground">
+            <h2
+              id="leave-family-title"
+              className="text-sm font-bold text-foreground"
+            >
               {isOwner ? "Apagar família?" : "Sair da família?"}
             </h2>
             <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
@@ -95,7 +98,11 @@ function LeaveConfirmModal({
             disabled={isPending}
             className="flex-1 rounded-xl text-xs bg-red-500/80 hover:bg-red-500 text-white border-0 active-scale tap-highlight-none"
           >
-            {isPending ? "A sair…" : isOwner ? "Apagar família" : "Sair da família"}
+            {isPending
+              ? "A sair…"
+              : isOwner
+                ? "Apagar família"
+                : "Sair da família"}
           </Button>
         </div>
       </div>
@@ -133,7 +140,10 @@ export default function FamilyDashboard({
   const hasFamilyData = !!familyId;
 
   const currentUserMember = membersQuery.data?.find(
-    (m) => m.email && currentUserEmail && m.email.toLowerCase() === currentUserEmail.toLowerCase()
+    (m) =>
+      m.email &&
+      currentUserEmail &&
+      m.email.toLowerCase() === currentUserEmail.toLowerCase(),
   );
   const currentUserIsOwner = currentUserMember?.role === "admin";
 
@@ -149,7 +159,7 @@ export default function FamilyDashboard({
   const createFamilyMutation = trpc.family.create.useMutation({
     onSuccess: () => {
       setFamilyName("");
-      toast.success("Família criada com sucesso! 🎉");
+      toast.success("Família criada com sucesso!");
       utils.family.getMembers.invalidate();
     },
     onError: (error) => toast.error(error.message),
@@ -157,7 +167,7 @@ export default function FamilyDashboard({
 
   const joinMutation = trpc.family.join.useMutation({
     onSuccess: () => {
-      toast.success("Entraste na família! 🐾");
+      toast.success("Entraste na família!");
       utils.family.getMembers.invalidate();
       utils.family.getAnimals.invalidate();
       setLocation("/family");
@@ -194,7 +204,10 @@ export default function FamilyDashboard({
     return (
       <div className="min-h-full bg-slate-950 px-4 py-6 text-slate-100 flex items-center justify-center pt-16">
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 max-w-md w-full">
-          <AlertCircle className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
+          <AlertCircle
+            className="w-10 h-10 text-red-400 mx-auto"
+            aria-hidden="true"
+          />
           <h2 className="text-sm font-semibold text-foreground">
             Erro ao carregar o Modo Família
           </h2>
@@ -256,7 +269,11 @@ export default function FamilyDashboard({
             {/* Create Family */}
             <SpotlightCard className="p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Plus size={14} className="text-emerald-400" aria-hidden="true" />
+                <Plus
+                  size={14}
+                  className="text-emerald-400"
+                  aria-hidden="true"
+                />
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Criar nova família
                 </h3>
@@ -337,9 +354,7 @@ export default function FamilyDashboard({
                   />
                   <Button
                     type="submit"
-                    disabled={
-                      joinMutation.isPending || joinCode.length !== 6
-                    }
+                    disabled={joinMutation.isPending || joinCode.length !== 6}
                     className="bg-primary hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold px-4 active-scale tap-highlight-none"
                   >
                     {joinMutation.isPending ? "A entrar…" : "Entrar"}

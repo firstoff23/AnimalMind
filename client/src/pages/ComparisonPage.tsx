@@ -1,27 +1,25 @@
-import { useState } from "react";
+import { AlertCircle, BarChart3, PawPrint } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { trpc } from "@/lib/trpc";
-import { useLanguage } from "@/hooks/useLanguage";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PawPrint, BarChart3, AlertCircle } from "lucide-react";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { Button } from "@/components/ui/button";
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
   Legend,
-  ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
   PolarAngleAxis,
+  PolarGrid,
   PolarRadiusAxis,
   Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
-import { STATE_COLORS } from "../../../shared/types";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/hooks/useLanguage";
+import { trpc } from "@/lib/trpc";
 import type { EmotionalState } from "../../../shared/types";
 
 const PERIOD_OPTIONS = [
@@ -30,32 +28,53 @@ const PERIOD_OPTIONS = [
   { value: 90, label: "90 dias" },
 ];
 
-const ALL_STATES: EmotionalState[] = ["relaxed", "attention", "excitement", "hunger", "alert", "distress"];
+const ALL_STATES: EmotionalState[] = [
+  "relaxed",
+  "attention",
+  "excitement",
+  "hunger",
+  "alert",
+  "distress",
+];
 
-const STATE_EMOJIS: Record<EmotionalState, string> = {
-  relaxed: "⚪",
-  attention: "🟡",
-  excitement: "🟢",
-  hunger: "🟠",
-  alert: "🔵",
-  distress: "🔴",
+const STATE_DOT_COLORS: Record<EmotionalState, string> = {
+  relaxed: "#94a3b8",
+  attention: "#eab308",
+  excitement: "#22c55e",
+  hunger: "#f97316",
+  alert: "#3b82f6",
+  distress: "#ef4444",
 };
 
-const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+const COLORS = [
+  "#6366f1",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#ec4899",
+];
 
 export default function ComparisonPage() {
   const { t, language } = useLanguage();
-  const { data: animals = [], isLoading: isLoadingAnimals, error: errorAnimals, refetch: refetchAnimals } = trpc.animals.list.useQuery();
+  const {
+    data: animals = [],
+    isLoading: isLoadingAnimals,
+    error: errorAnimals,
+    refetch: refetchAnimals,
+  } = trpc.animals.list.useQuery();
 
   const [a1, setA1] = useQueryState("a1");
   const [a2, setA2] = useQueryState("a2");
   const [a3, setA3] = useQueryState("a3");
   const [a4, setA4] = useQueryState("a4");
-  const [periodStr, setPeriodStr] = useQueryState("period", { defaultValue: "month" });
+  const [periodStr, setPeriodStr] = useQueryState("period", {
+    defaultValue: "month",
+  });
 
   const selectedIds = [a1, a2, a3, a4]
     .map((id) => (id ? parseInt(id, 10) : null))
-    .filter((id): id is number => id !== null && !isNaN(id));
+    .filter((id): id is number => id !== null && !Number.isNaN(id));
 
   const period = periodStr === "week" ? 7 : periodStr === "quarter" ? 90 : 30;
 
@@ -63,15 +82,23 @@ export default function ComparisonPage() {
     setPeriodStr(days === 7 ? "week" : days === 90 ? "quarter" : "month");
   };
 
-  const { data: listData, isLoading: isLoadingEvents, error: errorEvents, refetch: refetchEvents } = trpc.events.list.useQuery(
+  const {
+    data: listData,
+    isLoading: isLoadingEvents,
+    error: errorEvents,
+    refetch: refetchEvents,
+  } = trpc.events.list.useQuery(
     { pageSize: 1000 },
-    { enabled: animals.length > 0 }
+    { enabled: animals.length > 0 },
   );
   const eventsData = listData?.events ?? [];
 
   const toggleAnimal = (id: number) => {
-    const activeIdsCurrent = selectedIds.length > 0 ? selectedIds : animals.slice(0, 2).map((a) => a.id);
-    let newIds = activeIdsCurrent.includes(id)
+    const activeIdsCurrent =
+      selectedIds.length > 0
+        ? selectedIds
+        : animals.slice(0, 2).map((a) => a.id);
+    const newIds = activeIdsCurrent.includes(id)
       ? activeIdsCurrent.filter((x) => x !== id)
       : [...activeIdsCurrent, id].slice(0, 4);
 
@@ -82,17 +109,25 @@ export default function ComparisonPage() {
   };
 
   const cutoff = new Date(Date.now() - period * 24 * 60 * 60 * 1000);
-  const activeIds = selectedIds.length > 0 ? selectedIds : animals.slice(0, 2).map((a) => a.id);
+  const activeIds =
+    selectedIds.length > 0 ? selectedIds : animals.slice(0, 2).map((a) => a.id);
   const activeAnimals = animals.filter((a) => activeIds.includes(a.id));
 
   // Count per animal per state
   const stateCounts: Record<number, Record<EmotionalState, number>> = {};
   activeAnimals.forEach((a) => {
-    stateCounts[a.id] = { relaxed: 0, attention: 0, excitement: 0, hunger: 0, alert: 0, distress: 0 };
+    stateCounts[a.id] = {
+      relaxed: 0,
+      attention: 0,
+      excitement: 0,
+      hunger: 0,
+      alert: 0,
+      distress: 0,
+    };
   });
 
   (eventsData as any[]).forEach((ev: any) => {
-    if (!ev || !ev.animalId || !activeIds.includes(ev.animalId)) return;
+    if (!ev?.animalId || !activeIds.includes(ev.animalId)) return;
     if (new Date(ev.createdAt) < cutoff) return;
     const st = ev.state as EmotionalState;
     if (stateCounts[ev.animalId] && ALL_STATES.includes(st)) {
@@ -104,7 +139,7 @@ export default function ComparisonPage() {
   const barData = ALL_STATES.map((state) => {
     const entry: Record<string, any> = {
       state: (language === "pt" ? t(`states.${state}` as any) : state) || state,
-      emoji: STATE_EMOJIS[state],
+      dotColor: STATE_DOT_COLORS[state],
     };
     activeAnimals.forEach((a) => {
       entry[a.name] = stateCounts[a.id]?.[state] ?? 0;
@@ -118,8 +153,12 @@ export default function ComparisonPage() {
       state: (language === "pt" ? t(`states.${state}` as any) : state) || state,
     };
     activeAnimals.forEach((a) => {
-      const total = Object.values(stateCounts[a.id] ?? {}).reduce((s, v) => s + v, 0);
-      entry[a.name] = total > 0 ? Math.round((stateCounts[a.id][state] / total) * 100) : 0;
+      const total = Object.values(stateCounts[a.id] ?? {}).reduce(
+        (s, v) => s + v,
+        0,
+      );
+      entry[a.name] =
+        total > 0 ? Math.round((stateCounts[a.id][state] / total) * 100) : 0;
     });
     return entry;
   });
@@ -130,7 +169,11 @@ export default function ComparisonPage() {
       <div className="bg-card border border-border rounded-xl p-3 text-xs shadow-xl">
         <p className="font-bold text-foreground mb-2">{label}</p>
         {payload.map((p: any, i: number) => (
-          <p key={i} style={{ color: p.color }} className="flex items-center gap-1.5">
+          <p
+            key={i}
+            style={{ color: p.color }}
+            className="flex items-center gap-1.5"
+          >
             <span className="font-semibold">{p.name}:</span> {p.value}
           </p>
         ))}
@@ -148,7 +191,9 @@ export default function ComparisonPage() {
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 text-center space-y-3 animate-shake max-w-md mx-auto">
           <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
           <h2 className="text-sm font-semibold text-foreground">
-            {language === "pt" ? "Erro ao carregar dados de comparação." : "Error loading comparison data."}
+            {language === "pt"
+              ? "Erro ao carregar dados de comparação."
+              : "Error loading comparison data."}
           </h2>
           <p className="text-xs text-muted-foreground leading-relaxed">
             {language === "pt"
@@ -224,7 +269,9 @@ export default function ComparisonPage() {
           {/* Animal selector (max 4) */}
           <div>
             <p className="text-xs text-muted-foreground mb-2">
-              {language === "pt" ? "Selecionar animais (máx. 4):" : "Select animals (max 4):"}
+              {language === "pt"
+                ? "Selecionar animais (máx. 4):"
+                : "Select animals (max 4):"}
             </p>
             <div className="flex flex-wrap gap-2">
               {animals.map((a, i) => {
@@ -238,7 +285,11 @@ export default function ComparisonPage() {
                         ? "text-white border-transparent shadow-md scale-105"
                         : "bg-card border-border text-muted-foreground hover:text-foreground"
                     }`}
-                    style={isActive ? { backgroundColor: COLORS[i % COLORS.length] } : {}}
+                    style={
+                      isActive
+                        ? { backgroundColor: COLORS[i % COLORS.length] }
+                        : {}
+                    }
                   >
                     <PawPrint size={12} />
                     {a.name}
@@ -254,13 +305,21 @@ export default function ComparisonPage() {
       <Card className="bg-slate-900/60 border-slate-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            {language === "pt" ? "Ocorrências por Estado Emocional" : "Occurrences by Emotional State"}
+            {language === "pt"
+              ? "Ocorrências por Estado Emocional"
+              : "Occurrences by Emotional State"}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={barData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <BarChart
+              data={barData}
+              margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.05)"
+              />
               <XAxis
                 dataKey="state"
                 tick={{ fontSize: 10, fill: "#94a3b8" }}
@@ -276,7 +335,9 @@ export default function ComparisonPage() {
               <Tooltip content={<CustomTooltip />} />
               <Legend
                 wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-                formatter={(value) => <span style={{ color: "#94a3b8" }}>{value}</span>}
+                formatter={(value) => (
+                  <span style={{ color: "#94a3b8" }}>{value}</span>
+                )}
               />
               {activeAnimals.map((a, i) => (
                 <Bar
@@ -297,12 +358,17 @@ export default function ComparisonPage() {
         <Card className="bg-slate-900/60 border-slate-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              {language === "pt" ? "Perfil Emocional (%)" : "Emotional Profile (%)"}
+              {language === "pt"
+                ? "Perfil Emocional (%)"
+                : "Emotional Profile (%)"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
-              <RadarChart data={radarData} margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
+              <RadarChart
+                data={radarData}
+                margin={{ top: 10, right: 20, left: 20, bottom: 10 }}
+              >
                 <PolarGrid stroke="rgba(255,255,255,0.08)" />
                 <PolarAngleAxis
                   dataKey="state"
@@ -326,7 +392,9 @@ export default function ComparisonPage() {
                 ))}
                 <Legend
                   wrapperStyle={{ fontSize: "11px" }}
-                  formatter={(value) => <span style={{ color: "#94a3b8" }}>{value}</span>}
+                  formatter={(value) => (
+                    <span style={{ color: "#94a3b8" }}>{value}</span>
+                  )}
                 />
                 <Tooltip content={<CustomTooltip />} />
               </RadarChart>
@@ -363,10 +431,20 @@ export default function ComparisonPage() {
               </thead>
               <tbody>
                 {ALL_STATES.map((state) => (
-                  <tr key={state} className="border-b border-border/30 last:border-0">
+                  <tr
+                    key={state}
+                    className="border-b border-border/30 last:border-0"
+                  >
                     <td className="py-2 pr-3 text-foreground font-medium">
-                      {STATE_EMOJIS[state]}{" "}
-                      {(language === "pt" ? t(`states.${state}` as any) : state) || state}
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: STATE_DOT_COLORS[state] }}
+                        />
+                        {(language === "pt"
+                          ? t(`states.${state}` as any)
+                          : state) || state}
+                      </span>
                     </td>
                     {activeAnimals.map((a, i) => (
                       <td

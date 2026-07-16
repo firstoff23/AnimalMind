@@ -1,25 +1,22 @@
-import { useState, useMemo } from "react";
-import { trpc } from "@/lib/trpc";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import {
-  FileText,
-  Share2,
-  TrendingUp,
-  AlertTriangle,
-  Heart,
-  ChevronLeft,
   Activity,
+  AlertTriangle,
   CheckCircle,
-  Clock,
+  FileText,
+  PawPrint,
+  Share2,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
-import { STATE_LABELS, STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 import type { EmotionalState } from "../../../shared/types";
+import { STATE_LABELS } from "../../../shared/types";
 
 interface ActiveAnimal {
   id: number;
@@ -27,6 +24,7 @@ interface ActiveAnimal {
   species: "dog" | "cat";
   breed?: string;
   age?: number;
+  isActive?: boolean;
 }
 
 export default function VetPage() {
@@ -34,23 +32,24 @@ export default function VetPage() {
   const [vetEmail, setVetEmail] = useState("");
   const [vetNote, setVetNote] = useState("");
 
-  const utils = trpc.useUtils();
-  const { data: animals = [], isLoading: animalsLoading } = trpc.animals.list.useQuery();
+  const _utils = trpc.useUtils();
+  const { data: animals = [], isLoading: animalsLoading } =
+    trpc.animals.list.useQuery();
   const activeAnimal = animals.find((a) => a.isActive) ?? animals[0];
 
   const { data: events = [] } = trpc.animals.weeklyStats.useQuery(
     { animalId: activeAnimal?.id },
-    { enabled: !!activeAnimal }
+    { enabled: !!activeAnimal },
   );
 
   const { data: baseline } = trpc.animals.getBaseline.useQuery(
     { animalId: activeAnimal?.id || 1 },
-    { enabled: !!activeAnimal }
+    { enabled: !!activeAnimal },
   );
 
   const { data: beliefState } = trpc.animals.getBeliefState.useQuery(
     { animalId: activeAnimal?.id || 1 },
-    { enabled: !!activeAnimal }
+    { enabled: !!activeAnimal },
   );
 
   // Share report mutation
@@ -116,29 +115,29 @@ export default function VetPage() {
 
     if (stats.distressIndex > 40) {
       list.push(
-        "Frequência elevada de episódios de angústia e alerta. Recomenda-se realizar check-up para despiste de patologias dolorosas agudas (ex: otites, problemas osteoarticulares ou dor gastrointestinal)."
+        "Frequência elevada de episódios de angústia e alerta. Recomenda-se realizar check-up para despiste de patologias dolorosas agudas (ex: otites, problemas osteoarticulares ou dor gastrointestinal).",
       );
     } else if (stats.distressIndex > 20) {
       list.push(
-        "Níveis moderados de angústia detetados. Observe se estes estados coincidem com períodos de ausência do tutor ou alterações no ambiente doméstico (possível ansiedade de separação)."
+        "Níveis moderados de angústia detetados. Observe se estes estados coincidem com períodos de ausência do tutor ou alterações no ambiente doméstico (possível ansiedade de separação).",
       );
     }
 
     if (stats.agitationScore > 50) {
       list.push(
-        "Índice de agitação elevado. Considere rever o nível de exercício físico diário e enriquecimento ambiental. Estados constantes de hiperatividade podem despoletar stress crónico."
+        "Índice de agitação elevado. Considere rever o nível de exercício físico diário e enriquecimento ambiental. Estados constantes de hiperatividade podem despoletar stress crónico.",
       );
     }
 
     if (stats.baselineConsistency < 60) {
       list.push(
-        "Desvio significativo da baseline de comportamento normal. O animal está a manifestar vocalizações fora do seu perfil habitual. Recomenda-se acompanhamento por especialista em comportamento animal ou veterinário."
+        "Desvio significativo da baseline de comportamento normal. O animal está a manifestar vocalizações fora do seu perfil habitual. Recomenda-se acompanhamento por especialista em comportamento animal ou veterinário.",
       );
     }
 
     if (list.length === 0) {
       list.push(
-        "O perfil de humor e comportamento acústico do animal está perfeitamente consistente com a baseline definida. Continue a monitorização de rotina."
+        "O perfil de humor e comportamento acústico do animal está perfeitamente consistente com a baseline definida. Continue a monitorização de rotina.",
       );
     }
 
@@ -153,7 +152,7 @@ export default function VetPage() {
     }
 
     const doc = new jsPDF();
-    const primaryColor = "#10b981"; // Emerald
+    const _primaryColor = "#10b981"; // Emerald
     const dateStr = new Date().toLocaleDateString("pt-PT");
 
     // Header Title
@@ -178,16 +177,30 @@ export default function VetPage() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.text(`Nome: ${activeAnimal.name}`, 15, 65);
-    doc.text(`Espécie: ${activeAnimal.species === "dog" ? "Cão" : "Gato"}`, 15, 72);
+    doc.text(
+      `Espécie: ${activeAnimal.species === "dog" ? "Cão" : "Gato"}`,
+      15,
+      72,
+    );
     doc.text(`Raça: ${activeAnimal.breed || "Não informada"}`, 110, 65);
-    doc.text(`Idade: ${activeAnimal.age !== undefined ? `${activeAnimal.age} anos` : "Não informada"}`, 110, 72);
+    doc.text(
+      `Idade: ${activeAnimal.age !== undefined ? `${activeAnimal.age} anos` : "Não informada"}`,
+      110,
+      72,
+    );
 
     // Baseline details
     const normalStatesFormatted = baseline?.normalStates
-      ? baseline.normalStates.map((s) => STATE_LABELS[s as EmotionalState] || s).join(", ")
+      ? baseline.normalStates
+          .map((s) => STATE_LABELS[s as EmotionalState] || s)
+          .join(", ")
       : "Relaxado, Excitação";
     doc.text(`Baseline Normal: ${normalStatesFormatted}`, 15, 82);
-    doc.text(`Sensibilidade de Alerta: ${baseline?.alertSensitivity || "Média"}`, 110, 82);
+    doc.text(
+      `Sensibilidade de Alerta: ${baseline?.alertSensitivity || "Média"}`,
+      110,
+      82,
+    );
 
     // Divider Line
     doc.setDrawColor(226, 232, 240);
@@ -201,20 +214,52 @@ export default function VetPage() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.text(`Total de Vocalizações Analisadas: ${stats.totalEvents}`, 15, 109);
-    doc.text(`Índice de Angústia (Distress Index): ${stats.distressIndex}%`, 15, 117);
-    doc.text(`Nível de Agitação (Agitation Score): ${stats.agitationScore}%`, 15, 125);
-    doc.text(`Consistência de Baseline: ${stats.baselineConsistency}%`, 15, 133);
+    doc.text(
+      `Índice de Angústia (Distress Index): ${stats.distressIndex}%`,
+      15,
+      117,
+    );
+    doc.text(
+      `Nível de Agitação (Agitation Score): ${stats.agitationScore}%`,
+      15,
+      125,
+    );
+    doc.text(
+      `Consistência de Baseline: ${stats.baselineConsistency}%`,
+      15,
+      133,
+    );
 
     // Belief POMDP consolidation
     if (beliefState) {
-      doc.text("Distribuição do Humor Consolidado (POMDP Belief State):", 15, 143);
+      doc.text(
+        "Distribuição do Humor Consolidado (POMDP Belief State):",
+        15,
+        143,
+      );
       doc.setFontSize(9);
-      doc.text(`- Relaxado: ${Math.round(beliefState.relaxed * 100)}%`, 20, 150);
-      doc.text(`- Excitação: ${Math.round(beliefState.excitement * 100)}%`, 20, 156);
-      doc.text(`- Angústia: ${Math.round(beliefState.distress * 100)}%`, 80, 150);
+      doc.text(
+        `- Relaxado: ${Math.round(beliefState.relaxed * 100)}%`,
+        20,
+        150,
+      );
+      doc.text(
+        `- Excitação: ${Math.round(beliefState.excitement * 100)}%`,
+        20,
+        156,
+      );
+      doc.text(
+        `- Angústia: ${Math.round(beliefState.distress * 100)}%`,
+        80,
+        150,
+      );
       doc.text(`- Fome: ${Math.round(beliefState.hunger * 100)}%`, 80, 156);
       doc.text(`- Alerta: ${Math.round(beliefState.alert * 100)}%`, 140, 150);
-      doc.text(`- Atenção: ${Math.round(beliefState.attention * 100)}%`, 140, 156);
+      doc.text(
+        `- Atenção: ${Math.round(beliefState.attention * 100)}%`,
+        140,
+        156,
+      );
     }
 
     doc.setDrawColor(226, 232, 240);
@@ -245,7 +290,9 @@ export default function VetPage() {
     }
 
     // Save report
-    doc.save(`Relatorio_Clinico_${activeAnimal.name}_${dateStr.replace(/\//g, "-")}.pdf`);
+    doc.save(
+      `Relatorio_Clinico_${activeAnimal.name}_${dateStr.replace(/\//g, "-")}.pdf`,
+    );
     toast.success("PDF Clínico descarregado com sucesso!");
   };
 
@@ -272,22 +319,16 @@ export default function VetPage() {
   }
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-6 max-w-lg mx-auto space-y-6">
-      {/* Navigation & Header */}
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full shrink-0">
-            <ChevronLeft size={20} />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            Partilha Veterinária <Activity size={18} className="text-emerald-400" />
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Dossiê clínico, estatísticas de comportamento e partilha com o médico veterinário
-          </p>
-        </div>
+    <div className="page-enter min-h-full px-4 pt-4 pb-6 max-w-lg mx-auto space-y-6">
+      <div>
+        <h1 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          Partilha Veterinária{" "}
+          <Activity size={16} className="text-emerald-400" />
+        </h1>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Dossiê clínico, estatísticas de comportamento e partilha com o médico
+          veterinário
+        </p>
       </div>
 
       {activeAnimal ? (
@@ -295,16 +336,25 @@ export default function VetPage() {
           {/* Active animal banner */}
           <div className="bg-gradient-to-tr from-emerald-950/20 to-secondary/30 border border-emerald-500/20 rounded-2xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{activeAnimal.species === "dog" ? "🐕" : "🐈"}</span>
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <PawPrint size={22} className="text-emerald-400" />
+              </div>
               <div>
-                <p className="text-sm font-bold text-foreground">{activeAnimal.name}</p>
+                <p className="text-sm font-bold text-foreground">
+                  {activeAnimal.name}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {activeAnimal.breed || "Sem Raça Definida"} ·{" "}
-                  {activeAnimal.age !== undefined ? `${activeAnimal.age} anos` : "Idade indefinida"}
+                  {activeAnimal.age !== undefined
+                    ? `${activeAnimal.age} anos`
+                    : "Idade indefinida"}
                 </p>
               </div>
             </div>
-            <Badge variant="secondary" className="bg-emerald-950/30 text-emerald-400 border border-emerald-500/20">
+            <Badge
+              variant="secondary"
+              className="bg-emerald-950/30 text-emerald-400 border border-emerald-500/20"
+            >
               Clínico Ativo
             </Badge>
           </div>
@@ -314,7 +364,7 @@ export default function VetPage() {
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Indicadores Clínicos (Últimos 7 dias)
             </h2>
-            
+
             <div className="grid grid-cols-3 gap-3">
               {/* Distress index */}
               <div className="bg-card border border-border rounded-xl p-3 flex flex-col items-center text-center space-y-1">
@@ -367,7 +417,10 @@ export default function VetPage() {
             </div>
             <div className="space-y-3">
               {recommendations.map((rec, idx) => (
-                <p key={idx} className="text-xs text-muted-foreground leading-relaxed pl-2.5 border-l-2 border-primary/40">
+                <p
+                  key={idx}
+                  className="text-xs text-muted-foreground leading-relaxed pl-2.5 border-l-2 border-primary/40"
+                >
                   {rec}
                 </p>
               ))}
@@ -393,7 +446,7 @@ export default function VetPage() {
                 Partilhar Dossiê Clínico com Veterinário
               </h3>
             </div>
-            
+
             <form onSubmit={handleShare} className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
@@ -440,14 +493,17 @@ export default function VetPage() {
                 disabled={shareMutation.isPending}
                 className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 font-semibold text-white shadow-md rounded-xl text-xs h-10 mt-1"
               >
-                {shareMutation.isPending ? "A enviar..." : "Partilhar relatório"}
+                {shareMutation.isPending
+                  ? "A enviar..."
+                  : "Partilhar relatório"}
               </Button>
             </form>
           </div>
         </>
       ) : (
         <div className="bg-card border border-border rounded-2xl p-5 text-center text-muted-foreground text-sm">
-          Nenhum animal ativo encontrado. Adicione ou selecione um animal antes de gerar o dossiê clínico.
+          Nenhum animal ativo encontrado. Adicione ou selecione um animal antes
+          de gerar o dossiê clínico.
         </div>
       )}
     </div>

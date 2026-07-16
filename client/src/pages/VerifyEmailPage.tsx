@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import { MailCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import { AuthInlineNote, AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function VerifyEmailPage() {
   const { user, resendVerificationEmail } = useAuth();
@@ -39,7 +39,7 @@ export default function VerifyEmailPage() {
   return (
     <AuthShell
       title="Verifique o email"
-      subtitle="Confirme a sua conta para concluir o acesso ao AnimalMind."
+      subtitle="Confirme a sua conta para concluir o acesso ao Pawra."
       eyebrow="Confirmação de conta"
       compact
     >
@@ -50,7 +50,8 @@ export default function VerifyEmailPage() {
           title="Link de confirmação enviado"
           description={
             <>
-              Enviámos um link para <strong>{user.email}</strong>. Abra o email e confirme a conta antes de iniciar sessão.
+              Enviámos um link para <strong>{user.email}</strong>. Abra o email
+              e confirme a conta antes de iniciar sessão.
             </>
           }
         />

@@ -1,4 +1,12 @@
-export function triggerHaptic(type: "light" | "medium" | "heavy" | "success" | "error" | "warning" = "light") {
+export function triggerHaptic(
+  type:
+    | "light"
+    | "medium"
+    | "heavy"
+    | "success"
+    | "error"
+    | "warning" = "light",
+) {
   if (typeof navigator === "undefined" || !navigator.vibrate) return;
   try {
     switch (type) {

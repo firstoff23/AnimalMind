@@ -9,9 +9,7 @@
  * Data is periodically sent to /__manus__/logs
  * Note: uiEvents are mirrored to sessionEvents for sessionReplay.log
  */
-(function () {
-  "use strict";
-
+(() => {
   // Prevent double initialization
   if (window.__MANUS_DEBUG_COLLECTOR__) return;
 
@@ -68,23 +66,23 @@
     if (value === undefined) return undefined;
 
     if (typeof value === "string") {
-      return value.length > 1000 ? value.slice(0, 1000) + "...[truncated]" : value;
+      return value.length > 1000
+        ? `${value.slice(0, 1000)}...[truncated]`
+        : value;
     }
 
     if (typeof value !== "object") return value;
 
     if (Array.isArray(value)) {
-      return value.slice(0, 100).map(function (v) {
-        return sanitizeValue(v, depth + 1);
-      });
+      return value.slice(0, 100).map((v) => sanitizeValue(v, depth + 1));
     }
 
     var sanitized = {};
     for (var k in value) {
-      if (Object.prototype.hasOwnProperty.call(value, k)) {
-        var isSensitive = CONFIG.sensitiveFields.some(function (f) {
-          return k.toLowerCase().indexOf(f) !== -1;
-        });
+      if (Object.hasOwn(value, k)) {
+        var isSensitive = CONFIG.sensitiveFields.some(
+          (f) => k.toLowerCase().indexOf(f) !== -1,
+        );
         if (isSensitive) {
           sanitized[k] = "[REDACTED]";
         } else {
@@ -102,7 +100,7 @@
       }
       if (typeof arg === "object") return sanitizeValue(arg);
       return String(arg);
-    } catch (e) {
+    } catch (_e) {
       return "[Unserializable]";
     }
   }
@@ -121,7 +119,7 @@
     if (typeof str !== "string") return str;
     try {
       return JSON.parse(str);
-    } catch (e) {
+    } catch (_e) {
       return str;
     }
   }
@@ -134,7 +132,7 @@
     try {
       if (!target || !(target instanceof Element)) return false;
       return !!target.closest(".manus-no-record");
-    } catch (e) {
+    } catch (_e) {
       return false;
     }
   }
@@ -143,8 +141,8 @@
     try {
       var t = (s || "").trim().replace(/\s+/g, " ");
       if (!t) return "";
-      return t.length > maxLen ? t.slice(0, maxLen) + "…" : t;
-    } catch (e) {
+      return t.length > maxLen ? `${t.slice(0, maxLen)}…` : t;
+    } catch (_e) {
       return "";
     }
   }
@@ -153,7 +151,7 @@
     try {
       var t = el.innerText || el.textContent || "";
       return compactText(t, CONFIG.uiTextMaxLen);
-    } catch (e) {
+    } catch (_e) {
       return "";
     }
   }
@@ -161,9 +159,7 @@
   function describeElement(el) {
     if (!el || !(el instanceof Element)) return null;
 
-    var getAttr = function (name) {
-      return el.getAttribute(name);
-    };
+    var getAttr = (name) => el.getAttribute(name);
 
     var tag = el.tagName ? el.tagName.toLowerCase() : null;
     var id = el.id || null;
@@ -178,14 +174,14 @@
       getAttr("data-test") ||
       null;
 
-    var type = tag === "input" ? (getAttr("type") || "text") : null;
+    var type = tag === "input" ? getAttr("type") || "text" : null;
     var href = tag === "a" ? getAttr("href") || null : null;
 
     // a small, stable hint for agents (avoid building full CSS paths)
     var selectorHint = null;
-    if (testId) selectorHint = '[data-testid="' + testId + '"]';
-    else if (dataLoc) selectorHint = '[data-loc="' + dataLoc + '"]';
-    else if (id) selectorHint = "#" + id;
+    if (testId) selectorHint = `[data-testid="${testId}"]`;
+    else if (dataLoc) selectorHint = `[data-loc="${dataLoc}"]`;
+    else if (id) selectorHint = `#${id}`;
     else selectorHint = tag || "unknown";
 
     return {
@@ -214,9 +210,9 @@
     var name = (el.getAttribute("name") || "").toLowerCase();
     var id = (el.id || "").toLowerCase();
 
-    return CONFIG.sensitiveFields.some(function (f) {
-      return name.indexOf(f) !== -1 || id.indexOf(f) !== -1;
-    });
+    return CONFIG.sensitiveFields.some(
+      (f) => name.indexOf(f) !== -1 || id.indexOf(f) !== -1,
+    );
   }
 
   function getInputValueSafe(el) {
@@ -227,13 +223,14 @@
     var v = "";
     try {
       v = el.value != null ? String(el.value) : "";
-    } catch (e) {
+    } catch (_e) {
       v = "";
     }
 
     if (isSensitiveField(el)) return { masked: true, length: v.length };
 
-    if (v.length > CONFIG.uiInputMaxLen) v = v.slice(0, CONFIG.uiInputMaxLen) + "…";
+    if (v.length > CONFIG.uiInputMaxLen)
+      v = `${v.slice(0, CONFIG.uiInputMaxLen)}…`;
     return v;
   }
 
@@ -253,7 +250,7 @@
     // Clicks
     document.addEventListener(
       "click",
-      function (e) {
+      (e) => {
         var t = e.target;
         if (shouldIgnoreTarget(t)) return;
         logUiEvent("click", {
@@ -262,13 +259,13 @@
           y: e.clientY,
         });
       },
-      true
+      true,
     );
 
     // Typing "commit" events
     document.addEventListener(
       "change",
-      function (e) {
+      (e) => {
         var t = e.target;
         if (shouldIgnoreTarget(t)) return;
         logUiEvent("change", {
@@ -276,22 +273,22 @@
           value: getInputValueSafe(t),
         });
       },
-      true
+      true,
     );
 
     document.addEventListener(
       "focusin",
-      function (e) {
+      (e) => {
         var t = e.target;
         if (shouldIgnoreTarget(t)) return;
         logUiEvent("focusin", { target: describeElement(t) });
       },
-      true
+      true,
     );
 
     document.addEventListener(
       "focusout",
-      function (e) {
+      (e) => {
         var t = e.target;
         if (shouldIgnoreTarget(t)) return;
         logUiEvent("focusout", {
@@ -299,36 +296,36 @@
           value: getInputValueSafe(t),
         });
       },
-      true
+      true,
     );
 
     // Enter/Escape are useful for form flows & modals
     document.addEventListener(
       "keydown",
-      function (e) {
+      (e) => {
         if (e.key !== "Enter" && e.key !== "Escape") return;
         var t = e.target;
         if (shouldIgnoreTarget(t)) return;
         logUiEvent("keydown", { key: e.key, target: describeElement(t) });
       },
-      true
+      true,
     );
 
     // Form submissions
     document.addEventListener(
       "submit",
-      function (e) {
+      (e) => {
         var t = e.target;
         if (shouldIgnoreTarget(t)) return;
         logUiEvent("submit", { target: describeElement(t) });
       },
-      true
+      true,
     );
 
     // Throttled scroll events
     window.addEventListener(
       "scroll",
-      function () {
+      () => {
         var now = Date.now();
         if (now - store.lastScrollTime < CONFIG.scrollThrottleMs) return;
         store.lastScrollTime = now;
@@ -340,7 +337,7 @@
           viewportHeight: window.innerHeight,
         });
       },
-      { passive: true }
+      { passive: true },
     );
 
     // Navigation tracking for SPAs
@@ -360,10 +357,10 @@
       nav("replaceState");
     };
 
-    window.addEventListener("popstate", function () {
+    window.addEventListener("popstate", () => {
       nav("popstate");
     });
-    window.addEventListener("hashchange", function () {
+    window.addEventListener("hashchange", () => {
       nav("hashchange");
     });
   }
@@ -380,7 +377,7 @@
     error: console.error.bind(console),
   };
 
-  ["log", "debug", "info", "warn", "error"].forEach(function (method) {
+  ["log", "debug", "info", "warn", "error"].forEach((method) => {
     console[method] = function () {
       var args = Array.prototype.slice.call(arguments);
 
@@ -398,7 +395,7 @@
     };
   });
 
-  window.addEventListener("error", function (event) {
+  window.addEventListener("error", (event) => {
     store.consoleLogs.push({
       timestamp: Date.now(),
       level: "ERROR",
@@ -425,7 +422,7 @@
     });
   });
 
-  window.addEventListener("unhandledrejection", function (event) {
+  window.addEventListener("unhandledrejection", (event) => {
     var reason = event.reason;
     store.consoleLogs.push({
       timestamp: Date.now(),
@@ -433,16 +430,16 @@
       args: [
         {
           type: "UnhandledRejection",
-          reason: reason && reason.message ? reason.message : String(reason),
-          stack: reason && reason.stack ? reason.stack : null,
+          reason: reason?.message ? reason.message : String(reason),
+          stack: reason?.stack ? reason.stack : null,
         },
       ],
-      stack: reason && reason.stack ? reason.stack : null,
+      stack: reason?.stack ? reason.stack : null,
     });
     pruneBuffer(store.consoleLogs, CONFIG.bufferSize.console);
 
     logUiEvent("unhandledrejection", {
-      reason: reason && reason.message ? reason.message : String(reason),
+      reason: reason?.message ? reason.message : String(reason),
     });
   });
 
@@ -452,14 +449,15 @@
 
   var originalFetch = window.fetch.bind(window);
 
-  window.fetch = function (input, init) {
+  window.fetch = (input, init) => {
     init = init || {};
     var startTime = Date.now();
     // Handle string, Request object, or URL object
-    var url = typeof input === "string"
-      ? input
-      : (input && (input.url || input.href || String(input))) || "";
-    var method = init.method || (input && input.method) || "GET";
+    var url =
+      typeof input === "string"
+        ? input
+        : (input && (input.url || input.href || String(input))) || "";
+    var method = init.method || input?.method || "GET";
 
     // Don't intercept internal requests
     if (url.indexOf("/__manus__/") === 0) {
@@ -470,9 +468,11 @@
     var requestHeaders = {};
     try {
       if (init.headers) {
-        requestHeaders = Object.fromEntries(new Headers(init.headers).entries());
+        requestHeaders = Object.fromEntries(
+          new Headers(init.headers).entries(),
+        );
       }
-    } catch (e) {
+    } catch (_e) {
       requestHeaders = { _parseError: true };
     }
 
@@ -491,10 +491,12 @@
     };
 
     return originalFetch(input, init)
-      .then(function (response) {
+      .then((response) => {
         entry.duration = Date.now() - startTime;
 
-        var contentType = (response.headers.get("content-type") || "").toLowerCase();
+        var contentType = (
+          response.headers.get("content-type") || ""
+        ).toLowerCase();
         var contentLength = response.headers.get("content-length");
 
         entry.response = {
@@ -516,9 +518,10 @@
         }
 
         // Skip body capture for streaming responses (SSE, etc.) to avoid memory leaks
-        var isStreaming = contentType.indexOf("text/event-stream") !== -1 ||
-                          contentType.indexOf("application/stream") !== -1 ||
-                          contentType.indexOf("application/x-ndjson") !== -1;
+        var isStreaming =
+          contentType.indexOf("text/event-stream") !== -1 ||
+          contentType.indexOf("application/stream") !== -1 ||
+          contentType.indexOf("application/x-ndjson") !== -1;
         if (isStreaming) {
           entry.response.body = "[Streaming response - not captured]";
           store.networkRequests.push(entry);
@@ -527,22 +530,26 @@
         }
 
         // Skip body capture for large responses to avoid memory issues
-        if (contentLength && parseInt(contentLength, 10) > CONFIG.maxBodyLength) {
-          entry.response.body = "[Response too large: " + contentLength + " bytes]";
+        if (
+          contentLength &&
+          parseInt(contentLength, 10) > CONFIG.maxBodyLength
+        ) {
+          entry.response.body = `[Response too large: ${contentLength} bytes]`;
           store.networkRequests.push(entry);
           pruneBuffer(store.networkRequests, CONFIG.bufferSize.network);
           return response;
         }
 
         // Skip body capture for binary content types
-        var isBinary = contentType.indexOf("image/") !== -1 ||
-                       contentType.indexOf("video/") !== -1 ||
-                       contentType.indexOf("audio/") !== -1 ||
-                       contentType.indexOf("application/octet-stream") !== -1 ||
-                       contentType.indexOf("application/pdf") !== -1 ||
-                       contentType.indexOf("application/zip") !== -1;
+        var isBinary =
+          contentType.indexOf("image/") !== -1 ||
+          contentType.indexOf("video/") !== -1 ||
+          contentType.indexOf("audio/") !== -1 ||
+          contentType.indexOf("application/octet-stream") !== -1 ||
+          contentType.indexOf("application/pdf") !== -1 ||
+          contentType.indexOf("application/zip") !== -1;
         if (isBinary) {
-          entry.response.body = "[Binary content: " + contentType + "]";
+          entry.response.body = `[Binary content: ${contentType}]`;
           store.networkRequests.push(entry);
           pruneBuffer(store.networkRequests, CONFIG.bufferSize.network);
           return response;
@@ -554,17 +561,17 @@
         // Async: read body in background, don't block the response
         clonedResponse
           .text()
-          .then(function (text) {
+          .then((text) => {
             if (text.length <= CONFIG.maxBodyLength) {
               entry.response.body = sanitizeValue(tryParseJson(text));
             } else {
-              entry.response.body = text.slice(0, CONFIG.maxBodyLength) + "...[truncated]";
+              entry.response.body = `${text.slice(0, CONFIG.maxBodyLength)}...[truncated]`;
             }
           })
-          .catch(function () {
+          .catch(() => {
             entry.response.body = "[Unable to read body]";
           })
-          .finally(function () {
+          .finally(() => {
             store.networkRequests.push(entry);
             pruneBuffer(store.networkRequests, CONFIG.bufferSize.network);
           });
@@ -572,7 +579,7 @@
         // Return response immediately, don't wait for body reading
         return response;
       })
-      .catch(function (error) {
+      .catch((error) => {
         entry.duration = Date.now() - startTime;
         entry.error = { message: error.message, stack: error.stack };
 
@@ -607,64 +614,67 @@
   };
 
   XMLHttpRequest.prototype.send = function (body) {
-    var xhr = this;
-
     if (
-      xhr._manusData &&
-      xhr._manusData.url &&
-      xhr._manusData.url.indexOf("/__manus__/") !== 0
+      this._manusData?.url &&
+      this._manusData.url.indexOf("/__manus__/") !== 0
     ) {
-      xhr._manusData.startTime = Date.now();
-      xhr._manusData.requestBody = body ? sanitizeValue(tryParseJson(body)) : null;
+      this._manusData.startTime = Date.now();
+      this._manusData.requestBody = body
+        ? sanitizeValue(tryParseJson(body))
+        : null;
 
-      xhr.addEventListener("load", function () {
-        var contentType = (xhr.getResponseHeader("content-type") || "").toLowerCase();
+      this.addEventListener("load", () => {
+        var contentType = (
+          this.getResponseHeader("content-type") || ""
+        ).toLowerCase();
         var responseBody = null;
 
         // Skip body capture for streaming responses
-        var isStreaming = contentType.indexOf("text/event-stream") !== -1 ||
-                          contentType.indexOf("application/stream") !== -1 ||
-                          contentType.indexOf("application/x-ndjson") !== -1;
+        var isStreaming =
+          contentType.indexOf("text/event-stream") !== -1 ||
+          contentType.indexOf("application/stream") !== -1 ||
+          contentType.indexOf("application/x-ndjson") !== -1;
 
         // Skip body capture for binary content types
-        var isBinary = contentType.indexOf("image/") !== -1 ||
-                       contentType.indexOf("video/") !== -1 ||
-                       contentType.indexOf("audio/") !== -1 ||
-                       contentType.indexOf("application/octet-stream") !== -1 ||
-                       contentType.indexOf("application/pdf") !== -1 ||
-                       contentType.indexOf("application/zip") !== -1;
+        var isBinary =
+          contentType.indexOf("image/") !== -1 ||
+          contentType.indexOf("video/") !== -1 ||
+          contentType.indexOf("audio/") !== -1 ||
+          contentType.indexOf("application/octet-stream") !== -1 ||
+          contentType.indexOf("application/pdf") !== -1 ||
+          contentType.indexOf("application/zip") !== -1;
 
         if (isStreaming) {
           responseBody = "[Streaming response - not captured]";
         } else if (isBinary) {
-          responseBody = "[Binary content: " + contentType + "]";
+          responseBody = `[Binary content: ${contentType}]`;
         } else {
           // Safe to read responseText for text responses
           try {
-            var text = xhr.responseText || "";
+            var text = this.responseText || "";
             if (text.length > CONFIG.maxBodyLength) {
-              responseBody = text.slice(0, CONFIG.maxBodyLength) + "...[truncated]";
+              responseBody = `${text.slice(0, CONFIG.maxBodyLength)}...[truncated]`;
             } else {
               responseBody = sanitizeValue(tryParseJson(text));
             }
           } catch (e) {
             // responseText may throw for non-text responses
-            responseBody = "[Unable to read response: " + e.message + "]";
+            responseBody = `[Unable to read response: ${e.message}]`;
           }
         }
 
         var entry = {
-          timestamp: xhr._manusData.startTime,
+          timestamp: this._manusData.startTime,
           type: "xhr",
-          method: xhr._manusData.method,
-          url: xhr._manusData.url,
-          request: { body: xhr._manusData.requestBody },
+          method: this._manusData.method,
+          url: this._manusData.url,
+          request: { body: this._manusData.requestBody },
           response: {
-            status: xhr.status,
-            statusText: xhr.statusText,
+            status: this.status,
+            statusText: this.statusText,
             body: responseBody,
           },
-          duration: Date.now() - xhr._manusData.startTime,
+          duration: Date.now() - this._manusData.startTime,
           error: null,
         };
 
@@ -682,15 +692,15 @@
         }
       });
 
-      xhr.addEventListener("error", function () {
+      this.addEventListener("error", () => {
         var entry = {
-          timestamp: xhr._manusData.startTime,
+          timestamp: this._manusData.startTime,
           type: "xhr",
-          method: xhr._manusData.method,
-          url: xhr._manusData.url,
-          request: { body: xhr._manusData.requestBody },
+          method: this._manusData.method,
+          url: this._manusData.url,
+          request: { body: this._manusData.requestBody },
           response: null,
-          duration: Date.now() - xhr._manusData.startTime,
+          duration: Date.now() - this._manusData.startTime,
           error: { message: "Network error" },
         };
 
@@ -741,7 +751,7 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }).catch(function () {
+    }).catch(() => {
       // Put data back on failure (but respect limits)
       store.consoleLogs = consoleLogs.concat(store.consoleLogs);
       store.networkRequests = networkRequests.concat(store.networkRequests);
@@ -757,7 +767,7 @@
   setInterval(reportLogs, CONFIG.reportInterval);
 
   // Report on page unload
-  window.addEventListener("beforeunload", function () {
+  window.addEventListener("beforeunload", () => {
     var consoleLogs = store.consoleLogs;
     var networkRequests = store.networkRequests;
     var uiEvents = store.uiEvents;
@@ -817,5 +827,7 @@
     forceReport: reportLogs,
   };
 
-  console.debug("[Manus] Debug collector initialized (no rrweb, UI events only)");
+  console.debug(
+    "[Manus] Debug collector initialized (no rrweb, UI events only)",
+  );
 })();

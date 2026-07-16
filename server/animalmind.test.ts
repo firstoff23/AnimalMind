@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
-import { getAllEventsForExport } from "./db";
 import { notifyN8N } from "./_core/notification";
+import { getAllEventsForExport } from "./db";
+import { appRouter } from "./routers";
 
 // ─── Mock DB ──────────────────────────────────────────────────────────────────
 
@@ -32,17 +32,57 @@ vi.mock("./db", () => ({
   updateEventFeedback: vi.fn().mockResolvedValue(undefined),
   updateEventAudio: vi.fn().mockResolvedValue(undefined),
   getAllEventsForExport: vi.fn().mockResolvedValue([]),
-  uploadAudioToSupabase: vi.fn().mockResolvedValue("https://storage.example.test/events/test.wav"),
+  uploadAudioToSupabase: vi
+    .fn()
+    .mockResolvedValue("https://storage.example.test/events/test.wav"),
   getAnimalsByUser: vi.fn().mockResolvedValue([
-    { id: 1, userId: 1, name: "Bobi", species: "dog", breed: "Labrador", age: 3, isActive: true, createdAt: new Date(), updatedAt: new Date() },
-    { id: 2, userId: 1, name: "Mimi", species: "cat", breed: "Persa",    age: 5, isActive: false, createdAt: new Date(), updatedAt: new Date() },
+    {
+      id: 1,
+      userId: 1,
+      name: "Bobi",
+      species: "dog",
+      breed: "Labrador",
+      age: 3,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 2,
+      userId: 1,
+      name: "Mimi",
+      species: "cat",
+      breed: "Persa",
+      age: 5,
+      isActive: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
   ]),
-  addAnimal: vi.fn().mockResolvedValue({ id: 3, name: "Rex", species: "dog", breed: "Beagle", age: 2, isActive: false, userId: 1, createdAt: new Date(), updatedAt: new Date() }),
+  addAnimal: vi.fn().mockResolvedValue({
+    id: 3,
+    name: "Rex",
+    species: "dog",
+    breed: "Beagle",
+    age: 2,
+    isActive: false,
+    userId: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
   setActiveAnimal: vi.fn().mockResolvedValue(undefined),
-  getActiveAnimal: vi.fn().mockResolvedValue({ id: 1, name: "Bobi", species: "dog", isActive: true }),
+  getActiveAnimal: vi
+    .fn()
+    .mockResolvedValue({ id: 1, name: "Bobi", species: "dog", isActive: true }),
   getWeeklyStats: vi.fn().mockResolvedValue([]),
-  getSettings: vi.fn().mockResolvedValue({ notificationsEnabled: true, alertSensitivity: "medium" }),
-  upsertSettings: vi.fn().mockResolvedValue({ notificationsEnabled: true, alertSensitivity: "medium" }),
+  getSettings: vi.fn().mockResolvedValue({
+    notificationsEnabled: true,
+    alertSensitivity: "medium",
+  }),
+  upsertSettings: vi.fn().mockResolvedValue({
+    notificationsEnabled: true,
+    alertSensitivity: "medium",
+  }),
   upsertUser: vi.fn().mockResolvedValue(undefined),
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
   updateBeliefStateForAnimal: vi.fn().mockResolvedValue({
@@ -52,7 +92,7 @@ vi.mock("./db", () => ({
     hunger: 0.1,
     alert: 0.1,
     attention: 0.1,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }),
   getLatestBeliefState: vi.fn().mockResolvedValue({
     relaxed: 0.5,
@@ -61,7 +101,7 @@ vi.mock("./db", () => ({
     hunger: 0.1,
     alert: 0.1,
     attention: 0.1,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }),
   getEventBeliefState: vi.fn().mockResolvedValue(null),
   getEventPosture: vi.fn().mockResolvedValue(null),
@@ -77,7 +117,7 @@ vi.mock("./db", () => ({
     sampleSize: 2,
     calculatedFrom: "2026-05-01T00:00:00.000Z",
     calculatedTo: "2026-05-25T00:00:00.000Z",
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }),
   recalculateAnimalBehaviorBaseline: vi.fn().mockResolvedValue({
     vocalizationThreshold: 10,
@@ -88,7 +128,7 @@ vi.mock("./db", () => ({
     sampleSize: 2,
     calculatedFrom: "2026-05-01T00:00:00.000Z",
     calculatedTo: "2026-05-25T00:00:00.000Z",
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }),
   updateAnimalBaseline: vi.fn().mockResolvedValue({
     vocalizationThreshold: 10,
@@ -99,18 +139,49 @@ vi.mock("./db", () => ({
     sampleSize: 2,
     calculatedFrom: "2026-05-01T00:00:00.000Z",
     calculatedTo: "2026-05-25T00:00:00.000Z",
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }),
-  getAnimalById: vi.fn().mockResolvedValue({ id: 1, userId: 1, name: "Bobi", species: "dog", breed: "Labrador", age: 3 }),
-  getEventsForAnimalPaginated: vi.fn().mockResolvedValue({ events: [], total: 0 }),
-  getStatsForAnimal: vi.fn().mockResolvedValue({ dailyActivity: [], stateDistribution: {}, totalCount: 0 }),
+  getAnimalById: vi.fn().mockResolvedValue({
+    id: 1,
+    userId: 1,
+    name: "Bobi",
+    species: "dog",
+    breed: "Labrador",
+    age: 3,
+  }),
+  getEventsForAnimalPaginated: vi
+    .fn()
+    .mockResolvedValue({ events: [], total: 0 }),
+  getStatsForAnimal: vi.fn().mockResolvedValue({
+    dailyActivity: [],
+    stateDistribution: {},
+    totalCount: 0,
+  }),
   getUserByEmail: vi.fn().mockResolvedValue(undefined),
-  createShareInvitation: vi.fn().mockResolvedValue({ id: 1, status: "pending" }),
+  createShareInvitation: vi
+    .fn()
+    .mockResolvedValue({ id: 1, status: "pending" }),
   getPendingInvitations: vi.fn().mockResolvedValue([]),
   respondToInvitation: vi.fn().mockResolvedValue(true),
   getSharedAnimalsForUser: vi.fn().mockResolvedValue([]),
   getAnimalShares: vi.fn().mockResolvedValue([]),
-  removeAnimalShare: vi.fn().mockResolvedValue(true)
+  removeAnimalShare: vi.fn().mockResolvedValue(true),
+  checkAndIncrementAnalysisLimit: vi
+    .fn()
+    .mockResolvedValue({ remainingToday: 49 }),
+  getAnalysisUsage: vi.fn().mockResolvedValue({
+    hourlyCount: 0,
+    dailyCount: 0,
+    remainingHour: 10,
+    remainingDay: 50,
+    maxHour: 10,
+    maxDay: 50,
+  }),
+  getSupabase: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+  }),
 }));
 
 vi.mock("./_core/notification", () => ({
@@ -155,15 +226,19 @@ describe("classify.run", () => {
     const originalFetch = globalThis.fetch;
     const mockFetch = vi.fn().mockImplementation((input: any, init: any) => {
       const url = typeof input === "string" ? input : input.url;
-      if (url.includes("classify") || url.includes("fly.dev") || url.includes("hf.space")) {
+      if (
+        url.includes("classify") ||
+        url.includes("fly.dev") ||
+        url.includes("hf.space")
+      ) {
         return Promise.resolve({
           ok: true,
           json: async () => ({
             state: "relaxed",
             confidence: 0.95,
             emoji: "⚪",
-            model_used: "yamnet"
-          })
+            model_used: "yamnet",
+          }),
         });
       }
       return originalFetch(input, init);
@@ -178,7 +253,8 @@ describe("classify.run", () => {
   });
 
   it("retorna um resultado com os campos obrigatórios", async () => {
-    const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
+    const mockBase64Audio =
+      "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.classify.run({
       audio: mockBase64Audio,
@@ -189,7 +265,14 @@ describe("classify.run", () => {
     expect(result).toHaveProperty("emoji");
     expect(result).toHaveProperty("model_used");
     expect(result).toHaveProperty("cached");
-    expect(["distress","attention","excitement","hunger","alert","relaxed"]).toContain(result.state);
+    expect([
+      "distress",
+      "attention",
+      "excitement",
+      "hunger",
+      "alert",
+      "relaxed",
+    ]).toContain(result.state);
     expect(result.confidence).toBeGreaterThanOrEqual(0.6);
     expect(result.confidence).toBeLessThanOrEqual(1.0);
   }, 10000);
@@ -213,7 +296,8 @@ describe("classify.run", () => {
   }, 10000);
 
   it("aceita animalId opcional", async () => {
-    const mockBase64Audio = "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA=="; 
+    const mockBase64Audio =
+      "UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.classify.run({
       animalId: 1,
@@ -224,7 +308,8 @@ describe("classify.run", () => {
   }, 10000);
 
   it("falls back from a configured Railway backend to Fly before failing classification", async () => {
-    process.env.FASTAPI_BACKEND_URL = "https://animalmind-production.up.railway.app";
+    process.env.FASTAPI_BACKEND_URL =
+      "https://animalmind-production.up.railway.app";
     process.env.HF_BACKEND_URL = "";
     process.env.VITE_API_URL = "";
     const calls: string[] = [];
@@ -357,7 +442,10 @@ describe("events.exportData", () => {
 describe("events.feedback", () => {
   it("regista feedback sem erro", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.events.feedback({ eventId: 1, feedback: "correct" });
+    const result = await caller.events.feedback({
+      eventId: 1,
+      feedback: "correct",
+    });
     expect(result.success).toBe(true);
   });
 });

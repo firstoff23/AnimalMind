@@ -1,0 +1,14 @@
+name: Keep HF Space Alive
+
+on:
+  schedule:
+    - cron: '*/25 * * * *'  # A cada 25 minutos
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Space
+        run: |
+          curl -s https://firstoff-animalmind-backend.hf.space/health

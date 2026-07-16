@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in Vitest
 import React from "react";
 
 interface LiveAudioMeterProps {
@@ -10,9 +11,14 @@ function percentFromLevel(level: number) {
   return Math.max(0, Math.min(100, Math.round(level * 100)));
 }
 
-export function LiveAudioMeter({ level, waveform, isActive }: LiveAudioMeterProps) {
+export function LiveAudioMeter({
+  level,
+  waveform,
+  isActive,
+}: LiveAudioMeterProps) {
   const percent = percentFromLevel(level);
-  const bars = waveform.length > 0 ? waveform : Array.from({ length: 16 }, () => 0);
+  const bars =
+    waveform.length > 0 ? waveform : Array.from({ length: 16 }, () => 0);
 
   return (
     <div
@@ -40,7 +46,10 @@ export function LiveAudioMeter({ level, waveform, isActive }: LiveAudioMeterProp
         <span className="text-xs font-semibold text-primary">{percent}%</span>
       </div>
 
-      <div className="flex h-12 items-center gap-1 overflow-hidden" aria-hidden="true">
+      <div
+        className="flex h-12 items-center gap-1 overflow-hidden"
+        aria-hidden="true"
+      >
         {bars.map((bar, index) => {
           const height = Math.max(6, Math.round(bar * 42));
           return (

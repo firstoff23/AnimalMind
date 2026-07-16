@@ -1,9 +1,9 @@
 /**
  * Google Maps API Integration for Manus WebDev Templates
- * 
+ *
  * Main function: makeRequest<T>(endpoint, params) - Makes authenticated requests to Google Maps APIs
  * All credentials are automatically injected. Array parameters use | as separator.
- * 
+ *
  * See API examples below the type definitions for usage patterns.
  */
 
@@ -24,7 +24,7 @@ function getMapsConfig(): MapsConfig {
 
   if (!baseUrl || !apiKey) {
     throw new Error(
-      "Google Maps proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
+      "Google Maps proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY",
     );
   }
 
@@ -45,7 +45,7 @@ interface RequestOptions {
 
 /**
  * Make authenticated requests to Google Maps APIs
- * 
+ *
  * @param endpoint - The API endpoint (e.g., "/maps/api/geocode/json")
  * @param params - Query parameters for the request
  * @param options - Additional request options
@@ -54,7 +54,7 @@ interface RequestOptions {
 export async function makeRequest<T = unknown>(
   endpoint: string,
   params: Record<string, unknown> = {},
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> {
   const { baseUrl, apiKey } = getMapsConfig();
 
@@ -82,7 +82,7 @@ export async function makeRequest<T = unknown>(
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
-      `Google Maps API request failed (${response.status} ${response.statusText}): ${errorText}`
+      `Google Maps API request failed (${response.status} ${response.statusText}): ${errorText}`,
     );
   }
 
@@ -313,7 +313,3 @@ export type RoadsResult = {
  * Output: Image URL (not JSON) - use directly in <img src={url} />
  * Note: Construct URL manually with getMapsConfig() for auth
  */
-
-
-
-

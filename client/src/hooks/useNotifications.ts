@@ -6,11 +6,12 @@ import { STATE_LABELS } from "../../../shared/types";
 // Anti-spam: track last notification time per animal
 const lastNotifTime: Record<string, number> = {};
 const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
-const NOTIFICATION_PERMISSION_REQUESTED_KEY = "animalmind-notification-permission-requested";
+const NOTIFICATION_PERMISSION_REQUESTED_KEY =
+  "pawra-notification-permission-requested";
 
 export function useNotifications() {
   const permissionRef = useRef<NotificationPermission>(
-    "Notification" in window ? Notification.permission : "default"
+    "Notification" in window ? Notification.permission : "default",
   );
 
   useEffect(() => {
@@ -26,7 +27,9 @@ export function useNotifications() {
     if (permissionRef.current === "granted") return true;
     if (permissionRef.current === "denied") return false;
 
-    const alreadyRequested = localStorage.getItem(NOTIFICATION_PERMISSION_REQUESTED_KEY);
+    const alreadyRequested = localStorage.getItem(
+      NOTIFICATION_PERMISSION_REQUESTED_KEY,
+    );
     if (alreadyRequested) return false;
 
     localStorage.setItem(NOTIFICATION_PERMISSION_REQUESTED_KEY, "true");
@@ -40,7 +43,7 @@ export function useNotifications() {
       state: EmotionalState,
       confidence: number,
       animalName?: string,
-      eventId?: number
+      eventId?: number,
     ) => {
       if (!("Notification" in window) || permissionRef.current !== "granted") {
         return false;
@@ -48,8 +51,8 @@ export function useNotifications() {
 
       const label = STATE_LABELS[state];
       const title = animalName
-        ? `AnimalMind — ${animalName}`
-        : "AnimalMind — classificação concluída";
+        ? `Pawra — ${animalName}`
+        : "Pawra — classificação concluída";
       const body = `${label}: ${Math.round(confidence * 100)}% de confiança`;
 
       try {
@@ -63,7 +66,7 @@ export function useNotifications() {
         return false;
       }
     },
-    []
+    [],
   );
 
   const sendNotification = useCallback(
@@ -74,16 +77,19 @@ export function useNotifications() {
       animalId: string,
       sensitivity: "low" | "medium" | "high" = "medium",
       notificationsEnabled: boolean = true,
-      includeBrowserNotification: boolean = true
+      includeBrowserNotification: boolean = true,
     ) => {
       // Respect global toggle
       if (!notificationsEnabled) return;
 
       // Thresholds per sensitivity
-      const thresholds: Record<"low" | "medium" | "high", Record<string, number>> = {
-        low:    { distress: 0.85, hunger: 0.80 },
-        medium: { distress: 0.75, hunger: 0.70 },
-        high:   { distress: 0.65, hunger: 0.60 },
+      const thresholds: Record<
+        "low" | "medium" | "high",
+        Record<string, number>
+      > = {
+        low: { distress: 0.85, hunger: 0.8 },
+        medium: { distress: 0.75, hunger: 0.7 },
+        high: { distress: 0.65, hunger: 0.6 },
       };
 
       const threshold = thresholds[sensitivity][state];
@@ -96,13 +102,11 @@ export function useNotifications() {
       lastNotifTime[key] = now;
 
       const label = STATE_LABELS[state];
-      const emoji = state === "distress" ? "🔴" : "🟠";
-      const message = `${emoji} ${animalName} está a mostrar sinais de ${label.toLowerCase()} (${Math.round(confidence * 100)}% confiança)`;
+      const message = `${animalName} está a mostrar sinais de ${label.toLowerCase()} (${Math.round(confidence * 100)}% confiança)`;
 
       // In-app toast
       toast.warning(message, {
         duration: 6000,
-        icon: emoji,
       });
 
       // Browser push notification
@@ -112,7 +116,7 @@ export function useNotifications() {
         permissionRef.current === "granted"
       ) {
         try {
-          new Notification(`AnimalMind — ${animalName}`, {
+          new Notification(`Pawra — ${animalName}`, {
             body: message,
             icon: "/favicon.ico",
             tag: key,
@@ -122,8 +126,12 @@ export function useNotifications() {
         }
       }
     },
-    []
+    [],
   );
 
-  return { requestNotificationPermission, sendClassificationNotification, sendNotification };
+  return {
+    requestNotificationPermission,
+    sendClassificationNotification,
+    sendNotification,
+  };
 }

@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
@@ -747,14 +748,525 @@ async def analyze_audio_advanced(file: UploadFile = File(...)):
             os.remove(tmp_wav_path)
 
 
+# ─── Vision Classifier (Species & Breed) ─────────────────────────────────────
+
+import io
+import time as _time
+import pathlib as _pathlib
+import torch as _torch
+import torch.nn as _nn
+
+_MODEL_DIR = _pathlib.Path(__file__).parent / "models" / "species_classifier"
+_VIT_BASE  = "google/vit-base-patch16-224"
+
+_SPECIES_LABELS = ["cat", "dog"]
+_BREED_LABELS = [
+    "Abyssinian", "Bengal", "Birman", "Bombay", "British Shorthair",
+    "Egyptian Mau", "Maine Coon", "Persian", "Ragdoll", "Russian Blue",
+    "Siamese", "Sphynx", "american bulldog", "american pit bull terrier",
+    "basset hound", "beagle", "boxer", "chihuahua", "english cocker spaniel",
+    "english setter", "german shorthaired", "great pyrenees", "havanese",
+    "japanese chin", "keeshond", "leonberger", "miniature pinscher",
+    "newfoundland", "pomeranian", "pug", "saint bernard", "samoyed",
+    "scottish terrier", "shiba inu", "staffordshire bull terrier",
+    "wheaten terrier", "yorkshire terrier",
+]
+
+# Lazy-loaded singletons
+_vit_model      = None
+_vit_processor  = None
+_vit_loaded_at  = None
+_vit_source     = None   # "fine-tuned" | "pretrained-fallback"
+
+
+class _DualHeadViT(_nn.Module):
+    """Same architecture as in train_species_classifier.py."""
+    def __init__(self, backbone, num_species: int, num_breeds: int):
+        super().__init__()
+        self.backbone     = backbone
+        hidden_size       = backbone.config.hidden_size
+        self.head_species = _nn.Linear(hidden_size, num_species)
+        self.head_breed   = _nn.Linear(hidden_size, num_breeds)
+
+    def forward(self, pixel_values):
+        outputs  = self.backbone(pixel_values=pixel_values)
+        cls_tok  = outputs.last_hidden_state[:, 0, :]
+        return {
+            "logits_species": self.head_species(cls_tok),
+            "logits_breed":   self.head_breed(cls_tok),
+        }
+
+
+def _load_vision_model():
+    global _vit_model, _vit_processor, _vit_loaded_at, _vit_source
+    if _vit_model is not None:
+        return
+
+    from transformers import ViTForImageClassification, ViTImageProcessor, ViTModel
+
+    device = _torch.device("cpu")
+    local_path = _pathlib.Path("models/animalmind-breed-classifier")
+    model_name = "firstoff/animalmind-breed-classifier"
+
+    try:
+        # Try local first
+        if local_path.exists():
+            _vit_processor = ViTImageProcessor.from_pretrained(str(local_path))
+            _vit_model = ViTForImageClassification.from_pretrained(str(local_path))
+            _vit_source = "fine-tuned-local"
+            print(f"[Vision] Loaded local fine-tuned model from {local_path}")
+        else:
+            # Try Hugging Face Hub
+            _vit_processor = ViTImageProcessor.from_pretrained(model_name)
+            _vit_model = ViTForImageClassification.from_pretrained(model_name)
+            _vit_source = "fine-tuned-hub"
+            print(f"[Vision] Loaded fine-tuned breed classifier from Hugging Face: {model_name}")
+    except Exception as exc:
+        print(f"[Vision] Failed to load fine-tuned model ({exc}). Falling back to pretrained ViT backbone...")
+        try:
+            _vit_processor = ViTImageProcessor.from_pretrained(_VIT_BASE)
+            backbone  = ViTModel.from_pretrained(_VIT_BASE)
+            _vit_model = _DualHeadViT(backbone, len(_SPECIES_LABELS), len(_BREED_LABELS))
+            _vit_source = "pretrained-fallback"
+            print("[Vision] Pretrained fallback loaded successfully.")
+        except Exception as exc_fallback:
+            print(f"[Vision] Critical error during fallback: {exc_fallback}")
+            raise exc_fallback
+
+    _vit_model.eval()
+    _vit_loaded_at = _time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime())
+
+
+class ImageClassificationResponse(BaseModel):
+    species:             str
+    breed:               str
+    confidence:          float
+    processing_time_ms:  float
+    model_source:        str
+
+
+class ModelHealthResponse(BaseModel):
+    loaded:        bool
+    model_source:  Optional[str]
+    loaded_at:     Optional[str]
+    num_species:   int
+    num_breeds:    int
+    device:        str
+
+
+@app.post("/classify-image", response_model=ImageClassificationResponse)
+async def classify_image(file: UploadFile = File(...)):
+    """
+    Classify a pet image, returning species, breed and confidence.
+
+    - **file**: JPEG, PNG or WebP image (multipart/form-data), max 10 MB
+
+    Returns JSON with `species`, `breed`, `confidence`, `processing_time_ms`.
+    """
+    # ── Validate content type ─────────────────────────────────────────────
+    allowed_types = {"image/jpeg", "image/png", "image/webp"}
+    ct = (file.content_type or "").lower()
+    if ct not in allowed_types:
+        raise HTTPException(
+            status_code=415,
+            detail=f"Unsupported media type '{ct}'. Allowed: {sorted(allowed_types)}",
+        )
+
+    # ── Validate file size (≤ 10 MB) ──────────────────────────────────────
+    MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB in bytes
+    # Read one byte more than the limit; if we get that many back, it's too large
+    peek = await file.read(MAX_IMAGE_SIZE + 1)
+    if len(peek) > MAX_IMAGE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is 10 MB.",
+        )
+    # Rewind so downstream code can re-read the full contents
+    contents = peek
+
+    # ── Validate MIME magic bytes (defence-in-depth, ignores client Content-Type) ──
+    _MAGIC = {
+        b"\xff\xd8\xff": "image/jpeg",
+        b"\x89PNG\r\n": "image/png",
+        b"RIFF": None,  # WebP starts with RIFF...WEBP
+    }
+    is_valid_magic = (
+        contents[:3] == b"\xff\xd8\xff"          # JPEG
+        or contents[:8] == b"\x89PNG\r\n\x1a\n"  # PNG
+        or (contents[:4] == b"RIFF" and contents[8:12] == b"WEBP")  # WebP
+    )
+    if not is_valid_magic:
+        raise HTTPException(
+            status_code=415,
+            detail="File content does not match a valid image format.",
+        )
+
+    # ── Load model lazily ─────────────────────────────────────────────────
+    try:
+        _load_vision_model()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Model load failed: {exc}")
+
+    # ── Read & decode image ───────────────────────────────────────────────
+    t_start = _time.perf_counter()
+    try:
+        from PIL import Image as _PIL_Image
+        # `contents` is already populated by the size-check block above
+        img = _PIL_Image.open(io.BytesIO(contents)).convert("RGB")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Cannot decode image: {exc}")
+
+    # ── Inference ─────────────────────────────────────────────────────────
+    try:
+        with _torch.no_grad():
+            inputs  = _vit_processor(images=img, return_tensors="pt")
+            outputs = _vit_model(**inputs)
+
+        import torch.nn.functional as F
+        
+        # Check if the output has 'logits' attribute/key (standard ViTForImageClassification)
+        if hasattr(outputs, "logits") or "logits" in outputs:
+            logits = outputs.logits if hasattr(outputs, "logits") else outputs["logits"]
+            prob_breed = F.softmax(logits, dim=-1)[0]
+            breed_idx = int(prob_breed.argmax())
+            
+            # Resolve breed label via id2label if available, mapping to backend format
+            if hasattr(_vit_model, "config") and hasattr(_vit_model.config, "id2label") and _vit_model.config.id2label:
+                raw_breed = _vit_model.config.id2label[breed_idx]
+                norm_map = {b.lower().replace(" ", "_"): b for b in _BREED_LABELS}
+                breed = norm_map.get(raw_breed.lower().replace(" ", "_"), raw_breed)
+            else:
+                breed = _BREED_LABELS[breed_idx]
+            
+            # Map breed to species
+            species = "cat" if breed[0].isupper() else "dog"
+            confidence = float(prob_breed[breed_idx])
+        else:
+            # Fallback to the legacy dual-head/mock model format
+            prob_species = F.softmax(outputs["logits_species"], dim=-1)[0]
+            prob_breed   = F.softmax(outputs["logits_breed"],   dim=-1)[0]
+
+            species_idx = int(prob_species.argmax())
+            breed_idx   = int(prob_breed.argmax())
+
+            species    = _SPECIES_LABELS[species_idx]
+            breed      = _BREED_LABELS[breed_idx]
+            confidence = float((prob_species[species_idx] * prob_breed[breed_idx]) ** 0.5)
+
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Inference error: {exc}")
+
+    elapsed_ms = (_time.perf_counter() - t_start) * 1000.0
+
+    return ImageClassificationResponse(
+        species            = species,
+        breed              = breed,
+        confidence         = round(confidence, 4),
+        processing_time_ms = round(elapsed_ms, 1),
+        model_source       = _vit_source or "unknown",
+    )
+
+
+@app.get("/model-health", response_model=ModelHealthResponse)
+def model_health():
+    """Returns whether the vision model is loaded and its metadata."""
+    return ModelHealthResponse(
+        loaded       = _vit_model is not None,
+        model_source = _vit_source,
+        loaded_at    = _vit_loaded_at,
+        num_species  = len(_SPECIES_LABELS),
+        num_breeds   = len(_BREED_LABELS),
+        device       = "cpu",
+    )
+
+
 # ─── Root & Health ────────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.head("/", response_class=HTMLResponse)
+def root_head():
+    return HTMLResponse(content="", status_code=200)
+
+
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"status": "ok", "service": "AnimalMind API", "version": "1.3.0"}
+    db_status = "Connected" if db_pool is not None else "Disconnected"
+    db_dot_class = "dot-connected" if db_pool is not None else "dot-disconnected"
+    
+    redis_status = "Connected" if redis_conn is not None else "Disconnected"
+    redis_dot_class = "dot-connected" if redis_conn is not None else "dot-disconnected"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AnimalMind Backend Gateway</title>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            :root {{
+                --bg-color: #090d16;
+                --card-bg: rgba(17, 25, 40, 0.6);
+                --border-color: rgba(255, 255, 255, 0.08);
+                --text-primary: #f3f4f6;
+                --text-secondary: #9ca3af;
+                --accent-emerald: #10b981;
+                --accent-indigo: #6366f1;
+                --glow-emerald: rgba(16, 185, 129, 0.15);
+            }}
+            
+            * {{
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }}
+            
+            body {{
+                background-color: var(--bg-color);
+                color: var(--text-primary);
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                position: relative;
+            }}
+
+            .blob {{
+                position: absolute;
+                width: 500px;
+                height: 500px;
+                border-radius: 50%;
+                filter: blur(120px);
+                z-index: 0;
+                opacity: 0.35;
+                pointer-events: none;
+            }}
+            .blob-1 {{
+                background: var(--accent-indigo);
+                top: -10%;
+                left: -10%;
+            }}
+            .blob-2 {{
+                background: var(--accent-emerald);
+                bottom: -10%;
+                right: -10%;
+            }}
+
+            .container {{
+                z-index: 1;
+                width: 100%;
+                max-width: 520px;
+                padding: 24px;
+            }}
+
+            .card {{
+                background: var(--card-bg);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid var(--border-color);
+                border-radius: 24px;
+                padding: 40px;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                position: relative;
+                overflow: hidden;
+            }}
+
+            .card::before {{
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, var(--accent-indigo), var(--accent-emerald));
+            }}
+
+            .logo-area {{
+                font-size: 48px;
+                margin-bottom: 16px;
+                display: inline-block;
+                animation: float 4s ease-in-out infinite;
+            }}
+
+            @keyframes float {{
+                0%, 100% {{ transform: translateY(0px); }}
+                50% {{ transform: translateY(-8px); }}
+            }}
+
+            h1 {{
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                letter-spacing: -0.5px;
+                background: linear-gradient(135deg, #ffffff 60%, #a5b4fc);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }}
+
+            .version-badge {{
+                display: inline-block;
+                background: rgba(99, 102, 241, 0.15);
+                color: #a5b4fc;
+                padding: 4px 12px;
+                border-radius: 99px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 24px;
+                border: 1px solid rgba(99, 102, 241, 0.2);
+            }}
+
+            .description {{
+                color: var(--text-secondary);
+                font-size: 15px;
+                line-height: 1.6;
+                margin-bottom: 32px;
+            }}
+
+            .status-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                margin-bottom: 36px;
+            }}
+
+            .status-item {{
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid var(--border-color);
+                border-radius: 16px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }}
+
+            .status-label {{
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: var(--text-secondary);
+            }}
+
+            .status-value {{
+                font-size: 14px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }}
+
+            .dot {{
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                display: inline-block;
+            }}
+
+            .dot-connected {{
+                background-color: var(--accent-emerald);
+                box-shadow: 0 0 10px var(--accent-emerald);
+                animation: pulse 2s infinite;
+            }}
+
+            .dot-disconnected {{
+                background-color: #ef4444;
+                box-shadow: 0 0 10px #ef4444;
+            }}
+
+            @keyframes pulse {{
+                0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }}
+                70% {{ transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }}
+                100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }}
+            }}
+
+            .btn {{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                padding: 14px 24px;
+                background: linear-gradient(90deg, var(--accent-indigo), var(--accent-emerald));
+                border: none;
+                border-radius: 14px;
+                color: white;
+                font-size: 15px;
+                font-weight: 600;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+            }}
+
+            .btn:hover {{
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+                filter: brightness(1.1);
+            }}
+
+            .btn:active {{
+                transform: translateY(0);
+            }}
+
+            .footer {{
+                margin-top: 24px;
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.2);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        
+        <div class="container">
+            <div class="card">
+                <span class="logo-area">🐾</span>
+                <h1>AnimalMind Backend</h1>
+                <span class="version-badge">v1.4.0 • Gateway</span>
+                <p class="description">
+                    FastAPI machine learning engine for pet voice classification, breed detection, and posture analysis.
+                </p>
+                
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">PostgreSQL</span>
+                        <span class="status-value">
+                            <span class="dot {db_dot_class}"></span>
+                            {db_status}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Redis Cache</span>
+                        <span class="status-value">
+                            <span class="dot {redis_dot_class}"></span>
+                            {redis_status}
+                        </span>
+                    </div>
+                </div>
+                
+                <a href="/docs" class="btn">
+                    <span>Access API Documentation</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </a>
+                
+                <div class="footer">
+                    Running in Hugging Face Spaces Sandbox
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
     return {"status": "healthy"}
 
@@ -762,3 +1274,4 @@ def health():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7860)
+

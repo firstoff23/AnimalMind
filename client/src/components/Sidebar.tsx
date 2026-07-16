@@ -1,27 +1,26 @@
-import * as React from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Apple,
+  BarChart2,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  History,
+  LogOut,
+  MessageCircle,
+  PawPrint,
+  Settings,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
 import { trpc } from "@/lib/trpc";
-import { Logo } from "@/components/ui/Logo";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  BarChart2,
-  Mic,
-  PawPrint,
-  History,
-  MessageCircle,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Apple,
-} from "lucide-react";
-import { toast } from "sonner";
 
 export function Sidebar() {
   const [location, navigate] = useLocation();
@@ -31,12 +30,37 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   const navItems = [
-    { path: "/dashboard", icon: BarChart2, label: language === "pt" ? "Dashboard" : "Dashboard" },
-    { path: "/gravar", icon: Mic, label: language === "pt" ? "Gravar" : "Record" },
-    { path: "/historico", icon: History, label: language === "pt" ? "Histórico" : "History" },
+    {
+      path: "/dashboard",
+      icon: BarChart2,
+      label: language === "pt" ? "Dashboard" : "Dashboard",
+    },
+    {
+      path: "/perfil",
+      icon: PawPrint,
+      label: language === "pt" ? "Animais" : "Pets",
+    },
+    {
+      path: "/capturar",
+      icon: Camera,
+      label: language === "pt" ? "Capturar" : "Capture",
+    },
+    {
+      path: "/historico",
+      icon: History,
+      label: language === "pt" ? "Histórico" : "History",
+    },
     { path: "/mindi", icon: MessageCircle, label: "Mindi" },
-    { path: "/alimentos", icon: Apple, label: language === "pt" ? "Alimentos" : "Foods" },
-    { path: "/definicoes", icon: Settings, label: language === "pt" ? "Definições" : "Settings" },
+    {
+      path: "/alimentos",
+      icon: Apple,
+      label: language === "pt" ? "Alimentos" : "Foods",
+    },
+    {
+      path: "/definicoes",
+      icon: Settings,
+      label: language === "pt" ? "Definições" : "Settings",
+    },
   ];
 
   const handleLogout = async () => {
@@ -67,12 +91,12 @@ export function Sidebar() {
                 exit={{ opacity: 0, x: -10 }}
                 className="font-satoshi font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent truncate"
               >
-                AnimalMind
+                Pawra
               </motion.span>
             )}
           </AnimatePresence>
         </div>
-        
+
         {/* Toggle Collapse Button */}
         <Button
           type="button"
@@ -109,14 +133,14 @@ export function Sidebar() {
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-[150ms] ease-[cubic-bezier(0.16,1,0.3,1)] text-left active-scale font-satoshi text-xs font-semibold relative overflow-hidden group",
                 active
                   ? "bg-primary/10 text-primary border border-primary/25"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent",
               )}
             >
               <Icon
                 size={16}
                 className={cn(
                   "shrink-0 transition-transform duration-200",
-                  active ? "text-primary scale-110" : "group-hover:scale-105"
+                  active ? "text-primary scale-110" : "group-hover:scale-105",
                 )}
               />
               <AnimatePresence>
@@ -138,29 +162,42 @@ export function Sidebar() {
 
       {/* User profile bottom bar */}
       <div className="p-3 border-t border-border/40 bg-muted/20 flex flex-col gap-2">
-        <div className={cn("flex items-center gap-3", collapsed ? "justify-center" : "px-1.5")}>
-          <Avatar className="size-8.5 border border-border/50 shrink-0">
-            <AvatarImage src={undefined} />
-            <AvatarFallback className="bg-muted text-muted-foreground" />
-          </Avatar>
-          
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-[11px] font-bold text-foreground truncate leading-none">
-                  {dbUser?.name || "Tutor"}
-                </p>
-                <p className="text-[9px] text-muted-foreground truncate mt-0.5 leading-none">
-                  {dbUser?.email || "tutor@animalmind.app"}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            collapsed ? "justify-center" : "px-1.5",
+          )}
+        >
+          <div
+            onClick={() => navigate("/perfil")}
+            className="flex items-center gap-3 cursor-pointer group/avatar min-w-0 flex-1 justify-center md:justify-start"
+            title={
+              language === "pt" ? "Ver Perfis de Animais" : "View Pet Profiles"
+            }
+          >
+            <Avatar className="size-8.5 border border-border/50 shrink-0 group-hover/avatar:border-primary/50 transition-colors">
+              <AvatarImage src={undefined} />
+              <AvatarFallback className="bg-muted text-muted-foreground" />
+            </Avatar>
+
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -8 }}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <p className="text-[11px] font-bold text-foreground group-hover/avatar:text-primary transition-colors truncate leading-none">
+                    {dbUser?.name || "Tutor"}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground truncate mt-0.5 leading-none">
+                    {dbUser?.email || "tutor@pawra.app"}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {!collapsed && (
             <Button

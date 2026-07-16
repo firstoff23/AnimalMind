@@ -19,7 +19,12 @@ export type FileContent = {
   type: "file_url";
   file_url: {
     url: string;
-    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4" ;
+    mime_type?:
+      | "audio/mpeg"
+      | "audio/wav"
+      | "application/pdf"
+      | "audio/mp4"
+      | "video/mp4";
   };
 };
 
@@ -111,11 +116,11 @@ export type ResponseFormat =
   | { type: "json_schema"; json_schema: JsonSchema };
 
 const ensureArray = (
-  value: MessageContent | MessageContent[]
+  value: MessageContent | MessageContent[],
 ): MessageContent[] => (Array.isArray(value) ? value : [value]);
 
 const normalizeContentPart = (
-  part: MessageContent
+  part: MessageContent,
 ): TextContent | ImageContent | FileContent => {
   if (typeof part === "string") {
     return { type: "text", text: part };
@@ -141,7 +146,7 @@ const normalizeMessage = (message: Message) => {
 
   if (role === "tool" || role === "function") {
     const content = ensureArray(message.content)
-      .map(part => (typeof part === "string" ? part : JSON.stringify(part)))
+      .map((part) => (typeof part === "string" ? part : JSON.stringify(part)))
       .join("\n");
 
     return {
@@ -172,7 +177,7 @@ const normalizeMessage = (message: Message) => {
 
 const normalizeToolChoice = (
   toolChoice: ToolChoice | undefined,
-  tools: Tool[] | undefined
+  tools: Tool[] | undefined,
 ): "none" | "auto" | ToolChoiceExplicit | undefined => {
   if (!toolChoice) return undefined;
 
@@ -183,13 +188,13 @@ const normalizeToolChoice = (
   if (toolChoice === "required") {
     if (!tools || tools.length === 0) {
       throw new Error(
-        "tool_choice 'required' was provided but no tools were configured"
+        "tool_choice 'required' was provided but no tools were configured",
       );
     }
 
     if (tools.length > 1) {
       throw new Error(
-        "tool_choice 'required' needs a single tool or specify the tool name explicitly"
+        "tool_choice 'required' needs a single tool or specify the tool name explicitly",
       );
     }
 
@@ -242,7 +247,7 @@ const normalizeResponseFormat = ({
       !explicitFormat.json_schema?.schema
     ) {
       throw new Error(
-        "responseFormat json_schema requires a defined schema object"
+        "responseFormat json_schema requires a defined schema object",
       );
     }
     return explicitFormat;
@@ -290,16 +295,16 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   const normalizedToolChoice = normalizeToolChoice(
     toolChoice || tool_choice,
-    tools
+    tools,
   );
   if (normalizedToolChoice) {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
+  payload.max_tokens = 32768;
   payload.thinking = {
-    "budget_tokens": 128
-  }
+    budget_tokens: 128,
+  };
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -324,7 +329,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`,
     );
   }
 

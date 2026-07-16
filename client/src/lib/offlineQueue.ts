@@ -94,7 +94,9 @@ function emitQueueChanged() {
 
   if (typeof BroadcastChannel !== "undefined") {
     const channel = new BroadcastChannel(OFFLINE_QUEUE_CHANNEL);
-    channel.postMessage({ type: "offline-queue-changed" } satisfies QueueChangedMessage);
+    channel.postMessage({
+      type: "offline-queue-changed",
+    } satisfies QueueChangedMessage);
     channel.close();
   }
 }
@@ -148,7 +150,9 @@ export async function getPendingRecordings() {
 
 export async function getOfflineQueueSummary(): Promise<OfflineQueueSummary> {
   const recordings = await getPendingRecordings();
-  const pending = recordings.filter((recording) => recording.status === "pending");
+  const pending = recordings.filter(
+    (recording) => recording.status === "pending",
+  );
   const retryTimes = pending
     .map((recording) => recording.nextAttemptAt)
     .filter((value) => Number.isFinite(value));
@@ -156,7 +160,8 @@ export async function getOfflineQueueSummary(): Promise<OfflineQueueSummary> {
   return {
     totalCount: recordings.length,
     pendingCount: pending.length,
-    failedCount: recordings.filter((recording) => recording.status === "failed").length,
+    failedCount: recordings.filter((recording) => recording.status === "failed")
+      .length,
     nextRetryAt: retryTimes.length > 0 ? Math.min(...retryTimes) : null,
   };
 }
@@ -197,17 +202,19 @@ export async function registerPendingRecordingsSync() {
 
 export async function processPendingQueue(
   classify: (payload: QueuedClassificationPayload) => Promise<unknown>,
-  now = Date.now()
+  now = Date.now(),
 ): Promise<OfflineQueueProcessResult> {
   const recordings = await getPendingRecordings();
   const dueRecordings = recordings.filter(
-    (recording) => recording.status === "pending" && recording.nextAttemptAt <= now
+    (recording) =>
+      recording.status === "pending" && recording.nextAttemptAt <= now,
   );
 
   let processed = 0;
   let failed = 0;
   const deferred = recordings.filter(
-    (recording) => recording.status === "pending" && recording.nextAttemptAt > now
+    (recording) =>
+      recording.status === "pending" && recording.nextAttemptAt > now,
   ).length;
 
   for (const recording of dueRecordings) {
@@ -237,7 +244,9 @@ export async function processPendingQueue(
         attempts,
         status,
         nextAttemptAt:
-          status === "pending" ? getNextAttemptAt(attempts, now) : Number.POSITIVE_INFINITY,
+          status === "pending"
+            ? getNextAttemptAt(attempts, now)
+            : Number.POSITIVE_INFINITY,
         lastError: getErrorMessage(error),
       } satisfies PendingRecording;
 

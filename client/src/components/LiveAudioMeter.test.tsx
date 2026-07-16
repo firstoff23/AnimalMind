@@ -1,3 +1,4 @@
+// biome-ignore lint/correctness/noUnusedImports: React is needed for JSX in Vitest
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -6,7 +7,7 @@ import { LiveAudioMeter } from "./LiveAudioMeter";
 describe("LiveAudioMeter", () => {
   it("renders a live microphone level meter with waveform bars", () => {
     const markup = renderToStaticMarkup(
-      <LiveAudioMeter level={0.64} waveform={[0.1, 0.4, 0.8, 0.2]} isActive />
+      <LiveAudioMeter level={0.64} waveform={[0.1, 0.4, 0.8, 0.2]} isActive />,
     );
 
     expect(markup).toContain('role="meter"');

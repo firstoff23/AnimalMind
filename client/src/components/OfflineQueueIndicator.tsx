@@ -1,11 +1,12 @@
+import { CloudOff, Loader2, UploadCloud } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { cn } from "@/lib/utils";
-import { CloudOff, Loader2, UploadCloud } from "lucide-react";
 
 export function OfflineQueueIndicator() {
-  const { pendingCount, failedCount, isProcessing, processQueue } = useOfflineQueue();
+  const { pendingCount, failedCount, isProcessing, processQueue } =
+    useOfflineQueue();
   const hasPending = pendingCount > 0;
   const hasFailures = failedCount > 0;
 
@@ -16,8 +17,8 @@ export function OfflineQueueIndicator() {
   const title = hasPending
     ? `${pendingCount} gravação(ões) offline pendentes`
     : hasFailures
-    ? `${failedCount} gravação(ões) offline falharam após 3 tentativas`
-    : "A sincronizar gravações offline";
+      ? `${failedCount} gravação(ões) offline falharam após 3 tentativas`
+      : "A sincronizar gravações offline";
 
   return (
     <Button
@@ -27,7 +28,9 @@ export function OfflineQueueIndicator() {
       onClick={() => void processQueue()}
       className={cn(
         "relative border-border text-muted-foreground hover:bg-secondary hover:text-foreground",
-        !hasPending && hasFailures && "border-red-500/40 text-red-300 hover:text-red-200"
+        !hasPending &&
+          hasFailures &&
+          "border-red-500/40 text-red-300 hover:text-red-200",
       )}
       aria-label={title}
       title={title}

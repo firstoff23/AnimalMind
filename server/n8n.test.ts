@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createHmac } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createN8NSignature, notifyN8N } from "./_core/notification";
 
 describe("n8n Webhook Notifications", () => {
@@ -53,7 +53,7 @@ describe("n8n Webhook Notifications", () => {
   it("makes a signed POST request to N8N_WEBHOOK_URL with the classification payload", async () => {
     process.env.N8N_WEBHOOK_URL = "https://n8n.example.com/webhook/test";
     process.env.N8N_WEBHOOK_SECRET = "test-secret";
-    
+
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       text: async () => "OK",
@@ -73,15 +73,15 @@ describe("n8n Webhook Notifications", () => {
 
     expect(result).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    
+
     const [calledUrl, calledInit] = fetchMock.mock.calls[0];
     expect(calledUrl).toBe("https://n8n.example.com/webhook/test");
     expect(calledInit.method).toBe("POST");
     expect(calledInit.headers["Content-Type"]).toBe("application/json");
     expect(calledInit.headers["X-AnimalMind-Signature"]).toBe(
-      createN8NSignature(calledInit.body, "test-secret")
+      createN8NSignature(calledInit.body, "test-secret"),
     );
-    
+
     const body = JSON.parse(calledInit.body);
     expect(body.userId).toBe(1);
     expect(body.animalId).toBe(1);

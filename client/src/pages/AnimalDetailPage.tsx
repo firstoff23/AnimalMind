@@ -1,10 +1,41 @@
-import { useState, useMemo, useEffect } from "react";
+import { jsPDF } from "jspdf";
+import {
+  Activity,
+  AlertTriangle,
+  Download,
+  FileText,
+  History,
+  MessageSquare,
+  Pause,
+  PawPrint,
+  Play,
+  Save,
+  Sparkles,
+  ThumbsDown,
+  ThumbsUp,
+  Users,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
+import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import FamilyShareTab from "@/components/FamilyShareTab";
+import HealthBulletinTab from "@/components/HealthBulletinTab";
+import LazyAnimal3DModel from "@/components/LazyAnimal3DModel";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -13,48 +44,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  ArrowLeft,
-  Download,
-  Activity,
-  History,
-  Settings,
-  Play,
-  Pause,
-  AlertTriangle,
-  FileText,
-  Save,
-  MessageSquare,
-  ThumbsUp,
-  ThumbsDown,
-  Sparkles,
-  Users,
-} from "lucide-react";
-import { toast } from "sonner";
-import { jsPDF } from "jspdf";
-import FamilyShareTab from "@/components/FamilyShareTab";
-import HealthBulletinTab from "@/components/HealthBulletinTab";
-import LazyAnimal3DModel from "@/components/LazyAnimal3DModel";
-import { AppShellSkeleton } from "@/components/AppShellSkeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/hooks/useLanguage";
-import {
-  ResponsiveContainer,
-  Tooltip,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  BarChart,
-  Bar,
-  Cell,
-} from "recharts";
-import {
-  STATE_COLORS,
-  STATE_EMOJIS,
-} from "../../../shared/types";
-import type { EmotionalState } from "../../../shared/types";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import type { EmotionalState } from "../../../shared/types";
+import { STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
 
 const STATES: EmotionalState[] = [
   "distress",
@@ -65,54 +61,78 @@ const STATES: EmotionalState[] = [
   "relaxed",
 ];
 
-export default function AnimalDetailPage({ params }: { params: { id: string } }) {
-  const animalId = parseInt(params.id);
+export default function AnimalDetailPage({
+  params,
+  id,
+}: {
+  params?: { id: string };
+  id?: string;
+}) {
+  const rawId = id ?? params?.id;
+  const animalId = rawId ? parseInt(rawId, 10) : 0;
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<"stats" | "history" | "bulletin" | "share">("stats");
+  const [activeTab, setActiveTab] = useState<
+    "stats" | "history" | "bulletin" | "share"
+  >("stats");
   const { t, language } = useLanguage();
-  const [editingNotesEventId, setEditingNotesEventId] = useState<number | null>(null);
+  const [editingNotesEventId, setEditingNotesEventId] = useState<number | null>(
+    null,
+  );
   const [tempNotes, setTempNotes] = useState("");
   const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null,
+  );
 
   const utils = trpc.useUtils();
 
   // Queries
-  const { data: animal, isLoading: loadingAnimal, error: animalError } = trpc.animals.get.useQuery(
-    { animalId }
-  );
+  const {
+    data: animal,
+    isLoading: loadingAnimal,
+    error: animalError,
+  } = trpc.animals.get.useQuery({ animalId });
 
   useEffect(() => {
     if (animalError) {
-      toast.error(language === "pt" ? "Animal não encontrado ou não autorizado." : "Animal not found or not authorized.");
+      toast.error(
+        language === "pt"
+          ? "Animal não encontrado ou não autorizado."
+          : "Animal not found or not authorized.",
+      );
       setLocation("/definicoes");
     }
   }, [animalError, setLocation, language]);
 
-  const { data: baseline, isLoading: loadingBaseline } = trpc.animals.getBaseline.useQuery(
-    { animalId }
-  );
+  const { data: baseline, isLoading: loadingBaseline } =
+    trpc.animals.getBaseline.useQuery({ animalId });
 
-  const { data: stats30, isLoading: loadingStats30 } = trpc.events.statsForAnimal.useQuery(
-    { animalId, days: 30 }
-  );
+  const { data: stats30, isLoading: loadingStats30 } =
+    trpc.events.statsForAnimal.useQuery({ animalId, days: 30 });
 
-  const { data: stats7, isLoading: loadingStats7 } = trpc.events.statsForAnimal.useQuery(
-    { animalId, days: 7 }
-  );
+  const { data: stats7, isLoading: loadingStats7 } =
+    trpc.events.statsForAnimal.useQuery({ animalId, days: 7 });
 
-  const { data: historyRes, isLoading: loadingHistory } = trpc.events.listForAnimal.useQuery(
-    { animalId, page: 1, pageSize: 10 }
-  );
+  const { data: historyRes, isLoading: loadingHistory } =
+    trpc.events.listForAnimal.useQuery({ animalId, page: 1, pageSize: 10 });
 
   // Mutations
   const updateBaselineMutation = trpc.animals.updateBaseline.useMutation({
     onSuccess: () => {
-      toast.success(language === "pt" ? "Baseline comportamental atualizada com sucesso!" : "Behavioral baseline updated successfully!");
+      toast.success(
+        language === "pt"
+          ? "Baseline comportamental atualizada com sucesso!"
+          : "Behavioral baseline updated successfully!",
+      );
       utils.animals.getBaseline.invalidate({ animalId });
       utils.events.statsForAnimal.invalidate({ animalId });
     },
-    onError: () => toast.error(language === "pt" ? "Erro ao atualizar baseline." : "Error updating baseline."),
+    onError: () =>
+      toast.error(
+        language === "pt"
+          ? "Erro ao atualizar baseline."
+          : "Error updating baseline.",
+      ),
   });
 
   const feedbackMutation = trpc.events.feedback.useMutation({
@@ -120,7 +140,12 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       utils.events.listForAnimal.invalidate({ animalId });
       utils.events.statsForAnimal.invalidate({ animalId });
     },
-    onError: () => toast.error(language === "pt" ? "Erro ao guardar feedback." : "Error saving feedback."),
+    onError: () =>
+      toast.error(
+        language === "pt"
+          ? "Erro ao guardar feedback."
+          : "Error saving feedback.",
+      ),
   });
 
   const updateNotesMutation = trpc.events.updateNotes.useMutation({
@@ -129,12 +154,15 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       setEditingNotesEventId(null);
       utils.events.listForAnimal.invalidate({ animalId });
     },
-    onError: () => toast.error(language === "pt" ? "Erro ao guardar notas." : "Error saving notes."),
+    onError: () =>
+      toast.error(
+        language === "pt" ? "Erro ao guardar notas." : "Error saving notes.",
+      ),
   });
 
   // Calculations for dashboard
   const dominantStateWeekly = useMemo<EmotionalState | null>(() => {
-    if (!stats7 || !stats7.stateDistribution || stats7.totalCount === 0) return null;
+    if (!stats7?.stateDistribution || stats7.totalCount === 0) return null;
     let maxCount = 0;
     let maxState: EmotionalState | null = null;
     Object.entries(stats7.stateDistribution).forEach(([st, cnt]) => {
@@ -147,7 +175,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   }, [stats7]);
 
   const trendChartData = useMemo(() => {
-    if (!stats30 || !stats30.dailyActivity) return [];
+    if (!stats30?.dailyActivity) return [];
     return stats30.dailyActivity.map((day) => {
       const formatted: any = { date: day.date };
       const dayAny = day as any;
@@ -159,9 +187,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   }, [stats30]);
 
   const barChartData = useMemo(() => {
-    if (!stats30 || !stats30.stateDistribution) return [];
+    if (!stats30?.stateDistribution) return [];
     return STATES.map((s) => ({
-      state: t("states." + s),
+      state: t(`states.${s}`),
       value: stats30.stateDistribution[s] || 0,
       color: STATE_COLORS[s],
       emoji: STATE_EMOJIS[s],
@@ -203,17 +231,31 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       // Title & Header
       doc.setFillColor(248, 250, 252); // Light background
       doc.rect(0, 0, 210, 45, "F");
-      
+
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(22);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(language === "pt" ? "AnimalMind 🐾 - Relatório Clínico" : "AnimalMind 🐾 - Clinical Report", 15, 20);
+      doc.text(
+        language === "pt"
+          ? "Pawra - Relatório Clínico"
+          : "Pawra - Clinical Report",
+        15,
+        20,
+      );
 
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
-      doc.text(`${language === "pt" ? "Gerado em:" : "Generated on:" } ${new Date().toLocaleString(language === "pt" ? "pt-PT" : "en-US")}`, 15, 28);
-      doc.text(`${language === "pt" ? "Código do Animal:" : "Animal Code:"} #${animal.id}`, 15, 34);
+      doc.text(
+        `${language === "pt" ? "Gerado em:" : "Generated on:"} ${new Date().toLocaleString(language === "pt" ? "pt-PT" : "en-US")}`,
+        15,
+        28,
+      );
+      doc.text(
+        `${language === "pt" ? "Código do Animal:" : "Animal Code:"} #${animal.id}`,
+        15,
+        34,
+      );
 
       // Horizontal separator
       doc.setDrawColor(226, 232, 240);
@@ -223,38 +265,86 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
       doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-      doc.text(language === "pt" ? "Identificação do Animal" : "Animal Identification", 15, 55);
+      doc.text(
+        language === "pt" ? "Identificação do Animal" : "Animal Identification",
+        15,
+        55,
+      );
 
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(11);
-      doc.text(`${language === "pt" ? "Nome:" : "Name:"} ${animal.name}`, 15, 63);
-      doc.text(`${language === "pt" ? "Espécie:" : "Species:"} ${animal.species === "dog" ? (language === "pt" ? "Cão 🐕" : "Dog 🐕") : (language === "pt" ? "Gato 🐈" : "Cat 🐈")}`, 15, 70);
-      doc.text(`${language === "pt" ? "Raça:" : "Breed:"} ${animal.breed ?? (language === "pt" ? "Desconhecida" : "Unknown")}`, 110, 63);
-      doc.text(`${language === "pt" ? "Idade:" : "Age:"} ${animal.age !== null ? `${animal.age} ${language === "pt" ? "anos" : "years"}` : "—"}`, 110, 70);
+      doc.text(
+        `${language === "pt" ? "Nome:" : "Name:"} ${animal.name}`,
+        15,
+        63,
+      );
+      doc.text(
+        `${language === "pt" ? "Espécie:" : "Species:"} ${animal.species === "dog" ? (language === "pt" ? "Cão" : "Dog") : language === "pt" ? "Gato" : "Cat"}`,
+        15,
+        70,
+      );
+      doc.text(
+        `${language === "pt" ? "Raça:" : "Breed:"} ${animal.breed ?? (language === "pt" ? "Desconhecida" : "Unknown")}`,
+        110,
+        63,
+      );
+      doc.text(
+        `${language === "pt" ? "Idade:" : "Age:"} ${animal.age !== null ? `${animal.age} ${language === "pt" ? "anos" : "years"}` : "—"}`,
+        110,
+        70,
+      );
 
       // Baseline parameters
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text(language === "pt" ? "Baseline Comportamental (Calibração)" : "Behavioral Baseline (Calibration)", 15, 85);
+      doc.text(
+        language === "pt"
+          ? "Baseline Comportamental (Calibração)"
+          : "Behavioral Baseline (Calibration)",
+        15,
+        85,
+      );
 
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(11);
-      doc.text(`${language === "pt" ? "Sensibilidade de Alertas:" : "Alerts Sensitivity:"} ${t("settingsPage.alertsSensitivity" + baseline.alertSensitivity.charAt(0).toUpperCase() + baseline.alertSensitivity.slice(1))}`, 15, 93);
-      doc.text(`${language === "pt" ? "Limiar de Vocalizações:" : "Vocalization Threshold:"} ${baseline.vocalizationThreshold} ${language === "pt" ? "por dia" : "per day"}`, 15, 100);
-      
+      doc.text(
+        `${language === "pt" ? "Sensibilidade de Alertas:" : "Alerts Sensitivity:"} ${t(`settingsPage.alertsSensitivity${baseline.alertSensitivity.charAt(0).toUpperCase()}${baseline.alertSensitivity.slice(1)}`)}`,
+        15,
+        93,
+      );
+      doc.text(
+        `${language === "pt" ? "Limiar de Vocalizações:" : "Vocalization Threshold:"} ${baseline.vocalizationThreshold} ${language === "pt" ? "por dia" : "per day"}`,
+        15,
+        100,
+      );
+
       const normalStatesText = baseline.normalStates
-        .map((s) => t("states." + (s as EmotionalState)) || s)
+        .map((s) => t(`states.${s as EmotionalState}`) || s)
         .join(", ");
-      doc.text(`${language === "pt" ? "Estados Típicos/Normais:" : "Typical/Normal States:"} ${normalStatesText || (language === "pt" ? "Nenhum" : "None")}`, 15, 107);
+      doc.text(
+        `${language === "pt" ? "Estados Típicos/Normais:" : "Typical/Normal States:"} ${normalStatesText || (language === "pt" ? "Nenhum" : "None")}`,
+        15,
+        107,
+      );
 
       // Stats Section
       doc.setFont("Helvetica", "bold");
       doc.setFontSize(14);
-      doc.text(language === "pt" ? "Estatísticas Acústicas (Últimos 30 dias)" : "Acoustic Statistics (Last 30 Days)", 15, 122);
+      doc.text(
+        language === "pt"
+          ? "Estatísticas Acústicas (Últimos 30 dias)"
+          : "Acoustic Statistics (Last 30 Days)",
+        15,
+        122,
+      );
 
       doc.setFont("Helvetica", "normal");
       doc.setFontSize(11);
-      doc.text(`${language === "pt" ? "Total de vocalizações registadas:" : "Total registered vocalizations:"} ${stats.totalCount}`, 15, 130);
+      doc.text(
+        `${language === "pt" ? "Total de vocalizações registadas:" : "Total registered vocalizations:"} ${stats.totalCount}`,
+        15,
+        130,
+      );
 
       // Find dominant state
       let maxCount = 0;
@@ -262,10 +352,14 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       Object.entries(stats.stateDistribution).forEach(([st, cnt]) => {
         if ((cnt as number) > maxCount) {
           maxCount = cnt as number;
-          dominant = t("states." + (st as EmotionalState)) || st;
+          dominant = t(`states.${st as EmotionalState}`) || st;
         }
       });
-      doc.text(`${language === "pt" ? "Estado dominante no período:" : "Dominant state in the period:"} ${dominant} (${maxCount} ${language === "pt" ? "ocorrências" : "occurrences"})`, 15, 137);
+      doc.text(
+        `${language === "pt" ? "Estado dominante no período:" : "Dominant state in the period:"} ${dominant} (${maxCount} ${language === "pt" ? "ocorrências" : "occurrences"})`,
+        15,
+        137,
+      );
 
       // Table Header for Recent events
       doc.setFillColor(241, 245, 249);
@@ -275,7 +369,11 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       doc.setFontSize(9);
       doc.setTextColor(textColor[0], textColor[1], textColor[2]);
       doc.text(language === "pt" ? "Data e Hora" : "Date and Time", 18, 155);
-      doc.text(language === "pt" ? "Estado Traduzido" : "Translated State", 65, 155);
+      doc.text(
+        language === "pt" ? "Estado Traduzido" : "Translated State",
+        65,
+        155,
+      );
       doc.text(language === "pt" ? "Confiança" : "Confidence", 110, 155);
       doc.text(language === "pt" ? "Modelo" : "Model", 135, 155);
       doc.text(language === "pt" ? "Notas" : "Notes", 165, 155);
@@ -283,7 +381,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       // Table Rows
       doc.setFont("Helvetica", "normal");
       doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-      
+
       const eventsList = historyRes?.events || [];
       const tableLimit = Math.min(eventsList.length, 10);
 
@@ -297,20 +395,25 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
           doc.rect(15, y - 5, 180, 8, "F");
         }
 
-        const dateStr = new Date(ev.createdAt).toLocaleString(language === "pt" ? "pt-PT" : "en-US", {
-          day: "2-digit",
-          month: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+        const dateStr = new Date(ev.createdAt).toLocaleString(
+          language === "pt" ? "pt-PT" : "en-US",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          },
+        );
 
         doc.text(dateStr, 18, y);
-        doc.text(t("states." + (ev.state as EmotionalState)) || ev.state, 65, y);
+        doc.text(t(`states.${ev.state as EmotionalState}`) || ev.state, 65, y);
         doc.text(`${Math.round(Number(ev.confidence) * 100)}%`, 110, y);
         doc.text(ev.modelUsed || "yamnet", 135, y);
-        
-        const noteExcerpt = ev.notes 
-          ? (ev.notes.length > 15 ? ev.notes.substring(0, 12) + "..." : ev.notes) 
+
+        const noteExcerpt = ev.notes
+          ? ev.notes.length > 15
+            ? `${ev.notes.substring(0, 12)}...`
+            : ev.notes
           : "—";
         doc.text(noteExcerpt, 165, y);
       }
@@ -319,14 +422,36 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       doc.setFont("Helvetica", "italic");
       doc.setFontSize(9);
       doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
-      doc.text(language === "pt" ? "AnimalMind 🐾 — Monitorização de Bem-Estar Animal em Tempo Real" : "AnimalMind 🐾 — Real-Time Animal Well-Being Monitoring", 15, 275);
-      doc.text(language === "pt" ? "Relatório confidencial gerado pelo tutor." : "Confidential report generated by the guardian.", 15, 280);
+      doc.text(
+        language === "pt"
+          ? "Pawra — Monitorização de Bem-Estar Animal em Tempo Real"
+          : "Pawra — Real-Time Animal Well-Being Monitoring",
+        15,
+        275,
+      );
+      doc.text(
+        language === "pt"
+          ? "Relatório confidencial gerado pelo tutor."
+          : "Confidential report generated by the guardian.",
+        15,
+        280,
+      );
 
-      doc.save(`${language === "pt" ? "relatorio" : "report"}_${animal.name}_${new Date().toISOString().split("T")[0]}.pdf`);
-      toast.success(language === "pt" ? "Relatório PDF descarregado!" : "PDF Report downloaded!");
+      doc.save(
+        `${language === "pt" ? "relatorio" : "report"}_${animal.name}_${new Date().toISOString().split("T")[0]}.pdf`,
+      );
+      toast.success(
+        language === "pt"
+          ? "Relatório PDF descarregado!"
+          : "PDF Report downloaded!",
+      );
     } catch (err) {
       console.error(err);
-      toast.error(language === "pt" ? "Erro ao gerar relatório PDF." : "Error generating PDF report.");
+      toast.error(
+        language === "pt"
+          ? "Erro ao gerar relatório PDF."
+          : "Error generating PDF report.",
+      );
     }
   };
 
@@ -334,10 +459,16 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   const handleBaselineSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!baseline) return;
-    
+
     const formData = new FormData(e.currentTarget);
-    const vocalizationThreshold = parseInt(formData.get("vocalizationThreshold") as string);
-    const alertSensitivity = formData.get("alertSensitivity") as ("low" | "medium" | "high");
+    const vocalizationThreshold = parseInt(
+      formData.get("vocalizationThreshold") as string,
+      10,
+    );
+    const alertSensitivity = formData.get("alertSensitivity") as
+      | "low"
+      | "medium"
+      | "high";
 
     const checkedNormalStates: string[] = [];
     STATES.forEach((s) => {
@@ -354,7 +485,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
     });
   };
 
-  if (loadingAnimal || loadingBaseline || loadingStats30 || loadingStats7 || loadingHistory) {
+  if (
+    loadingAnimal ||
+    loadingBaseline ||
+    loadingStats30 ||
+    loadingStats7 ||
+    loadingHistory
+  ) {
     return <AppShellSkeleton mode="content" variant="detail" />;
   }
 
@@ -366,8 +503,10 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   const currentEmotion = recentEvents[0]?.state || "relaxed";
   const anomalyAlerts = recentEvents.filter((ev) => {
     const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
-    const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
-    const isNormal = baseline.normalStates.includes(ev.state) && !isRareForAnimal;
+    const isRareForAnimal =
+      (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
+    const isNormal =
+      baseline.normalStates.includes(ev.state) && !isRareForAnimal;
     const isThreatState = ev.state === "distress" || ev.state === "alert";
     return !isNormal || isThreatState;
   });
@@ -380,10 +519,15 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
             {language === "pt" ? "Timeline de análises" : "Analysis timeline"}
           </h3>
           <p className="text-[11px] text-muted-foreground">
-            {language === "pt" ? "Eventos recentes com confiança, áudio e notas." : "Recent events with confidence, audio and notes."}
+            {language === "pt"
+              ? "Eventos recentes com confiança, áudio e notas."
+              : "Recent events with confidence, audio and notes."}
           </p>
         </div>
-        <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary">
+        <Badge
+          variant="outline"
+          className="rounded-full border-primary/30 bg-primary/10 text-primary"
+        >
           {historyRes?.events.length ?? 0}
         </Badge>
       </div>
@@ -396,14 +540,20 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
         <div className="relative space-y-4 pl-5 before:absolute before:left-2 before:top-2 before:h-[calc(100%-1rem)] before:w-px before:bg-border">
           {historyRes.events.map((ev) => {
             const state = ev.state as EmotionalState;
-            const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
-            const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
-            const isNormal = baseline.normalStates.includes(ev.state) && !isRareForAnimal;
+            const baselineFrequency =
+              baseline.stateDistribution?.[ev.state] ?? 0;
+            const isRareForAnimal =
+              (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
+            const isNormal =
+              baseline.normalStates.includes(ev.state) && !isRareForAnimal;
             const isThreat = ev.state === "distress" || ev.state === "alert";
             const isAlert = !isNormal || isThreat;
 
             return (
-              <div key={ev.id} className="relative rounded-2xl border border-border/80 bg-background/45 p-3">
+              <div
+                key={ev.id}
+                className="relative rounded-2xl border border-border/80 bg-background/45 p-3"
+              >
                 <span
                   className="absolute -left-[1.1rem] top-4 h-4 w-4 rounded-full border-2 border-background"
                   style={{ backgroundColor: STATE_COLORS[state] }}
@@ -413,9 +563,12 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-xl">{STATE_EMOJIS[state]}</span>
                       <span className="text-sm font-bold text-foreground">
-                        {t("states." + state) || ev.state}
+                        {t(`states.${state}`) || ev.state}
                       </span>
-                      <Badge variant="outline" className="rounded-full border-border text-[10px] text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className="rounded-full border-border text-[10px] text-muted-foreground"
+                      >
                         {Math.round(Number(ev.confidence) * 100)}%
                       </Badge>
                       {isAlert && (
@@ -425,7 +578,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                       )}
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      {new Date(ev.createdAt).toLocaleString(language === "pt" ? "pt-PT" : "en-US")}
+                      {new Date(ev.createdAt).toLocaleString(
+                        language === "pt" ? "pt-PT" : "en-US",
+                      )}
                     </p>
                     {ev.notes && (
                       <p className="mt-2 line-clamp-2 text-[11px] text-cyan-300">
@@ -440,9 +595,15 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                         variant="ghost"
                         onClick={() => handlePlayToggle(ev.id, ev.audioUrl!)}
                         className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
-                        aria-label={language === "pt" ? "Reproduzir áudio" : "Play audio"}
+                        aria-label={
+                          language === "pt" ? "Reproduzir áudio" : "Play audio"
+                        }
                       >
-                        {playingAudioId === ev.id ? <Pause size={14} /> : <Play size={14} />}
+                        {playingAudioId === ev.id ? (
+                          <Pause size={14} />
+                        ) : (
+                          <Play size={14} />
+                        )}
                       </Button>
                     )}
                     <Button
@@ -453,7 +614,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                         setTempNotes(ev.notes || "");
                       }}
                       className="h-8 w-8 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      aria-label={language === "pt" ? "Editar notas" : "Edit notes"}
+                      aria-label={
+                        language === "pt" ? "Editar notas" : "Edit notes"
+                      }
                     >
                       <MessageSquare size={14} />
                     </Button>
@@ -476,18 +639,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
   );
 
   return (
-    <div className="page-enter min-h-full px-4 pt-6 pb-20 max-w-xl mx-auto space-y-6">
-      {/* Header and Back navigation */}
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/perfil")}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft size={16} /> {t("common.back")}
-        </Button>
-
+    <div className="page-enter min-h-full px-4 pt-4 pb-20 max-w-xl mx-auto space-y-6">
+      {/* Actions header bar */}
+      <div className="flex items-center justify-end">
         <Button
           variant="outline"
           size="sm"
@@ -501,8 +655,8 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
       {/* Animal Identity Header */}
       <div className="relative overflow-hidden rounded-[1.75rem] border border-emerald-500/15 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)]">
-        <div className="absolute right-0 top-0 translate-x-10 -translate-y-8 text-[7rem] font-black text-white/[0.03] pointer-events-none select-none">
-          {animal.species === "dog" ? "DOG" : "CAT"}
+        <div className="absolute right-[-20px] top-[-20px] text-white/[0.03] pointer-events-none select-none rotate-12">
+          <PawPrint size={140} />
         </div>
         <div className="absolute -left-12 bottom-0 h-32 w-32 rounded-full bg-emerald-500/10 blur-3xl" />
 
@@ -518,29 +672,48 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
           <div className="space-y-4 text-center sm:text-left">
             <div>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                <h1 className="text-3xl font-bold text-foreground">{animal.name}</h1>
+                <h1 className="text-3xl font-bold text-foreground">
+                  {animal.name}
+                </h1>
                 <Badge className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] text-emerald-300">
-                  {animal.species === "dog" ? t("profilePage.speciesDog") : t("profilePage.speciesCat")}
+                  {animal.species === "dog"
+                    ? t("profilePage.speciesDog")
+                    : t("profilePage.speciesCat")}
                 </Badge>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                {animal.breed || t("calibration.noBreedDefined")} • {animal.age !== null ? `${animal.age} ${language === "pt" ? "anos" : "years"}` : t("calibration.unknownAge")}
+                {animal.breed || t("calibration.noBreedDefined")} •{" "}
+                {animal.age !== null
+                  ? `${animal.age} ${language === "pt" ? "anos" : "years"}`
+                  : t("calibration.unknownAge")}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                <p className="text-[10px] uppercase text-muted-foreground">{language === "pt" ? "30 dias" : "30 days"}</p>
-                <p className="mt-1 text-lg font-bold text-foreground">{stats30?.totalCount ?? 0}</p>
+                <p className="text-[10px] uppercase text-muted-foreground">
+                  {language === "pt" ? "30 dias" : "30 days"}
+                </p>
+                <p className="mt-1 text-lg font-bold text-foreground">
+                  {stats30?.totalCount ?? 0}
+                </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                <p className="text-[10px] uppercase text-muted-foreground">{language === "pt" ? "Alertas" : "Alerts"}</p>
-                <p className="mt-1 text-lg font-bold text-amber-300">{anomalyAlerts.length}</p>
+                <p className="text-[10px] uppercase text-muted-foreground">
+                  {language === "pt" ? "Alertas" : "Alerts"}
+                </p>
+                <p className="mt-1 text-lg font-bold text-amber-300">
+                  {anomalyAlerts.length}
+                </p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                <p className="text-[10px] uppercase text-muted-foreground">{language === "pt" ? "Estado" : "State"}</p>
+                <p className="text-[10px] uppercase text-muted-foreground">
+                  {language === "pt" ? "Estado" : "State"}
+                </p>
                 <p className="mt-1 truncate text-sm font-bold text-emerald-300">
-                  {dominantStateWeekly ? t("states." + dominantStateWeekly) : "—"}
+                  {dominantStateWeekly
+                    ? t(`states.${dominantStateWeekly}`)
+                    : "—"}
                 </p>
               </div>
             </div>
@@ -557,7 +730,10 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               {t("calibration.recentAlerts")}
             </h4>
             <p className="text-xs text-muted-foreground mt-1">
-              {t("calibration.eventsDetected").replace("{count}", String(anomalyAlerts.length))}
+              {t("calibration.eventsDetected").replace(
+                "{count}",
+                String(anomalyAlerts.length),
+              )}
             </p>
           </div>
         </div>
@@ -575,7 +751,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                 "flex-1 py-2 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1 active-scale tap-highlight-none",
                 activeTab === tab
                   ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {tab === "stats" && <Activity size={13} />}
@@ -583,7 +759,8 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               {tab === "bulletin" && <FileText size={13} />}
               {tab === "share" && <Users size={13} />}
               {tab === "stats" && (language === "pt" ? "Resumo" : "Summary")}
-              {tab === "history" && (language === "pt" ? "Histórico" : "History")}
+              {tab === "history" &&
+                (language === "pt" ? "Histórico" : "History")}
               {tab === "bulletin" && (language === "pt" ? "Saúde" : "Health")}
               {tab === "share" && (language === "pt" ? "Partilha" : "Sharing")}
             </button>
@@ -606,11 +783,17 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                     {STATE_EMOJIS[dominantStateWeekly]}
                   </div>
                   <div>
-                    <p className="text-2xl font-bold capitalize" style={{ color: STATE_COLORS[dominantStateWeekly] }}>
-                      {t("states." + dominantStateWeekly)}
+                    <p
+                      className="text-2xl font-bold capitalize"
+                      style={{ color: STATE_COLORS[dominantStateWeekly] }}
+                    >
+                      {t(`states.${dominantStateWeekly}`)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t("calibration.dominantStateDesc").replace("{state}", (t("states." + dominantStateWeekly)).toLowerCase())}
+                      {t("calibration.dominantStateDesc").replace(
+                        "{state}",
+                        t(`states.${dominantStateWeekly}`).toLowerCase(),
+                      )}
                     </p>
                   </div>
                 </div>
@@ -633,17 +816,29 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               ) : (
                 <div className="h-60 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trendChartData} margin={{ left: -25, right: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.012 264)" vertical={false} />
+                    <LineChart
+                      data={trendChartData}
+                      margin={{ left: -25, right: 10 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="oklch(0.22 0.012 264)"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="date"
                         tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 8 }}
                         tickFormatter={(str) => {
                           const parts = str.split("-");
-                          return parts.length >= 3 ? `${parts[2]}/${parts[1]}` : str;
+                          return parts.length >= 3
+                            ? `${parts[2]}/${parts[1]}`
+                            : str;
                         }}
                       />
-                      <YAxis allowDecimals={false} tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 8 }} />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 8 }}
+                      />
                       <Tooltip
                         contentStyle={{
                           background: "oklch(0.12 0.012 264)",
@@ -658,7 +853,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                           key={s}
                           type="monotone"
                           dataKey={s}
-                          name={t("states." + s)}
+                          name={t(`states.${s}`)}
                           stroke={STATE_COLORS[s]}
                           strokeWidth={2.5}
                           dot={false}
@@ -683,13 +878,23 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               ) : (
                 <div className="h-52 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.012 264)" vertical={false} />
+                    <BarChart
+                      data={barChartData}
+                      margin={{ top: 10, right: 10, left: -25, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="oklch(0.22 0.012 264)"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="state"
                         tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 9 }}
                       />
-                      <YAxis allowDecimals={false} tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 9 }} />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: "oklch(0.55 0.012 264)", fontSize: 9 }}
+                      />
                       <Tooltip
                         cursor={{ fill: "rgba(255,255,255,0.03)" }}
                         contentStyle={{
@@ -700,7 +905,11 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                           fontSize: 11,
                         }}
                       />
-                      <Bar dataKey="value" name={language === "pt" ? "Ocorrências" : "Occurrences"} radius={[6, 6, 0, 0]}>
+                      <Bar
+                        dataKey="value"
+                        name={language === "pt" ? "Ocorrências" : "Occurrences"}
+                        radius={[6, 6, 0, 0]}
+                      >
                         {barChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -724,10 +933,16 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                 <div className="space-y-3">
                   {historyRes.events.map((ev) => {
                     const state = ev.state as EmotionalState;
-                    const baselineFrequency = baseline.stateDistribution?.[ev.state] ?? 0;
-                    const isRareForAnimal = (baseline.sampleSize ?? 0) >= 5 && baselineFrequency < 0.1;
-                    const isNormal = baseline.normalStates.includes(ev.state) && !isRareForAnimal;
-                    const isThreat = ev.state === "distress" || ev.state === "alert";
+                    const baselineFrequency =
+                      baseline.stateDistribution?.[ev.state] ?? 0;
+                    const isRareForAnimal =
+                      (baseline.sampleSize ?? 0) >= 5 &&
+                      baselineFrequency < 0.1;
+                    const isNormal =
+                      baseline.normalStates.includes(ev.state) &&
+                      !isRareForAnimal;
+                    const isThreat =
+                      ev.state === "distress" || ev.state === "alert";
                     const isAlert = !isNormal || isThreat;
 
                     return (
@@ -735,22 +950,28 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                         key={ev.id}
                         className={cn(
                           "bg-secondary/20 border border-border/80 rounded-xl p-3 flex items-center justify-between transition-all hover:border-primary/30 relative",
-                          isAlert && "border-rose-500/20 bg-rose-500/5 hover:border-rose-500/40"
+                          isAlert &&
+                            "border-rose-500/20 bg-rose-500/5 hover:border-rose-500/40",
                         )}
                       >
                         <div className="flex items-center gap-3">
                           <div
                             className="text-2xl w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: `${STATE_COLORS[state]}15` }}
+                            style={{
+                              backgroundColor: `${STATE_COLORS[state]}15`,
+                            }}
                           >
                             {STATE_EMOJIS[state]}
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-semibold text-sm text-foreground">
-                                {t("states." + state) || ev.state}
+                                {t(`states.${state}`) || ev.state}
                               </span>
-                              <Badge variant="outline" className="text-[9px] px-1 py-0 border-border text-muted-foreground">
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] px-1 py-0 border-border text-muted-foreground"
+                              >
                                 {Math.round(Number(ev.confidence) * 100)}%
                               </Badge>
                               {isAlert && (
@@ -760,11 +981,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                               )}
                             </div>
                             <span className="text-[10px] text-muted-foreground block mt-0.5">
-                              {new Date(ev.createdAt).toLocaleString(language === "pt" ? "pt-PT" : "en-US")}
+                              {new Date(ev.createdAt).toLocaleString(
+                                language === "pt" ? "pt-PT" : "en-US",
+                              )}
                             </span>
                             {ev.notes && (
                               <p className="text-[10px] text-cyan-400 italic mt-1 max-w-[200px] truncate">
-                                📝 "{ev.notes}"
+                                &ldquo;{ev.notes}&rdquo;
                               </p>
                             )}
                           </div>
@@ -776,11 +999,21 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => handlePlayToggle(ev.id, ev.audioUrl!)}
+                              onClick={() =>
+                                handlePlayToggle(ev.id, ev.audioUrl!)
+                              }
                               className="h-8 w-8 rounded-full hover:bg-secondary text-primary"
-                              aria-label={language === "pt" ? "Reproduzir áudio" : "Play audio"}
+                              aria-label={
+                                language === "pt"
+                                  ? "Reproduzir áudio"
+                                  : "Play audio"
+                              }
                             >
-                              {playingAudioId === ev.id ? <Pause size={14} /> : <Play size={14} />}
+                              {playingAudioId === ev.id ? (
+                                <Pause size={14} />
+                              ) : (
+                                <Play size={14} />
+                              )}
                             </Button>
                           )}
 
@@ -793,9 +1026,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                             }}
                             className={cn(
                               "h-8 w-8 rounded-full hover:bg-secondary",
-                              ev.notes ? "text-primary" : "text-muted-foreground"
+                              ev.notes
+                                ? "text-primary"
+                                : "text-muted-foreground",
                             )}
-                            aria-label={language === "pt" ? "Editar notas" : "Edit notes"}
+                            aria-label={
+                              language === "pt" ? "Editar notas" : "Edit notes"
+                            }
                           >
                             <MessageSquare size={14} />
                           </Button>
@@ -804,22 +1041,44 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                           <div className="flex border border-border rounded-lg bg-secondary/50 p-0.5">
                             <button
                               disabled={feedbackMutation.isPending}
-                              onClick={() => feedbackMutation.mutate({ eventId: ev.id, feedback: "correct" })}
-                              aria-label={language === "pt" ? "Marcar como correto" : "Mark as correct"}
+                              onClick={() =>
+                                feedbackMutation.mutate({
+                                  eventId: ev.id,
+                                  feedback: "correct",
+                                })
+                              }
+                              aria-label={
+                                language === "pt"
+                                  ? "Marcar como correto"
+                                  : "Mark as correct"
+                              }
                               className={cn(
                                 "p-1 rounded transition-all",
-                                ev.feedback === "correct" ? "bg-emerald-500/20 text-emerald-500" : "text-muted-foreground hover:text-foreground"
+                                ev.feedback === "correct"
+                                  ? "bg-emerald-500/20 text-emerald-500"
+                                  : "text-muted-foreground hover:text-foreground",
                               )}
                             >
                               <ThumbsUp size={10} />
                             </button>
                             <button
                               disabled={feedbackMutation.isPending}
-                              onClick={() => feedbackMutation.mutate({ eventId: ev.id, feedback: "incorrect" })}
-                              aria-label={language === "pt" ? "Marcar como incorreto" : "Mark as incorrect"}
+                              onClick={() =>
+                                feedbackMutation.mutate({
+                                  eventId: ev.id,
+                                  feedback: "incorrect",
+                                })
+                              }
+                              aria-label={
+                                language === "pt"
+                                  ? "Marcar como incorreto"
+                                  : "Mark as incorrect"
+                              }
                               className={cn(
                                 "p-1 rounded transition-all",
-                                ev.feedback === "incorrect" ? "bg-rose-500/20 text-rose-500" : "text-muted-foreground hover:text-foreground"
+                                ev.feedback === "incorrect"
+                                  ? "bg-rose-500/20 text-rose-500"
+                                  : "text-muted-foreground hover:text-foreground",
                               )}
                             >
                               <ThumbsDown size={10} />
@@ -836,7 +1095,9 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
               <div className="pt-2">
                 <Button
                   variant="outline"
-                  onClick={() => setLocation(`/historico?animalId=${animal.id}`)}
+                  onClick={() =>
+                    setLocation(`/historico?animalId=${animal.id}`)
+                  }
                   className="w-full text-xs font-semibold border-primary/20 hover:bg-primary/10 text-primary h-10 rounded-xl active-scale tap-highlight-none"
                 >
                   {t("calibration.viewFullHistory")}
@@ -848,9 +1109,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
         {/* HISTORY TAB */}
         {activeTab === "history" && (
-          <div className="page-enter">
-            {renderHistoryTimeline()}
-          </div>
+          <div className="page-enter">{renderHistoryTimeline()}</div>
         )}
 
         {/* BULLETIN TAB (HEALTH BULLETIN) */}
@@ -867,20 +1126,32 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
         {/* BASELINE TAB (CALIBRATION) */}
         {activeTab === "bulletin" && (
-          <form onSubmit={handleBaselineSubmit} className="bg-card border border-border rounded-2xl p-5 space-y-5 page-enter">
+          <form
+            onSubmit={handleBaselineSubmit}
+            className="bg-card border border-border rounded-2xl p-5 space-y-5 page-enter"
+          >
             <div>
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold text-foreground flex items-center gap-1.5">
-                    <Sparkles size={16} className="text-primary animate-pulse" /> {t("calibration.title")}
+                    <Sparkles
+                      size={16}
+                      className="text-primary animate-pulse"
+                    />{" "}
+                    {t("calibration.title")}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
                     {t("calibration.desc")}
                   </p>
                 </div>
                 {animal.isShared && (
-                  <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 bg-cyan-950/20 uppercase font-semibold">
-                    {language === "pt" ? `Co-tutor (${animal.permission})` : `Co-guardian (${animal.permission})`}
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] border-cyan-500/30 text-cyan-400 bg-cyan-950/20 uppercase font-semibold"
+                  >
+                    {language === "pt"
+                      ? `Co-tutor (${animal.permission})`
+                      : `Co-guardian (${animal.permission})`}
                   </Badge>
                 )}
               </div>
@@ -896,7 +1167,10 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
             <div className="space-y-4">
               {/* Vocalization Threshold */}
               <div className="space-y-1">
-                <Label htmlFor="vocalizationThreshold" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="vocalizationThreshold"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   {t("calibration.vocalizationThreshold")}
                 </Label>
                 <div className="flex gap-3 items-center">
@@ -918,7 +1192,10 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
 
               {/* Alert Sensitivity */}
               <div className="space-y-1">
-                <Label htmlFor="alertSensitivity" className="text-xs font-semibold text-muted-foreground">
+                <Label
+                  htmlFor="alertSensitivity"
+                  className="text-xs font-semibold text-muted-foreground"
+                >
                   {t("calibration.sensitivityTitle")}
                 </Label>
                 <select
@@ -928,9 +1205,21 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                   disabled={animal.permission === "read"}
                   className="w-full bg-secondary border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:ring-1 focus:ring-primary focus:outline-none active-scale tap-highlight-none"
                 >
-                  <option value="low">{language === "pt" ? "Baixa (Apenas alertas críticos de angústia)" : "Low (Only critical distress alerts)"}</option>
-                  <option value="medium">{language === "pt" ? "Média (Recomendado para cães/gatos no geral)" : "Medium (Recommended for general dogs/cats)"}</option>
-                  <option value="high">{language === "pt" ? "Alta (Qualquer ruído desconhecido dispara alerta)" : "High (Any unknown noise triggers alert)"}</option>
+                  <option value="low">
+                    {language === "pt"
+                      ? "Baixa (Apenas alertas críticos de angústia)"
+                      : "Low (Only critical distress alerts)"}
+                  </option>
+                  <option value="medium">
+                    {language === "pt"
+                      ? "Média (Recomendado para cães/gatos no geral)"
+                      : "Medium (Recommended for general dogs/cats)"}
+                  </option>
+                  <option value="high">
+                    {language === "pt"
+                      ? "Alta (Qualquer ruído desconhecido dispara alerta)"
+                      : "High (Any unknown noise triggers alert)"}
+                  </option>
                 </select>
               </div>
 
@@ -958,7 +1247,7 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                         className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground cursor-pointer flex items-center gap-1"
                       >
                         <span>{STATE_EMOJIS[s]}</span>
-                        <span>{t("states." + s)}</span>
+                        <span>{t(`states.${s}`)}</span>
                       </label>
                     </div>
                   ))}
@@ -973,12 +1262,13 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
                 disabled={updateBaselineMutation.isPending}
               >
                 <Save size={16} />
-                {updateBaselineMutation.isPending ? t("calibration.saving") : t("calibration.save")}
+                {updateBaselineMutation.isPending
+                  ? t("calibration.saving")
+                  : t("calibration.save")}
               </Button>
             )}
           </form>
         )}
-
 
         {/* SHARE TAB */}
         {activeTab === "share" && !animal.isShared && (
@@ -989,11 +1279,15 @@ export default function AnimalDetailPage({ params }: { params: { id: string } })
       </div>
 
       {/* Notes Editor Modal */}
-      <Dialog open={editingNotesEventId !== null} onOpenChange={(o) => !o && setEditingNotesEventId(null)}>
+      <Dialog
+        open={editingNotesEventId !== null}
+        onOpenChange={(o) => !o && setEditingNotesEventId(null)}
+      >
         <DialogContent className="bg-card border border-border rounded-2xl max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-base text-foreground font-semibold flex items-center gap-1.5">
-              <FileText size={16} className="text-primary" /> {t("calibration.observationNotes")}
+              <FileText size={16} className="text-primary" />{" "}
+              {t("calibration.observationNotes")}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
               {t("calibration.observationNotesDesc")}

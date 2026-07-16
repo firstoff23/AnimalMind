@@ -1,5 +1,5 @@
 /**
- * ErrorBoundary — Self-healing React error boundary for AnimalMind
+ * ErrorBoundary — Self-healing React error boundary for Pawra
  *
  * Features:
  * - Auto-retry the failed subtree up to MAX_AUTO_RETRIES times
@@ -7,9 +7,10 @@
  * - Provide a polished UI for user-facing crashes
  * - Show different messages for network vs render errors
  */
-import { cn } from "@/lib/utils";
+
 import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ class ErrorBoundary extends Component<Props, State> {
       const delay = 1500 * (this.state.retryCount + 1); // 1.5s, 3s …
       console.warn(
         `[ErrorBoundary] Auto-retry ${this.state.retryCount + 1}/${maxRetries} in ${delay}ms for:`,
-        error.message
+        error.message,
       );
       this.autoRetryTimer = setTimeout(() => this.handleRetry(), delay);
     }
@@ -114,7 +115,7 @@ class ErrorBoundary extends Component<Props, State> {
           className={cn(
             "flex flex-col items-center w-full max-w-lg p-8 rounded-2xl border",
             "bg-card/50 backdrop-blur-sm border-border/60",
-            "animate-in fade-in-0 zoom-in-95 duration-300"
+            "animate-in fade-in-0 zoom-in-95 duration-300",
           )}
           role="alert"
           aria-live="assertive"
@@ -143,7 +144,8 @@ class ErrorBoundary extends Component<Props, State> {
           {/* Retry indicator */}
           {canRetry && (
             <p className="text-xs text-muted-foreground/60 mb-5 text-center">
-              A tentar recuperar… (tentativa {this.state.retryCount + 1}/{maxRetries})
+              A tentar recuperar… (tentativa {this.state.retryCount + 1}/
+              {maxRetries})
             </p>
           )}
 
@@ -169,7 +171,7 @@ class ErrorBoundary extends Component<Props, State> {
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium",
                 "bg-primary text-primary-foreground",
-                "hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                "hover:opacity-90 active:scale-95 transition-all cursor-pointer",
               )}
             >
               <RefreshCw size={14} />
@@ -182,7 +184,7 @@ class ErrorBoundary extends Component<Props, State> {
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium",
                 "bg-muted text-muted-foreground border border-border/60",
-                "hover:bg-muted/80 active:scale-95 transition-all cursor-pointer"
+                "hover:bg-muted/80 active:scale-95 transition-all cursor-pointer",
               )}
             >
               Recarregar app
@@ -203,7 +205,7 @@ export default ErrorBoundary;
  */
 export function withErrorBoundary<P extends object>(
   Wrapped: React.ComponentType<P>,
-  options?: { label?: string; maxRetries?: number }
+  options?: { label?: string; maxRetries?: number },
 ) {
   return function WithErrorBoundaryWrapper(props: P) {
     return (

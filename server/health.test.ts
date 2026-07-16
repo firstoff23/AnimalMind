@@ -1,41 +1,51 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { appRouter } from "./routers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 import {
-  getVaccines,
-  addVaccine,
-  deleteVaccine,
-  getHealthRecords,
   addHealthRecord,
+  addVaccine,
   deleteHealthRecord,
-  verifyAnimalOwner,
-  getVaccineById,
+  deleteVaccine,
   getHealthRecordById,
+  getHealthRecords,
+  getVaccineById,
+  getVaccines,
+  verifyAnimalOwner,
 } from "./db";
+import { appRouter } from "./routers";
 
 // Mock DB module
 vi.mock("./db", () => ({
   getVaccines: vi.fn().mockResolvedValue([]),
-  addVaccine: vi.fn().mockResolvedValue({ id: 10, animalId: 1, vaccineName: "Rabies" }),
+  addVaccine: vi
+    .fn()
+    .mockResolvedValue({ id: 10, animalId: 1, vaccineName: "Rabies" }),
   deleteVaccine: vi.fn().mockResolvedValue({ success: true }),
   getHealthRecords: vi.fn().mockResolvedValue([]),
   addHealthRecord: vi.fn().mockResolvedValue({ id: 20, animalId: 1 }),
   deleteHealthRecord: vi.fn().mockResolvedValue({ success: true }),
   getDemoUserId: vi.fn().mockResolvedValue(1),
-  verifyAnimalOwner: vi.fn().mockImplementation((animalId, userId) => {
+  verifyAnimalOwner: vi.fn().mockImplementation((animalId, _userId) => {
     if (animalId !== 1) {
       throw new Error("Não autorizado");
     }
     return Promise.resolve();
   }),
   getVaccineById: vi.fn().mockImplementation((id) => {
-    if (id === 10) return Promise.resolve({ id: 10, animalId: 1, vaccineName: "Rabies" });
-    if (id === 99) return Promise.resolve({ id: 99, animalId: 2, vaccineName: "Secret Rabies" });
+    if (id === 10)
+      return Promise.resolve({ id: 10, animalId: 1, vaccineName: "Rabies" });
+    if (id === 99)
+      return Promise.resolve({
+        id: 99,
+        animalId: 2,
+        vaccineName: "Secret Rabies",
+      });
     return Promise.resolve(null);
   }),
   getHealthRecordById: vi.fn().mockImplementation((id) => {
-    if (id === 20) return Promise.resolve({ id: 20, animalId: 1, recordType: "deworming" });
-    if (id === 99) return Promise.resolve({ id: 99, animalId: 2, recordType: "deworming" });
+    if (id === 20)
+      return Promise.resolve({ id: 20, animalId: 1, recordType: "deworming" });
+    if (id === 99)
+      return Promise.resolve({ id: 99, animalId: 2, recordType: "deworming" });
     return Promise.resolve(null);
   }),
 }));
@@ -75,7 +85,9 @@ describe("healthRouter security", () => {
 
     it("denies access when animal owner check fails", async () => {
       const caller = appRouter.createCaller(makeCtx());
-      await expect(caller.health.getVaccines({ animalId: 2 })).rejects.toThrow("Não autorizado");
+      await expect(caller.health.getVaccines({ animalId: 2 })).rejects.toThrow(
+        "Não autorizado",
+      );
     });
   });
 
@@ -101,7 +113,9 @@ describe("healthRouter security", () => {
         vaccineType: "rabies" as const,
         dateAdministered: "2026-06-10",
       };
-      await expect(caller.health.addVaccine(payload)).rejects.toThrow("Não autorizado");
+      await expect(caller.health.addVaccine(payload)).rejects.toThrow(
+        "Não autorizado",
+      );
     });
   });
 
@@ -116,12 +130,16 @@ describe("healthRouter security", () => {
 
     it("denies deleting non-owned vaccine record", async () => {
       const caller = appRouter.createCaller(makeCtx());
-      await expect(caller.health.deleteVaccine({ id: 99 })).rejects.toThrow("Não autorizado");
+      await expect(caller.health.deleteVaccine({ id: 99 })).rejects.toThrow(
+        "Não autorizado",
+      );
     });
 
     it("returns NOT_FOUND if vaccine doesn't exist", async () => {
       const caller = appRouter.createCaller(makeCtx());
-      await expect(caller.health.deleteVaccine({ id: 404 })).rejects.toThrow("Vacina não encontrada");
+      await expect(caller.health.deleteVaccine({ id: 404 })).rejects.toThrow(
+        "Vacina não encontrada",
+      );
     });
   });
 
@@ -135,7 +153,9 @@ describe("healthRouter security", () => {
 
     it("denies access when animal owner check fails", async () => {
       const caller = appRouter.createCaller(makeCtx());
-      await expect(caller.health.getHealthRecords({ animalId: 2 })).rejects.toThrow("Não autorizado");
+      await expect(
+        caller.health.getHealthRecords({ animalId: 2 }),
+      ).rejects.toThrow("Não autorizado");
     });
   });
 
@@ -175,7 +195,9 @@ describe("healthRouter security", () => {
         recordType: "deworming" as const,
         date: "2026-06-10",
       };
-      await expect(caller.health.addHealthRecord(payload)).rejects.toThrow("Não autorizado");
+      await expect(caller.health.addHealthRecord(payload)).rejects.toThrow(
+        "Não autorizado",
+      );
     });
   });
 
@@ -190,12 +212,16 @@ describe("healthRouter security", () => {
 
     it("denies deleting non-owned health record", async () => {
       const caller = appRouter.createCaller(makeCtx());
-      await expect(caller.health.deleteHealthRecord({ id: 99 })).rejects.toThrow("Não autorizado");
+      await expect(
+        caller.health.deleteHealthRecord({ id: 99 }),
+      ).rejects.toThrow("Não autorizado");
     });
 
     it("returns NOT_FOUND if health record doesn't exist", async () => {
       const caller = appRouter.createCaller(makeCtx());
-      await expect(caller.health.deleteHealthRecord({ id: 404 })).rejects.toThrow("Registo de saúde não encontrado");
+      await expect(
+        caller.health.deleteHealthRecord({ id: 404 }),
+      ).rejects.toThrow("Registo de saúde não encontrado");
     });
   });
 });

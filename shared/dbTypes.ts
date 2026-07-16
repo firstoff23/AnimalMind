@@ -1,4 +1,10 @@
-export type UserRole = "user" | "owner" | "vet" | "veterinarian" | "clinic_admin" | "admin";
+export type UserRole =
+  | "user"
+  | "owner"
+  | "vet"
+  | "veterinarian"
+  | "clinic_admin"
+  | "admin";
 
 export interface User {
   id: number;
@@ -10,6 +16,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   lastSignedIn: Date;
+  onboardingCompleted: boolean;
 }
 
 export type InsertUser = Partial<User> & { openId: string };
@@ -73,5 +80,3 @@ export interface Food {
 export interface FoodResult extends Food {
   computedSeverity: SeverityType;
 }
-
-

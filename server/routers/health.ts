@@ -1,20 +1,23 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { sanitizedString } from "../_core/sanitize";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
-  getVaccines,
-  addVaccine,
-  deleteVaccine,
-  getHealthRecords,
   addHealthRecord,
+  addVaccine,
   deleteHealthRecord,
+  deleteVaccine,
   getDemoUserId,
-  verifyAnimalOwner,
-  getVaccineById,
   getHealthRecordById,
+  getHealthRecords,
+  getVaccineById,
+  getVaccines,
+  verifyAnimalOwner,
 } from "../db";
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -34,13 +37,13 @@ export const healthRouter = router({
     .input(
       z.object({
         animalId: z.number(),
-        vaccineName: z.string().min(1).max(100),
+        vaccineName: sanitizedString(100),
         vaccineType: z.enum(["rabies", "other"]),
         dateAdministered: z.string().min(1),
-        batchNumber: z.string().nullable().optional(),
-        veterinarian: z.string().nullable().optional(),
+        batchNumber: sanitizedString(50).nullable().optional(),
+        veterinarian: sanitizedString(100).nullable().optional(),
         nextDueDate: z.string().nullable().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);
@@ -83,15 +86,15 @@ export const healthRouter = router({
           "notes",
         ]),
         date: z.string().min(1),
-        product: z.string().nullable().optional(),
-        dosage: z.string().nullable().optional(),
-        result: z.string().nullable().optional(),
-        category: z.string().nullable().optional(),
-        notes: z.string().nullable().optional(),
-        licenseNumber: z.string().nullable().optional(),
-        issuingAuthority: z.string().nullable().optional(),
+        product: sanitizedString(100).nullable().optional(),
+        dosage: sanitizedString(100).nullable().optional(),
+        result: sanitizedString(200).nullable().optional(),
+        category: sanitizedString(100).nullable().optional(),
+        notes: sanitizedString(500).nullable().optional(),
+        licenseNumber: sanitizedString(100).nullable().optional(),
+        issuingAuthority: sanitizedString(150).nullable().optional(),
         nextDueDate: z.string().nullable().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = await effectiveUserId(ctx.user);

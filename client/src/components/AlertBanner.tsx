@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { trpc } from "@/lib/trpc";
+import { AlertCircle, AlertTriangle, Calendar, Info, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/hooks/useLanguage";
-import { AlertCircle, AlertTriangle, Info, Calendar, X } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 
 interface AlertBannerProps {
@@ -15,15 +15,15 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
 
   const { data: trend } = trpc.trends.getWeeklyTrend.useQuery(
     { animalId },
-    { enabled: typeof animalId === "number" && !isNaN(animalId) }
+    { enabled: typeof animalId === "number" && !Number.isNaN(animalId) },
   );
   const { data: listData } = trpc.events.listForAnimal.useQuery(
     { animalId, page: 1, pageSize: 20 },
-    { enabled: typeof animalId === "number" && !isNaN(animalId) }
+    { enabled: typeof animalId === "number" && !Number.isNaN(animalId) },
   );
   const { data: vaccines } = trpc.health.getVaccines.useQuery(
     { animalId },
-    { enabled: typeof animalId === "number" && !isNaN(animalId) }
+    { enabled: typeof animalId === "number" && !Number.isNaN(animalId) },
   );
 
   const [activeAlert, setActiveAlert] = useState<{
@@ -42,10 +42,14 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
     if (trend.trend === "down" && trend.percentageChange <= -30) {
       setActiveAlert({
         type: "red",
-        message: language === "pt" ? "Alerta Crítico de Bem-estar" : "Critical Well-being Alert",
-        description: language === "pt"
-          ? `O índice de bem-estar diminuiu ${Math.abs(trend.percentageChange)}% em relação à semana passada.`
-          : `Well-being index dropped by ${Math.abs(trend.percentageChange)}% compared to last week.`,
+        message:
+          language === "pt"
+            ? "Alerta Crítico de Bem-estar"
+            : "Critical Well-being Alert",
+        description:
+          language === "pt"
+            ? `O índice de bem-estar diminuiu ${Math.abs(trend.percentageChange)}% em relação à semana passada.`
+            : `Well-being index dropped by ${Math.abs(trend.percentageChange)}% compared to last week.`,
       });
       return;
     }
@@ -54,7 +58,7 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
     // Check daily scores from trend
     let consecutiveLowDays = 0;
     let hasOrangeAlert = false;
-    
+
     // trend.dailyScores has DD/MM format. Let's look at the scores
     if (trend.dailyScores && trend.dailyScores.length >= 3) {
       for (const ds of trend.dailyScores) {
@@ -73,10 +77,14 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
     if (hasOrangeAlert) {
       setActiveAlert({
         type: "orange",
-        message: language === "pt" ? "Agitação Prolongada Detetada" : "Prolonged Agitation Detected",
-        description: language === "pt"
-          ? "O animal apresenta scores de agitação/angústia elevados há 3 ou mais dias consecutivos."
-          : "The animal has shown high agitation/distress scores for 3 or more consecutive days.",
+        message:
+          language === "pt"
+            ? "Agitação Prolongada Detetada"
+            : "Prolonged Agitation Detected",
+        description:
+          language === "pt"
+            ? "O animal apresenta scores de agitação/angústia elevados há 3 ou mais dias consecutivos."
+            : "The animal has shown high agitation/distress scores for 3 or more consecutive days.",
       });
       return;
     }
@@ -88,21 +96,23 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
       fourteenDaysFromNow.setDate(now.getDate() + 14);
 
       const expiringVaccine = vaccines.find((v) => {
-        if (!v || !v.nextDueDate) return false;
+        if (!v?.nextDueDate) return false;
         const dueDate = new Date(v.nextDueDate);
         return dueDate > now && dueDate <= fourteenDaysFromNow;
       });
 
       if (expiringVaccine) {
-        const formattedDate = new Date(expiringVaccine.nextDueDate!).toLocaleDateString(
-          language === "pt" ? "pt-PT" : "en-US"
-        );
+        const formattedDate = new Date(
+          expiringVaccine.nextDueDate!,
+        ).toLocaleDateString(language === "pt" ? "pt-PT" : "en-US");
         setActiveAlert({
           type: "yellow",
-          message: language === "pt" ? "Vacinação Próxima" : "Upcoming Vaccination",
-          description: language === "pt"
-            ? `A vacina "${expiringVaccine.vaccineName}" expira em breve (data limite: ${formattedDate}).`
-            : `Vaccine "${expiringVaccine.vaccineName}" expires soon (due date: ${formattedDate}).`,
+          message:
+            language === "pt" ? "Vacinação Próxima" : "Upcoming Vaccination",
+          description:
+            language === "pt"
+              ? `A vacina "${expiringVaccine.vaccineName}" expira em breve (data limite: ${formattedDate}).`
+              : `Vaccine "${expiringVaccine.vaccineName}" expires soon (due date: ${formattedDate}).`,
         });
         return;
       }
@@ -110,15 +120,20 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
 
     // 4. Blue Info: No recordings in 7 days
     const lastEvent = listData?.events?.[0];
-    const noRecordings = !lastEvent || (Date.now() - new Date(lastEvent.createdAt).getTime()) > 7 * 24 * 60 * 60 * 1000;
-    
+    const noRecordings =
+      !lastEvent ||
+      Date.now() - new Date(lastEvent.createdAt).getTime() >
+        7 * 24 * 60 * 60 * 1000;
+
     if (noRecordings) {
       setActiveAlert({
         type: "blue",
-        message: language === "pt" ? "Gravação Recomendada" : "Recording Recommended",
-        description: language === "pt"
-          ? "Não realiza gravações de som há mais de 7 dias. Atualize o estado emocional do seu animal."
-          : "No sound recordings in over 7 days. Update your animal's emotional status.",
+        message:
+          language === "pt" ? "Gravação Recomendada" : "Recording Recommended",
+        description:
+          language === "pt"
+            ? "Não realiza gravações de som há mais de 7 dias. Atualize o estado emocional do seu animal."
+            : "No sound recordings in over 7 days. Update your animal's emotional status.",
       });
       return;
     }
@@ -194,10 +209,20 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
   const styles = getAlertStyles(activeAlert.type);
 
   return (
-    <div className={cn("border rounded-2xl p-4 flex items-start gap-3 relative transition-all page-enter", styles.bg)}>
+    <div
+      className={cn(
+        "border rounded-2xl p-4 flex items-start gap-3 relative transition-all page-enter",
+        styles.bg,
+      )}
+    >
       {styles.icon}
       <div className="flex-1 min-w-0 pr-6">
-        <h4 className={cn("text-xs font-bold uppercase tracking-wide", styles.text)}>
+        <h4
+          className={cn(
+            "text-xs font-bold uppercase tracking-wide",
+            styles.text,
+          )}
+        >
           {activeAlert.message}
         </h4>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">

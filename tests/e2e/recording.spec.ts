@@ -1,7 +1,9 @@
 import { expect, loginAsMockUser, test } from "./fixtures";
 
 test.describe("recording", () => {
-  test("records mocked audio, classifies it, and shows the event in history", async ({ page }) => {
+  test("records mocked audio, classifies it, and shows the event in history", async ({
+    page,
+  }) => {
     test.setTimeout(45_000);
 
     await loginAsMockUser(page);

@@ -1,75 +1,86 @@
-import { TRPCError } from "@trpc/server";
-import { streamText, type ModelMessage } from "ai";
-import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
-import { notifyN8N } from "./_core/notification";
+import { TRPCError } from "@trpc/server";
+import { type ModelMessage, streamText } from "ai";
+import { z } from "zod";
+import {
+  type EmotionalState,
+  type ModelUsed,
+  STATE_LABELS,
+} from "../shared/types";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { notifyN8N } from "./_core/notification";
+import { sendPushNotification } from "./_core/pushNotification";
+import { checkRateLimit } from "./_core/rateLimiter";
+import { sanitizedString } from "./_core/sanitize";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { familyRouter } from "./routers/family";
-import { vetRouter } from "./routers/vet";
-import { healthRouter } from "./routers/health";
-import { trendsRouter } from "./routers/trends";
-import { healingRouter } from "./routers/healing";
-import { foodsRouter } from "./routers/foods";
 import {
   addAnimal,
-  updateAnimal,
-  getAllEventsForExport,
+  addDeworming,
+  addDiagnosticTest,
+  addLicensing,
+  addOtherTreatment,
+  addVaccination,
+  checkAndIncrementAnalysisLimit,
+  createShareInvitation,
+  deleteDeworming,
+  deleteDiagnosticTest,
+  deleteLicensing,
+  deleteOtherTreatment,
+  deleteVaccination,
   getActiveAnimal,
+  getAllEventsForExport,
+  getAnalysisUsage,
+  getAnimalBaseline,
+  getAnimalById,
+  getAnimalShares,
   getAnimalsByUser,
+  getDemoUserId,
+  getDewormings,
+  getDiagnosticTests,
+  getEventBeliefState,
+  getEventNotes,
+  getEventPosture,
+  getEventsForAnimalPaginated,
   getEventsPaginated,
-  getOrCreateDemoUserId,
+  getLatestBeliefState,
+  getLicensing,
+  getOtherTreatments,
+  getPendingInvitations,
   getRecentEvents,
   getSettings,
+  getSignedAudioUrl,
+  getStatsForAnimal,
+  getSupabase,
+  getVaccinations,
   getWeeklyStats,
   insertEvent,
-  setActiveAnimal,
-  updateEventFeedback,
-  upsertSettings,
-  getDemoUserId,
-  getEventNotes,
-  updateEventNotes,
-  uploadAudioToSupabase,
-  getSignedAudioUrl,
-  updateEventAudio,
-  getAnimalById,
-  getAnimalBaseline,
   recalculateAnimalBehaviorBaseline,
-  updateAnimalBaseline,
-  verifyAnimalOwner,
-  getEventsForAnimalPaginated,
-  getStatsForAnimal,
-  updateBeliefStateForAnimal,
-  getLatestBeliefState,
-  getEventBeliefState,
-  getEventPosture,
-  savePostureForEvent,
-  createShareInvitation,
-  getPendingInvitations,
-  respondToInvitation,
-  getAnimalShares,
   removeAnimalShare,
+  respondToInvitation,
   saveBreedFeedback,
+  savePostureForEvent,
+  setActiveAnimal,
+  updateAnimal,
+  updateAnimalBaseline,
+  updateBeliefStateForAnimal,
+  updateEventAudio,
+  updateEventFeedback,
+  updateEventNotes,
   updateUser,
-  getVaccinations,
-  addVaccination,
-  deleteVaccination,
-  getDewormings,
-  addDeworming,
-  deleteDeworming,
-  getDiagnosticTests,
-  addDiagnosticTest,
-  deleteDiagnosticTest,
-  getOtherTreatments,
-  addOtherTreatment,
-  deleteOtherTreatment,
-  getLicensing,
-  addLicensing,
-  deleteLicensing,
+  uploadAudioToSupabase,
+  upsertSettings,
+  verifyAnimalOwner,
+  saveFeedbackAnnotation,
+  getFeedbackAnnotations,
 } from "./db";
-import { checkRateLimit } from "./_core/rateLimiter";
-import { STATE_LABELS, type EmotionalState, type ModelUsed } from "../shared/types";
+import { familyRouter } from "./routers/family";
+import { foodsRouter } from "./routers/foods";
+import { healingRouter } from "./routers/healing";
+import { healthRouter } from "./routers/health";
+import { pushRouter } from "./routers/push";
+import { trendsRouter } from "./routers/trends";
+import { vetRouter } from "./routers/vet";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -83,15 +94,15 @@ const STATES: EmotionalState[] = [
 ];
 
 const STATE_EMOJIS: Record<EmotionalState, string> = {
-  distress:   "🔴",
-  attention:  "🟡",
+  distress: "🔴",
+  attention: "🟡",
   excitement: "🟢",
-  hunger:     "🟠",
-  alert:      "🔵",
-  relaxed:    "⚪",
+  hunger: "🟠",
+  alert: "🔵",
+  relaxed: "⚪",
 };
 
-const MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
+const _MODELS: ModelUsed[] = ["yamnet", "wav2vec2", "gemini"];
 
 // Default ML backends. Runtime env can prepend a deployed backend without
 // removing these known-good fallbacks.
@@ -99,7 +110,7 @@ const PRIMARY_BACKEND_URL = "https://animalmind-backend.fly.dev";
 const HF_BACKEND_URL = "https://firstoff-animalmind-backend.hf.space";
 const CLASSIFY_TIMEOUT_MS = 5000;
 
-async function sleep(ms: number) {
+async function _sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
@@ -108,7 +119,7 @@ async function tryBackendPost(
   url: string,
   endpoint: string,
   formData: FormData,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -124,7 +135,9 @@ async function tryBackendPost(
     return await response.json();
   } catch (err) {
     const isTimeout = err instanceof Error && err.name === "AbortError";
-    console.warn(`[ML] Backend ${url}${endpoint} failed${isTimeout ? " (timeout)" : ""}: ${err}`);
+    console.warn(
+      `[ML] Backend ${url}${endpoint} failed${isTimeout ? " (timeout)" : ""}: ${err}`,
+    );
     return null;
   } finally {
     clearTimeout(timer);
@@ -135,8 +148,13 @@ async function tryBackendPost(
 async function tryClassifyBackend(
   url: string,
   formData: FormData,
-  timeoutMs: number
-): Promise<{ state: string; confidence: number; emoji: string; model_used: string } | null> {
+  timeoutMs: number,
+): Promise<{
+  state: string;
+  confidence: number;
+  emoji: string;
+  model_used: string;
+} | null> {
   return tryBackendPost(url, "/classify", formData, timeoutMs);
 }
 
@@ -170,23 +188,39 @@ function resolveMlBackendUrls() {
 async function tryVisionBackend(
   endpoint: string,
   imageBuffer: Buffer,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<any> {
   for (const backendUrl of resolveMlBackendUrls()) {
-    const file = new File([Uint8Array.from(imageBuffer)], "frame.jpg", { type: "image/jpeg" });
+    const file = new File([Uint8Array.from(imageBuffer)], "frame.jpg", {
+      type: "image/jpeg",
+    });
     const formData = new FormData();
     formData.append("file", file);
-    
-    const data = await tryBackendPost(backendUrl, endpoint, formData, timeoutMs);
+
+    const data = await tryBackendPost(
+      backendUrl,
+      endpoint,
+      formData,
+      timeoutMs,
+    );
     if (data) return data;
   }
   return null;
 }
 
 /** Map raw backend response into our typed result shape. */
-function mapBackendResult(
-  data: { state: string; confidence: number; emoji: string; model_used: string }
-): { state: EmotionalState; confidence: number; emoji: string; model_used: ModelUsed; cached: boolean } | null {
+function mapBackendResult(data: {
+  state: string;
+  confidence: number;
+  emoji: string;
+  model_used: string;
+}): {
+  state: EmotionalState;
+  confidence: number;
+  emoji: string;
+  model_used: ModelUsed;
+  cached: boolean;
+} | null {
   if (!STATES.includes(data.state as EmotionalState)) return null;
   let modelUsedMapped: ModelUsed = "yamnet";
   if (data.model_used === "wav2vec2") modelUsedMapped = "wav2vec2";
@@ -203,7 +237,9 @@ function mapBackendResult(
 
 // ─── Effective user ID (demo fallback) ───────────────────────────────────────
 
-async function effectiveUserId(ctxUser: { id: number } | null): Promise<number> {
+async function effectiveUserId(
+  ctxUser: { id: number } | null,
+): Promise<number> {
   if (ctxUser) return ctxUser.id;
   const demoId = await getDemoUserId();
   if (!demoId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -246,7 +282,7 @@ function mapDbEvent(e: any) {
 
 const MINDI_DEFAULT_MODEL = "google/gemini-3.5-flash";
 const MINDI_BASE_PROMPT =
-  "És a Mindi, assistente de bem-estar animal do AnimalMind. Tens acesso ao perfil do animal [nome, espécie, raça] e ao histórico de classificações recentes. Responde sempre em português de Portugal. Sê precisa, empática e recomenda sempre consulta veterinária para situações de saúde sérias. Nunca substituas um diagnóstico médico.";
+  "És a Mindi, assistente de bem-estar animal do Pawra. Tens acesso ao perfil do animal [nome, espécie, raça] e ao histórico de classificações recentes. Responde sempre em português de Portugal. Sê precisa, empática e recomenda sempre consulta veterinária para situações de saúde sérias. Nunca substituas um diagnóstico médico.";
 
 const SPECIES_LABELS: Record<string, string> = {
   dog: "cão",
@@ -286,11 +322,11 @@ function formatRecentClassifications(events: ReturnType<typeof mapDbEvent>[]) {
 
 function buildMindiSystemPrompt(
   animal: any | null,
-  events: ReturnType<typeof mapDbEvent>[]
+  events: ReturnType<typeof mapDbEvent>[],
 ) {
   return `${MINDI_BASE_PROMPT}
 
-Contexto automático do AnimalMind:
+Contexto automático do Pawra:
 ${formatAnimalContext(animal)}
 
 Últimas 5 classificações do histórico:
@@ -305,7 +341,7 @@ Regras de resposta:
 function buildFallbackMindiResponse(
   message: string,
   animal: any | null,
-  events: ReturnType<typeof mapDbEvent>[]
+  events: ReturnType<typeof mapDbEvent>[],
 ) {
   const animalName = animal?.name ? animal.name : "o teu animal";
   const recent = events[0];
@@ -314,7 +350,11 @@ function buildFallbackMindiResponse(
     : "";
   const normalized = message.toLocaleLowerCase("pt-PT");
 
-  if (normalized.includes("não come") || normalized.includes("nao come") || normalized.includes("comer")) {
+  if (
+    normalized.includes("não come") ||
+    normalized.includes("nao come") ||
+    normalized.includes("comer")
+  ) {
     return `${animalName} pode estar a recusar comida por stress, alteração de rotina, desconforto oral, náusea ou dor.${recentState} Observa também água, energia, vómitos, diarreia e sinais de dor. Se não comer durante 24 horas, se for gato, sénior, cachorro, ou se houver apatia/vómitos/dificuldade respiratória, contacta um médico veterinário.`;
   }
 
@@ -333,6 +373,43 @@ function buildFallbackMindiResponse(
   return `Com base no perfil de ${animalName} e no histórico recente, posso ajudar-te a interpretar sinais de comportamento, alimentação e bem-estar.${recentState} Diz-me o que observaste, há quanto tempo acontece e se existem sinais físicos como dor, vómitos, diarreia, apatia ou dificuldade respiratória. Para sintomas sérios, a avaliação veterinária é indispensável.`;
 }
 
+const feedbackRouter = router({
+  save: publicProcedure
+    .input(
+      z.object({
+        animal_type: z.enum(["dog", "cat"]),
+        predicted_breed: z.string().nullable().optional(),
+        confirmed_breed: z.string().nullable().optional(),
+        predicted_state: z.string().nullable().optional(),
+        confirmed_state: z.string().nullable().optional(),
+        confidence: z.number().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      await saveFeedbackAnnotation(input);
+      return { success: true };
+    }),
+
+  list: protectedProcedure
+    .input(
+      z.object({
+        animal_type: z.string().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      }).optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const accessToken = ctx.accessToken;
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Token de acesso em falta na sessão",
+        });
+      }
+      return getFeedbackAnnotations(accessToken, input);
+    }),
+});
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -350,11 +427,11 @@ export const appRouter = router({
               z.object({
                 role: z.enum(["user", "assistant"]),
                 content: z.string().min(1).max(4000),
-              })
+              }),
             )
             .max(10)
             .optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "chat.send", 25);
@@ -366,7 +443,8 @@ export const appRouter = router({
         if (input.animalId && !animal) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Animal não encontrado ou sem acesso para este utilizador.",
+            message:
+              "Animal não encontrado ou sem acesso para este utilizador.",
           });
         }
 
@@ -392,14 +470,23 @@ export const appRouter = router({
           });
           const reply = (await result.text).trim();
           return {
-            reply: reply || buildFallbackMindiResponse(input.message, animal, recentEvents),
+            reply:
+              reply ||
+              buildFallbackMindiResponse(input.message, animal, recentEvents),
             model,
             fallback: !reply,
           };
         } catch (err) {
-          console.warn("[Mindi] AI generation failed, returning fallback response:", err);
+          console.warn(
+            "[Mindi] AI generation failed, returning fallback response:",
+            err,
+          );
           return {
-            reply: buildFallbackMindiResponse(input.message, animal, recentEvents),
+            reply: buildFallbackMindiResponse(
+              input.message,
+              animal,
+              recentEvents,
+            ),
             model,
             fallback: true,
           };
@@ -419,31 +506,144 @@ export const appRouter = router({
         z.object({
           name: z.string().min(1).max(100).optional(),
           email: z.string().email().optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
         await updateUser(userId, input);
         return { success: true };
       }),
+    completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await updateUser(userId, { onboardingCompleted: true });
+      return { success: true };
+    }),
+    deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const openId = ctx.user.openId;
+
+      const supabase = getSupabase();
+
+      // 1. Get all events with audio_url for this user to delete from storage
+      const { data: events, error: eventsError } = await supabase
+        .from("classification_events")
+        .select("audio_url")
+        .eq("user_id", userId);
+
+      if (eventsError) {
+        console.error(
+          "[DeleteAccount] Error fetching user events for audio deletion:",
+          eventsError,
+        );
+      }
+
+      const fileNames = (events || [])
+        .map((e: any) => e.audio_url)
+        .filter((url: any): url is string =>
+          Boolean(url && url.includes("audio-recordings/")),
+        )
+        .map((url: string) => url.split("audio-recordings/").pop() as string);
+
+      if (fileNames.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from("audio-recordings")
+          .remove(fileNames);
+        if (storageError) {
+          console.error(
+            "[DeleteAccount] Error removing audio files from storage:",
+            storageError,
+          );
+        } else {
+          console.log(
+            `[DeleteAccount] Successfully removed ${fileNames.length} audio files from storage.`,
+          );
+        }
+      }
+
+      // 2. Delete from Supabase Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(openId);
+      if (authError) {
+        console.error(
+          "[DeleteAccount] Error deleting user from Supabase Auth:",
+          authError,
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao eliminar utilizador no Supabase Auth: ${authError.message}`,
+        });
+      }
+
+      // 3. Delete from public.users table (cascades to all other tables)
+      const { error: dbError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
+      if (dbError) {
+        console.error(
+          "[DeleteAccount] Error deleting user from database:",
+          dbError,
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao eliminar dados do utilizador na base de dados: ${dbError.message}`,
+        });
+      }
+
+      // 4. Clear session cookies (logout)
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+      return { success: true };
+    }),
   }),
 
   // ── Classify ────────────────────────────────────────────────────────────────
   classify: router({
     run: protectedProcedure
       .input(
-        z.object({
-          animalId: z.number().optional(),
-          audio: z.string().optional(),
-          audioMimeType: z.string().optional(),
-          posture: z.string().optional(),
-          pitch: z.number().optional(),
-          spectralEnergy: z.number().optional(),
-          tonalBrightness: z.number().optional(),
-        })
+        z
+          .object({
+            animalId: z.number().optional(),
+            audio: z.string().optional(),
+            audioMimeType: z.string().optional(),
+            posture: z.string().optional(),
+            pitch: z.number().optional(),
+            spectralEnergy: z.number().optional(),
+            tonalBrightness: z.number().optional(),
+          })
+          .refine(
+            (val) => {
+              if (val.audio) {
+                const ALLOWED_AUDIO = [
+                  "audio/mpeg",
+                  "audio/mp3",
+                  "audio/wav",
+                  "audio/x-wav",
+                  "audio/mp4",
+                  "audio/x-m4a",
+                  "audio/m4a",
+                  "audio/aac",
+                  "audio/ogg",
+                  "audio/webm",
+                ];
+                const mime = val.audioMimeType || "audio/webm";
+                if (!ALLOWED_AUDIO.includes(mime.toLowerCase())) return false;
+                const size = (val.audio.length * 3) / 4;
+                if (size > 50 * 1024 * 1024) return false; // 50MB
+              }
+              return true;
+            },
+            {
+              message:
+                "Ficheiro de áudio inválido ou demasiado grande. Máximo 50MB (MP3, WAV, M4A, WebM, OGG).",
+            },
+          ),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.run", 30);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
         let result: {
           state: EmotionalState;
           confidence: number;
@@ -471,7 +671,11 @@ export const appRouter = router({
             const formData = new FormData();
             formData.append("file", file);
 
-            const data = await tryClassifyBackend(backendUrl, formData, CLASSIFY_TIMEOUT_MS);
+            const data = await tryClassifyBackend(
+              backendUrl,
+              formData,
+              CLASSIFY_TIMEOUT_MS,
+            );
             if (data) {
               const mapped = mapBackendResult(data);
               if (mapped) {
@@ -479,7 +683,9 @@ export const appRouter = router({
                 console.log(`[Classify] Success from ${backendUrl}:`, result);
                 break;
               } else {
-                console.warn(`[Classify] ${backendUrl} returned invalid state "${data.state}", trying next.`);
+                console.warn(
+                  `[Classify] ${backendUrl} returned invalid state "${data.state}", trying next.`,
+                );
               }
             }
           }
@@ -492,11 +698,12 @@ export const appRouter = router({
         if (!result) {
           throw new TRPCError({
             code: "SERVICE_UNAVAILABLE",
-            message: "Não foi possível classificar o áudio neste momento. O áudio foi guardado para análise posterior.",
+            message:
+              "Não foi possível classificar o áudio neste momento. O áudio foi guardado para análise posterior.",
           });
         }
 
-        const userId = await effectiveUserId(ctx.user);
+        const openId = ctx.user.openId;
         const targetAnimalId = input.animalId || 1;
         await verifyAnimalOwner(targetAnimalId, userId, true);
         const targetAnimal = await getAnimalById(targetAnimalId, userId);
@@ -522,7 +729,7 @@ export const appRouter = router({
         let audioUrl = null;
         if (eventId && buffer) {
           try {
-            const fileName = `audio_${eventId}_${Date.now()}.${ext}`;
+            const fileName = `${openId}/${Date.now()}-audio_${eventId}.${ext}`;
             audioUrl = await uploadAudioToSupabase(fileName, buffer, mime);
             await updateEventAudio(eventId, audioUrl);
           } catch (err) {
@@ -533,11 +740,19 @@ export const appRouter = router({
         let beliefState = null;
         if (eventId) {
           const animalId = input.animalId || 1;
-          beliefState = await updateBeliefStateForAnimal(animalId, result.state, result.confidence, eventId);
+          beliefState = await updateBeliefStateForAnimal(
+            animalId,
+            result.state,
+            result.confidence,
+            eventId,
+          );
           try {
             await recalculateAnimalBehaviorBaseline(animalId, userId);
           } catch (err) {
-            console.error("[Baseline] Failed to recalculate behavior baseline:", err);
+            console.error(
+              "[Baseline] Failed to recalculate behavior baseline:",
+              err,
+            );
           }
           if (input.posture) {
             await savePostureForEvent(eventId, input.posture);
@@ -555,21 +770,82 @@ export const appRouter = router({
           } catch (err) {
             console.error("[n8n] Failed to send classification webhook:", err);
           }
+
+          // Enviar notificações push
+          try {
+            const animalName = targetAnimal?.name ?? "animal";
+            const stateLabel = STATE_LABELS[result.state];
+
+            // 1. Notificação de conclusão de análise de áudio
+            await sendPushNotification(userId, {
+              title: "Análise de Áudio Concluída",
+              body: `A análise de áudio de ${animalName} terminou! Estado: ${stateLabel}.`,
+              data: { url: "/historico", animalId: targetAnimalId },
+            });
+
+            // 2. Alertas de Saúde por IA (estado crítico ou desvio do baseline)
+            const isCritical =
+              result.state === "distress" || result.state === "alert";
+            const baseline = await getAnimalBaseline(targetAnimalId);
+            const baselineFrequency =
+              baseline.stateDistribution?.[result.state] ?? 0;
+            const isRare = baseline.sampleSize >= 5 && baselineFrequency < 0.1;
+
+            if (isCritical || isRare) {
+              const bodyText = isCritical
+                ? `Alerta de Saúde: ${animalName} está com sinais de ${stateLabel}!`
+                : `Alerta de Saúde: ${animalName} apresentou um estado atípico de ${stateLabel} (desvio de baseline)!`;
+
+              await sendPushNotification(userId, {
+                title: "Alerta de Saúde de IA",
+                body: bodyText,
+                data: { url: "/historico", animalId: targetAnimalId },
+              });
+            }
+          } catch (pushErr) {
+            console.error(
+              "[Push] Falha ao enviar notificações de áudio:",
+              pushErr,
+            );
+          }
         }
 
-        return { ...result, eventId, audioUrl, beliefState, posture: input.posture || null };
+        return {
+          ...result,
+          eventId,
+          audioUrl,
+          beliefState,
+          posture: input.posture || null,
+        };
       }),
+
+    getUsage: protectedProcedure.query(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      return getAnalysisUsage(userId);
+    }),
 
     detectPosture: protectedProcedure
       .input(
         z.object({
-          image: z.string(), // base64 JPEG
-        })
+          image: z.string().refine(
+            (val) => {
+              const size = (val.length * 3) / 4;
+              return size <= 5 * 1024 * 1024; // 5MB
+            },
+            { message: "A imagem excede o tamanho máximo de 5MB." },
+          ),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.detectPosture", 45);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
         const buffer = Buffer.from(input.image, "base64");
-        const data = await tryVisionBackend("/detect-posture", buffer, CLASSIFY_TIMEOUT_MS);
+        const data = await tryVisionBackend(
+          "/detect-posture",
+          buffer,
+          CLASSIFY_TIMEOUT_MS,
+        );
         if (!data) {
           throw new TRPCError({
             code: "SERVICE_UNAVAILABLE",
@@ -582,13 +858,25 @@ export const appRouter = router({
     detectSpecies: protectedProcedure
       .input(
         z.object({
-          image: z.string(), // base64 JPEG
-        })
+          image: z.string().refine(
+            (val) => {
+              const size = (val.length * 3) / 4;
+              return size <= 5 * 1024 * 1024; // 5MB
+            },
+            { message: "A imagem excede o tamanho máximo de 5MB." },
+          ),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         checkRateLimit(ctx, "classify.detectSpecies", 45);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
         const buffer = Buffer.from(input.image, "base64");
-        const data = await tryVisionBackend("/detect-species", buffer, CLASSIFY_TIMEOUT_MS);
+        const data = await tryVisionBackend(
+          "/detect-species",
+          buffer,
+          CLASSIFY_TIMEOUT_MS,
+        );
         if (!data) {
           throw new TRPCError({
             code: "SERVICE_UNAVAILABLE",
@@ -596,6 +884,147 @@ export const appRouter = router({
           });
         }
         return data as { species: string; confidence: number };
+      }),
+
+    saveVisionEvent: protectedProcedure
+      .input(
+        z.object({
+          animalId: z.number(),
+          posture: z.string(),
+          species: z.string().optional().nullable(),
+          image: z.string().optional(), // base64 JPEG
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        let state:
+          | "relaxed"
+          | "distress"
+          | "attention"
+          | "hunger"
+          | "alert"
+          | "excitement" = "relaxed";
+        let emoji = "😌";
+        const p = input.posture.toLowerCase();
+
+        if (
+          p.includes("sleep") ||
+          p.includes("lie") ||
+          p.includes("lying") ||
+          p.includes("sitting") ||
+          p.includes("sit")
+        ) {
+          state = "relaxed";
+          emoji = "😌";
+        } else if (
+          p.includes("stand") ||
+          p.includes("standing") ||
+          p.includes("walk") ||
+          p.includes("run")
+        ) {
+          state = "alert";
+          emoji = "👀";
+        } else if (
+          p.includes("play") ||
+          p.includes("jump") ||
+          p.includes("excited")
+        ) {
+          state = "excitement";
+          emoji = "🤪";
+        } else if (
+          p.includes("beg") ||
+          p.includes("begging") ||
+          p.includes("food")
+        ) {
+          state = "hunger";
+          emoji = "😋";
+        } else if (
+          p.includes("cower") ||
+          p.includes("fear") ||
+          p.includes("hide") ||
+          p.includes("distress")
+        ) {
+          state = "distress";
+          emoji = "😰";
+        } else if (
+          p.includes("bark") ||
+          p.includes("growl") ||
+          p.includes("attention")
+        ) {
+          state = "attention";
+          emoji = "🥺";
+        }
+
+        const userId = await effectiveUserId(ctx.user);
+        await verifyAnimalOwner(input.animalId, userId, true);
+        const _targetAnimal = await getAnimalById(input.animalId, userId);
+
+        const event = await insertEvent({
+          userId,
+          animalId: input.animalId,
+          state,
+          confidence: 0.9,
+          emoji,
+          modelUsed: "YOLOv8-Vision",
+          cached: false,
+        });
+
+        const eventId = (event as any)?.id;
+        if (eventId) {
+          await savePostureForEvent(eventId, input.posture);
+          await updateBeliefStateForAnimal(input.animalId, state, 0.9, eventId);
+          try {
+            await recalculateAnimalBehaviorBaseline(input.animalId, userId);
+          } catch (err) {
+            console.error(
+              "[Baseline] Failed to recalculate behavior baseline:",
+              err,
+            );
+          }
+
+          // Enviar notificações push
+          try {
+            const animalName = _targetAnimal?.name ?? "animal";
+            const stateLabel = STATE_LABELS[state];
+
+            // 1. Notificação de conclusão de análise de vídeo
+            await sendPushNotification(userId, {
+              title: "Análise de Vídeo Concluída",
+              body: `A análise de vídeo de ${animalName} terminou! Postura: ${input.posture}.`,
+              data: { url: "/historico", animalId: input.animalId },
+            });
+
+            // 2. Alerta de Saúde por IA (estado crítico ou desvio do baseline)
+            const isCritical = state === "distress" || state === "alert";
+            const baseline = await getAnimalBaseline(input.animalId);
+            const baselineFrequency = baseline.stateDistribution?.[state] ?? 0;
+            const isRare = baseline.sampleSize >= 5 && baselineFrequency < 0.1;
+
+            if (isCritical || isRare) {
+              const bodyText = isCritical
+                ? `Alerta de Saúde: ${animalName} está com sinais de ${stateLabel}!`
+                : `Alerta de Saúde: ${animalName} apresentou um estado atípico de ${stateLabel} (desvio de baseline)!`;
+
+              await sendPushNotification(userId, {
+                title: "Alerta de Saúde de IA",
+                body: bodyText,
+                data: { url: "/historico", animalId: input.animalId },
+              });
+            }
+          } catch (pushErr) {
+            console.error(
+              "[Push] Falha ao enviar notificações de vídeo:",
+              pushErr,
+            );
+          }
+        }
+
+        return {
+          state,
+          confidence: 0.9,
+          emoji,
+          model_used: "YOLOv8-Vision",
+          eventId,
+        };
       }),
   }),
 
@@ -609,21 +1038,45 @@ export const appRouter = router({
     add: protectedProcedure
       .input(
         z.object({
-          name: z.string().min(1).max(100),
+          name: sanitizedString(100),
           species: z.enum(["dog", "cat"]),
-          breed: z.string().max(100).optional().nullable(),
+          breed: sanitizedString(100).optional().nullable(),
           age: z.number().int().min(0).max(30).optional().nullable(),
           dateOfBirth: z.string().optional().nullable(),
           sex: z.enum(["male", "female", "unknown"]).optional(),
-          color: z.string().optional().nullable(),
+          color: sanitizedString(100).optional().nullable(),
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
-          photoUrl: z.string().optional().nullable(),
-          microchipNumber: z.string().max(15).optional().nullable(),
-          height: z.string().max(50).optional().nullable(),
-          tail: z.string().max(50).optional().nullable(),
-          specialMarkings: z.string().optional().nullable(),
-          weight: z.string().max(50).optional().nullable(),
-        })
+          photoUrl: z
+            .string()
+            .optional()
+            .nullable()
+            .refine(
+              (val) => {
+                if (!val) return true;
+                if (val.startsWith("http://") || val.startsWith("https://"))
+                  return true;
+                const match = val.match(/^data:([^;]+);base64,/);
+                if (!match) return false;
+                const mime = match[1];
+                const ALLOWED = [
+                  "image/jpeg",
+                  "image/jpg",
+                  "image/png",
+                  "image/webp",
+                  "application/pdf",
+                ];
+                if (!ALLOWED.includes(mime.toLowerCase())) return false;
+                const size = (val.length * 3) / 4;
+                return size <= 5 * 1024 * 1024; // 5MB
+              },
+              { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." },
+            ),
+          microchipNumber: sanitizedString(15).optional().nullable(),
+          height: sanitizedString(50).optional().nullable(),
+          tail: sanitizedString(50).optional().nullable(),
+          specialMarkings: sanitizedString(500).optional().nullable(),
+          weight: sanitizedString(50).optional().nullable(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -634,21 +1087,45 @@ export const appRouter = router({
       .input(
         z.object({
           animalId: z.number(),
-          name: z.string().min(1).max(100).optional(),
+          name: sanitizedString(100).optional(),
           species: z.enum(["dog", "cat"]).optional(),
-          breed: z.string().max(100).optional().nullable(),
+          breed: sanitizedString(100).optional().nullable(),
           age: z.number().int().min(0).max(30).optional().nullable(),
           dateOfBirth: z.string().optional().nullable(),
           sex: z.enum(["male", "female", "unknown"]).optional(),
-          color: z.string().optional().nullable(),
+          color: sanitizedString(100).optional().nullable(),
           coat: z.enum(["short", "medium", "long"]).optional().nullable(),
-          photoUrl: z.string().optional().nullable(),
-          microchipNumber: z.string().max(15).optional().nullable(),
-          height: z.string().max(50).optional().nullable(),
-          tail: z.string().max(50).optional().nullable(),
-          specialMarkings: z.string().optional().nullable(),
-          weight: z.string().max(50).optional().nullable(),
-        })
+          photoUrl: z
+            .string()
+            .optional()
+            .nullable()
+            .refine(
+              (val) => {
+                if (!val) return true;
+                if (val.startsWith("http://") || val.startsWith("https://"))
+                  return true;
+                const match = val.match(/^data:([^;]+);base64,/);
+                if (!match) return false;
+                const mime = match[1];
+                const ALLOWED = [
+                  "image/jpeg",
+                  "image/jpg",
+                  "image/png",
+                  "image/webp",
+                  "application/pdf",
+                ];
+                if (!ALLOWED.includes(mime.toLowerCase())) return false;
+                const size = (val.length * 3) / 4;
+                return size <= 5 * 1024 * 1024; // 5MB
+              },
+              { message: "Ficheiro inválido ou demasiado grande. Máximo 5MB." },
+            ),
+          microchipNumber: sanitizedString(15).optional().nullable(),
+          height: sanitizedString(50).optional().nullable(),
+          tail: sanitizedString(50).optional().nullable(),
+          specialMarkings: sanitizedString(500).optional().nullable(),
+          weight: sanitizedString(50).optional().nullable(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -697,7 +1174,10 @@ export const appRouter = router({
         const userId = await effectiveUserId(ctx.user);
         await verifyAnimalOwner(input.animalId, userId);
         try {
-          return await recalculateAnimalBehaviorBaseline(input.animalId, userId);
+          return await recalculateAnimalBehaviorBaseline(
+            input.animalId,
+            userId,
+          );
         } catch {
           return getAnimalBaseline(input.animalId);
         }
@@ -710,7 +1190,7 @@ export const appRouter = router({
           vocalizationThreshold: z.number().int().min(1).max(100).optional(),
           normalStates: z.array(z.string()).optional(),
           alertSensitivity: z.enum(["low", "medium", "high"]).optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -732,7 +1212,7 @@ export const appRouter = router({
           animalId: z.number(),
           email: z.string().email(),
           permission: z.enum(["read", "write"]),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -743,7 +1223,12 @@ export const appRouter = router({
             message: "Apenas o proprietario pode convidar co-tutores.",
           });
         }
-        return createShareInvitation(userId, input.animalId, input.email, input.permission);
+        return createShareInvitation(
+          userId,
+          input.animalId,
+          input.email,
+          input.permission,
+        );
       }),
 
     listShares: protectedProcedure
@@ -779,7 +1264,7 @@ export const appRouter = router({
         z.object({
           invitationId: z.number(),
           action: z.enum(["accept", "reject"]),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -794,7 +1279,7 @@ export const appRouter = router({
           predictedBreed: z.string(),
           confirmedBreed: z.string(),
           confidence: z.number(),
-        })
+        }),
       )
       .mutation(async ({ input }) => {
         await saveBreedFeedback(input);
@@ -819,7 +1304,7 @@ export const appRouter = router({
           batchNumber: z.string().max(50).optional().nullable(),
           veterinarian: z.string().max(100).optional().nullable(),
           nextDueDate: z.string().length(10).optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -852,7 +1337,7 @@ export const appRouter = router({
           dosage: z.string().max(100).optional().nullable(),
           dateAdministered: z.string().length(10),
           nextDueDate: z.string().length(10).optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -884,7 +1369,7 @@ export const appRouter = router({
           datePerformed: z.string().length(10),
           result: z.string().min(1).max(200),
           notes: z.string().optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -915,7 +1400,7 @@ export const appRouter = router({
           treatmentName: z.string().min(1).max(200),
           dateAdministered: z.string().length(10),
           notes: z.string().optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -947,9 +1432,16 @@ export const appRouter = router({
           issueDate: z.string().length(10),
           expiryDate: z.string().length(10).optional().nullable(),
           issuingAuthority: z.string().min(1).max(150),
-          category: z.enum(["companion", "dangerous", "potentially_dangerous", "hunting", "guard", "other"]),
+          category: z.enum([
+            "companion",
+            "dangerous",
+            "potentially_dangerous",
+            "hunting",
+            "guard",
+            "other",
+          ]),
           notes: z.string().optional().nullable(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -978,20 +1470,20 @@ export const appRouter = router({
           mapped.map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
       }),
 
     list: protectedProcedure
       .input(
         z.object({
-          page:     z.number().default(1),
+          page: z.number().default(1),
           pageSize: z.number().default(10),
-          state:    z.string().optional(),
+          state: z.string().optional(),
           dateFrom: z.string().optional(),
-          dateTo:   z.string().optional(),
+          dateTo: z.string().optional(),
           animalId: z.number().optional(),
-        })
+        }),
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1002,13 +1494,13 @@ export const appRouter = router({
           input.state,
           input.dateFrom,
           input.dateTo,
-          input.animalId
+          input.animalId,
         );
         const mappedEvents = await Promise.all(
           result.events.map(mapDbEvent).map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
         return {
           events: mappedEvents,
@@ -1019,9 +1511,9 @@ export const appRouter = router({
     feedback: protectedProcedure
       .input(
         z.object({
-          eventId:  z.number(),
+          eventId: z.number(),
           feedback: z.enum(["correct", "incorrect"]),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1036,7 +1528,7 @@ export const appRouter = router({
           dateFrom: z.string().optional(),
           dateTo: z.string().optional(),
           animalId: z.number().optional(),
-        })
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1051,7 +1543,7 @@ export const appRouter = router({
           events.map(mapEventForExport).map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
         return {
           events: mappedEvents,
@@ -1063,7 +1555,8 @@ export const appRouter = router({
     exportCsv: protectedProcedure.query(async ({ ctx }) => {
       const userId = await effectiveUserId(ctx.user);
       const events = await getAllEventsForExport(userId);
-      const header = "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
+      const header =
+        "id,state,confidence,emoji,model_used,cached,feedback,audio_url,created_at";
       const rows = await Promise.all(
         events.map(async (e: any) => {
           const signedUrl = await getSignedAudioUrl(e.audio_url);
@@ -1078,7 +1571,7 @@ export const appRouter = router({
             signedUrl ?? "",
             new Date(e.created_at).toISOString(),
           ].join(",");
-        })
+        }),
       );
       return { csv: [header, ...rows].join("\n") };
     }),
@@ -1093,8 +1586,8 @@ export const appRouter = router({
       .input(
         z.object({
           eventId: z.number(),
-          notes:   z.string(),
-        })
+          notes: sanitizedString(500),
+        }),
       )
       .mutation(async ({ input }) => {
         const notes = await updateEventNotes(input.eventId, input.notes);
@@ -1107,7 +1600,7 @@ export const appRouter = router({
           animalId: z.number(),
           page: z.number().default(1),
           pageSize: z.number().default(10),
-        })
+        }),
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1115,13 +1608,13 @@ export const appRouter = router({
           input.animalId,
           userId,
           input.page,
-          input.pageSize
+          input.pageSize,
         );
         const mappedEvents = await Promise.all(
           result.events.map(mapDbEvent).map(async (e) => ({
             ...e,
             audioUrl: await getSignedAudioUrl(e.audioUrl),
-          }))
+          })),
         );
         return {
           events: mappedEvents,
@@ -1134,7 +1627,7 @@ export const appRouter = router({
         z.object({
           animalId: z.number(),
           days: z.number().default(7),
-        })
+        }),
       )
       .query(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1159,11 +1652,13 @@ export const appRouter = router({
         return {
           notificationsEnabled: true,
           alertSensitivity: "medium" as const,
+          shareDiagnosticData: false,
         };
       }
       return {
         notificationsEnabled: s.notifications_enabled,
         alertSensitivity: s.alert_sensitivity as "low" | "medium" | "high",
+        shareDiagnosticData: !!s.share_diagnostic_data,
       };
     }),
 
@@ -1171,8 +1666,9 @@ export const appRouter = router({
       .input(
         z.object({
           notificationsEnabled: z.boolean().optional(),
-          alertSensitivity:     z.enum(["low", "medium", "high"]).optional(),
-        })
+          alertSensitivity: z.enum(["low", "medium", "high"]).optional(),
+          shareDiagnosticData: z.boolean().optional(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const userId = await effectiveUserId(ctx.user);
@@ -1185,6 +1681,8 @@ export const appRouter = router({
   trends: trendsRouter,
   healing: healingRouter,
   foods: foodsRouter,
+  push: pushRouter,
+  feedback: feedbackRouter,
 });
 
 export type AppRouter = typeof appRouter;

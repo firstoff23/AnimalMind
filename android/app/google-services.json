@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "348916031789",
+    "project_id": "pawra-7fa68",
+    "storage_bucket": "pawra-7fa68.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:348916031789:android:9c9600131b076dc6e333a4",
+        "android_client_info": {
+          "package_name": "com.pawra.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAOXIFo2o7i3sAMxoxVbp1_k-Fh6j2NaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

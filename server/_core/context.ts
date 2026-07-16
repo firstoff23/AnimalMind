@@ -1,37 +1,44 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../shared/dbTypes";
-import { sdk } from "./sdk";
 import { getSupabase, getUserByOpenId, upsertUser } from "../db";
+import { sdk } from "./sdk";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User | null;
+  accessToken?: string;
 };
 
 export async function createContext(
-  opts: CreateExpressContextOptions
+  opts: CreateExpressContextOptions,
 ): Promise<TrpcContext> {
   let user: User | null = null;
+  let accessToken: string | undefined = undefined;
 
   // 1. Try to authenticate via Authorization header (Supabase JWT token)
   const authHeader = opts.req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
+  if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
+    accessToken = token;
     try {
       const supabase = getSupabase();
-      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
+      const {
+        data: { user: supabaseUser },
+        error,
+      } = await supabase.auth.getUser(token);
       if (supabaseUser && !error) {
         // Query user from local database using their Supabase UID (open_id)
         user = await getUserByOpenId(supabaseUser.id);
-        
+
         // If not in database, sync/upsert them
         if (!user) {
-          const name = supabaseUser.user_metadata?.full_name || 
-                       supabaseUser.user_metadata?.name || 
-                       supabaseUser.email?.split("@")[0] || 
-                       "Supabase User";
-                       
+          const name =
+            supabaseUser.user_metadata?.full_name ||
+            supabaseUser.user_metadata?.name ||
+            supabaseUser.email?.split("@")[0] ||
+            "Supabase User";
+
           await upsertUser({
             openId: supabaseUser.id,
             name,
@@ -62,7 +69,7 @@ export async function createContext(
   if (!user) {
     try {
       user = await sdk.authenticateRequest(opts.req);
-    } catch (error) {
+    } catch (_error) {
       // Authentication is optional for public procedures.
       user = null;
     }
@@ -72,5 +79,6 @@ export async function createContext(
     req: opts.req,
     res: opts.res,
     user,
+    accessToken,
   };
 }

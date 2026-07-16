@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, Mail, User } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, User, Mail } from "lucide-react";
-import { requireSupabase } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { requireSupabase, useAuth } from "@/contexts/AuthContext";
 
 export default function UserProfilePage() {
   const { user } = useAuth();
@@ -49,7 +54,9 @@ export default function UserProfilePage() {
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Meu Perfil</h1>
-        <p className="text-slate-400 mt-2">Gerencie as suas informações pessoais</p>
+        <p className="text-slate-400 mt-2">
+          Gerencie as suas informações pessoais
+        </p>
       </div>
 
       {/* Profile Information */}
@@ -88,7 +95,9 @@ export default function UserProfilePage() {
                 disabled
                 className="bg-slate-800 border-slate-700 text-slate-400 cursor-not-allowed"
               />
-              <p className="text-xs text-slate-500">O email não pode ser alterado</p>
+              <p className="text-xs text-slate-500">
+                O email não pode ser alterado
+              </p>
             </div>
 
             <div className="pt-4">
@@ -99,8 +108,8 @@ export default function UserProfilePage() {
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    A guardar...
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />A
+                    guardar...
                   </>
                 ) : (
                   "Guardar Alterações"

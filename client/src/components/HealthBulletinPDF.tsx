@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
   page: {
@@ -157,7 +157,7 @@ export function HealthBulletinPDF({
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>AnimalMind</Text>
+          <Text style={styles.logo}>Pawra</Text>
           <Text style={styles.subtitle}>Boletim Sanitário Digital</Text>
         </View>
 
@@ -171,7 +171,9 @@ export function HealthBulletinPDF({
           <View style={styles.gridCol}>
             <Text style={styles.label}>Espécie:</Text>
             <Text style={styles.value}>
-              {animal.species === "cat" || animal.species === "gato" ? "Gato" : "Cão"}
+              {animal.species === "cat" || animal.species === "gato"
+                ? "Gato"
+                : "Cão"}
             </Text>
           </View>
           <View style={styles.gridCol}>
@@ -185,7 +187,11 @@ export function HealthBulletinPDF({
           <View style={styles.gridCol}>
             <Text style={styles.label}>Sexo:</Text>
             <Text style={styles.value}>
-              {animal.sex === "male" ? "Macho" : animal.sex === "female" ? "Fêmea" : "Desconhecido"}
+              {animal.sex === "male"
+                ? "Macho"
+                : animal.sex === "female"
+                  ? "Fêmea"
+                  : "Desconhecido"}
             </Text>
           </View>
           <View style={styles.gridCol}>
@@ -195,19 +201,34 @@ export function HealthBulletinPDF({
           <View style={styles.gridCol}>
             <Text style={styles.label}>Pelagem:</Text>
             <Text style={styles.value}>
-              {animal.coat === "short" ? "Curto" : animal.coat === "medium" ? "Médio" : animal.coat === "long" ? "Longo" : "—"}
+              {animal.coat === "short"
+                ? "Curto"
+                : animal.coat === "medium"
+                  ? "Médio"
+                  : animal.coat === "long"
+                    ? "Longo"
+                    : "—"}
             </Text>
           </View>
           <View style={styles.gridCol}>
             <Text style={styles.label}>Microchip:</Text>
-            <Text style={styles.value}>{animal.microchipNumber || "Não registado"}</Text>
+            <Text style={styles.value}>
+              {animal.microchipNumber || "Não registado"}
+            </Text>
           </View>
         </View>
 
         {/* Vaccines Table */}
         <Text style={styles.sectionTitle}>Vacinação</Text>
         {vaccinations.length === 0 ? (
-          <Text style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 15 }}>
+          <Text
+            style={{
+              fontSize: 9,
+              color: "#64748b",
+              fontStyle: "italic",
+              marginBottom: 15,
+            }}
+          >
             Nenhum registo de vacinação encontrado.
           </Text>
         ) : (
@@ -235,7 +256,9 @@ export function HealthBulletinPDF({
                   <Text style={styles.tableCell}>{v.vaccineName || "—"}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: "15%" }]}>
-                  <Text style={styles.tableCell}>{v.dateAdministered || "—"}</Text>
+                  <Text style={styles.tableCell}>
+                    {v.dateAdministered || "—"}
+                  </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "20%" }]}>
                   <Text style={styles.tableCell}>{v.batchNumber || "—"}</Text>
@@ -254,7 +277,14 @@ export function HealthBulletinPDF({
         {/* Deworming Table */}
         <Text style={styles.sectionTitle}>Desparasitações</Text>
         {dewormings.length === 0 ? (
-          <Text style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 15 }}>
+          <Text
+            style={{
+              fontSize: 9,
+              color: "#64748b",
+              fontStyle: "italic",
+              marginBottom: 15,
+            }}
+          >
             Nenhum registo de desparasitação encontrado.
           </Text>
         ) : (
@@ -283,14 +313,20 @@ export function HealthBulletinPDF({
                 </View>
                 <View style={[styles.tableCol, { width: "20%" }]}>
                   <Text style={styles.tableCell}>
-                    {d.type === "internal" ? "Interna" : d.type === "external" ? "Externa" : "Ambas"}
+                    {d.type === "internal"
+                      ? "Interna"
+                      : d.type === "external"
+                        ? "Externa"
+                        : "Ambas"}
                   </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "15%" }]}>
                   <Text style={styles.tableCell}>{d.dosage || "—"}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: "15%" }]}>
-                  <Text style={styles.tableCell}>{d.dateAdministered || "—"}</Text>
+                  <Text style={styles.tableCell}>
+                    {d.dateAdministered || "—"}
+                  </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "20%" }]}>
                   <Text style={styles.tableCell}>{d.nextDueDate || "—"}</Text>
@@ -303,7 +339,14 @@ export function HealthBulletinPDF({
         {/* Other Treatments Table */}
         <Text style={styles.sectionTitle}>Outros Tratamentos</Text>
         {treatments.length === 0 ? (
-          <Text style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 15 }}>
+          <Text
+            style={{
+              fontSize: 9,
+              color: "#64748b",
+              fontStyle: "italic",
+              marginBottom: 15,
+            }}
+          >
             Nenhum registo de outro tratamento encontrado.
           </Text>
         ) : (
@@ -325,7 +368,9 @@ export function HealthBulletinPDF({
                   <Text style={styles.tableCell}>{t.treatmentName || "—"}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: "20%" }]}>
-                  <Text style={styles.tableCell}>{t.dateAdministered || "—"}</Text>
+                  <Text style={styles.tableCell}>
+                    {t.dateAdministered || "—"}
+                  </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "40%" }]}>
                   <Text style={styles.tableCell}>{t.notes || "—"}</Text>
@@ -336,9 +381,18 @@ export function HealthBulletinPDF({
         )}
 
         {/* Symptoms Logger Table */}
-        <Text style={styles.sectionTitle}>Registo de Sintomas (Symptom Logger)</Text>
+        <Text style={styles.sectionTitle}>
+          Registo de Sintomas (Symptom Logger)
+        </Text>
         {symptoms.length === 0 ? (
-          <Text style={{ fontSize: 9, color: "#64748b", fontStyle: "italic", marginBottom: 15 }}>
+          <Text
+            style={{
+              fontSize: 9,
+              color: "#64748b",
+              fontStyle: "italic",
+              marginBottom: 15,
+            }}
+          >
             Nenhum registo de sintoma encontrado.
           </Text>
         ) : (
@@ -360,10 +414,14 @@ export function HealthBulletinPDF({
             {symptoms.map((s, i) => (
               <View key={i} style={styles.tableRow}>
                 <View style={[styles.tableCol, { width: "25%" }]}>
-                  <Text style={styles.tableCell}>{getSymptomLabel(s.symptomName)}</Text>
+                  <Text style={styles.tableCell}>
+                    {getSymptomLabel(s.symptomName)}
+                  </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "15%" }]}>
-                  <Text style={styles.tableCell}>{getSeverityLabel(s.severity)}</Text>
+                  <Text style={styles.tableCell}>
+                    {getSeverityLabel(s.severity)}
+                  </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "20%" }]}>
                   <Text style={styles.tableCell}>{s.date || "—"}</Text>
@@ -379,7 +437,7 @@ export function HealthBulletinPDF({
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Gerado por AnimalMind • animalmind.vercel.app
+            Gerado por Pawra • pawra.vercel.app
           </Text>
           <Text style={styles.footerText}>
             Documento digital não substitui o boletim oficial da DGAV.

@@ -1,6 +1,6 @@
-import * as React from "react";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import type * as React from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps extends React.ComponentPropsWithoutRef<"div"> {
@@ -24,7 +24,7 @@ export function EmptyState({
     <div
       className={cn(
         "flex flex-col items-center justify-center p-8 text-center max-w-sm mx-auto space-y-4 rounded-2xl border border-dashed border-border/60 bg-card/20 backdrop-blur-xs select-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -57,8 +57,12 @@ export function EmptyState({
       </motion.div>
 
       <div className="space-y-1">
-        <h3 className="font-bold text-base text-foreground tracking-tight">{title}</h3>
-        <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">{description}</p>
+        <h3 className="font-bold text-base text-foreground tracking-tight">
+          {title}
+        </h3>
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+          {description}
+        </p>
       </div>
 
       {actionLabel && onAction && (

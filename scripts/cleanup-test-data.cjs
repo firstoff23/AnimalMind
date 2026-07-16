@@ -20,7 +20,9 @@ async function runCleanup() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error("Erro: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY em falta no ambiente.");
+    console.error(
+      "Erro: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY em falta no ambiente.",
+    );
     process.exit(1);
   }
 
@@ -30,7 +32,10 @@ async function runCleanup() {
   let deletedUsersCount = 0;
   try {
     console.log("A obter utilizadores do Supabase Auth...");
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({
+    const {
+      data: { users },
+      error: listError,
+    } = await supabase.auth.admin.listUsers({
       page: 1,
       perPage: 1000,
     });
@@ -53,9 +58,14 @@ async function runCleanup() {
 
     for (const user of testUsers) {
       console.log(`A apagar utilizador: ${user.email} (${user.id})...`);
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(
+        user.id,
+      );
       if (deleteError) {
-        console.error(`Erro ao apagar utilizador ${user.email}:`, deleteError.message);
+        console.error(
+          `Erro ao apagar utilizador ${user.email}:`,
+          deleteError.message,
+        );
       } else {
         deletedUsersCount++;
       }
@@ -96,19 +106,33 @@ async function runCleanup() {
     const testAnimalIds = testAnimals.map((a) => a.id);
     if (testAnimalIds.length > 0) {
       try {
-        const { count: vCount } = await supabase.from("vaccines").select("*", { count: "exact", head: true }).in("animal_id", testAnimalIds);
+        const { count: vCount } = await supabase
+          .from("vaccines")
+          .select("*", { count: "exact", head: true })
+          .in("animal_id", testAnimalIds);
         deletedVaccinationsCount = vCount || 0;
       } catch (err) {
         console.error("Erro a contar vacinas:", err.message);
       }
 
       try {
-        const { data: records, error: rError } = await supabase.from("health_records").select("record_type").in("animal_id", testAnimalIds);
+        const { data: records, error: rError } = await supabase
+          .from("health_records")
+          .select("record_type")
+          .in("animal_id", testAnimalIds);
         if (!rError && records) {
-          deletedDewormingsCount = records.filter(r => r.record_type === "deworming").length;
-          deletedTestsCount = records.filter(r => r.record_type === "diagnostic_test").length;
-          deletedTreatmentsCount = records.filter(r => r.record_type === "other_treatment").length;
-          deletedLicensingCount = records.filter(r => r.record_type === "licensing").length;
+          deletedDewormingsCount = records.filter(
+            (r) => r.record_type === "deworming",
+          ).length;
+          deletedTestsCount = records.filter(
+            (r) => r.record_type === "diagnostic_test",
+          ).length;
+          deletedTreatmentsCount = records.filter(
+            (r) => r.record_type === "other_treatment",
+          ).length;
+          deletedLicensingCount = records.filter(
+            (r) => r.record_type === "licensing",
+          ).length;
         } else if (rError) {
           throw rError;
         }
@@ -125,7 +149,10 @@ async function runCleanup() {
         .eq("id", animal.id);
 
       if (deleteError) {
-        console.error(`Erro ao apagar animal ${animal.name}:`, deleteError.message);
+        console.error(
+          `Erro ao apagar animal ${animal.name}:`,
+          deleteError.message,
+        );
       } else {
         deletedAnimalsCount++;
       }
@@ -138,11 +165,13 @@ async function runCleanup() {
   let deletedFeedbackCount = 0;
   try {
     console.log("A apagar feedback_annotations de teste...");
-    
+
     // We filter annotations that match test patterns in predicted_breed, confirmed_breed, predicted_state or confirmed_state
     const { data: annotations, error: fetchError } = await supabase
       .from("feedback_annotations")
-      .select("id, predicted_breed, confirmed_breed, predicted_state, confirmed_state");
+      .select(
+        "id, predicted_breed, confirmed_breed, predicted_state, confirmed_state",
+      );
 
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
 
@@ -161,7 +190,9 @@ async function runCleanup() {
       );
     });
 
-    console.log(`Encontradas ${testAnnotations.length} anotações de feedback de teste.`);
+    console.log(
+      `Encontradas ${testAnnotations.length} anotações de feedback de teste.`,
+    );
 
     for (const ann of testAnnotations) {
       const { error: deleteError } = await supabase
@@ -170,13 +201,19 @@ async function runCleanup() {
         .eq("id", ann.id);
 
       if (deleteError) {
-        console.error(`Erro ao apagar anotação ID ${ann.id}:`, deleteError.message);
+        console.error(
+          `Erro ao apagar anotação ID ${ann.id}:`,
+          deleteError.message,
+        );
       } else {
         deletedFeedbackCount++;
       }
     }
   } catch (err) {
-    console.error("Erro durante a limpeza de feedback_annotations:", err.message);
+    console.error(
+      "Erro durante a limpeza de feedback_annotations:",
+      err.message,
+    );
   }
 
   // 4. Limpeza do Redis
@@ -187,7 +224,7 @@ async function runCleanup() {
     try {
       console.log("A conectar ao Redis para limpeza de chaves...");
       const redis = new Redis(redisUrl);
-      
+
       const patterns = ["test:*", "AUTO_TEST:*", "rls_test:*"];
       let allKeys = [];
 
@@ -206,10 +243,13 @@ async function runCleanup() {
         const deleted = await redis.del(...allKeys);
         deletedRedisCount = deleted || 0;
       }
-      
+
       await redis.quit();
     } catch (err) {
-      console.warn("Aviso: Falha ao ligar ou limpar chaves no Redis:", err.message);
+      console.warn(
+        "Aviso: Falha ao ligar ou limpar chaves no Redis:",
+        err.message,
+      );
     }
   } else {
     console.log("REDIS_URL não está configurada. Limpeza de Redis ignorada.");
@@ -224,7 +264,9 @@ async function runCleanup() {
   console.log(`Tratamentos (cascade):          ${deletedTreatmentsCount}`);
   console.log(`Licenciamentos (cascade):       ${deletedLicensingCount}`);
   console.log(`Anotações Supabase apagadas:    ${deletedFeedbackCount}`);
-  console.log(`Redis:                          ${deletedRedisCount} chaves apagadas`);
+  console.log(
+    `Redis:                          ${deletedRedisCount} chaves apagadas`,
+  );
   console.log("============================================\n");
 }
 

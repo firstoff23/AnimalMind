@@ -40,9 +40,9 @@ describe("history export helpers", () => {
 
   it("describes animal and period labels for PDF headers", () => {
     expect(getAnimalScopeLabel([event])).toBe("Mimi");
-    expect(getAnimalScopeLabel([event, { ...event, id: 2, animalName: "Bobi" }])).toBe(
-      "Todos os animais",
-    );
+    expect(
+      getAnimalScopeLabel([event, { ...event, id: 2, animalName: "Bobi" }]),
+    ).toBe("Todos os animais");
     expect(getPeriodLabel("2026-05-01", "2026-05-25")).toBe(
       "2026-05-01 a 2026-05-25",
     );

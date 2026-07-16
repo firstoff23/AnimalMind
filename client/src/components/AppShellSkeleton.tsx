@@ -1,6 +1,6 @@
+import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
 
 type AppShellSkeletonVariant =
   | "dashboard"
@@ -12,7 +12,8 @@ type AppShellSkeletonVariant =
   | "health"
   | "family"
   | "vet"
-  | "content";
+  | "content"
+  | "mindi";
 
 type AppShellSkeletonProps = {
   mode?: "shell" | "content";
@@ -28,9 +29,19 @@ type PageFrameProps = {
 
 const cardClass = "rounded-2xl border border-border bg-card/80 p-4";
 
-function PageFrame({ children, className, maxWidth = "max-w-lg" }: PageFrameProps) {
+function PageFrame({
+  children,
+  className,
+  maxWidth = "max-w-lg",
+}: PageFrameProps) {
   return (
-    <div className={cn("page-enter mx-auto flex w-full flex-col gap-5 px-4 py-6", maxWidth, className)}>
+    <div
+      className={cn(
+        "page-enter mx-auto flex w-full flex-col gap-5 px-4 py-6",
+        maxWidth,
+        className,
+      )}
+    >
       {children}
     </div>
   );
@@ -64,7 +75,14 @@ function HeaderSkeleton({
 
 function MetricGridSkeleton({ columns = 2 }: { columns?: 2 | 3 | 4 }) {
   return (
-    <div className={cn("grid gap-3", columns === 2 && "grid-cols-2", columns === 3 && "grid-cols-3", columns === 4 && "grid-cols-2 md:grid-cols-4")}>
+    <div
+      className={cn(
+        "grid gap-3",
+        columns === 2 && "grid-cols-2",
+        columns === 3 && "grid-cols-3",
+        columns === 4 && "grid-cols-2 md:grid-cols-4",
+      )}
+    >
       {Array.from({ length: columns }).map((_, index) => (
         <div key={index} className={cardClass}>
           <Skeleton className="mb-3 h-4 w-16 rounded-lg" />
@@ -137,7 +155,10 @@ function ProfileSkeleton() {
       <HeaderSkeleton title="w-32" subtitle="w-44" actions={1} />
       <div className="-mx-4 flex gap-3 overflow-hidden px-4">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="w-36 shrink-0 rounded-2xl border border-border bg-card/80 p-4">
+          <div
+            key={index}
+            className="w-36 shrink-0 rounded-2xl border border-border bg-card/80 p-4"
+          >
             <Skeleton className="mb-3 h-10 w-10 rounded-full" />
             <Skeleton className="h-4 w-20 rounded-lg" />
             <Skeleton className="mt-2 h-3 w-24 rounded-lg" />
@@ -318,6 +339,39 @@ function VetSkeleton() {
   );
 }
 
+function MindiSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 px-4 pt-4 pb-24 max-w-lg mx-auto">
+      {/* Header area */}
+      <div className="flex items-center gap-3 mb-2">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex-1 space-y-1.5">
+          <Skeleton className="h-4 w-28 rounded-md" />
+          <Skeleton className="h-3 w-20 rounded-md" />
+        </div>
+      </div>
+      {/* Assistant bubble */}
+      <div className="flex items-end gap-2 max-w-[85%]">
+        <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+        <Skeleton className="h-16 flex-1 rounded-2xl rounded-bl-sm" />
+      </div>
+      {/* User bubble */}
+      <div className="flex items-end gap-2 max-w-[70%] self-end">
+        <Skeleton className="h-10 flex-1 rounded-2xl rounded-br-sm" />
+      </div>
+      {/* Assistant reply */}
+      <div className="flex items-end gap-2 max-w-[85%]">
+        <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+        <Skeleton className="h-24 flex-1 rounded-2xl rounded-bl-sm" />
+      </div>
+      {/* Input bar */}
+      <div className="fixed bottom-20 left-0 right-0 px-4">
+        <Skeleton className="h-12 w-full rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
 function GenericContentSkeleton() {
   return (
     <PageFrame maxWidth="max-w-5xl">
@@ -328,7 +382,13 @@ function GenericContentSkeleton() {
   );
 }
 
-function ContentSkeleton({ variant = "dashboard", className }: { variant?: AppShellSkeletonVariant; className?: string }) {
+function ContentSkeleton({
+  variant = "dashboard",
+  className,
+}: {
+  variant?: AppShellSkeletonVariant;
+  className?: string;
+}) {
   return (
     <div className={className}>
       {variant === "dashboard" && <DashboardSkeleton />}
@@ -341,17 +401,24 @@ function ContentSkeleton({ variant = "dashboard", className }: { variant?: AppSh
       {variant === "family" && <FamilySkeleton />}
       {variant === "vet" && <VetSkeleton />}
       {variant === "content" && <GenericContentSkeleton />}
+      {variant === "mindi" && <MindiSkeleton />}
     </div>
   );
 }
 
-export function AppShellSkeleton({ mode = "shell", variant = "dashboard", className }: AppShellSkeletonProps) {
+export function AppShellSkeleton({
+  mode = "shell",
+  variant = "dashboard",
+  className,
+}: AppShellSkeletonProps) {
   if (mode === "content") {
     return <ContentSkeleton variant={variant} className={className} />;
   }
 
   return (
-    <div className={cn("min-h-screen bg-background text-foreground", className)}>
+    <div
+      className={cn("min-h-screen bg-background text-foreground", className)}
+    >
       <header className="sticky top-0 z-50 border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <Skeleton className="h-6 w-32 rounded-lg" />

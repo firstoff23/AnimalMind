@@ -2,10 +2,17 @@
   "version": 2,
   "buildCommand": "pnpm install && pnpm build",
   "outputDirectory": "dist/public",
-  "framework": null,
-  "public": true,
   "trailingSlash": false,
   "headers": [
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [
@@ -51,6 +58,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/manifest.json",
+      "destination": "/manifest.webmanifest"
+    },
     {
       "source": "/api/:path*",
       "destination": "/api/[...all].js"
