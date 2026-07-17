@@ -202,7 +202,12 @@
     "stop": "STOP",
     "cameraDeniedTitle": "Camera Permission Denied",
     "cameraDeniedDesc": "The application cannot access your device's camera. This can happen if: you denied permission when the browser asked, the camera is disabled in browser settings, or another application is using the camera.",
-    "cameraDeniedInstructions": "To enable the camera: open browser settings, search for \"Permissions\" or \"Privacy\", find \"Camera\" and enable it for this site, then reload the page."
+    "cameraDeniedInstructions": "To enable the camera: open browser settings, search for \"Permissions\" or \"Privacy\", find \"Camera\" and enable it for this site, then reload the page.",
+    "feedbackSuccess": "Thanks for your feedback. Your correction has been recorded and will help improve future interpretations."
+  },
+  "auditPage": {
+    "emptyTitle": "Every interpretation leaves a trail.",
+    "emptyDesc": "Start an analysis to review how Pawra reached each explanation."
   },
   "historyPage": {
     "title": "History",
@@ -332,26 +337,33 @@
     "relaxed": "Relaxed"
   },
   "landing": {
-    "title": "Monitor your pet's well-being signs through audio and behavioral patterns.",
-    "subtitle": "Real-time acoustic AI-powered monitoring of your companion's emotional state and well-being.",
+    "title": "Understand what your pet is trying to tell you.",
+    "subtitle": "Pawra combines AI-assisted behavior interpretation with your observations to create explanations that improve over time.",
+    "valueProp": "Clear explanations. Better understanding. Built together with pet owners.",
     "getStarted": "Get Started",
     "howItWorks": "How It Works",
-    "features": "Features",
+    "features": "Key Features",
     "step1Title": "1. Record Sound",
     "step1Desc": "Record your pet's barks, meows, or other sounds directly in the application.",
     "step2Title": "2. AI Analysis",
     "step2Desc": "Our advanced models classify the emotional state in real time based on sound.",
     "step3Title": "3. Track Evolution",
     "step3Desc": "View reports, well-being trends, and share the profile with your family.",
-    "feat1Title": "Acoustic Intelligence",
-    "feat1Desc": "Refined classification among 6 emotional states: distress, excitement, alert, hunger, attention, and relaxation.",
-    "feat2Title": "Evolution & Alerts",
-    "feat2Desc": "Automatic identification of escapes from typical behavior (baseline) and preventive well-being alerts.",
-    "feat3Title": "Family Sharing",
-    "feat3Desc": "Invite co-guardians to manage health duties and track the pet's status in real time.",
+    "feat1Title": "AI-Assisted Interpretation",
+    "feat1Desc": "Interprets behavior and vocalizations to provide a clearer sense of what an animal may be trying to communicate.",
+    "feat2Title": "Human Feedback Loop",
+    "feat2Desc": "Rate how accurate an analysis felt, logging corrections to refine future explanations over time.",
+    "feat3Title": "Transparent Audit Panel",
+    "feat3Desc": "A dedicated review area for admins and vets to verify and moderate user-submitted corrections.",
+    "feat4Title": "Behavior History",
+    "feat4Desc": "Visualize emotional evolution, track baseline deviations, and export observations.",
+    "feat5Title": "Support, Not Diagnosis",
+    "feat5Desc": "All interpretations act as a helpful second opinion, never a medical or veterinary diagnosis.",
     "pwaAvailable": "Available to install as PWA",
     "login": "Log In",
     "register": "Register",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "disclaimerTitle": "Scientific Honesty & Limitations",
+    "disclaimerDesc": "Pawra uses the YAMNet model (a generic audio event classifier) to estimate emotional states as behavioral approximations. Results should be interpreted as signals or cues — never as a diagnosis. This application does not replace professional veterinary evaluation."
   }
 }

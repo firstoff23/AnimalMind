@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS classification_events (
   cached BOOLEAN DEFAULT FALSE,
   feedback VARCHAR(50),
   audio_url TEXT,
+  context_tags TEXT[] DEFAULT '{}'::text[] NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
@@ -66,3 +67,33 @@ CREATE INDEX idx_classification_events_user_id ON classification_events(user_id)
 CREATE INDEX idx_classification_events_animal_id ON classification_events(animal_id);
 CREATE INDEX idx_classification_events_created_at ON classification_events(created_at);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
+
+-- Create feedback_annotations table
+CREATE TABLE IF NOT EXISTS feedback_annotations (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  classification_event_id BIGINT NOT NULL REFERENCES classification_events(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  confirmed_state VARCHAR(50),
+  comment TEXT,
+  reviewed_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  CONSTRAINT unique_feedback_per_user_event UNIQUE (classification_event_id, user_id)
+);
+
+-- Create indexes for feedback_annotations
+CREATE INDEX idx_feedback_annotations_event_id ON feedback_annotations(classification_event_id);
+CREATE INDEX idx_feedback_annotations_created_at ON feedback_annotations(created_at DESC);
+
+-- Create analytics_events table
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  event_name VARCHAR(100) NOT NULL,
+  user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  properties JSONB DEFAULT '{}'::jsonb NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+-- Create indexes for analytics_events
+CREATE INDEX idx_analytics_events_name ON analytics_events(event_name);
+CREATE INDEX idx_analytics_events_created_at ON analytics_events(created_at DESC);

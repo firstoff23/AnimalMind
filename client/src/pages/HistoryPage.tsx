@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { HowlerAudioPlayer } from "@/components/HowlerAudioPlayer";
+import { InsightsPanel } from "@/components/InsightsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,6 +116,7 @@ interface HistoryEvent {
   audioUrl?: string | null;
   animalId?: number | null;
   animalName?: string | null;
+  contextTags?: string[];
 }
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
@@ -523,6 +525,9 @@ export default function HistoryPage() {
     defaultValue: "",
   });
   const [period, setPeriod] = useQueryState("period", { defaultValue: "" });
+  const [contextTagParam, setContextTagParam] = useQueryState("contextTag", {
+    defaultValue: "",
+  });
 
   const animalIdFilter =
     animalParam !== null
@@ -534,6 +539,11 @@ export default function HistoryPage() {
   const stateFilter = emotionParam || "all";
   const setStateFilter = (val: string) => {
     setEmotionParam(val === "all" ? null : val);
+  };
+
+  const contextTagFilter = contextTagParam || "all";
+  const setContextTagFilter = (val: string) => {
+    setContextTagParam(val === "all" ? null : val);
   };
 
   const dateFrom = dateFromParam || "";
@@ -605,7 +615,7 @@ export default function HistoryPage() {
     };
   }, []);
 
-  const isFiltered = stateFilter !== "all" || dateFrom !== "" || dateTo !== "";
+  const isFiltered = stateFilter !== "all" || contextTagFilter !== "all" || dateFrom !== "" || dateTo !== "";
   const hasAnimalFilter = typeof animalIdFilter === "number";
   const useAnimalEndpoint = hasAnimalFilter && !isFiltered;
 
@@ -617,6 +627,7 @@ export default function HistoryPage() {
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
       animalId: animalIdFilter,
+      contextTag: contextTagFilter !== "all" ? contextTagFilter : undefined,
     },
     { enabled: !useAnimalEndpoint },
   );
@@ -763,6 +774,27 @@ export default function HistoryPage() {
           const pct = Math.round(row.original.confidence * 100);
           return (
             <span className="text-xs font-medium tabular-nums">{pct}%</span>
+          );
+        },
+      },
+      {
+        accessorKey: "contextTags",
+        header: language === "pt" ? "Contexto" : "Context",
+        cell: ({ row }) => {
+          const tags = row.original.contextTags || [];
+          if (tags.length === 0) return <span className="text-xs text-muted-foreground">-</span>;
+          return (
+            <div className="flex flex-wrap gap-1 max-w-[120px]">
+              {tags.map((tag: string) => (
+                <Badge
+                  key={tag}
+                  variant="outline"
+                  className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold border-white/5 bg-white/5 text-slate-300 capitalize"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           );
         },
       },
@@ -1387,6 +1419,11 @@ export default function HistoryPage() {
             {t("historyPage.emotionalEvolution")}
           </button>
         </div>
+
+        {/* Insights Panel — só visível quando um animal específico está selecionado */}
+        {hasAnimalFilter && typeof animalIdFilter === "number" && (
+          <InsightsPanel animalId={animalIdFilter} />
+        )}
 
         {/* Filters panel */}
         {showFilters && (

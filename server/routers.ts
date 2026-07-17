@@ -73,12 +73,15 @@ import {
   verifyAnimalOwner,
   saveFeedbackAnnotation,
   getFeedbackAnnotations,
+  reviewFeedbackAnnotation,
+  logAnalyticsEvent,
 } from "./db";
 import { familyRouter } from "./routers/family";
 import { foodsRouter } from "./routers/foods";
 import { healingRouter } from "./routers/healing";
 import { healthRouter } from "./routers/health";
 import { pushRouter } from "./routers/push";
+import { insightsRouter } from "./routers/insights";
 import { trendsRouter } from "./routers/trends";
 import { vetRouter } from "./routers/vet";
 
@@ -277,6 +280,7 @@ function mapDbEvent(e: any) {
     audioUrl: e.audio_url ?? e.audioUrl ?? null,
     createdAt: createdAt ? new Date(createdAt) : new Date(),
     notes: e.notes ?? null,
+    contextTags: e.context_tags ?? e.contextTags ?? [],
   };
 }
 
@@ -374,25 +378,32 @@ function buildFallbackMindiResponse(
 }
 
 const feedbackRouter = router({
-  save: publicProcedure
+  submit: protectedProcedure
     .input(
       z.object({
-        animal_type: z.enum(["dog", "cat"]),
-        predicted_breed: z.string().nullable().optional(),
-        confirmed_breed: z.string().nullable().optional(),
-        predicted_state: z.string().nullable().optional(),
-        confirmed_state: z.string().nullable().optional(),
-        confidence: z.number().nullable().optional(),
+        classificationEventId: z.number(),
+        confirmedState: z.string().max(50),
+        comment: z.string().max(500).optional().nullable(),
       }),
     )
-    .mutation(async ({ input }) => {
-      await saveFeedbackAnnotation(input);
-      return { success: true };
+    .mutation(async ({ ctx, input }) => {
+      const accessToken = ctx.accessToken;
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Token de acesso em falta na sessão",
+        });
+      }
+      const userId = await effectiveUserId(ctx.user);
+      const data = await saveFeedbackAnnotation(accessToken, userId, input);
+      return { success: true, data };
     }),
 
   list: protectedProcedure
     .input(
       z.object({
+        limit: z.number().min(1).max(50).default(20),
+        offset: z.number().min(0).default(0),
         animal_type: z.string().optional(),
         from: z.string().optional(),
         to: z.string().optional(),
@@ -406,7 +417,54 @@ const feedbackRouter = router({
           message: "Token de acesso em falta na sessão",
         });
       }
-      return getFeedbackAnnotations(accessToken, input);
+      if (!["admin", "vet", "veterinarian"].includes(ctx.user?.role || "")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Acesso restrito a utilizadores com role veterinária ou administrativa.",
+        });
+      }
+      const data = await getFeedbackAnnotations(accessToken, input);
+      return data;
+    }),
+
+  review: protectedProcedure
+    .input(
+      z.object({
+        feedbackId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const accessToken = ctx.accessToken;
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Token de acesso em falta na sessão",
+        });
+      }
+      if (!["admin", "vet", "veterinarian"].includes(ctx.user?.role || "")) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Acesso restrito a utilizadores com role veterinária ou administrativa.",
+        });
+      }
+      const userId = await effectiveUserId(ctx.user);
+      const data = await reviewFeedbackAnnotation(accessToken, userId, input.feedbackId);
+      return { success: true, data };
+    }),
+});
+
+const analyticsRouter = router({
+  logEvent: protectedProcedure
+    .input(
+      z.object({
+        eventName: z.string(),
+        properties: z.any().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = await effectiveUserId(ctx.user);
+      await logAnalyticsEvent(userId, input.eventName, input.properties);
+      return { success: true };
     }),
 });
 
@@ -611,6 +669,7 @@ export const appRouter = router({
             pitch: z.number().optional(),
             spectralEnergy: z.number().optional(),
             tonalBrightness: z.number().optional(),
+            contextTags: z.array(z.string()).optional(),
           })
           .refine(
             (val) => {
@@ -717,6 +776,7 @@ export const appRouter = router({
           emoji: result.emoji,
           modelUsed: result.model_used,
           cached: result.cached,
+          contextTags: input.contextTags || [],
         });
 
         const eventId = (event as any)?.id;
@@ -1483,6 +1543,7 @@ export const appRouter = router({
           dateFrom: z.string().optional(),
           dateTo: z.string().optional(),
           animalId: z.number().optional(),
+          contextTag: z.string().optional(),
         }),
       )
       .query(async ({ ctx, input }) => {
@@ -1495,6 +1556,7 @@ export const appRouter = router({
           input.dateFrom,
           input.dateTo,
           input.animalId,
+          input.contextTag,
         );
         const mappedEvents = await Promise.all(
           result.events.map(mapDbEvent).map(async (e) => ({
@@ -1679,10 +1741,12 @@ export const appRouter = router({
   vet: vetRouter,
   health: healthRouter,
   trends: trendsRouter,
+  insights: insightsRouter,
   healing: healingRouter,
   foods: foodsRouter,
   push: pushRouter,
   feedback: feedbackRouter,
+  analytics: analyticsRouter,
 });
 
 export type AppRouter = typeof appRouter;

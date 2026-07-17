@@ -427,6 +427,7 @@ export async function insertEvent(data: {
   modelUsed: string;
   cached?: boolean;
   audioUrl?: string | null;
+  contextTags?: string[] | null;
 }) {
   const supabase = getSupabase();
   const eventPayload: Record<string, unknown> = {
@@ -437,6 +438,7 @@ export async function insertEvent(data: {
     emoji: data.emoji,
     model_used: data.modelUsed,
     cached: data.cached ?? false,
+    context_tags: data.contextTags || [],
   };
 
   if (data.audioUrl !== undefined) {
@@ -451,6 +453,27 @@ export async function insertEvent(data: {
 
   if (error) throw error;
   return result;
+}
+
+export async function logAnalyticsEvent(
+  userId: number,
+  eventName: string,
+  properties: any = {}
+) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("analytics_events")
+    .insert([
+      {
+        event_name: eventName,
+        user_id: userId,
+        properties: properties || {},
+      },
+    ]);
+
+  if (error) {
+    console.error(`[Analytics] Failed to log event "${eventName}":`, error.message);
+  }
 }
 
 export async function getRecentEvents(userId: number, limit = 5) {
@@ -480,6 +503,7 @@ export async function getEventsPaginated(
   dateFrom?: string,
   dateTo?: string,
   animalId?: number,
+  contextTag?: string,
 ) {
   const supabase = getSupabase();
   let query = supabase
@@ -491,6 +515,7 @@ export async function getEventsPaginated(
   if (state && state !== "all") query = query.eq("state", state);
   if (dateFrom) query = query.gte("created_at", dateFrom);
   if (dateTo) query = query.lte("created_at", dateTo);
+  if (contextTag) query = query.contains("context_tags", [contextTag]);
 
   const offset = (page - 1) * pageSize;
   const { data, error, count } = await query
@@ -503,6 +528,7 @@ export async function getEventsPaginated(
     ...e,
     notes: e.notes || null,
     audioUrl: e.audio_url ?? null,
+    contextTags: e.context_tags ?? e.contextTags ?? [],
   }));
   return { events, total: count || 0 };
 }
@@ -521,7 +547,7 @@ export async function updateEventFeedback(
 
   if (updateError) throw updateError;
 
-  // Retrieve event information to populate feedback_annotations
+  // Retrieve event information to confirm it exists and belongs to the user
   const { data: event, error: eventError } = await supabase
     .from("classification_events")
     .select("state, confidence, animal_id")
@@ -537,36 +563,25 @@ export async function updateEventFeedback(
     return;
   }
 
-  let animalType: "dog" | "cat" | null = null;
-  if (event.animal_id) {
-    const { data: animal, error: animalError } = await supabase
-      .from("animals")
-      .select("species")
-      .eq("id", event.animal_id)
-      .single();
-    if (!animalError && animal) {
-      animalType = animal.species;
-    }
-  }
+  const confirmedState = feedback === "correct" ? event.state : null;
+  const { error: insertError } = await supabase
+    .from("feedback_annotations")
+    .upsert(
+      {
+        classification_event_id: eventId,
+        user_id: userId,
+        confirmed_state: confirmedState,
+      },
+      {
+        onConflict: "classification_event_id, user_id",
+      },
+    );
 
-  if (animalType) {
-    const confirmedState = feedback === "correct" ? event.state : null;
-    const { error: insertError } = await supabase
-      .from("feedback_annotations")
-      .insert([
-        {
-          animal_type: animalType,
-          predicted_state: event.state,
-          confirmed_state: confirmedState,
-          confidence: event.confidence,
-        },
-      ]);
-    if (insertError) {
-      console.error(
-        "[updateEventFeedback] Failed to insert feedback annotation:",
-        insertError,
-      );
-    }
+  if (insertError) {
+    console.error(
+      "[updateEventFeedback] Failed to upsert feedback annotation:",
+      insertError,
+    );
   }
 }
 
@@ -576,16 +591,12 @@ export async function saveBreedFeedback(data: {
   confirmedBreed: string;
   confidence: number;
 }) {
-  const supabase = getSupabase();
-  const { error } = await supabase.from("feedback_annotations").insert([
-    {
-      animal_type: data.animalType,
-      predicted_breed: data.predictedBreed,
-      confirmed_breed: data.confirmedBreed,
-      confidence: data.confidence,
-    },
-  ]);
-  if (error) throw error;
+  // Breed feedback logging is deprecated in feedback_annotations table
+  // as the table is strictly normalized to track classification event feedback.
+  console.log(
+    "[saveBreedFeedback] Deprecated - animal breed is already saved in animals table:",
+    data,
+  );
 }
 
 export async function getAllEventsForExport(
@@ -4010,43 +4021,74 @@ export async function checkAndIncrementAnalysisLimit(
   return { remainingToday: Math.max(0, 50 - (usage.dailyCount + 1)) };
 }
 
-export async function saveFeedbackAnnotation(data: {
-  animal_type: "dog" | "cat";
-  predicted_breed?: string | null;
-  confirmed_breed?: string | null;
-  predicted_state?: string | null;
-  confirmed_state?: string | null;
-  confidence?: number | null;
-}) {
-  const supabase = getSupabaseAnon();
-  const { error } = await supabase.from("feedback_annotations").insert([
-    {
-      animal_type: data.animal_type,
-      predicted_breed: data.predicted_breed ?? null,
-      confirmed_breed: data.confirmed_breed ?? null,
-      predicted_state: data.predicted_state ?? null,
-      confirmed_state: data.confirmed_state ?? null,
-      confidence: data.confidence ?? null,
-    },
-  ]);
+export async function saveFeedbackAnnotation(
+  accessToken: string,
+  userId: number,
+  data: {
+    classificationEventId: number;
+    confirmedState: string;
+    comment?: string | null;
+  },
+) {
+  const supabase = getSupabase(accessToken);
+  const { data: inserted, error } = await supabase
+    .from("feedback_annotations")
+    .upsert(
+      {
+        classification_event_id: data.classificationEventId,
+        user_id: userId,
+        confirmed_state: data.confirmedState,
+        comment: data.comment || null,
+      },
+      {
+        onConflict: "classification_event_id, user_id",
+      },
+    )
+    .select()
+    .single();
+
   if (error) throw error;
+  return inserted;
 }
 
 export async function getFeedbackAnnotations(
   accessToken: string,
   filters?: {
+    limit?: number;
+    offset?: number;
     animal_type?: string;
     from?: string;
     to?: string;
   },
 ) {
   const supabase = getSupabase(accessToken);
-  let query = supabase
-    .from("feedback_annotations")
-    .select("*");
+  const limit = filters?.limit ?? 20;
+  const offset = filters?.offset ?? 0;
+
+  let query = supabase.from("feedback_annotations").select(`
+      id,
+      classification_event_id,
+      user_id,
+      confirmed_state,
+      comment,
+      reviewed_by,
+      reviewed_at,
+      created_at,
+      classification_events!inner (
+        state,
+        confidence,
+        animals!inner (
+          species,
+          breed
+        )
+      )
+    `);
 
   if (filters?.animal_type && filters.animal_type !== "all") {
-    query = query.eq("animal_type", filters.animal_type);
+    query = query.eq(
+      "classification_events.animals.species",
+      filters.animal_type,
+    );
   }
   if (filters?.from) {
     query = query.gte("created_at", filters.from);
@@ -4055,7 +4097,43 @@ export async function getFeedbackAnnotations(
     query = query.lte("created_at", filters.to);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
   if (error) throw error;
-  return data || [];
+
+  return (data || []).map((item: any) => ({
+    id: item.id,
+    confirmed_state: item.confirmed_state,
+    comment: item.comment,
+    reviewed_by: item.reviewed_by,
+    reviewed_at: item.reviewed_at,
+    created_at: item.created_at,
+    predicted_state: item.classification_events?.state || null,
+    confidence: item.classification_events?.confidence || null,
+    animal_type: item.classification_events?.animals?.species || null,
+    predicted_breed: item.classification_events?.animals?.breed || null,
+    confirmed_breed: null,
+  }));
+}
+
+export async function reviewFeedbackAnnotation(
+  accessToken: string,
+  userId: number,
+  feedbackId: number,
+) {
+  const supabase = getSupabase(accessToken);
+  const { data, error } = await supabase
+    .from("feedback_annotations")
+    .update({
+      reviewed_by: userId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", feedbackId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }

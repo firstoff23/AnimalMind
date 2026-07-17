@@ -92,17 +92,9 @@ function ResultCard({
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  const [confirmedBreed, setConfirmedBreed] = useState("");
+  const [comment, setComment] = useState("");
   const [confirmedState, setConfirmedState] = useState<EmotionalState>(result.state);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
-
-  useEffect(() => {
-    if (activeAnimal?.breed) {
-      setConfirmedBreed(activeAnimal.breed);
-    } else {
-      setConfirmedBreed("");
-    }
-  }, [activeAnimal]);
 
   const utils = trpc.useUtils();
   const updateNotesMutation = trpc.events.updateNotes.useMutation({
@@ -115,12 +107,22 @@ function ResultCard({
     },
   });
 
-  const saveFeedback = trpc.feedback.save.useMutation({
-    onSuccess: () => {
-      toast.success("Feedback guardado!");
+  const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
+
+  const saveFeedback = trpc.feedback.submit.useMutation({
+    onSuccess: (data, variables) => {
+      toast.success(t("recordingPage.feedbackSuccess"));
       setShowCorrectionForm(false);
+      logAnalyticsMutation.mutate({
+        eventName: "feedback_detailed",
+        properties: {
+          classificationEventId: variables.classificationEventId,
+          confirmedState: variables.confirmedState,
+          comment: variables.comment,
+        },
+      });
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error("Erro ao guardar feedback: " + err.message);
     },
   });
@@ -185,14 +187,13 @@ function ResultCard({
 
   const handleSaveFeedback = (e: React.FormEvent) => {
     e.preventDefault();
-    saveFeedback.mutate({
-      animal_type: activeAnimal?.species || "dog",
-      predicted_breed: activeAnimal?.breed || null,
-      confirmed_breed: confirmedBreed.trim() || null,
-      predicted_state: result.state,
-      confirmed_state: confirmedState,
-      confidence: result.confidence,
-    });
+    if (result.eventId) {
+      saveFeedback.mutate({
+        classificationEventId: result.eventId,
+        confirmedState: confirmedState,
+        comment: comment.trim() || null,
+      });
+    }
   };
 
   useEffect(() => {
@@ -221,7 +222,7 @@ function ResultCard({
         <Button
           variant={feedbackSent === "correct" ? "default" : "outline"}
           size="sm"
-          className="flex-1 gap-2"
+          className="flex-1 gap-2 disabled:opacity-70"
           onClick={() => handleFeedback("correct")}
           disabled={feedbackSent !== null}
         >
@@ -231,7 +232,7 @@ function ResultCard({
         <Button
           variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
           size="sm"
-          className="flex-1 gap-2"
+          className="flex-1 gap-2 disabled:opacity-70"
           onClick={() => handleFeedback("incorrect")}
           disabled={feedbackSent !== null}
         >
@@ -255,16 +256,15 @@ function ResultCard({
         {showCorrectionForm && (
           <form onSubmit={handleSaveFeedback} className="space-y-3 p-3 rounded-xl bg-secondary/20 border border-border">
             <div className="space-y-1">
-              <label htmlFor="confirmed-breed-input" className="text-xs font-semibold text-muted-foreground block">
-                Confirmar/Corrigir Raça
+              <label htmlFor="feedback-comment-input" className="text-xs font-semibold text-muted-foreground block">
+                Observações Contextuais (Opcional)
               </label>
-              <input
-                id="confirmed-breed-input"
-                type="text"
-                value={confirmedBreed}
-                onChange={(e) => setConfirmedBreed(e.target.value)}
-                placeholder="Ex: Labrador, Persa..."
-                className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
+              <textarea
+                id="feedback-comment-input"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Ex: Estava a chover, próximo da hora da refeição..."
+                className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-[60px] resize-none"
               />
             </div>
 
@@ -482,6 +482,37 @@ export default function RecordingPage() {
   const [dominantFreq, setDominantFreq] = useState<number>(0);
   const [spectralEnergy, setSpectralEnergy] = useState<number>(0);
   const [tonalBrightness, setTonalBrightness] = useState<number>(0);
+  
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const tagCategories = [
+    {
+      label: language === "pt" ? "Período do Dia" : "Time of Day",
+      tags: [
+        { id: "manha", label_pt: "Manhã", label_en: "Morning" },
+        { id: "tarde", label_pt: "Tarde", label_en: "Afternoon" },
+        { id: "noite", label_pt: "Noite", label_en: "Night" },
+      ],
+    },
+    {
+      label: language === "pt" ? "Ambiente" : "Environment",
+      tags: [
+        { id: "silencioso", label_pt: "Silencioso", label_en: "Silent" },
+        { id: "ruido_alto", label_pt: "Ruído Alto", label_en: "Loud Noise" },
+        { id: "rua", label_pt: "Rua", label_en: "Street" },
+        { id: "casa", label_pt: "Casa", label_en: "Home" },
+      ],
+    },
+    {
+      label: language === "pt" ? "Atividade" : "Activity",
+      tags: [
+        { id: "brincar", label_pt: "Brincar", label_en: "Playing" },
+        { id: "comer", label_pt: "Comer", label_en: "Eating" },
+        { id: "dormir", label_pt: "Dormir", label_en: "Sleeping" },
+        { id: "passeio", label_pt: "Passeio", label_en: "Walking" },
+      ],
+    },
+  ];
 
   const utils = trpc.useUtils();
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
@@ -580,12 +611,26 @@ export default function RecordingPage() {
     );
   };
 
+  const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
+
   const handleClassificationResult = (
     res: ClassifyResult,
     offlineMode: boolean,
   ) => {
     setIsOfflineMode(offlineMode);
     setResult(res);
+
+    logAnalyticsMutation.mutate({
+      eventName: "recording_success",
+      properties: {
+        eventId: res.eventId,
+        modelUsed: res.model_used || (offlineMode ? "local-tfjs" : "yamnet"),
+        confidence: res.confidence,
+        cached: res.cached,
+        offlineMode,
+        contextTags: selectedTags,
+      },
+    });
 
     if (!offlineMode) {
       // Invalidate all event-related caches so history page and dashboard
@@ -672,6 +717,15 @@ export default function RecordingPage() {
         }
       }
 
+      logAnalyticsMutation.mutate({
+        eventName: "recording_failure",
+        properties: {
+          error: err.message,
+          fallbackFailed: true,
+          contextTags: selectedTags,
+        },
+      });
+
       setRecordState("error");
       const isNetError =
         !navigator.onLine ||
@@ -687,12 +741,16 @@ export default function RecordingPage() {
   });
 
   const feedbackMutation = trpc.events.feedback.useMutation({
-    onSuccess: () =>
-      toast.success(
-        language === "pt"
-          ? "Obrigado pelo feedback!"
-          : "Thank you for your feedback!",
-      ),
+    onSuccess: (data, variables) => {
+      toast.success(t("recordingPage.feedbackSuccess"));
+      logAnalyticsMutation.mutate({
+        eventName: "feedback_quick",
+        properties: {
+          eventId: variables.eventId,
+          feedback: variables.feedback,
+        },
+      });
+    },
   });
 
   // Tone.js FFT audio analysis hook
@@ -921,6 +979,7 @@ export default function RecordingPage() {
             pitch: dominantFreq,
             spectralEnergy,
             tonalBrightness,
+            contextTags: selectedTags,
           });
         };
         reader.readAsDataURL(blob);
@@ -944,6 +1003,7 @@ export default function RecordingPage() {
     setResult(null);
     setUploadProgress(0);
     setErrorMessage(null);
+    setSelectedTags([]);
     setRecordState("idle");
     startRecordingCycle();
   };
@@ -1477,6 +1537,59 @@ export default function RecordingPage() {
                 )}
               </div>
             </div>
+
+            {/* Context Tags Selection */}
+            {recordState === "idle" && (
+              <div className="rounded-[1.75rem] border border-white/5 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)] space-y-4 animate-fade-in text-left">
+                <div className="space-y-1">
+                  <h3 className="text-xs font-semibold uppercase text-emerald-300">
+                    {language === "pt" ? "Contexto do Comportamento" : "Behavioral Context"}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground leading-normal">
+                    {language === "pt"
+                      ? "Selecione as tags de contexto para enriquecer a análise"
+                      : "Select context tags to enrich the analysis"}
+                  </p>
+                </div>
+                
+                <div className="space-y-3.5">
+                  {tagCategories.map((cat) => (
+                    <div key={cat.label} className="space-y-1.5">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                        {cat.label}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cat.tags.map((tag) => {
+                          const isSelected = selectedTags.includes(tag.id);
+                          const label = language === "pt" ? tag.label_pt : tag.label_en;
+                          return (
+                            <button
+                              key={tag.id}
+                              type="button"
+                              className={cn(
+                                "text-[10px] px-2.5 py-1 rounded-full font-semibold border transition-all duration-200 select-none",
+                                isSelected
+                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.1)]"
+                                  : "border-white/5 bg-white/2 hover:bg-white/5 text-muted-foreground"
+                              )}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedTags(selectedTags.filter((t) => t !== tag.id));
+                                } else {
+                                  setSelectedTags([...selectedTags, tag.id]);
+                                }
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Classification Result card */}
             {result && recordState === "success" && (

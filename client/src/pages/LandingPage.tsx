@@ -95,20 +95,20 @@ export default function LandingPage() {
             className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-3xl"
             style={{ textWrap: "balance" } as React.CSSProperties}
           >
-            Compreenda o seu{" "}
-            <span className="bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent">
-              animal
-            </span>{" "}
-            através do som.
+            {t("landing.title")}
           </h1>
+
+          {/* Value Proposition */}
+          <p className="text-xs sm:text-sm font-bold text-emerald-400 tracking-wide uppercase max-w-xl">
+            {t("landing.valueProp")}
+          </p>
 
           {/* Sub-headline */}
           <p
             className="text-base sm:text-lg text-slate-400 max-w-xl leading-relaxed"
             style={{ textWrap: "pretty" } as React.CSSProperties}
           >
-            {t("landing.subtitle") ||
-              "Monitorização em tempo real do estado emocional do seu companheiro com IA acústica — offline, privado e sempre consigo."}
+            {t("landing.subtitle")}
           </p>
 
           {/* CTA row */}
@@ -251,41 +251,49 @@ export default function LandingPage() {
               {t("landing.features") || "Funcionalidades Premium"}
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
             {[
+              {
+                icon: Sparkles,
+                color: "indigo",
+                title: t("landing.feat1Title"),
+                desc: t("landing.feat1Desc"),
+              },
               {
                 icon: Heart,
                 color: "rose",
-                title: t("landing.feat1Title") || "Inteligência Acústica",
-                desc:
-                  t("landing.feat1Desc") ||
-                  "Classificação entre 6 estados emocionais: angústia, excitação, alerta, fome, atenção e relaxamento.",
+                title: t("landing.feat2Title"),
+                desc: t("landing.feat2Desc"),
               },
               {
-                icon: Sparkles,
+                icon: ShieldCheck,
+                color: "emerald",
+                title: t("landing.feat3Title"),
+                desc: t("landing.feat3Desc"),
+              },
+              {
+                icon: BarChart3,
                 color: "amber",
-                title: t("landing.feat2Title") || "Evolução e Alertas",
-                desc:
-                  t("landing.feat2Desc") ||
-                  "Identificação automática de desvios no comportamento típico e alertas preventivos de bem-estar.",
+                title: t("landing.feat4Title"),
+                desc: t("landing.feat4Desc"),
               },
               {
-                icon: Users,
+                icon: CheckCircle2,
                 color: "cyan",
-                title: t("landing.feat3Title") || "Partilha Familiar",
-                desc:
-                  t("landing.feat3Desc") ||
-                  "Convide co-tutores para gerir as tarefas de saúde e acompanhar o estado do animal em tempo real.",
+                title: t("landing.feat5Title"),
+                desc: t("landing.feat5Desc"),
               },
             ].map(({ icon: Icon, color, title, desc }) => (
               <SpotlightCard
                 key={title}
-                className="flex flex-col text-left p-6 space-y-3"
+                className="flex flex-col text-left p-6 space-y-3 animate-fade-in"
               >
                 <div
                   className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center",
+                    color === "indigo" && "bg-indigo-500/10 text-indigo-400",
                     color === "rose" && "bg-rose-500/10 text-rose-400",
+                    color === "emerald" && "bg-emerald-500/10 text-emerald-400",
                     color === "amber" && "bg-amber-500/10 text-amber-400",
                     color === "cyan" && "bg-cyan-500/10 text-cyan-400",
                   )}
@@ -306,22 +314,12 @@ export default function LandingPage() {
               <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
                 ⚠️
               </span>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 border-none">
                 <h3 className="font-bold text-sm text-amber-400">
-                  Honestidade Científica &amp; Limitações
+                  {t("landing.disclaimerTitle")}
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  O <strong className="text-slate-300">Pawra</strong> utiliza o
-                  modelo <strong className="text-slate-300">YAMNet</strong>{" "}
-                  (classificador genérico de eventos de áudio) para estimar
-                  estados emocionais como aproximações comportamentais. Os
-                  resultados devem ser interpretados como{" "}
-                  <strong className="text-slate-300">sinais ou indícios</strong>{" "}
-                  — nunca como diagnóstico. Esta aplicação{" "}
-                  <strong className="text-slate-300">
-                    não substitui avaliação veterinária profissional
-                  </strong>
-                  .
+                  {t("landing.disclaimerDesc")}
                 </p>
               </div>
             </div>

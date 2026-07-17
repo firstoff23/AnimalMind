@@ -1,5 +1,5 @@
 import { createGoogle } from "@ai-sdk/google";
-import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
+import { convertToModelMessages, pipeUIMessageStreamToResponse, stepCountIs, streamText, tool } from "ai";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { authenticateExpressRequest } from "./_core/expressAuth";
@@ -426,7 +426,11 @@ Identidade do Tutor Atual:
       },
     });
 
-    return result.toUIMessageStreamResponse();
+    pipeUIMessageStreamToResponse({
+      stream: result.toUIMessageStream(),
+      response: res,
+    });
+    return;
   } catch (error: any) {
     console.error("[Mindi] Chat stream handler error:", error);
     if (!res.headersSent) {

@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
-import { ArrowLeft, Filter, Loader2 } from "lucide-react";
+import { ArrowLeft, Filter, Loader2, Check, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
+import { toast } from "sonner";
 
 // Emotion state translations (for displaying them nicely)
 const STATE_TRANSLATIONS: Record<string, string> = {
@@ -16,7 +17,7 @@ const STATE_TRANSLATIONS: Record<string, string> = {
 };
 
 export default function FeedbackAuditPage() {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   
   // State for inputs
   const [animalTypeInput, setAnimalTypeInput] = useState<string>("all");
@@ -35,6 +36,24 @@ export default function FeedbackAuditPage() {
     animal_type: activeFilters.animal_type !== "all" ? activeFilters.animal_type : undefined,
     from: activeFilters.from || undefined,
     to: activeFilters.to || undefined,
+  });
+
+  const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
+
+  const reviewMutation = trpc.feedback.review.useMutation({
+    onSuccess: (data, variables) => {
+      toast.success("Feedback verificado e revisto com sucesso!");
+      refetch();
+      logAnalyticsMutation.mutate({
+        eventName: "audit_reviewed",
+        properties: {
+          feedbackId: variables.feedbackId,
+        },
+      });
+    },
+    onError: (err) => {
+      toast.error("Erro ao rever feedback: " + err.message);
+    },
   });
 
   const handleFilter = (e: React.FormEvent) => {
@@ -74,7 +93,7 @@ export default function FeedbackAuditPage() {
           <div>
             <h1 className="text-xl font-bold text-foreground">Auditoria de Feedback</h1>
             <p className="text-xs text-muted-foreground">
-              Monitoriza e audita os desvios e correções dos modelos de IA do AnimalMind
+              Monitoriza e audita os desvios e correções dos modelos de IA do Pawra
             </p>
           </div>
         </div>
@@ -158,56 +177,164 @@ export default function FeedbackAuditPage() {
           </div>
         ) : feedbackList.length === 0 ? (
           <div className="py-20 text-center space-y-2">
-            <p className="text-sm font-semibold text-muted-foreground">Nenhuma anotação encontrada.</p>
-            <p className="text-xs text-muted-foreground/60">Tente ajustar as datas ou filtros.</p>
+            <p className="text-sm font-semibold text-muted-foreground">
+              {t("auditPage.emptyTitle") || "Nenhuma anotação encontrada."}
+            </p>
+            <p className="text-xs text-muted-foreground/60">
+              {t("auditPage.emptyDesc") || "Tente ajustar as datas ou filtros."}
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">ID</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Animal</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Raça Prevista</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Raça Confirmada</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Estado Previsto</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Estado Confirmado</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground text-right">Confiança</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Data</th>
-                </tr>
-              </thead>
-              <tbody>
-                {feedbackList.map((item: any) => (
-                  <tr key={item.id} className="border-b border-border/40 hover:bg-muted/5 last:border-0 transition-colors">
-                    <td className="px-4 py-3 text-xs font-mono text-muted-foreground">#{item.id}</td>
-                    <td className="px-4 py-3 text-xs font-medium">
+          <>
+            {/* Cards — mobile (<md) */}
+            <div className="md:hidden divide-y divide-border/40">
+              {feedbackList.map((item: any) => (
+                <div key={item.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-muted-foreground">#{item.id}</span>
+                    {item.reviewed_by ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-semibold">
+                        <CheckCircle size={10} />
+                        Revisto
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full font-semibold">
+                        Pendente
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium">
                       {item.animal_type === "dog" ? "🐶 Cão" : "🐱 Gato"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground italic">
-                      {item.predicted_breed || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-semibold">
-                      {item.confirmed_breed || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {item.predicted_state ? (STATE_TRANSLATIONS[item.predicted_state] || item.predicted_state) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-semibold">
-                      {item.confirmed_state ? (STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-right font-mono font-semibold">
+                    </span>
+                    <span className="font-mono font-semibold">
                       {item.confidence !== null && item.confidence !== undefined
                         ? `${Math.round(item.confidence * 100)}%`
                         : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {item.created_at ? formatDate(item.created_at) : "—"}
-                    </td>
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>
+                      Previsto:{" "}
+                      {item.predicted_state
+                        ? STATE_TRANSLATIONS[item.predicted_state] || item.predicted_state
+                        : "—"}
+                      {item.predicted_breed ? ` · ${item.predicted_breed}` : ""}
+                    </p>
+                    <p className="text-foreground font-semibold">
+                      Confirmado:{" "}
+                      {item.confirmed_state
+                        ? STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state
+                        : "—"}
+                    </p>
+                    {item.comment && <p className="italic">"{item.comment}"</p>}
+                    <p>{item.created_at ? formatDate(item.created_at) : "—"}</p>
+                  </div>
+
+                  {!item.reviewed_by ? (
+                    <button
+                      className="w-full h-11 inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg border border-primary/20 transition-colors disabled:opacity-70"
+                      onClick={() => reviewMutation.mutate({ feedbackId: item.id })}
+                      disabled={reviewMutation.isPending}
+                    >
+                      <Check size={14} />
+                      Rever
+                    </button>
+                  ) : (
+                    <p className="text-muted-foreground/60 text-[10px] font-medium text-right">
+                      Por ID #{item.reviewed_by}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Tabela — desktop (md+), inalterada */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">ID</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Animal</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Raça Prevista</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Estado Previsto</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Estado Confirmado</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground text-right">Confiança</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Observações</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Data</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {feedbackList.map((item: any) => (
+                    <tr key={item.id} className="border-b border-border/40 hover:bg-muted/5 last:border-0 transition-colors">
+                      <td className="px-4 py-3 text-xs font-mono text-muted-foreground">#{item.id}</td>
+                      <td className="px-4 py-3 text-xs font-medium">
+                        {item.animal_type === "dog" ? "🐶 Cão" : "🐱 Gato"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground italic">
+                        {item.predicted_breed || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.predicted_state ? (STATE_TRANSLATIONS[item.predicted_state] || item.predicted_state) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-semibold">
+                        {item.confirmed_state ? (STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-right font-mono font-semibold">
+                        {item.confidence !== null && item.confidence !== undefined
+                          ? `${Math.round(item.confidence * 100)}%`
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {item.comment ? (
+                          <span className="text-muted-foreground truncate max-w-[150px] block" title={item.comment}>
+                            {item.comment}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.created_at ? formatDate(item.created_at) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {item.reviewed_by ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-semibold">
+                            <CheckCircle size={10} />
+                            Revisto
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full font-semibold">
+                            Pendente
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {!item.reviewed_by ? (
+                          <button
+                            className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 hover:bg-primary text-primary hover:text-white px-2 py-1 rounded-lg border border-primary/20 transition-colors disabled:opacity-50"
+                            onClick={() => reviewMutation.mutate({ feedbackId: item.id })}
+                            disabled={reviewMutation.isPending}
+                          >
+                            <Check size={10} />
+                            Rever
+                          </button>
+                        ) : (
+                          <span className="text-muted-foreground/60 text-[10px] font-medium">
+                            Por ID #{item.reviewed_by}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Footer with counts */}

@@ -202,7 +202,12 @@
     "stop": "PARAR",
     "cameraDeniedTitle": "Permissão de Câmara Negada",
     "cameraDeniedDesc": "A aplicação não consegue aceder à câmara do seu dispositivo. Isto pode acontecer se: negou a permissão quando o browser pediu, a câmara está desativada nas definições do browser, ou outra aplicação está a usar a câmara.",
-    "cameraDeniedInstructions": "Para ativar a câmara: abra as definições do browser, procure por \"Permissões\" ou \"Privacidade\", encontre \"Câmara\" e ative para este site, depois recarregue a página."
+    "cameraDeniedInstructions": "Para ativar a câmara: abra as definições do browser, procure por \"Permissões\" ou \"Privacidade\", encontre \"Câmara\" e ative para este site, depois recarregue a página.",
+    "feedbackSuccess": "Obrigado pelo seu feedback. A sua correção foi registada e ajudará a melhorar interpretações futuras."
+  },
+  "auditPage": {
+    "emptyTitle": "Cada interpretação deixa um rasto.",
+    "emptyDesc": "Inicie uma análise para rever como o Pawra chegou a cada explicação."
   },
   "historyPage": {
     "title": "Histórico",
@@ -331,26 +336,33 @@
     "relaxed": "Relaxado"
   },
   "landing": {
-    "title": "Monitorize sinais de bem-estar do seu animal através de áudio e padrões comportamentais.",
-    "subtitle": "Monitorização em tempo real do estado emocional e bem-estar do seu companheiro através de Inteligência Artificial acústica.",
+    "title": "Entenda o que o seu animal está a tentar dizer-lhe.",
+    "subtitle": "O Pawra combina a interpretação de comportamento assistida por IA com as suas observações para criar explicações que melhoram com o tempo.",
+    "valueProp": "Explicações claras. Melhor compreensão. Construído em conjunto com tutores de animais.",
     "getStarted": "Começar Agora",
     "howItWorks": "Como Funciona",
-    "features": "Funcionalidades",
+    "features": "Principais Funcionalidades",
     "step1Title": "1. Grave o Som",
     "step1Desc": "Grave os latidos, miados ou outros sons do seu animal diretamente na aplicação.",
     "step2Title": "2. Análise de IA",
     "step2Desc": "Os nossos modelos avançados classificam o estado emocional em tempo real com base no som.",
     "step3Title": "3. Acompanhe a Evolução",
     "step3Desc": "Visualize relatórios, tendências de bem-estar e partilhe o perfil com a sua família.",
-    "feat1Title": "Inteligência Acústica",
-    "feat1Desc": "Classificação refinada entre 6 estados emocionais: angústia, excitação, alerta, fome, atenção e relaxamento.",
-    "feat2Title": "Evolução e Alertas",
-    "feat2Desc": "Identificação automática de desvios no comportamento típico (baseline) e alertas preventivos de bem-estar.",
-    "feat3Title": "Partilha Familiar",
-    "feat3Desc": "Convide co-tutores para gerir as tarefas de saúde e acompanhar o estado do animal em tempo real.",
+    "feat1Title": "Interpretação Assistida por IA",
+    "feat1Desc": "Interpreta comportamento e vocalizações para fornecer uma comunicação mais clara.",
+    "feat2Title": "Ciclo de Feedback Humano",
+    "feat2Desc": "Classifique a precisão de uma análise, registando correções para melhorar as explicações futuras.",
+    "feat3Title": "Painel de Auditoria Transparente",
+    "feat3Desc": "Uma área de revisão dedicada para admins e veterinários verificarem as correções dos utilizadores.",
+    "feat4Title": "Histórico de Comportamento",
+    "feat4Desc": "Visualize a evolução emocional, acompanhe desvios e exporte observações.",
+    "feat5Title": "Apoio, não Diagnóstico",
+    "feat5Desc": "Todas as interpretações funcionam como uma segunda opinião, nunca como diagnóstico médico ou veterinário.",
     "pwaAvailable": "Disponível para instalar como PWA",
     "login": "Iniciar Sessão",
     "register": "Registar",
-    "dashboard": "Painel de Controlo"
+    "dashboard": "Painel de Controlo",
+    "disclaimerTitle": "Honestidade Científica & Limitações",
+    "disclaimerDesc": "O Pawra utiliza o modelo YAMNet (classificador genérico de eventos de áudio) para estimar estados emocionais como aproximações comportamentais. Os resultados devem ser interpretados como sinais ou indícios — nunca como diagnóstico. Esta aplicação não substitui avaliação veterinária profissional."
   }
 }
