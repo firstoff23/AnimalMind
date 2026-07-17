@@ -2,6 +2,8 @@ import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { type ModelMessage, streamText } from "ai";
 import { z } from "zod";
+
+const ALLOWED_AUDIT_ROLES = ["admin", "vet", "veterinarian", "clinic_admin"];
 import {
   type EmotionalState,
   type ModelUsed,
@@ -419,7 +421,7 @@ const feedbackRouter = router({
           message: "Token de acesso em falta na sessão",
         });
       }
-      if (!["admin", "vet", "veterinarian"].includes(ctx.user?.role || "")) {
+      if (!ALLOWED_AUDIT_ROLES.includes(ctx.user?.role || "")) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Acesso restrito a utilizadores com role veterinária ou administrativa.",
@@ -443,7 +445,7 @@ const feedbackRouter = router({
           message: "Token de acesso em falta na sessão",
         });
       }
-      if (!["admin", "vet", "veterinarian"].includes(ctx.user?.role || "")) {
+      if (!ALLOWED_AUDIT_ROLES.includes(ctx.user?.role || "")) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Acesso restrito a utilizadores com role veterinária ou administrativa.",
