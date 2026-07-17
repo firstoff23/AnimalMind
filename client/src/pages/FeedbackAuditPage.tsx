@@ -229,9 +229,19 @@ export default function FeedbackAuditPage() {
                     </p>
                     <p className="text-foreground font-semibold">
                       Confirmado:{" "}
-                      {item.confirmed_state
-                        ? STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state
-                        : "—"}
+                      <span
+                        className={
+                          item.predicted_state &&
+                          item.confirmed_state &&
+                          item.predicted_state !== item.confirmed_state
+                            ? "text-rose-400"
+                            : ""
+                        }
+                      >
+                        {item.confirmed_state
+                          ? STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state
+                          : "—"}
+                      </span>
                     </p>
                     {item.comment && <p className="italic">"{item.comment}"</p>}
                     <p>{item.created_at ? formatDate(item.created_at) : "—"}</p>
@@ -255,6 +265,7 @@ export default function FeedbackAuditPage() {
                   ) : (
                     <p className="text-muted-foreground/60 text-[10px] font-medium text-right">
                       Por ID #{item.reviewed_by}
+                      {item.reviewed_at ? ` · ${formatDate(item.reviewed_at)}` : ""}
                     </p>
                   )}
                 </div>
@@ -292,7 +303,17 @@ export default function FeedbackAuditPage() {
                         {item.predicted_state ? (STATE_TRANSLATIONS[item.predicted_state] || item.predicted_state) : "—"}
                       </td>
                       <td className="px-4 py-3 text-xs font-semibold">
-                        {item.confirmed_state ? (STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state) : "—"}
+                        <span
+                          className={
+                            item.predicted_state &&
+                            item.confirmed_state &&
+                            item.predicted_state !== item.confirmed_state
+                              ? "text-rose-400"
+                              : ""
+                          }
+                        >
+                          {item.confirmed_state ? (STATE_TRANSLATIONS[item.confirmed_state] || item.confirmed_state) : "—"}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-right font-mono font-semibold">
                         {item.confidence !== null && item.confidence !== undefined
@@ -342,6 +363,7 @@ export default function FeedbackAuditPage() {
                         ) : (
                           <span className="text-muted-foreground/60 text-[10px] font-medium">
                             Por ID #{item.reviewed_by}
+                            {item.reviewed_at ? ` · ${formatDate(item.reviewed_at)}` : ""}
                           </span>
                         )}
                       </td>
