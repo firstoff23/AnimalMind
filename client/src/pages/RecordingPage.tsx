@@ -130,6 +130,10 @@ function ResultCard({
   const handleFeedback = (f: "correct" | "incorrect") => {
     setFeedbackSent(f);
     onFeedback(f);
+    logAnalyticsMutation.mutate({
+      eventName: "feedback_quick",
+      properties: { type: f, eventId: result.eventId },
+    });
   };
 
   const toggleListening = () => {

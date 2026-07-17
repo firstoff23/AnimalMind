@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -55,6 +55,10 @@ export default function FeedbackAuditPage() {
       toast.error("Erro ao rever feedback: " + err.message);
     },
   });
+
+  useEffect(() => {
+    logAnalyticsMutation.mutate({ eventName: "audit_page_opened" });
+  }, []);
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,7 +240,13 @@ export default function FeedbackAuditPage() {
                   {!item.reviewed_by ? (
                     <button
                       className="w-full h-11 inline-flex items-center justify-center gap-1.5 text-xs font-bold bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg border border-primary/20 transition-colors disabled:opacity-70"
-                      onClick={() => reviewMutation.mutate({ feedbackId: item.id })}
+                      onClick={() => {
+                        logAnalyticsMutation.mutate({
+                          eventName: "audit_review_clicked",
+                          properties: { feedbackId: item.id },
+                        });
+                        reviewMutation.mutate({ feedbackId: item.id });
+                      }}
                       disabled={reviewMutation.isPending}
                     >
                       <Check size={14} />
@@ -317,7 +327,13 @@ export default function FeedbackAuditPage() {
                         {!item.reviewed_by ? (
                           <button
                             className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 hover:bg-primary text-primary hover:text-white px-2 py-1 rounded-lg border border-primary/20 transition-colors disabled:opacity-50"
-                            onClick={() => reviewMutation.mutate({ feedbackId: item.id })}
+                            onClick={() => {
+                              logAnalyticsMutation.mutate({
+                                eventName: "audit_review_clicked",
+                                properties: { feedbackId: item.id },
+                              });
+                              reviewMutation.mutate({ feedbackId: item.id });
+                            }}
                             disabled={reviewMutation.isPending}
                           >
                             <Check size={10} />
