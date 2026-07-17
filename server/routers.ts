@@ -407,6 +407,8 @@ const feedbackRouter = router({
         animal_type: z.string().optional(),
         from: z.string().optional(),
         to: z.string().optional(),
+        reviewed: z.enum(["all", "pending", "reviewed"]).default("all"),
+        predicted_state: z.string().optional(),
       }).optional(),
     )
     .query(async ({ ctx, input }) => {

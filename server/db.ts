@@ -4059,6 +4059,8 @@ export async function getFeedbackAnnotations(
     animal_type?: string;
     from?: string;
     to?: string;
+    reviewed?: "all" | "pending" | "reviewed";
+    predicted_state?: string;
   },
 ) {
   const supabase = getSupabase(accessToken);
@@ -4095,6 +4097,14 @@ export async function getFeedbackAnnotations(
   }
   if (filters?.to) {
     query = query.lte("created_at", filters.to);
+  }
+  if (filters?.reviewed === "pending") {
+    query = query.is("reviewed_by", null);
+  } else if (filters?.reviewed === "reviewed") {
+    query = query.not("reviewed_by", "is", null);
+  }
+  if (filters?.predicted_state && filters.predicted_state !== "all") {
+    query = query.eq("classification_events.state", filters.predicted_state);
   }
 
   const { data, error } = await query

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
-import { ArrowLeft, Filter, Loader2, Check, CheckCircle } from "lucide-react";
+import { ArrowLeft, Filter, Check, CheckCircle, ClipboardList } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -19,16 +20,29 @@ const STATE_TRANSLATIONS: Record<string, string> = {
 export default function FeedbackAuditPage() {
   const { t, language } = useLanguage();
   
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+
   // State for inputs
   const [animalTypeInput, setAnimalTypeInput] = useState<string>("all");
   const [fromInput, setFromInput] = useState<string>("");
   const [toInput, setToInput] = useState<string>("");
+  const [reviewedInput, setReviewedInput] = useState<"all" | "pending" | "reviewed">("all");
+  const [predictedStateInput, setPredictedStateInput] = useState<string>("all");
 
   // State for active query filters (only updated when clicking "Filtrar")
-  const [activeFilters, setActiveFilters] = useState({
+  const [activeFilters, setActiveFilters] = useState<{
+    animal_type: string;
+    from: string;
+    to: string;
+    reviewed: "all" | "pending" | "reviewed";
+    predicted_state: string;
+  }>({
     animal_type: "all",
     from: "",
     to: "",
+    reviewed: "all",
+    predicted_state: "all",
   });
 
   // tRPC query to fetch the list of feedback annotations
@@ -36,6 +50,10 @@ export default function FeedbackAuditPage() {
     animal_type: activeFilters.animal_type !== "all" ? activeFilters.animal_type : undefined,
     from: activeFilters.from || undefined,
     to: activeFilters.to || undefined,
+    reviewed: activeFilters.reviewed,
+    predicted_state: activeFilters.predicted_state !== "all" ? activeFilters.predicted_state : undefined,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   });
 
   const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
@@ -62,11 +80,30 @@ export default function FeedbackAuditPage() {
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
+    setPage(1);
     setActiveFilters({
       animal_type: animalTypeInput,
       from: fromInput,
       to: toInput,
+      reviewed: reviewedInput,
+      predicted_state: predictedStateInput,
     });
+  };
+
+  const resetFilters = () => {
+    setAnimalTypeInput("all");
+    setFromInput("");
+    setToInput("");
+    setReviewedInput("all");
+    setPredictedStateInput("all");
+    setActiveFilters({
+      animal_type: "all",
+      from: "",
+      to: "",
+      reviewed: "all",
+      predicted_state: "all",
+    });
+    setPage(1);
   };
 
   const formatDate = (dateStr: string) => {
@@ -154,6 +191,39 @@ export default function FeedbackAuditPage() {
               className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-colors"
             />
           </div>
+
+          <div className="space-y-1">
+            <label htmlFor="predicted-state-select" className="text-xs font-semibold text-muted-foreground block">
+              Estado previsto
+            </label>
+            <select
+              id="predicted-state-select"
+              value={predictedStateInput}
+              onChange={(e) => setPredictedStateInput(e.target.value)}
+              className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+            >
+              <option value="all">Todos</option>
+              {Object.entries(STATE_TRANSLATIONS).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="reviewed-select" className="text-xs font-semibold text-muted-foreground block">
+              Estado de revisão
+            </label>
+            <select
+              id="reviewed-select"
+              value={reviewedInput}
+              onChange={(e) => setReviewedInput(e.target.value as "all" | "pending" | "reviewed")}
+              className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+            >
+              <option value="all">Todos</option>
+              <option value="pending">Pendente</option>
+              <option value="reviewed">Revisto</option>
+            </select>
+          </div>
         </div>
 
         {/* Submit button */}
@@ -167,9 +237,15 @@ export default function FeedbackAuditPage() {
       {/* Main Results Table */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-3">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            <p className="text-xs text-muted-foreground">A carregar auditorias de feedback...</p>
+          <div className="p-4 space-y-3">
+            {[1,2,3,4].map(n => (
+              <div key={n} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+                <Skeleton className="h-4 w-8 rounded" />
+                <Skeleton className="h-4 w-16 rounded" />
+                <Skeleton className="h-4 flex-1 rounded" />
+                <Skeleton className="h-4 w-12 rounded" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="p-8 text-center space-y-3">
@@ -180,13 +256,21 @@ export default function FeedbackAuditPage() {
             </Button>
           </div>
         ) : feedbackList.length === 0 ? (
-          <div className="py-20 text-center space-y-2">
+          <div className="py-20 text-center space-y-3 flex flex-col items-center">
+            <ClipboardList className="h-10 w-10 text-muted-foreground/30 mb-2" />
             <p className="text-sm font-semibold text-muted-foreground">
               {t("auditPage.emptyTitle") || "Nenhuma anotação encontrada."}
             </p>
-            <p className="text-xs text-muted-foreground/60">
-              {t("auditPage.emptyDesc") || "Tente ajustar as datas ou filtros."}
-            </p>
+            {(activeFilters.animal_type !== "all" || activeFilters.from || activeFilters.to || activeFilters.reviewed !== "all" || activeFilters.predicted_state !== "all") && (
+              <div className="space-y-3 flex flex-col items-center">
+                <p className="text-xs text-muted-foreground/60">
+                  Tenta limpar os filtros para ver todos os registos.
+                </p>
+                <Button size="sm" variant="outline" onClick={resetFilters}>
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -377,10 +461,28 @@ export default function FeedbackAuditPage() {
 
         {/* Footer with counts */}
         {!isLoading && !error && (
-          <div className="bg-muted/20 border-t border-border px-4 py-3 text-center sm:text-left">
+          <div className="bg-muted/20 border-t border-border px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
-              Total: <strong>{feedbackList.length}</strong> {feedbackList.length === 1 ? "anotação" : "anotações"} de feedback
+              Página <strong>{page}</strong> · <strong>{feedbackList.length}</strong> {feedbackList.length === 1 ? "anotação" : "anotações"} nesta página
             </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => p + 1)}
+                disabled={feedbackList.length < PAGE_SIZE}
+              >
+                Próxima
+              </Button>
+            </div>
           </div>
         )}
       </div>
