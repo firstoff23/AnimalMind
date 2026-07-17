@@ -226,6 +226,11 @@ export function InsightsPanel({ animalId }: { animalId: number }) {
                     style={{ width: `${Math.round(modelAgreement.rate * 100)}%` }}
                   />
                 </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {language === "pt"
+                    ? `Baseado em ${modelAgreement.total} confirmações rápidas (mín. 3)`
+                    : `Based on ${modelAgreement.total} quick confirmations (min. 3)`}
+                </p>
               </div>
             </div>
           )}
