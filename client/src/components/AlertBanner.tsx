@@ -231,6 +231,7 @@ export function AlertBanner({ animalId }: AlertBannerProps) {
       </div>
       <button
         onClick={handleDismiss}
+        aria-label={language === "pt" ? "Fechar aviso" : "Dismiss alert"}
         className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-slate-800/40"
       >
         <X size={14} />
