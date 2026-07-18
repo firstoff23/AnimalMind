@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
+import { upsertUser } from "./db";
 
 describe("Supabase Integration", () => {
   let supabase: ReturnType<typeof createClient>;
@@ -27,6 +28,30 @@ describe("Supabase Integration", () => {
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
   });
+
+  it("atribui role 'user' por defeito a um novo utilizador no upsert", async () => {
+    if (!credentialsValid) return;
+    
+    const testOpenId = `test-user-${Date.now()}`;
+    await upsertUser({
+      openId: testOpenId,
+      name: "Teste Utilizador",
+      email: "test@animalmind.local",
+    } as any);
+
+    const { data: newUser } = await supabase
+      .from("users")
+      .select("role")
+      .eq("open_id", testOpenId)
+      .single();
+
+    expect(newUser).toBeDefined();
+    expect(newUser?.role).toBe("user");
+
+    // Clean up
+    await supabase.from("users").delete().eq("open_id", testOpenId);
+  });
+
 
   it("obtém animais do utilizador demo", async () => {
     if (!credentialsValid) return;

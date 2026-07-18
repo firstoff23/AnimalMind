@@ -63,7 +63,7 @@ function mapDbUser(user: any): User {
     name: user.name ?? null,
     email: user.email ?? null,
     loginMethod: user.login_method ?? null,
-    role: user.role ?? "owner",
+    role: user.role ?? "user",
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
     lastSignedIn: new Date(user.last_signed_in),
@@ -84,11 +84,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   };
 
   if (user.role) {
-    values.role = user.role === "user" ? "owner" : user.role;
+    values.role = user.role;
   } else if (user.openId === ENV.ownerOpenId) {
     values.role = "admin";
   } else {
-    values.role = "owner";
+    values.role = "user";
   }
 
   const { error } = await supabase
