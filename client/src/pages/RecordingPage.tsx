@@ -209,40 +209,51 @@ function ResultCard({
   }, []);
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-4 page-enter text-left">
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-5 page-enter text-left">
       <ConfidenceRing
         confidence={result.confidence}
         emoji={result.emoji}
         state={result.state}
       />
 
-      <div className="flex justify-center">
-        <Badge variant="secondary" className="text-xs uppercase tracking-wide">
+      <div className="text-center mt-0">
+        <p className="text-[11px] text-muted-foreground/70 uppercase tracking-widest font-medium">
+          AI-assisted second opinion, not a diagnosis
+        </p>
+      </div>
+
+      <div className="flex justify-center mt-2">
+        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide opacity-50">
           {result.model_used}
         </Badge>
       </div>
 
-      <div className="flex gap-3">
-        <Button
-          variant={feedbackSent === "correct" ? "default" : "outline"}
-          size="sm"
-          className="flex-1 gap-2 disabled:opacity-70"
-          onClick={() => handleFeedback("correct")}
-          disabled={feedbackSent !== null}
-        >
-          <ThumbsUp size={16} />
-          {t("recordingPage.correct")}
-        </Button>
-        <Button
-          variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
-          size="sm"
-          className="flex-1 gap-2 disabled:opacity-70"
-          onClick={() => handleFeedback("incorrect")}
-          disabled={feedbackSent !== null}
-        >
-          <ThumbsDown size={16} />
-          {t("recordingPage.incorrect")}
-        </Button>
+      <div className="space-y-2 pt-2">
+        <p className="text-sm font-medium text-center text-foreground/90">
+          Did this make sense?
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variant={feedbackSent === "correct" ? "default" : "outline"}
+            size="sm"
+            className="flex-1 gap-2 disabled:opacity-70 rounded-xl"
+            onClick={() => handleFeedback("correct")}
+            disabled={feedbackSent !== null}
+          >
+            <ThumbsUp size={16} />
+            Yes
+          </Button>
+          <Button
+            variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
+            size="sm"
+            className="flex-1 gap-2 disabled:opacity-70 rounded-xl"
+            onClick={() => handleFeedback("incorrect")}
+            disabled={feedbackSent !== null}
+          >
+            <ThumbsDown size={16} />
+            No
+          </Button>
+        </div>
       </div>
 
       <div className="pt-3 border-t border-border space-y-3">

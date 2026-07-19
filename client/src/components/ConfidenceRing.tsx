@@ -23,6 +23,18 @@ function toPercent(confidence: number) {
   return Math.min(100, Math.max(0, Math.round(confidence * 100)));
 }
 
+function getConfidenceLevelText(percent: number) {
+  if (percent >= 80) return "High";
+  if (percent >= 60) return "Medium";
+  return "Low";
+}
+
+function getContextualPrefix(percent: number) {
+  if (percent >= 80) return "Seems like";
+  if (percent >= 60) return "May be feeling";
+  return "Might be";
+}
+
 export function ConfidenceRing({
   confidence,
   emoji,
@@ -73,16 +85,16 @@ export function ConfidenceRing({
             cy="56"
           />
         </svg>
-        <div className="absolute flex flex-col items-center justify-center gap-1 animate-in zoom-in duration-500">
+        <div className="absolute flex flex-col items-center justify-center gap-0 animate-in zoom-in duration-500">
           <span
-            className="font-bold tracking-normal"
-            style={{ color, fontSize: "1.875rem", lineHeight: 1 }}
+            className="font-bold tracking-normal uppercase text-sm mt-1"
+            style={{ color }}
           >
-            {percent}%
+            {getConfidenceLevelText(percent)}
           </span>
           <span
-            className="leading-none drop-shadow-sm"
-            style={{ fontSize: "1.5rem" }}
+            className="leading-none drop-shadow-sm mt-1"
+            style={{ fontSize: "2.25rem" }}
             aria-hidden="true"
           >
             {emoji}
@@ -90,15 +102,15 @@ export function ConfidenceRing({
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-0 text-center">
+        <span className="text-sm font-medium text-muted-foreground">
+          {getContextualPrefix(percent)}
+        </span>
         <span
-          className="text-2xl font-bold tracking-normal"
+          className="text-2xl font-bold tracking-normal mt-1"
           style={{ color: STATE_COLORS[state] }}
         >
           {t(`states.${state}` as any) || STATE_LABELS[state]}
-        </span>
-        <span className="text-sm font-medium" style={{ color }}>
-          {t("historyPage.tableConf").toLowerCase()}
         </span>
       </div>
     </div>
