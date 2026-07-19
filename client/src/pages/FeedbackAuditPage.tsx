@@ -6,6 +6,7 @@ import { ArrowLeft, Filter, Check, CheckCircle, ClipboardList } from "lucide-rea
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { type EmotionalState } from "../../../shared/types";
 
 // Emotion state translations (for displaying them nicely)
 const STATE_TRANSLATIONS: Record<string, string> = {
@@ -28,7 +29,7 @@ export default function FeedbackAuditPage() {
   const [fromInput, setFromInput] = useState<string>("");
   const [toInput, setToInput] = useState<string>("");
   const [reviewedInput, setReviewedInput] = useState<"all" | "pending" | "reviewed">("all");
-  const [predictedStateInput, setPredictedStateInput] = useState<string>("all");
+  const [predictedStateInput, setPredictedStateInput] = useState<EmotionalState | "all">("all");
 
   // State for active query filters (only updated when clicking "Filtrar")
   const [activeFilters, setActiveFilters] = useState<{
@@ -36,7 +37,7 @@ export default function FeedbackAuditPage() {
     from: string;
     to: string;
     reviewed: "all" | "pending" | "reviewed";
-    predicted_state: string;
+    predicted_state: EmotionalState | "all";
   }>({
     animal_type: "all",
     from: "",
@@ -46,7 +47,7 @@ export default function FeedbackAuditPage() {
   });
 
   // tRPC query to fetch the list of feedback annotations
-  const { data: feedbackList = [], isLoading, error, refetch } = trpc.feedback.list.useQuery({
+  const { data, isLoading, error, refetch } = trpc.feedback.list.useQuery({
     animal_type: activeFilters.animal_type !== "all" ? activeFilters.animal_type : undefined,
     from: activeFilters.from || undefined,
     to: activeFilters.to || undefined,
@@ -55,6 +56,10 @@ export default function FeedbackAuditPage() {
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
   });
+
+  const feedbackList = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
 
@@ -199,7 +204,7 @@ export default function FeedbackAuditPage() {
             <select
               id="predicted-state-select"
               value={predictedStateInput}
-              onChange={(e) => setPredictedStateInput(e.target.value)}
+              onChange={(e) => setPredictedStateInput(e.target.value as EmotionalState | "all")}
               className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 transition-colors"
             >
               <option value="all">Todos</option>
@@ -463,7 +468,7 @@ export default function FeedbackAuditPage() {
         {!isLoading && !error && (
           <div className="bg-muted/20 border-t border-border px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">
-              Página <strong>{page}</strong> · <strong>{feedbackList.length}</strong> {feedbackList.length === 1 ? "anotação" : "anotações"} nesta página
+              Total: <strong>{total}</strong> anotações · Página <strong>{page}</strong> de <strong>{totalPages}</strong>
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -478,7 +483,7 @@ export default function FeedbackAuditPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(p => p + 1)}
-                disabled={feedbackList.length < PAGE_SIZE}
+                disabled={page >= totalPages}
               >
                 Próxima
               </Button>

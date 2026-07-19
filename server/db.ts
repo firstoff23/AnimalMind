@@ -4084,7 +4084,7 @@ export async function getFeedbackAnnotations(
           breed
         )
       )
-    `);
+    `, { count: "exact" });
 
   if (filters?.animal_type && filters.animal_type !== "all") {
     query = query.eq(
@@ -4107,25 +4107,28 @@ export async function getFeedbackAnnotations(
     query = query.eq("classification_events.state", filters.predicted_state);
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) throw error;
 
-  return (data || []).map((item: any) => ({
-    id: item.id,
-    confirmed_state: item.confirmed_state,
-    comment: item.comment,
-    reviewed_by: item.reviewed_by,
-    reviewed_at: item.reviewed_at,
-    created_at: item.created_at,
-    predicted_state: item.classification_events?.state || null,
-    confidence: item.classification_events?.confidence || null,
-    animal_type: item.classification_events?.animals?.species || null,
-    predicted_breed: item.classification_events?.animals?.breed || null,
-    confirmed_breed: null,
-  }));
+  return {
+    items: (data || []).map((item: any) => ({
+      id: item.id,
+      confirmed_state: item.confirmed_state,
+      comment: item.comment,
+      reviewed_by: item.reviewed_by,
+      reviewed_at: item.reviewed_at,
+      created_at: item.created_at,
+      predicted_state: item.classification_events?.state || null,
+      confidence: item.classification_events?.confidence || null,
+      animal_type: item.classification_events?.animals?.species || null,
+      predicted_breed: item.classification_events?.animals?.breed || null,
+      confirmed_breed: null,
+    })),
+    total: count || 0,
+  };
 }
 
 export async function reviewFeedbackAnnotation(

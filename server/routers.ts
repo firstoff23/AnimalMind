@@ -410,7 +410,7 @@ const feedbackRouter = router({
         from: z.string().optional(),
         to: z.string().optional(),
         reviewed: z.enum(["all", "pending", "reviewed"]).default("all"),
-        predicted_state: z.string().optional(),
+        predicted_state: z.enum(["distress", "attention", "excitement", "hunger", "alert", "relaxed"]).optional(),
       }).optional(),
     )
     .query(async ({ ctx, input }) => {
