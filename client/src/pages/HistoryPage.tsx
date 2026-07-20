@@ -478,39 +478,13 @@ function EmptyState({ filtered }: { filtered: boolean }) {
       </div>
       <p className="font-semibold text-foreground">
         {filtered
-          ? t("historyPage.clear")
-              .replace("Limpar", "Sem resultados")
-              .replace("Clear", "No results")
-          : t("historyPage.noEvents")
-              .replace(
-                "Nenhum evento registado para os filtros selecionados.",
-                "Sem histórico ainda",
-              )
-              .replace(
-                "No events recorded for the selected filters.",
-                "No history yet",
-              )}
+          ? (language === "pt" ? "Sem resultados" : "No results")
+          : (language === "pt" ? "Sem histórico ainda" : "No history yet")}
       </p>
       <p className="text-sm text-muted-foreground max-w-xs">
         {filtered
-          ? t("historyPage.noEvents")
-              .replace(
-                "Nenhum evento registado para os filtros selecionados.",
-                "Tente ajustar os filtros para encontrar registos.",
-              )
-              .replace(
-                "No events recorded for the selected filters.",
-                "Try adjusting the filters to find records.",
-              )
-          : t("recordingPage.tapForSingle")
-              .replace(
-                "Toque para uma gravação única de 3 segundos",
-                "Grave o som do seu animal para ver o histórico de classificações aqui.",
-              )
-              .replace(
-                "Tap for a single 3-second recording",
-                "Record your pet's sound to see classification history here.",
-              )}
+          ? (language === "pt" ? "Tente ajustar os filtros para encontrar registos." : "Try adjusting the filters to find records.")
+          : (language === "pt" ? "Grave o som do seu animal para ver o histórico de classificações aqui." : "Record your pet's sound to see classification history here.")}
       </p>
       {!filtered && (
         <Link href="/capturar">

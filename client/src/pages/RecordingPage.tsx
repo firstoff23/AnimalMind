@@ -76,6 +76,42 @@ interface RecentEvent {
 }
 
 // ─── Result Card ─────────────────────────────────────────────────────────────
+function buildSummaryPhrase(
+  state: EmotionalState,
+  confidence: number,
+  language: string,
+  t: (key: any) => string,
+  animalName?: string | null
+): string {
+  const stateStr = (t(`states.${state}` as any) || STATE_LABELS[state]).toLowerCase();
+  
+  if (language === "pt") {
+    if (confidence >= 0.75) {
+      return animalName 
+        ? `${animalName} parece claramente ${stateStr}.` 
+        : `Parece claramente que está ${stateStr}.`;
+    }
+    if (confidence >= 0.50) {
+      return animalName 
+        ? `Há alguns sinais de que ${animalName} está ${stateStr}.` 
+        : `Parece que há alguns sinais de que está ${stateStr}.`;
+    }
+    return `É difícil ter a certeza, mas pode haver sinais de ${stateStr}.`;
+  }
+
+  if (confidence >= 0.75) {
+    return animalName
+      ? `${animalName} clearly seems ${stateStr}.`
+      : `Clearly seems to be ${stateStr}.`;
+  }
+  if (confidence >= 0.50) {
+    return animalName
+      ? `There are some signs that ${animalName} is ${stateStr}.`
+      : `There seems to be some signs of being ${stateStr}.`;
+  }
+  return `It's hard to be sure, but there might be signs of ${stateStr}.`;
+}
+
 function ResultCard({
   result,
   onFeedback,
@@ -125,7 +161,7 @@ function ResultCard({
       });
     },
     onError: (err: any) => {
-      toast.error("Erro ao guardar feedback: " + err.message);
+      toast.error((language === "pt" ? "Erro ao guardar feedback: " : "Error saving feedback: ") + err.message);
     },
   });
 
@@ -218,21 +254,15 @@ function ResultCard({
         state={result.state}
       />
 
-      <div className="text-center mt-0">
-        <p className="text-[11px] text-muted-foreground/70 uppercase tracking-widest font-medium">
-          AI-assisted second opinion, not a diagnosis
+      <div className="text-center mt-2 px-4">
+        <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+          {buildSummaryPhrase(result.state, result.confidence, language, t, activeAnimal?.name)}
         </p>
-      </div>
-
-      <div className="flex justify-center mt-2">
-        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide opacity-50">
-          {result.model_used}
-        </Badge>
       </div>
 
       <div className="space-y-2 pt-2">
         <p className="text-sm font-medium text-center text-foreground/90">
-          {language === "pt" ? "Fez sentido?" : "Did this make sense?"}
+          {language === "pt" ? "Concorda com esta leitura?" : "Do you agree with this reading?"}
         </p>
         <div className="flex gap-3">
           <Button
@@ -267,27 +297,29 @@ function ResultCard({
           onClick={() => setShowCorrectionForm(!showCorrectionForm)}
         >
           <Sparkles size={14} />
-          {showCorrectionForm ? "Ocultar Correção" : "Confirmar / Corrigir Detalhes"}
+          {showCorrectionForm 
+            ? (language === "pt" ? "Ocultar Correção" : "Hide Correction") 
+            : (language === "pt" ? "Confirmar / Corrigir Detalhes" : "Confirm / Correct Details")}
         </Button>
 
         {showCorrectionForm && (
           <form onSubmit={handleSaveFeedback} className="space-y-3 p-3 rounded-xl bg-secondary/20 border border-border">
             <div className="space-y-1">
               <label htmlFor="feedback-comment-input" className="text-xs font-semibold text-muted-foreground block">
-                Observações Contextuais (Opcional)
+                {language === "pt" ? "Observações Contextuais (Opcional)" : "Contextual Notes (Optional)"}
               </label>
               <textarea
                 id="feedback-comment-input"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Ex: Estava a chover, próximo da hora da refeição..."
+                placeholder={language === "pt" ? "Ex: Estava a chover, próximo da hora da refeição..." : "Ex: It was raining, close to mealtime..."}
                 className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-[60px] resize-none"
               />
             </div>
 
             <div className="space-y-1">
               <label htmlFor="confirmed-state-select" className="text-xs font-semibold text-muted-foreground block">
-                Confirmar/Corrigir Estado Emocional
+                {language === "pt" ? "Como descreveria o estado real?" : "How would you describe it?"}
               </label>
               <select
                 id="confirmed-state-select"
@@ -295,12 +327,11 @@ function ResultCard({
                 onChange={(e) => setConfirmedState(e.target.value as EmotionalState)}
                 className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
               >
-                <option value="relaxed">Relaxado</option>
-                <option value="distress">Angústia</option>
-                <option value="attention">Atenção</option>
-                <option value="excitement">Excitação</option>
-                <option value="hunger">Fome</option>
-                <option value="alert">Alerta</option>
+                {Object.entries(STATE_LABELS).map(([val, label]) => (
+                  <option key={val} value={val}>
+                    {t(`states.${val}` as any) || label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -310,7 +341,9 @@ function ResultCard({
               className="w-full text-xs font-semibold h-8 rounded-xl"
               disabled={saveFeedback.isPending}
             >
-              {saveFeedback.isPending ? "A guardar..." : "Submeter Feedback"}
+              {saveFeedback.isPending 
+                ? (language === "pt" ? "A guardar..." : "Saving...") 
+                : (language === "pt" ? "Submeter Feedback" : "Submit Feedback")}
             </Button>
           </form>
         )}
