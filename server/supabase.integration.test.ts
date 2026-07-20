@@ -17,6 +17,73 @@ describe("Supabase Integration", () => {
       // Quick connectivity check — if key is invalid this returns an error
       const { error } = await supabase.from("users").select("id").limit(1);
       credentialsValid = !error;
+
+      if (credentialsValid) {
+        // Idempotent Seed for "demo-user-001"
+        const demoUserOpenId = "demo-user-001";
+        
+        // 1. Ensure user exists
+        await upsertUser({
+          openId: demoUserOpenId,
+          name: "Demo User",
+          email: "demo@animalmind.local",
+        } as any);
+
+        const { data: user } = await supabase
+          .from("users")
+          .select("id")
+          .eq("open_id", demoUserOpenId)
+          .single();
+
+        if (user) {
+          const userId = user.id;
+
+          // 2. We don't delete previous test data because Vitest runs in parallel 
+          // and other tests (like baseline.test.ts) rely on this demo user.
+
+          // 3. Ensure Animals
+          const { data: existingAnimals } = await supabase.from("animals").select("id").eq("user_id", userId);
+          let animalId = existingAnimals?.[0]?.id;
+          if (!existingAnimals || existingAnimals.length < 2) {
+            const { data: newAnimals, error: errA } = await supabase.from("animals").insert([
+              { user_id: userId, name: "Bobi", species: "dog" },
+              { user_id: userId, name: "Mimi", species: "cat" },
+            ]).select();
+            if (errA) console.error("Error inserting animals:", errA);
+            animalId = newAnimals?.[0]?.id || animalId;
+          }
+
+          // 4. Ensure Classification Event
+          if (animalId) {
+            const { data: existingEvents } = await supabase.from("classification_events").select("id").eq("user_id", userId);
+            if (!existingEvents || existingEvents.length === 0) {
+              const { error: errE } = await supabase.from("classification_events").insert([
+                {
+                  user_id: userId,
+                  animal_id: animalId,
+                  state: "relaxed",
+                  confidence: 0.95,
+                  model_used: "yamnet",
+                },
+              ]);
+              if (errE) console.error("Error inserting event:", errE);
+            }
+          }
+
+          // 5. Ensure Settings
+          const { data: existingSettings } = await supabase.from("settings").select("id").eq("user_id", userId);
+          if (!existingSettings || existingSettings.length === 0) {
+            const { error: errS } = await supabase.from("settings").insert([
+              {
+                user_id: userId,
+                notifications_enabled: true,
+                alert_sensitivity: 0.8,
+              },
+            ]);
+            if (errS) console.error("Error inserting settings:", errS);
+          }
+        }
+      }
     } catch {
       credentialsValid = false;
     }
