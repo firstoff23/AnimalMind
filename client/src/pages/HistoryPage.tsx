@@ -1,6 +1,7 @@
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { jsPDF } from "jspdf";
 import {
+  AlertCircle,
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
@@ -10,6 +11,7 @@ import {
   Loader2,
   Mic,
   PawPrint,
+  RefreshCw,
   Search,
   ThumbsDown,
   ThumbsUp,
@@ -1346,11 +1348,31 @@ export default function HistoryPage() {
               ))}
             </div>
           ) : queryError ? (
-            <div className="py-10 px-6 text-center space-y-3 bg-card border border-border rounded-2xl">
-              <p className="text-sm text-foreground font-semibold">Erro ao carregar histórico.</p>
-              <button onClick={() => refetchData()} className="bg-primary px-3 py-1 text-primary-foreground rounded-xl text-sm">
-                Tentar novamente
-              </button>
+            <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5 space-y-4 shadow-lg text-left">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                  <AlertCircle size={22} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-rose-400">
+                    {language === "pt" ? "Erro ao carregar histórico" : "Error loading history"}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                    {language === "pt" ? "Falha ao comunicar com o servidor." : "Failed to communicate with the server."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => refetchData()}
+                  className="text-xs h-9 border-white/10 text-foreground hover:bg-white/5"
+                >
+                  <RefreshCw size={12} className="mr-1.5" />
+                  {language === "pt" ? "Tentar novamente" : "Try again"}
+                </Button>
+              </div>
             </div>
           ) : events.length === 0 ? (
             <div className="bg-card border border-border rounded-2xl">

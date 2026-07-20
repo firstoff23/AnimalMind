@@ -17,8 +17,9 @@ import {
   Trash2,
   Volume2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
 import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +85,8 @@ function ResultCard({
   onFeedback: (feedback: "correct" | "incorrect") => void;
   activeAnimal: ActiveAnimal | null | undefined;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const [, setLocation] = useLocation();
   const [feedbackSent, setFeedbackSent] = useState<
     "correct" | "incorrect" | null
   >(null);
@@ -230,7 +232,7 @@ function ResultCard({
 
       <div className="space-y-2 pt-2">
         <p className="text-sm font-medium text-center text-foreground/90">
-          Did this make sense?
+          {language === "pt" ? "Fez sentido?" : "Did this make sense?"}
         </p>
         <div className="flex gap-3">
           <Button
@@ -241,7 +243,7 @@ function ResultCard({
             disabled={feedbackSent !== null}
           >
             <ThumbsUp size={16} />
-            Yes
+            {language === "pt" ? "Sim" : "Yes"}
           </Button>
           <Button
             variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
@@ -251,7 +253,7 @@ function ResultCard({
             disabled={feedbackSent !== null}
           >
             <ThumbsDown size={16} />
-            No
+            {language === "pt" ? "Não" : "No"}
           </Button>
         </div>
       </div>
@@ -314,52 +316,66 @@ function ResultCard({
         )}
       </div>
 
-      <div className="space-y-2 pt-3 border-t border-border">
-        <label
-          htmlFor="recording-observation-note"
-          className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block"
-        >
-          {t("recordingPage.observationNote")}
+      <div className="space-y-3 pt-3 border-t border-border">
+        <label className="text-xs font-semibold text-muted-foreground block text-center">
+          {language === "pt" ? "Adicionar contexto rápido" : "Add quick context"}
         </label>
-        <div className="flex gap-2">
-          <textarea
-            id="recording-observation-note"
-            name="recording-observation-note"
-            autoComplete="off"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={t("recordingPage.observationPlaceholder")}
-            className="flex-1 min-h-[56px] max-h-24 bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none transition-colors"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={toggleListening}
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300",
-              isListening
-                ? "bg-cyan-500 hover:bg-cyan-600 border-0 text-white animate-pulse shadow-md shadow-cyan-500/20"
-                : "hover:text-cyan-400 hover:border-cyan-500/20",
-            )}
-            title={t("recordingPage.dictateNote")}
-            aria-label={t("recordingPage.dictateNote")}
-          >
-            <Mic size={16} className={cn(isListening && "scale-110")} />
-          </Button>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {[
+            { id: "Playing", en: "Playing", pt: "A brincar" },
+            { id: "Alone", en: "Alone", pt: "Sozinho" },
+            { id: "Near the door", en: "Near the door", pt: "À porta" },
+            { id: "Mealtime", en: "Mealtime", pt: "Hora da refeição" }
+          ].map((tag) => {
+            const isSelected = notes.includes(tag.id);
+            const label = language === "pt" ? tag.pt : tag.en;
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => {
+                  if (isSelected) {
+                    setNotes(notes.replace(tag.id, "").replace("  ", " ").trim());
+                  } else {
+                    setNotes(notes ? `${notes} ${tag.id}` : tag.id);
+                  }
+                }}
+                className={cn(
+                  "text-[11px] px-3 py-1.5 rounded-full font-medium transition-all",
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border"
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-        {notes.trim().length > 0 && (
+        
+        {notes.length > 0 && (
           <Button
             size="sm"
             onClick={handleSaveNotes}
             disabled={updateNotesMutation.isPending}
-            className="w-full text-xs font-semibold h-8 rounded-xl transition-all"
+            className="w-full text-xs font-semibold h-9 rounded-xl transition-all mt-2"
           >
             {updateNotesMutation.isPending
               ? t("recordingPage.saving")
               : t("recordingPage.saveNote")}
           </Button>
         )}
+
+        <div className="pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/history")}
+            className="w-full text-xs text-muted-foreground hover:text-foreground mt-2 font-medium"
+          >
+            {language === "pt" ? "Ver no diário" : "View in timeline"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -498,36 +514,7 @@ export default function RecordingPage() {
   const [spectralEnergy, setSpectralEnergy] = useState<number>(0);
   const [tonalBrightness, setTonalBrightness] = useState<number>(0);
   
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const tagCategories = [
-    {
-      label: language === "pt" ? "Período do Dia" : "Time of Day",
-      tags: [
-        { id: "manha", label_pt: "Manhã", label_en: "Morning" },
-        { id: "tarde", label_pt: "Tarde", label_en: "Afternoon" },
-        { id: "noite", label_pt: "Noite", label_en: "Night" },
-      ],
-    },
-    {
-      label: language === "pt" ? "Ambiente" : "Environment",
-      tags: [
-        { id: "silencioso", label_pt: "Silencioso", label_en: "Silent" },
-        { id: "ruido_alto", label_pt: "Ruído Alto", label_en: "Loud Noise" },
-        { id: "rua", label_pt: "Rua", label_en: "Street" },
-        { id: "casa", label_pt: "Casa", label_en: "Home" },
-      ],
-    },
-    {
-      label: language === "pt" ? "Atividade" : "Activity",
-      tags: [
-        { id: "brincar", label_pt: "Brincar", label_en: "Playing" },
-        { id: "comer", label_pt: "Comer", label_en: "Eating" },
-        { id: "dormir", label_pt: "Dormir", label_en: "Sleeping" },
-        { id: "passeio", label_pt: "Passeio", label_en: "Walking" },
-      ],
-    },
-  ];
 
   const utils = trpc.useUtils();
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
@@ -643,7 +630,7 @@ export default function RecordingPage() {
         confidence: res.confidence,
         cached: res.cached,
         offlineMode,
-        contextTags: selectedTags,
+        contextTags: [],
       },
     });
 
@@ -737,7 +724,7 @@ export default function RecordingPage() {
         properties: {
           error: err.message,
           fallbackFailed: true,
-          contextTags: selectedTags,
+          contextTags: [],
         },
       });
 
@@ -994,7 +981,7 @@ export default function RecordingPage() {
             pitch: dominantFreq,
             spectralEnergy,
             tonalBrightness,
-            contextTags: selectedTags,
+            contextTags: [],
           });
         };
         reader.readAsDataURL(blob);
@@ -1018,7 +1005,7 @@ export default function RecordingPage() {
     setResult(null);
     setUploadProgress(0);
     setErrorMessage(null);
-    setSelectedTags([]);
+
     setRecordState("idle");
     startRecordingCycle();
   };
@@ -1393,10 +1380,10 @@ export default function RecordingPage() {
                         ? "Gravação acústica"
                         : "Acoustic recording"}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {language === "pt"
-                        ? "Toque para 3 segundos ou mantenha para auto"
-                        : "Tap for 3 seconds or hold for auto"}
+                        ? "Toque para gravar. O Pawra precisa de acesso ao microfone."
+                        : "Tap to record. Pawra needs microphone access."}
                     </p>
                   </div>
                   <Badge
@@ -1553,58 +1540,7 @@ export default function RecordingPage() {
               </div>
             </div>
 
-            {/* Context Tags Selection */}
-            {recordState === "idle" && (
-              <div className="rounded-[1.75rem] border border-white/5 bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)] space-y-4 animate-fade-in text-left">
-                <div className="space-y-1">
-                  <h3 className="text-xs font-semibold uppercase text-emerald-300">
-                    {language === "pt" ? "Contexto do Comportamento" : "Behavioral Context"}
-                  </h3>
-                  <p className="text-[10px] text-muted-foreground leading-normal">
-                    {language === "pt"
-                      ? "Selecione as tags de contexto para enriquecer a análise"
-                      : "Select context tags to enrich the analysis"}
-                  </p>
-                </div>
-                
-                <div className="space-y-3.5">
-                  {tagCategories.map((cat) => (
-                    <div key={cat.label} className="space-y-1.5">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                        {cat.label}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {cat.tags.map((tag) => {
-                          const isSelected = selectedTags.includes(tag.id);
-                          const label = language === "pt" ? tag.label_pt : tag.label_en;
-                          return (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              className={cn(
-                                "text-[10px] px-2.5 py-1 rounded-full font-semibold border transition-all duration-200 select-none",
-                                isSelected
-                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.1)]"
-                                  : "border-white/5 bg-white/2 hover:bg-white/5 text-muted-foreground"
-                              )}
-                              onClick={() => {
-                                if (isSelected) {
-                                  setSelectedTags(selectedTags.filter((t) => t !== tag.id));
-                                } else {
-                                  setSelectedTags([...selectedTags, tag.id]);
-                                }
-                              }}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Context Tags Selection (Removed for simpler flow) */}
 
             {/* Classification Result card */}
             {result && recordState === "success" && (
