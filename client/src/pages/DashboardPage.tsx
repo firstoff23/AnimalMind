@@ -34,6 +34,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMood } from "@/contexts/MoodContext";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -42,7 +49,7 @@ import { CACHE_KEYS, getCachedData, setCachedData } from "@/lib/offlineCache";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import type { EmotionalState } from "../../../shared/types";
-import { STATE_COLORS } from "../../../shared/types";
+import { STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
 
 const STATES: EmotionalState[] = [
   "distress",
@@ -178,6 +185,9 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const { mood } = useMood();
   const { isAuthenticated } = useAuth();
+  
+  const [dashboardDays, setDashboardDays] = useState<7 | 30 | 90>(7);
+  const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const {
     data: animals = [],
     isLoading: animalsLoading,
@@ -212,6 +222,12 @@ export default function DashboardPage() {
     animals && animals.length > 0 ? animals : cachedAnimals;
   const activeAnimal =
     displayAnimals.find((a) => a.isActive) ?? displayAnimals[0];
+
+  const dashboardAnimalId = selectedAnimalId || activeAnimal?.id;
+  const { data: dashboardStats } = trpc.events.statsForAnimal.useQuery(
+    { animalId: dashboardAnimalId as number, days: dashboardDays },
+    { enabled: !!dashboardAnimalId }
+  );
 
   const utils = trpc.useUtils();
   const { data: invitations = [], refetch: refetchInvitations } =
@@ -287,6 +303,58 @@ export default function DashboardPage() {
 
   const { pullDistance, isRefreshing, touchHandlers } =
     usePullToRefresh(handleRefresh);
+
+  const dashboardChartData = useMemo(() => {
+    if (!dashboardStats?.dailyActivity) return [];
+    
+    return dashboardStats.dailyActivity.map((day) => {
+      // Find dominant state
+      let dominantState = "relaxed" as EmotionalState;
+      let maxCount = -1;
+      
+      STATES.forEach((state) => {
+        const count = Number((day as any)[state] || 0);
+        if (count > maxCount) {
+          maxCount = count;
+          dominantState = state;
+        }
+      });
+      
+      // format date
+      const d = new Date(day.date);
+      const dateLabel = d.toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
+        day: "2-digit",
+        month: "2-digit"
+      });
+      
+      return {
+        label: dateLabel,
+        confidence: day.avgConfidence,
+        state: dominantState,
+        emoji: STATE_EMOJIS[dominantState],
+      };
+    });
+  }, [dashboardStats, language]);
+
+  const dashboardNarrative = useMemo(() => {
+    if (!dashboardStats?.stateDistribution || dashboardStats.totalCount === 0) return null;
+    
+    const entries = Object.entries(dashboardStats.stateDistribution);
+    if (entries.length === 0) return null;
+    
+    const [dominantState] = entries.sort((a, b) => b[1] - a[1])[0];
+    const animalName = displayAnimals.find(a => a.id === dashboardAnimalId)?.name || (language === "pt" ? "O teu animal" : "Your animal");
+    
+    const stateText = t(`states.${dominantState as EmotionalState}`).toLowerCase();
+    
+    if (language === "pt") {
+      const period = dashboardDays === 7 ? "Esta semana" : dashboardDays === 30 ? "Neste mês" : "Nestes 3 meses";
+      return `${period}, ${animalName} esteve maioritariamente ${stateText}.`;
+    } else {
+      const period = dashboardDays === 7 ? "This week" : dashboardDays === 30 ? "This month" : "These 3 months";
+      return `${period}, ${animalName} was mostly ${stateText}.`;
+    }
+  }, [dashboardStats, dashboardAnimalId, displayAnimals, dashboardDays, t, language]);
 
   const dominantBelief = useMemo(() => {
     if (!displayBeliefState) return null;
@@ -863,6 +931,121 @@ export default function DashboardPage() {
                 {t("dashboardPage.statsAnimals")}
               </span>
             </SpotlightCard>
+          </motion.div>
+        )}
+
+        {/* NOVA SECÇÃO: Dashboard de Bem-estar */}
+        {activeAnimal && displayAnimals.length > 0 && (
+          <motion.div variants={itemVariants} className="space-y-4 pt-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-foreground">
+                  {language === "pt" ? "Evolução Emocional" : "Emotional Trends"}
+                </h2>
+                
+                {/* Seletor de período */}
+                <div className="flex bg-slate-900/50 p-1 rounded-full border border-slate-800">
+                  {[7, 30, 90].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDashboardDays(d as 7 | 30 | 90)}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-semibold transition-all tap-highlight-none",
+                        dashboardDays === d
+                          ? "bg-[var(--color-primary)] text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Seletor de animal (apenas se > 1 animal) */}
+              {displayAnimals.length > 1 && (
+                <Select 
+                  value={String(dashboardAnimalId)} 
+                  onValueChange={(val) => setSelectedAnimalId(Number(val))}
+                >
+                  <SelectTrigger className="h-9 rounded-xl border-slate-800 bg-slate-900/30 text-xs font-semibold focus:ring-0 focus:ring-offset-0">
+                    <SelectValue placeholder={language === "pt" ? "Selecionar animal" : "Select animal"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-800 bg-slate-900">
+                    {displayAnimals.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)} className="text-xs font-semibold">
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            <div className="bg-[var(--color-surface)] border border-border/70 rounded-[1.75rem] p-5 shadow-[var(--shadow-sm)]">
+              {dashboardChartData.length >= 2 ? (
+                <div className="space-y-4">
+                  <div className="h-44 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={dashboardChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis 
+                          dataKey="label" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                          dy={10}
+                        />
+                        <YAxis 
+                          domain={[0, 1]}
+                          hide={true}
+                        />
+                        <Tooltip 
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-card border border-border rounded-xl px-3 py-2 text-xs shadow-xl flex items-center gap-2">
+                                <span>{data.emoji}</span>
+                                <div>
+                                  <p className="font-semibold text-foreground">{t(`states.${data.state as EmotionalState}`)}</p>
+                                  <p className="text-[10px] text-muted-foreground">{data.label}</p>
+                                </div>
+                              </div>
+                            );
+                          }}
+                          cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="confidence"
+                          stroke="var(--color-primary)"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, fill: "var(--color-primary)", stroke: "var(--background)", strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {dashboardNarrative && (
+                    <div className="pt-3 border-t border-border/50 text-center">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {dashboardNarrative}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 flex flex-col items-center justify-center text-center gap-2">
+                  <HeartPulse className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
+                    {language === "pt" 
+                      ? "Ainda não há dados suficientes para mostrar a evolução. Faz mais gravações!" 
+                      : "Not enough data yet. Keep recording!"}
+                  </p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
