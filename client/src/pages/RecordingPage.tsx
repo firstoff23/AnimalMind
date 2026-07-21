@@ -21,8 +21,17 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
+import { ContextTagsSheet } from "@/components/ContextTagsSheet";
 import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GlowingButton } from "@/components/ui/GlowingButton";
 import { Progress } from "@/components/ui/progress";
@@ -126,6 +135,7 @@ function ResultCard({
   const [feedbackSent, setFeedbackSent] = useState<
     "correct" | "incorrect" | null
   >(null);
+  const [showContextTags, setShowContextTags] = useState(false);
   const [notes, setNotes] = useState("");
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -141,7 +151,13 @@ function ResultCard({
       utils.events.recent.invalidate();
     },
     onError: () => {
-      toast.error(t("recordingPage.noteSaveError"));
+      toast.error(t("common.error"));
+    },
+  });
+
+  const updateTagsMutation = trpc.events.updateTags.useMutation({
+    onSuccess: () => {
+      utils.events.recent.invalidate();
     },
   });
 
@@ -172,6 +188,7 @@ function ResultCard({
       eventName: "feedback_quick",
       properties: { type: f, eventId: result.eventId },
     });
+    setShowContextTags(true);
   };
 
   const toggleListening = () => {
@@ -257,6 +274,11 @@ function ResultCard({
       <div className="text-center mt-2 px-4">
         <p className="text-sm text-muted-foreground font-medium leading-relaxed">
           {buildSummaryPhrase(result.state, result.confidence, language, t, activeAnimal?.name)}
+        </p>
+        <p className="text-xs text-muted-foreground/60 text-center mt-1">
+          {language === "pt" 
+            ? "Isto é uma segunda opinião. Não substitui um veterinário." 
+            : "This is a second opinion. It does not replace a vet."}
         </p>
       </div>
 
@@ -410,6 +432,17 @@ function ResultCard({
           </Button>
         </div>
       </div>
+
+      <ContextTagsSheet
+        open={showContextTags}
+        onOpenChange={setShowContextTags}
+        onSave={(tags) => {
+          if (tags.length > 0 && result.eventId) {
+            updateTagsMutation.mutate({ eventId: result.eventId, tags });
+          }
+          setShowContextTags(false);
+        }}
+      />
     </div>
   );
 }
@@ -528,6 +561,7 @@ export default function RecordingPage() {
   } = useLiveAudioStream();
 
   const [isAutoMode, setIsAutoMode] = useState(false);
+  const [showMicPrompt, setShowMicPrompt] = useState(false);
   const [autoClassificationCount, setAutoClassificationCount] = useState(0);
   const [lastAutoResult, setLastAutoResult] = useState<ClassifyResult | null>(
     null,
@@ -569,7 +603,7 @@ export default function RecordingPage() {
     setRecording(recordState === "recording");
   }, [recordState, setRecording]);
 
-  const startRecordingCycle = async () => {
+  const executeRecording = async () => {
     setRecordState("requesting");
     setErrorMessage(null);
     await requestNotificationPermission();
@@ -598,6 +632,21 @@ export default function RecordingPage() {
     }
     triggerStartRecording();
     setRecordState("recording");
+  };
+
+  const startRecordingCycle = async () => {
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        const perm = await navigator.permissions.query({ name: "microphone" as PermissionName });
+        if (perm.state === "prompt") {
+          setShowMicPrompt(true);
+          return;
+        }
+      }
+    } catch (e) {
+      // Ignora erro de suporte
+    }
+    await executeRecording();
   };
 
   const clearAutoRecordingTimer = () => {

@@ -30,6 +30,7 @@ import { Link } from "wouter";
 import { AlertBanner } from "@/components/AlertBanner";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { TrendCard } from "@/components/TrendCard";
+import { VetReportButton } from "@/components/VetReportButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1045,6 +1046,9 @@ export default function DashboardPage() {
                   </p>
                 </div>
               )}
+            </div>
+            <div className="flex justify-end pt-2 px-1">
+              <VetReportButton stats={dashboardStats} animalName={displayAnimals.find(a => a.id === dashboardAnimalId)?.name || ""} />
             </div>
           </motion.div>
         )}

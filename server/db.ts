@@ -737,6 +737,20 @@ export async function updateEventNotes(
   return noteText;
 }
 
+export async function updateEventContextTags(
+  eventId: number,
+  tags: string[],
+): Promise<string[]> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("classification_events")
+    .update({ context_tags: tags })
+    .eq("id", eventId);
+
+  if (error) throw error;
+  return tags;
+}
+
 // ─── Event Audio operations (Supabase Storage + classification_events.audio_url) ──────
 
 export async function getEventAudio(eventId: number): Promise<string> {

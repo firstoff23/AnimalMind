@@ -13,98 +13,70 @@ interface ConfidenceRingProps {
   state: EmotionalState;
 }
 
-function getConfidenceColor(percent: number) {
-  if (percent >= 80) return "#10b981";
-  if (percent >= 60) return "#eab308";
-  return "#ef4444";
-}
-
-function toPercent(confidence: number) {
-  return Math.min(100, Math.max(0, Math.round(confidence * 100)));
-}
-
-function getConfidenceLevelText(percent: number) {
-  if (percent >= 80) return "High";
-  if (percent >= 60) return "Medium";
-  return "Low";
-}
-
-function getContextualPrefix(percent: number) {
-  if (percent >= 80) return "Seems like";
-  if (percent >= 60) return "May be feeling";
-  return "Might be";
-}
-
 export function ConfidenceRing({
   confidence,
   emoji,
   state,
 }: ConfidenceRingProps) {
-  const { t } = useLanguage();
-  const percent = toPercent(confidence);
-  const color = getConfidenceColor(percent);
-  const radius = 45;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const { t, language } = useLanguage();
+  const isPt = language === "pt";
+  
+  // Confidences are 0-1
+  let bars = 1;
+  let levelEn = "Low";
+  let levelPt = "Baixa";
+  let color = "bg-rose-500";
+  let textColor = "text-rose-500";
+  
+  if (confidence >= 0.75) {
+    bars = 3;
+    levelEn = "High";
+    levelPt = "Alta";
+    color = "bg-emerald-500";
+    textColor = "text-emerald-500";
+  } else if (confidence >= 0.5) {
+    bars = 2;
+    levelEn = "Medium";
+    levelPt = "Média";
+    color = "bg-yellow-500";
+    textColor = "text-yellow-500";
+  }
+
+  const prefixEn = confidence >= 0.75 ? "Seems like" : confidence >= 0.5 ? "May be feeling" : "Might be";
+  const prefixPt = confidence >= 0.75 ? "Parece estar" : confidence >= 0.5 ? "Talvez esteja" : "Poderá estar";
+  const prefix = isPt ? prefixPt : prefixEn;
 
   return (
     <div className="flex flex-col items-center gap-4">
       <div
-        className="relative flex items-center justify-center"
+        className="relative flex flex-col items-center justify-center py-6 w-full max-w-[12rem] bg-secondary/20 rounded-full drop-shadow-sm border border-border"
         role="progressbar"
-        aria-label={`Confiança da classificação: ${percent}%`}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
+        aria-label={`Confiança: ${isPt ? levelPt : levelEn}`}
       >
-        <svg
-          className="-rotate-90 drop-shadow-sm"
-          viewBox="0 0 112 112"
+        <span
+          className="leading-none drop-shadow-sm mb-3"
+          style={{ fontSize: "3rem" }}
           aria-hidden="true"
-          style={{ width: "8rem", height: "8rem" }}
         >
-          <circle
-            className="text-secondary"
-            strokeWidth="8"
-            stroke="currentColor"
-            fill="transparent"
-            r={radius}
-            cx="56"
-            cy="56"
-          />
-          <circle
-            className="transition-[stroke-dashoffset,stroke] duration-700 ease-out"
-            strokeWidth="8"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            stroke={color}
-            fill="transparent"
-            r={radius}
-            cx="56"
-            cy="56"
-          />
-        </svg>
-        <div className="absolute flex flex-col items-center justify-center gap-0 animate-in zoom-in duration-500">
-          <span
-            className="font-bold tracking-normal uppercase text-sm mt-1"
-            style={{ color }}
-          >
-            {getConfidenceLevelText(percent)}
-          </span>
-          <span
-            className="leading-none drop-shadow-sm mt-1"
-            style={{ fontSize: "2.25rem" }}
-            aria-hidden="true"
-          >
-            {emoji}
-          </span>
+          {emoji}
+        </span>
+        
+        <div className="flex gap-1.5 mb-2">
+          <div className={`w-4 h-1.5 rounded-full ${bars >= 1 ? color : 'bg-muted/50'}`} />
+          <div className={`w-4 h-1.5 rounded-full ${bars >= 2 ? color : 'bg-muted/50'}`} />
+          <div className={`w-4 h-1.5 rounded-full ${bars >= 3 ? color : 'bg-muted/50'}`} />
         </div>
+        
+        <span
+          className={`font-bold tracking-normal uppercase text-xs ${textColor}`}
+        >
+          {isPt ? levelPt : levelEn}
+        </span>
       </div>
 
       <div className="flex flex-col items-center gap-0 text-center">
         <span className="text-sm font-medium text-muted-foreground">
-          {getContextualPrefix(percent)}
+          {prefix}
         </span>
         <span
           className="text-2xl font-bold tracking-normal mt-1"

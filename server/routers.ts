@@ -69,6 +69,7 @@ import {
   updateEventAudio,
   updateEventFeedback,
   updateEventNotes,
+  updateEventContextTags,
   updateUser,
   uploadAudioToSupabase,
   upsertSettings,
@@ -1658,6 +1659,18 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const notes = await updateEventNotes(input.eventId, input.notes);
         return { success: true, notes };
+      }),
+
+    updateTags: protectedProcedure
+      .input(
+        z.object({
+          eventId: z.number(),
+          tags: z.array(z.string()),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const tags = await updateEventContextTags(input.eventId, input.tags);
+        return { success: true, tags };
       }),
 
     listForAnimal: protectedProcedure
