@@ -17,12 +17,10 @@ from services.breed_knowledge import get_breed_info
 
 
 def test_quality_assessment_pass():
-    # Generate mock bright image bytes
     from PIL import Image
     import io
 
     img = Image.new("RGB", (200, 200), color=(128, 128, 128))
-    # Draw noise to ensure Laplacian variance
     import random
     pixels = img.load()
     for x in range(200):
@@ -43,10 +41,13 @@ def test_breed_knowledge_lookup():
     assert info is not None
     assert info.species == "dog"
     assert "Amigável" in info.temperament
+    assert info.life_expectancy == "10-12 anos"
+    assert info.average_weight == "25-36 kg"
 
     cat_info = get_breed_info("Persian", species="cat")
     assert cat_info is not None
     assert cat_info.species == "cat"
+    assert cat_info.life_expectancy == "12-17 anos"
 
 
 def test_schemas_validation():
@@ -57,6 +58,11 @@ def test_schemas_validation():
         prediction="Labrador Retriever",
         confidence=0.95,
         is_correct=True,
+        image_path="feedback_images/abc123.jpg",
     )
     assert req.prediction == "Labrador Retriever"
     assert req.confidence == 0.95
+    assert req.image_path == "feedback_images/abc123.jpg"
+
+    res = FeedbackResponse(status="success", id="uuid-123", image_path="feedback_images/abc123.jpg")
+    assert res.image_path == "feedback_images/abc123.jpg"

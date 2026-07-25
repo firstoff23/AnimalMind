@@ -13,8 +13,10 @@ class FeedbackRequest(BaseModel):
     user_confidence: Optional[int] = Field(default=None, ge=1, le=5, example=4)
     feedback_text: Optional[str] = Field(default=None, example="O cão é dourado, não preto!")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, example={"device": "iPhone"})
+    image_path: Optional[str] = Field(default=None, example="feedback_images/abc123.jpg")
 
 
 class FeedbackResponse(BaseModel):
     status: str = "success"
     id: str
+    image_path: Optional[str] = None

@@ -58,6 +58,8 @@ server/belief_states.json
 server/postures.json
 server/vet_shares.json
 server/vet_clinical_notes.json
+ml_backend/feedback_images/
+ml_backend/feedback.db
 server/families.json
 server/notes.json
 server/audio.json
