@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/useLanguage";
-import { ArrowLeft, Filter, Check, CheckCircle, ClipboardList } from "lucide-react";
+import { ArrowLeft, Filter, Check, CheckCircle, ClipboardList, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -334,6 +334,9 @@ export default function FeedbackAuditPage() {
                     </p>
                     {item.comment && <p className="italic">"{item.comment}"</p>}
                     <p>{item.created_at ? formatDate(item.created_at) : "—"}</p>
+                    {item.audioUrl && (
+                      <audio controls src={item.audioUrl} className="w-full h-8 mt-2" />
+                    )}
                   </div>
 
                   {!item.reviewed_by ? (
@@ -348,8 +351,17 @@ export default function FeedbackAuditPage() {
                       }}
                       disabled={reviewMutation.isPending}
                     >
-                      <Check size={14} />
-                      Rever
+                      {reviewMutation.isPending && reviewMutation.variables?.feedbackId === item.id ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          <span>A rever...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check size={14} />
+                          <span>Rever</span>
+                        </>
+                      )}
                     </button>
                   ) : (
                     <p className="text-muted-foreground/60 text-[10px] font-medium text-right">
@@ -373,6 +385,7 @@ export default function FeedbackAuditPage() {
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Estado Confirmado</th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground text-right">Confiança</th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Observações</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Áudio</th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Data</th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Status</th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Ações</th>
@@ -418,6 +431,13 @@ export default function FeedbackAuditPage() {
                           <span className="text-muted-foreground/40">—</span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-xs">
+                        {item.audioUrl ? (
+                          <audio controls src={item.audioUrl} className="h-8 w-44" />
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         {item.created_at ? formatDate(item.created_at) : "—"}
                       </td>
@@ -446,8 +466,17 @@ export default function FeedbackAuditPage() {
                             }}
                             disabled={reviewMutation.isPending}
                           >
-                            <Check size={10} />
-                            Rever
+                            {reviewMutation.isPending && reviewMutation.variables?.feedbackId === item.id ? (
+                              <>
+                                <Loader2 size={10} className="animate-spin" />
+                                <span>A rever...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check size={10} />
+                                <span>Rever</span>
+                              </>
+                            )}
                           </button>
                         ) : (
                           <span className="text-muted-foreground/60 text-[10px] font-medium">

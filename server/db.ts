@@ -4093,6 +4093,7 @@ export async function getFeedbackAnnotations(
       classification_events!inner (
         state,
         confidence,
+        audio_url,
         animals!inner (
           species,
           breed
@@ -4128,19 +4129,22 @@ export async function getFeedbackAnnotations(
   if (error) throw error;
 
   return {
-    items: (data || []).map((item: any) => ({
-      id: item.id,
-      confirmed_state: item.confirmed_state,
-      comment: item.comment,
-      reviewed_by: item.reviewed_by,
-      reviewed_at: item.reviewed_at,
-      created_at: item.created_at,
-      predicted_state: item.classification_events?.state || null,
-      confidence: item.classification_events?.confidence || null,
-      animal_type: item.classification_events?.animals?.species || null,
-      predicted_breed: item.classification_events?.animals?.breed || null,
-      confirmed_breed: null,
-    })),
+    items: await Promise.all(
+      (data || []).map(async (item: any) => ({
+        id: item.id,
+        confirmed_state: item.confirmed_state,
+        comment: item.comment,
+        reviewed_by: item.reviewed_by,
+        reviewed_at: item.reviewed_at,
+        created_at: item.created_at,
+        predicted_state: item.classification_events?.state || null,
+        confidence: item.classification_events?.confidence || null,
+        animal_type: item.classification_events?.animals?.species || null,
+        predicted_breed: item.classification_events?.animals?.breed || null,
+        confirmed_breed: null,
+        audioUrl: await getSignedAudioUrl(item.classification_events?.audio_url),
+      })),
+    ),
     total: count || 0,
   };
 }
