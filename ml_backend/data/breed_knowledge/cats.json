@@ -5,7 +5,9 @@
     "temperament": ["Calmo", "Docile", "Afetuoso", "Silencioso"],
     "description": "Gato elegante de pelagem longa e cauda exuberante, com temperamento calmo e sereno.",
     "exercise_needs": "Baixa (15-20 min/dia)",
-    "health_risks": ["Doença renal policística (PKD)", "Problemas respiratórios braquicefálicos", "Secreção ocular"]
+    "health_risks": ["Doença renal policística (PKD)", "Problemas respiratórios braquicefálicos", "Secreção ocular"],
+    "life_expectancy": "12-17 anos",
+    "average_weight": "3-5.5 kg"
   },
   "Maine Coon": {
     "species": "cat",
@@ -13,7 +15,9 @@
     "temperament": ["Gentil", "Brincalhão", "Sociável", "Inteligente"],
     "description": "Um dos maiores gatos domésticos do mundo, famoso pelo pelo denso e amor pela água.",
     "exercise_needs": "Moderada (30-45 min/dia)",
-    "health_risks": ["Cardiomiopatia hipertrófica (HCM)", "Displasia da anca", "Atrofia muscular espinhal"]
+    "health_risks": ["Cardiomiopatia hipertrófica (HCM)", "Displasia da anca", "Atrofia muscular espinhal"],
+    "life_expectancy": "12-15 anos",
+    "average_weight": "6-8.5 kg"
   },
   "Siamese": {
     "species": "cat",
@@ -21,7 +25,9 @@
     "temperament": ["Vocal", "Ativo", "Afetuoso", "Curioso"],
     "description": "Gato oriental esbelto com olhos azuis profundos e vocalização comunicativa distinta.",
     "exercise_needs": "Elevada (45+ min/dia)",
-    "health_risks": ["Amiloidose hepática", "Asma felina", "Doença dental", "Estrabismo"]
+    "health_risks": ["Amiloidose hepática", "Asma felina", "Doença dental", "Estrabismo"],
+    "life_expectancy": "15-20 anos",
+    "average_weight": "3.5-5 kg"
   },
   "Bengal": {
     "species": "cat",
@@ -29,7 +35,9 @@
     "temperament": ["Atlético", "Selvagem", "Ativo", "Inteligente"],
     "description": "Gato impressionante com pelagem leopardo manchada e energia inagotável.",
     "exercise_needs": "Muito Elevada (60+ min/dia)",
-    "health_risks": ["Deficiência de PK", "Atrofia progressiva de retina", "Cardiomiopatia hipertrófica"]
+    "health_risks": ["Deficiência de PK", "Atrofia progressiva de retina", "Cardiomiopatia hipertrófica"],
+    "life_expectancy": "12-16 anos",
+    "average_weight": "4.5-7 kg"
   },
   "Ragdoll": {
     "species": "cat",
@@ -37,7 +45,9 @@
     "temperament": ["Relaxado", "Carinhoso", "Manso", "Leal"],
     "description": "Gato de olhos azuis extremamente dócil que costuma relaxar os músculos quando segurado ao colo.",
     "exercise_needs": "Baixa a Moderada (20-30 min/dia)",
-    "health_risks": ["Cardiomiopatia hipertrófica", "Cálculos urinários"]
+    "health_risks": ["Cardiomiopatia hipertrófica", "Cálculos urinários"],
+    "life_expectancy": "12-15 anos",
+    "average_weight": "4.5-9 kg"
   },
   "Sphynx": {
     "species": "cat",
@@ -45,7 +55,9 @@
     "temperament": ["Extrovertido", "Brincalhão", "Afetuoso", "Curioso"],
     "description": "Gato sem pelos distinto pelo toque aveludado da pele e personalidade calorosa.",
     "exercise_needs": "Moderada a Elevada (35-50 min/dia)",
-    "health_risks": ["Sensibilidade ao frio/sol", "Urticária pigmentosa", "Cardiomiopatia hipertrófica"]
+    "health_risks": ["Sensibilidade ao frio/sol", "Urticária pigmentosa", "Cardiomiopatia hipertrófica"],
+    "life_expectancy": "12-14 anos",
+    "average_weight": "3.5-5 kg"
   },
   "British Shorthair": {
     "species": "cat",
@@ -53,7 +65,9 @@
     "temperament": ["Tranquilo", "Independente", "Leal", "Calmo"],
     "description": "Gato encorpado com bochechas redondas e pelagem densa tipo pelúcia.",
     "exercise_needs": "Moderada (20-30 min/dia)",
-    "health_risks": ["Obesidade", "Cardiomiopatia hipertrófica", "Hemofilia B"]
+    "health_risks": ["Obesidade", "Cardiomiopatia hipertrófica", "Hemofilia B"],
+    "life_expectancy": "12-17 anos",
+    "average_weight": "4-8 kg"
   },
   "Abyssinian": {
     "species": "cat",
@@ -61,6 +75,8 @@
     "temperament": ["Ativo", "Curioso", "Atlético", "Inteligente"],
     "description": "Gato ágil e elegante com pelagem 'ticked' que lembra um pequeno puma selvagem.",
     "exercise_needs": "Muito Elevada (60 min/dia)",
-    "health_risks": ["Deficiência de piruvato quinase", "Atrofia progressiva da retina", "Gengivite"]
+    "health_risks": ["Deficiência de piruvato quinase", "Atrofia progressiva da retina", "Gengivite"],
+    "life_expectancy": "14-15 anos",
+    "average_weight": "3.5-5 kg"
   }
 }

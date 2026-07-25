@@ -14,6 +14,8 @@ class BreedInfo(BaseModel):
     description: Optional[str] = None
     exercise_needs: Optional[str] = None
     health_risks: Optional[List[str]] = None
+    life_expectancy: Optional[str] = None
+    average_weight: Optional[str] = None
 
 
 class BreedClassificationResponse(BaseModel):
