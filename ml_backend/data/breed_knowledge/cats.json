@@ -1,0 +1,66 @@
+{
+  "Persian": {
+    "species": "cat",
+    "group": "Longhair",
+    "temperament": ["Calmo", "Docile", "Afetuoso", "Silencioso"],
+    "description": "Gato elegante de pelagem longa e cauda exuberante, com temperamento calmo e sereno.",
+    "exercise_needs": "Baixa (15-20 min/dia)",
+    "health_risks": ["Doença renal policística (PKD)", "Problemas respiratórios braquicefálicos", "Secreção ocular"]
+  },
+  "Maine Coon": {
+    "species": "cat",
+    "group": "Semi-Longhair",
+    "temperament": ["Gentil", "Brincalhão", "Sociável", "Inteligente"],
+    "description": "Um dos maiores gatos domésticos do mundo, famoso pelo pelo denso e amor pela água.",
+    "exercise_needs": "Moderada (30-45 min/dia)",
+    "health_risks": ["Cardiomiopatia hipertrófica (HCM)", "Displasia da anca", "Atrofia muscular espinhal"]
+  },
+  "Siamese": {
+    "species": "cat",
+    "group": "Shorthair",
+    "temperament": ["Vocal", "Ativo", "Afetuoso", "Curioso"],
+    "description": "Gato oriental esbelto com olhos azuis profundos e vocalização comunicativa distinta.",
+    "exercise_needs": "Elevada (45+ min/dia)",
+    "health_risks": ["Amiloidose hepática", "Asma felina", "Doença dental", "Estrabismo"]
+  },
+  "Bengal": {
+    "species": "cat",
+    "group": "Shorthair",
+    "temperament": ["Atlético", "Selvagem", "Ativo", "Inteligente"],
+    "description": "Gato impressionante com pelagem leopardo manchada e energia inagotável.",
+    "exercise_needs": "Muito Elevada (60+ min/dia)",
+    "health_risks": ["Deficiência de PK", "Atrofia progressiva de retina", "Cardiomiopatia hipertrófica"]
+  },
+  "Ragdoll": {
+    "species": "cat",
+    "group": "Semi-Longhair",
+    "temperament": ["Relaxado", "Carinhoso", "Manso", "Leal"],
+    "description": "Gato de olhos azuis extremamente dócil que costuma relaxar os músculos quando segurado ao colo.",
+    "exercise_needs": "Baixa a Moderada (20-30 min/dia)",
+    "health_risks": ["Cardiomiopatia hipertrófica", "Cálculos urinários"]
+  },
+  "Sphynx": {
+    "species": "cat",
+    "group": "Hairless",
+    "temperament": ["Extrovertido", "Brincalhão", "Afetuoso", "Curioso"],
+    "description": "Gato sem pelos distinto pelo toque aveludado da pele e personalidade calorosa.",
+    "exercise_needs": "Moderada a Elevada (35-50 min/dia)",
+    "health_risks": ["Sensibilidade ao frio/sol", "Urticária pigmentosa", "Cardiomiopatia hipertrófica"]
+  },
+  "British Shorthair": {
+    "species": "cat",
+    "group": "Shorthair",
+    "temperament": ["Tranquilo", "Independente", "Leal", "Calmo"],
+    "description": "Gato encorpado com bochechas redondas e pelagem densa tipo pelúcia.",
+    "exercise_needs": "Moderada (20-30 min/dia)",
+    "health_risks": ["Obesidade", "Cardiomiopatia hipertrófica", "Hemofilia B"]
+  },
+  "Abyssinian": {
+    "species": "cat",
+    "group": "Shorthair",
+    "temperament": ["Ativo", "Curioso", "Atlético", "Inteligente"],
+    "description": "Gato ágil e elegante com pelagem 'ticked' que lembra um pequeno puma selvagem.",
+    "exercise_needs": "Muito Elevada (60 min/dia)",
+    "health_risks": ["Deficiência de piruvato quinase", "Atrofia progressiva da retina", "Gengivite"]
+  }
+}

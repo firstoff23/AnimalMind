@@ -1,0 +1,82 @@
+{
+  "Labrador Retriever": {
+    "species": "dog",
+    "group": "Sporting",
+    "temperament": ["Amigável", "Ativo", "Inteligente", "Leal"],
+    "description": "O Labrador Retriever é uma das raças mais populares do mundo, conhecido pelo seu temperamento gentil e excelente aptidão para famílias.",
+    "exercise_needs": "Elevada (60-90 min/dia)",
+    "health_risks": ["Displasia da anca", "Displasia do cotovelo", "Atrofia progressiva da retina", "Obesidade"]
+  },
+  "Golden Retriever": {
+    "species": "dog",
+    "group": "Sporting",
+    "temperament": ["Inteligente", "Amigável", "Devoto", "Gentil"],
+    "description": "Cão de porte médio-grande famoso pela sua pelagem dourada e personalidade extremamente sociável.",
+    "exercise_needs": "Elevada (60-90 min/dia)",
+    "health_risks": ["Displasia da anca", "Cancro (hemangiossarcoma)", "Cataratas", "Hipotireoidismo"]
+  },
+  "Beagle": {
+    "species": "dog",
+    "group": "Hound",
+    "temperament": ["Curioso", "Alegre", "Determinado", "Inteligente"],
+    "description": "Pequeno sabujo com excelente faro, conhecido pelas suas orelhas caídas e latido melodioso.",
+    "exercise_needs": "Moderada a Elevada (60 min/dia)",
+    "health_risks": ["Infeções de ouvido", "Epilepsia", "Hipotireoidismo", "Displasia da anca"]
+  },
+  "German Shepherd": {
+    "species": "dog",
+    "group": "Herding",
+    "temperament": ["Corajoso", "Leal", "Alerta", "Trabalhador"],
+    "description": "Cão de trabalho versátil, protetor e altamente treinável, muito utilizado como cão policial e de guarda.",
+    "exercise_needs": "Muito Elevada (90+ min/dia)",
+    "health_risks": ["Displasia da anca e cotovelo", "Mielopatia degenerativa", "Torção gástrica"]
+  },
+  "Pug": {
+    "species": "dog",
+    "group": "Toy",
+    "temperament": ["Afetuoso", "Divertido", "Calmo", "Sociável"],
+    "description": "Pequeno cão de companhia braquicefálico com cara enrugada e cauda encaracolada.",
+    "exercise_needs": "Baixa a Moderada (20-30 min/dia)",
+    "health_risks": ["Síndrome braquicefálica", "Úlceras de córnea", "Problemas de pele nas rugas", "Obesidade"]
+  },
+  "Chihuahua": {
+    "species": "dog",
+    "group": "Toy",
+    "temperament": ["Gracejo", "Alerta", "Corajoso", "Afetuoso"],
+    "description": "Uma das menores raças do mundo, conhecida por sua grande personalidade em um corpo compacto.",
+    "exercise_needs": "Baixa (20-30 min/dia)",
+    "health_risks": ["Luxação de patela", "Colapso de traqueia", "Problemas dentários", "Hipoglicemia"]
+  },
+  "Boxer": {
+    "species": "dog",
+    "group": "Working",
+    "temperament": ["Energético", "Brincalhão", "Leal", "Protetor"],
+    "description": "Cão atlético, muscular e brincalhão com mandíbula forte e expressão alerta.",
+    "exercise_needs": "Elevada (60 min/dia)",
+    "health_risks": ["Cardiomopatia de Boxer", "Displasia de anca", "Cancro", "Torção gástrica"]
+  },
+  "French Bulldog": {
+    "species": "dog",
+    "group": "Non-Sporting",
+    "temperament": ["Afetuoso", "Tranquilo", "Brincalhão", "Sociável"],
+    "description": "Cão compacto com orelhas de morcego, ideal para apartamentos e vidas urbanas.",
+    "exercise_needs": "Baixa (30 min/dia)",
+    "health_risks": ["Síndrome respiratória braquicefálica", "Alergias de pele", "Problemas de coluna"]
+  },
+  "Poodle": {
+    "species": "dog",
+    "group": "Non-Sporting",
+    "temperament": ["Extremamente Inteligente", "Ativo", "Orgulhoso", "Treinável"],
+    "description": "Raça elegante conhecida pelo pelo encaracolado hipoalergénico e inteligência superior.",
+    "exercise_needs": "Moderada a Elevada (45-60 min/dia)",
+    "health_risks": ["Atrofia de retina", "Torção gástrica", "Doença de Addison", "Luxação patelar"]
+  },
+  "Shih Tzu": {
+    "species": "dog",
+    "group": "Toy",
+    "temperament": ["Carinhoso", "Alegre", "Amigável", "Independente"],
+    "description": "Cão de companhia ancestral chinês com pelagem longa e sedosa.",
+    "exercise_needs": "Baixa (20-30 min/dia)",
+    "health_risks": ["Problemas oculares", "Doença renal", "Infeções de ouvido", "Problemas respiratórios"]
+  }
+}

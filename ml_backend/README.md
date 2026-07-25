@@ -9,188 +9,220 @@ app_port: 7860
 
 # AnimalMind ML Backend
 
-FastAPI backend for AnimalMind — pet audio classification, breed identification, and vision-based species/behaviour analysis.
+FastAPI backend for AnimalMind — pet audio classification, breed identification, quality assessment, and user feedback collection.
 
 **Version**: 1.4.0  
 **Base URL (production)**: `https://firstoff-animalmind-backend.hf.space`
 
 ---
 
-## Endpoints
+## 📁 Architecture Overview
 
-### 🔊 Audio Classification
+The backend follows a modular, production-ready structure using FastAPI `APIRouter`:
+
+```
+ml_backend/
+├── app.py                     # Core FastAPI gateway (loads .env, mounts routers, CORS)
+├── routers/
+│   ├── classify_breed.py      # POST /v1/classify-breed (Quality check + Breed AI + Cache)
+│   ├── feedback.py            # POST /v1/feedback (PostgreSQL / SQLite storage)
+│   └── health.py              # GET /ready (Readiness & model warm-up check)
+├── services/
+│   ├── quality.py             # Laplacian variance blur & lighting detection
+│   └── breed_knowledge.py     # Rich breed knowledge lookup (temperament, health risks, etc.)
+├── schemas/
+│   ├── breed.py               # Pydantic request/response schemas for breed classification
+│   └── feedback.py            # Pydantic schemas for feedback collection
+├── utils/
+│   ├── cache.py               # Redis & In-Memory SHA-256 inference caching (24h TTL)
+│   └── logging.py             # Structured JSON logger with Correlation IDs
+├── data/
+│   └── breed_knowledge/
+│       ├── dogs.json          # Dog breed metadata & health risks
+│       └── cats.json          # Cat breed metadata & health risks
+├── .env.example               # Environment variables configuration template
+└── requirements.txt           # Python dependencies
+```
+
+---
+
+## ⚙️ Environment Variables Configuration
+
+Copy `.env.example` to `.env` or configure variables in your hosting provider (e.g., Hugging Face Spaces / Docker):
+
+| Variable | Default / Format | Description |
+|----------|------------------|-------------|
+| `ENVIRONMENT` | `development` | Environment mode (`development` / `production`) |
+| `PORT` | `7860` | Server listening port |
+| `CORS_ORIGINS` | `https://animalmind.vercel.app,http://localhost:5173` | Comma-separated allowed CORS origins |
+| `HF_TOKEN` | `""` | Hugging Face Access Token for private model weights |
+| `DATABASE_URL` | `""` | PostgreSQL connection string (`postgresql://...`) |
+| `REDIS_URL` | `""` | Redis connection URL (`redis://...`) for 24h cache |
+| `LAPLACIAN_THRESHOLD` | `100.0` | Minimum image sharpness variance threshold |
+
+---
+
+## 🚀 Endpoints Specification
+
+### 🏷️ v1 Breed Classification & Feedback (NEW)
+
+#### `POST /v1/classify-breed`
+
+Performs breed classification with **image blur/lighting quality assessment** and optional **breed knowledge enrichment**.
+
+**Query Parameters**:
+- `include_info` (optional, boolean, default `false`): If `true`, returns detailed breed description, temperament, exercise needs, and health risks.
+
+**Request** — `multipart/form-data`:
+- `file`: Image file (`JPEG`, `PNG`, `WebP`, max 10 MB).
+
+**Response** — `application/json`:
+```json
+{
+  "breed": "Labrador Retriever",
+  "confidence": 0.95,
+  "species": "dog",
+  "top3": [
+    {"breed": "Labrador Retriever", "confidence": 0.95},
+    {"breed": "Golden Retriever", "confidence": 0.03},
+    {"breed": "Chesapeake Bay Retriever", "confidence": 0.01}
+  ],
+  "info": {
+    "species": "dog",
+    "group": "Sporting",
+    "temperament": ["Amigável", "Ativo", "Inteligente", "Leal"],
+    "description": "O Labrador Retriever é uma das raças mais populares do mundo...",
+    "exercise_needs": "Elevada (60-90 min/dia)",
+    "health_risks": ["Displasia da anca", "Displasia do cotovelo", "Atrofia progressiva da retina", "Obesidade"]
+  },
+  "processing_time_ms": 142.5
+}
+```
+
+**Quality Check Rejection (HTTP 400)**:
+If the image is too blurry or dark (Laplacian variance < 100.0):
+```json
+{
+  "detail": "A imagem está desfocada ou com pouca luz. Tira outra foto."
+}
+```
+
+**cURL Example**:
+```bash
+curl -X POST "https://firstoff-animalmind-backend.hf.space/v1/classify-breed?include_info=true" \
+  -F "file=@pet.jpg"
+```
+
+---
+
+#### `POST /v1/feedback`
+
+Collects user feedback on AI predictions for continuous model evaluation. Supports dual storage (PostgreSQL when `DATABASE_URL` is configured, or local SQLite fallback `feedback.db`).
+
+**Request** — `application/json`:
+```json
+{
+  "model_name": "animalmind-breed-classifier",
+  "model_version": "v1.0.0",
+  "input_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+  "prediction": "Labrador Retriever",
+  "confidence": 0.92,
+  "is_correct": false,
+  "correct_label": "Golden Retriever",
+  "user_confidence": 4,
+  "feedback_text": "O cão é dourado, não preto!",
+  "metadata": {"device": "iPhone", "os": "iOS 17"}
+}
+```
+
+**Response** — `application/json`:
+```json
+{
+  "status": "success",
+  "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**cURL Example**:
+```bash
+curl -X POST https://firstoff-animalmind-backend.hf.space/v1/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_name": "animalmind-breed-classifier",
+    "model_version": "v1.0.0",
+    "input_hash": "hash123",
+    "prediction": "Labrador Retriever",
+    "confidence": 0.92,
+    "is_correct": true
+  }'
+```
+
+---
+
+#### `GET /ready`
+
+Readiness check to verify model warm-up status and connection health.
+
+**Response (HTTP 200)**:
+```json
+{
+  "status": "ready",
+  "vision_model_loaded": true,
+  "db_connected": true,
+  "redis_connected": true
+}
+```
+
+---
+
+### 🔊 Legacy Audio & Vision Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/classify` | Classify pet audio (YAMNet) → state + emoji |
-| `POST` | `/analyze-audio` | Full audio analysis with Gemini |
+| `POST` | `/identify-breed` | Identify dog/cat breed via species-specific ViT |
+| `POST` | `/detect-posture` | Detect posture (sitting, lying, standing) via YOLOv8n-pose |
+| `POST` | `/detect-species` | Detect species (dog, cat, unknown) |
+| `POST` | `/analyze-audio-advanced` | Spectral audio metrics (RMS, ZCR, centroid, pitch) |
+| `POST` | `/classify-image` | Legacy dual-head species & breed classification |
+| `GET`  | `/model-health` | Metadata for loaded vision model |
+| `GET`  | `/health` | Basic health check — `{"status": "healthy"}` |
 
 ---
 
-### 🖼️ Vision Classification *(NEW in v1.4.0)*
+## 🛠️ Local Development & Running
 
-#### `POST /classify-image`
-
-Classifies a pet image, returning **species** and **breed**.
-
-**Request** — `multipart/form-data`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `file` | File | JPEG, PNG or WebP image of the pet |
-
-**Response** — `application/json`:
-
-```json
-{
-  "species":            "dog",
-  "breed":              "golden retriever",
-  "confidence":         0.8432,
-  "processing_time_ms": 312.5,
-  "model_source":       "fine-tuned"
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `species` | string | `"dog"` or `"cat"` |
-| `breed` | string | One of 37 recognised breeds |
-| `confidence` | float | Combined confidence \[0–1\] (geometric mean of species × breed) |
-| `processing_time_ms` | float | Server-side inference time in milliseconds |
-| `model_source` | string | `"fine-tuned"` or `"pretrained-fallback"` |
-
-**Example — cURL**:
-```bash
-curl -X POST https://firstoff-animalmind-backend.hf.space/classify-image \
-  -F "file=@my_dog.jpg"
-```
-
-**Example — Python (requests)**:
-```python
-import requests
-
-with open("my_dog.jpg", "rb") as f:
-    resp = requests.post(
-        "https://firstoff-animalmind-backend.hf.space/classify-image",
-        files={"file": ("my_dog.jpg", f, "image/jpeg")},
-    )
-print(resp.json())
-# {'species': 'dog', 'breed': 'golden retriever', 'confidence': 0.84, ...}
-```
-
-**Example — JavaScript (fetch)**:
-```js
-const formData = new FormData();
-formData.append("file", imageFile);
-
-const res = await fetch("https://firstoff-animalmind-backend.hf.space/classify-image", {
-  method: "POST",
-  body: formData,
-});
-const result = await res.json();
-console.log(result.species, result.breed, result.confidence);
-```
-
-**Error codes**:
-
-| Code | Meaning |
-|------|---------|
-| 400 | Invalid or unreadable image |
-| 415 | Unsupported content type (must be JPEG/PNG/WebP) |
-| 503 | Model failed to load |
-
----
-
-#### `GET /model-health`
-
-Returns current status of the vision model.
-
-**Response**:
-```json
-{
-  "loaded":       true,
-  "model_source": "fine-tuned",
-  "loaded_at":    "2026-06-19T20:00:00Z",
-  "num_species":  2,
-  "num_breeds":   37,
-  "device":       "cpu"
-}
-```
-
-> The model is loaded **lazily** on first request to `/classify-image` to reduce startup time.
-
----
-
-### ❤️ Health
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | Basic health check — `{"status": "healthy"}` |
-| `GET` | `/` | Root — version info |
-
----
-
-## Model architecture
-
-The vision classifier is a **dual-head ViT** (`google/vit-base-patch16-224`):
-
-```
-Input image (224×224 RGB)
-    ↓
-ViT backbone ([CLS] token output, 768-dim)
-    ├── head_species → softmax → dog | cat
-    └── head_breed   → softmax → 37 breed classes
-```
-
-**Confidence** = √(P(species) × P(breed)) — geometric mean of the two top probabilities.
-
-### Supported breeds
-
-**Cats (12)**: Abyssinian, Bengal, Birman, Bombay, British Shorthair, Egyptian Mau, Maine Coon, Persian, Ragdoll, Russian Blue, Siamese, Sphynx
-
-**Dogs (25)**: American Bulldog, American Pit Bull Terrier, Basset Hound, Beagle, Boxer, Chihuahua, English Cocker Spaniel, English Setter, German Shorthaired, Great Pyrenees, Havanese, Japanese Chin, Keeshond, Leonberger, Miniature Pinscher, Newfoundland, Pomeranian, Pug, Saint Bernard, Samoyed, Scottish Terrier, Shiba Inu, Staffordshire Bull Terrier, Wheaten Terrier, Yorkshire Terrier
-
----
-
-## Running locally
+### Using Python / Uvicorn
 
 ```bash
-# Install dependencies
+# 1. Clone repository & enter ml_backend
+cd ml_backend
+
+# 2. Copy .env template
+cp .env.example .env
+
+# 3. Install requirements
 pip install -r requirements.txt
 
-# Start server
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+# 4. Start Uvicorn development server
+uvicorn app:app --host 0.0.0.0 --port 7860 --reload
 
-# API docs (Swagger UI)
-open http://localhost:8000/docs
+# 5. Access Interactive Swagger Documentation
+open http://localhost:7860/docs
 ```
 
-## Running tests
+### Using Docker
 
 ```bash
-pip install pytest httpx Pillow
-pytest ml_backend/tests/test_classify.py -v
+# Build Docker image
+docker build -t animalmind-ml-backend .
+
+# Run Docker container
+docker run -p 7860:7860 --env-file .env animalmind-ml-backend
 ```
 
----
-
-## Training the classifier
-
-See [`data/scripts/train_species_classifier.py`](../data/scripts/train_species_classifier.py).
+### Running Tests
 
 ```bash
-# Dry-run (pipeline validation):
-python data/scripts/train_species_classifier.py --dry-run
-
-# Full training (CPU, linear probe, 5 epochs, ~20 min):
-python data/scripts/train_species_classifier.py \
-  --output ml_backend/models/species_classifier \
-  --epochs 5
-
-# Train + push model to HF Hub:
-python data/scripts/train_species_classifier.py \
-  --output ml_backend/models/species_classifier \
-  --push-to-hub firstoff/animalmind-species-classifier
+python tests/test_v1_routes.py
 ```
-
-After training, restart the backend — it will auto-load the fine-tuned weights.

@@ -4,6 +4,13 @@ import subprocess
 import tempfile
 from typing import Dict, List, Optional, Tuple
 
+# Load environment variables from .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
@@ -17,23 +24,43 @@ import json
 import redis as redis_client
 from datetime import datetime, timezone
 
+from utils.logging import setup_structured_logging
+setup_structured_logging()
+
 app = FastAPI(
-    title="AnimalMind Acoustic Classifier Backend",
-    description="FastAPI backend for pet audio classification and breed identification.",
-    version="1.3.0",
+    title="AnimalMind Acoustic & Vision Classifier Backend",
+    description="FastAPI backend for pet audio classification, breed identification, and posture detection.",
+    version="1.4.0",
 )
+
+# --- CORS Security ---
+cors_origins_str = os.environ.get(
+    "CORS_ORIGINS",
+    "https://animalmind.vercel.app,http://localhost:5173,http://localhost:3000,*"
+)
+cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# --- Mount Routers ---
+from routers.classify_breed import router as breed_router
+from routers.feedback import router as feedback_router
+from routers.health import router as health_router
+
+app.include_router(breed_router, prefix="/v1")
+app.include_router(feedback_router, prefix="/v1")
+app.include_router(health_router)
+
 # --- Globals: DB pool e Redis client ---
 db_pool = None
 redis_conn = None
+
 
 
 @app.on_event("startup")
