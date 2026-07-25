@@ -5,11 +5,12 @@ import sqlite3
 import uuid
 from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
 from schemas.feedback import FeedbackRequest, FeedbackResponse
+from utils.auth import get_current_user
 
-router = APIRouter(tags=["Feedback"])
+router = APIRouter(tags=["Feedback"], dependencies=[Depends(get_current_user)])
 
 _SQLITE_DB_PATH = Path(__file__).parent.parent / "feedback.db"
 _FEEDBACK_IMAGES_DIR = Path(__file__).parent.parent / "feedback_images"

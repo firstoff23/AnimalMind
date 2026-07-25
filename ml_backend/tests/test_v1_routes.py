@@ -1,10 +1,12 @@
 """
-Tests for new ML Backend v1 endpoints (/v1/classify-breed, /v1/feedback, /ready)
+Tests for new ML Backend v1 endpoints (/v1/classify-breed, /v1/feedback, /ready) and auth
 """
+import os
 import sys
 import types
 from pathlib import Path
 from unittest.mock import MagicMock
+import pytest
 
 # Add ml_backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -14,6 +16,7 @@ from schemas.breed import BreedClassificationResponse
 from schemas.feedback import FeedbackRequest, FeedbackResponse
 from services.quality import assess_image_quality
 from services.breed_knowledge import get_breed_info
+from utils.auth import verify_api_key
 
 
 def test_quality_assessment_pass():
@@ -66,3 +69,10 @@ def test_schemas_validation():
 
     res = FeedbackResponse(status="success", id="uuid-123", image_path="feedback_images/abc123.jpg")
     assert res.image_path == "feedback_images/abc123.jpg"
+
+
+def test_auth_verification():
+    os.environ["API_KEY"] = "secret_key_123"
+    assert verify_api_key("secret_key_123") is True
+    assert verify_api_key("wrong_key") is False
+    del os.environ["API_KEY"]

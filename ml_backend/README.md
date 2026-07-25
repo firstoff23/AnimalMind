@@ -55,10 +55,33 @@ Copy `.env.example` to `.env` or configure variables in your hosting provider (e
 | `ENVIRONMENT` | `development` | Environment mode (`development` / `production`) |
 | `PORT` | `7860` | Server listening port |
 | `CORS_ORIGINS` | `https://animalmind.vercel.app,http://localhost:5173` | Comma-separated allowed CORS origins |
-| `HF_TOKEN` | `""` | Hugging Face Access Token for private model weights |
-| `DATABASE_URL` | `""` | PostgreSQL connection string (`postgresql://...`) |
-| `REDIS_URL` | `""` | Redis connection URL (`redis://...`) for 24h cache |
+| `SUPABASE_JWT_SECRET` | `""` | Secret key for verifying Supabase JWT tokens |
+| `API_KEY` | `""` | Static API key for client authentication (`X-API-Key`) |
 | `LAPLACIAN_THRESHOLD` | `100.0` | Minimum image sharpness variance threshold |
+
+---
+
+## 🔒 Authentication (`/v1/*` Endpoints)
+
+All endpoints under `/v1/*` (`/v1/classify-breed` and `/v1/feedback`) are protected by authentication when `SUPABASE_JWT_SECRET` or `API_KEY` environment variables are defined.
+
+> **Note**: In development mode (when neither variable is set), authentication is bypassed automatically for convenience.
+
+### Supported Authentication Methods:
+
+1. **Supabase JWT Token (Bearer Authentication)**:
+   Pass the JWT in the `Authorization` header:
+   ```http
+   Authorization: Bearer <your_supabase_jwt_token>
+   ```
+
+2. **Static API Key (`X-API-Key` Header)**:
+   Pass the API Key in the `X-API-Key` header:
+   ```http
+   X-API-Key: <your_secret_api_key>
+   ```
+
+> **Legacy endpoints** (`/classify`, `/classify-image`, `/detect-posture`, etc.) remain unauthenticated for backward compatibility.
 
 ---
 

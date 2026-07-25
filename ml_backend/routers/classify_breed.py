@@ -1,7 +1,7 @@
 import io
 import time
 from typing import List, Optional
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from PIL import Image
 import torch
 import torch.nn.functional as F
@@ -10,9 +10,10 @@ from schemas.breed import BreedClassificationResponse, Top3Item
 from services.quality import assess_image_quality
 from services.breed_knowledge import get_breed_info
 from utils.cache import get_cached_inference, get_image_hash, set_cached_inference
+from utils.auth import get_current_user
 
 
-router = APIRouter(tags=["Breed Classification"])
+router = APIRouter(tags=["Breed Classification"], dependencies=[Depends(get_current_user)])
 
 
 @router.post(
