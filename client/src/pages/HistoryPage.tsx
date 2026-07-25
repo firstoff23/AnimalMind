@@ -94,6 +94,17 @@ const _STATE_FILTER_LABELS: Record<string, string> = {
   ...STATE_LABELS,
 };
 
+const CONTEXT_TAGS_MAP: Record<string, { pt: string; en: string }> = {
+  storm: { pt: "🌩️ Trovoada", en: "🌩️ Storm" },
+  home_alone: { pt: "🚶 Sozinho em casa", en: "🚶 Home alone" },
+  other_animal: { pt: "🐕 Outro animal", en: "🐕 Other animal" },
+  mealtime: { pt: "🍽️ Refeição", en: "🍽️ Mealtime" },
+  travel: { pt: "🚗 Viagem", en: "🚗 Travel" },
+  loud_noise: { pt: "🎆 Barulho forte", en: "🎆 Loud noise" },
+  sleeping: { pt: "😴 A dormir", en: "😴 Sleeping" },
+  exercise: { pt: "🏃 Exercício", en: "🏃 Exercise" },
+};
+
 interface HistoryEvent {
   id: number;
   state: string;
@@ -292,6 +303,22 @@ const EventRow = memo(function EventRow({
               <FileText size={10} className="flex-shrink-0" />
               <span className="truncate">&ldquo;{event.notes}&rdquo;</span>
             </p>
+          )}
+          {event.contextTags && event.contextTags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {event.contextTags.map((tagId) => {
+                const tagInfo = CONTEXT_TAGS_MAP[tagId];
+                const label = tagInfo ? (language === "pt" ? tagInfo.pt : tagInfo.en) : tagId;
+                return (
+                  <span
+                    key={tagId}
+                    className="text-[10px] bg-secondary/80 text-muted-foreground border border-border/40 px-1.5 py-0.5 rounded-md font-medium"
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
           )}
         </div>
 
@@ -666,6 +693,24 @@ export default function HistoryPage() {
   const events = (data?.events ?? []) as HistoryEvent[];
   const total = data?.total ?? 0;
   const _totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const availableTags = useMemo(() => {
+    const presentTagsSet = new Set<string>();
+    events.forEach((evt) => {
+      if (evt.contextTags && Array.isArray(evt.contextTags)) {
+        evt.contextTags.forEach((tag) => presentTagsSet.add(tag));
+      }
+    });
+
+    const orderedKnownTags = Object.keys(CONTEXT_TAGS_MAP).filter((tag) =>
+      presentTagsSet.has(tag)
+    );
+
+    return orderedKnownTags.length > 0
+      ? orderedKnownTags
+      : Object.keys(CONTEXT_TAGS_MAP);
+  }, [events]);
+
   const utils = trpc.useUtils();
   const feedbackMutation = trpc.events.feedback.useMutation({
     onSuccess: () => {
@@ -689,6 +734,7 @@ export default function HistoryPage() {
 
   const clearFilters = () => {
     setEmotionParam(null);
+    setContextTagParam(null);
     setDateFromParam(null);
     setDateToParam(null);
     setPeriod(null);
@@ -1198,6 +1244,50 @@ export default function HistoryPage() {
                         STATE_LABELS[s as EmotionalState]}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Context tag filter */}
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                {language === "pt" ? "Gatilho / Contexto" : "Trigger / Context"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => {
+                    setContextTagFilter("all");
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
+                    contextTagFilter === "all"
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border text-muted-foreground hover:border-primary/50",
+                  )}
+                >
+                  {language === "pt" ? "Todos os contextos" : "All contexts"}
+                </button>
+                {availableTags.map((tagId) => {
+                  const tagInfo = CONTEXT_TAGS_MAP[tagId];
+                  const label = tagInfo ? (language === "pt" ? tagInfo.pt : tagInfo.en) : tagId;
+                  return (
+                    <button
+                      key={tagId}
+                      onClick={() => {
+                        setContextTagFilter(tagId);
+                        setPage(1);
+                      }}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
+                        contextTagFilter === tagId
+                          ? "border-primary bg-primary/10 text-primary font-semibold"
+                          : "border-border text-muted-foreground hover:border-primary/50",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
