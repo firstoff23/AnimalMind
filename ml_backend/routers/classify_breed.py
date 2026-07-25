@@ -103,6 +103,19 @@ async def classify_breed_v1(
 
         if hasattr(outputs, "logits") or "logits" in outputs:
             logits = outputs.logits if hasattr(outputs, "logits") else outputs["logits"]
+
+            # Apply Temperature Scaling if calibrated parameter exists
+            import pathlib
+            temp_path = pathlib.Path(__file__).parent.parent / "models" / "temperature.pt"
+            if temp_path.exists():
+                try:
+                    temp_data = torch.load(str(temp_path), map_location="cpu")
+                    temp_val = float(temp_data.get("temperature", 1.0))
+                    if temp_val > 0:
+                        logits = logits / temp_val
+                except Exception as temp_err:
+                    print(f"[Inference] Warning: Erro ao carregar parâmetro de temperatura: {temp_err}")
+
             prob_breed = F.softmax(logits, dim=-1)[0]
             top_k = torch.topk(prob_breed, k=min(3, len(prob_breed)))
 

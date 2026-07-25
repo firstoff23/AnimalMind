@@ -229,8 +229,40 @@ pip install -r requirements.txt
 
 # 4. Start Uvicorn development server
 uvicorn app:app --host 0.0.0.0 --port 7860 --reload
+```
 
-# 5. Access Interactive Swagger Documentation
+---
+
+## 🏋️ Model Training & Temperature Calibration
+
+To train/fine-tune the ViT dog breed classifier to **>90% accuracy** on Stanford Dogs with RandAugment, MixUp/CutMix, and Temperature Scaling:
+
+```bash
+# 1. Install training dependencies
+pip install -r requirements_training.txt
+
+# 2. Run dry-run verification
+python -m training.train_dog_breeds --dry-run
+
+# 3. Launch full training pipeline (50 epochs, batch size 32)
+python -m training.train_dog_breeds --batch-size 32 --epochs 50 --model-name google/vit-base-patch16-224
+
+# 4. (Optional) Publish fine-tuned model directly to Hugging Face Hub
+export HF_TOKEN="your_hf_token"
+python -m training.train_dog_breeds --batch-size 32 --epochs 50 --push-to-hub firstoff/animalmind-breed-classifier
+```
+
+> **Metrics Log**: Training progress, validation loss/accuracy, ECE (Expected Calibration Error), and calibrated temperature parameter $T$ are automatically logged to `ml_backend/training/training_metrics.json`. The calibrated temperature tensor is saved to `ml_backend/models/temperature.pt` and loaded automatically by `app.py` during inference.
+
+---
+
+## 🧪 Testing
+
+Run backend tests using pytest:
+
+```bash
+python -m pytest tests/
+```
 open http://localhost:7860/docs
 ```
 
