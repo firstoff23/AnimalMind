@@ -66,8 +66,6 @@ async def submit_feedback_v1(
     - `multipart/form-data` com campo `json` (string do JSON) e `image` (ficheiro binário)
     - `application/json` direto com payload JSON tradicional
     """
-    import app as main_app
-
     # 1. Parsing do FeedbackRequest
     req: Optional[FeedbackRequest] = None
     if json_data:
@@ -88,6 +86,14 @@ async def submit_feedback_v1(
     feedback_id = str(uuid.uuid4())
     saved_image_path: Optional[str] = req.image_path
 
+    # Try accessing main_app db_pool safely
+    db_pool = None
+    try:
+        import app as main_app
+        db_pool = getattr(main_app, "db_pool", None)
+    except Exception:
+        db_pool = None
+
     # 2. Guardar Ficheiro de Imagem se enviado
     if image:
         try:
@@ -104,9 +110,9 @@ async def submit_feedback_v1(
             print(f"[Feedback] Aviso: Erro ao guardar imagem de feedback: {img_err}")
 
     # 3. Guardar em PostgreSQL se disponível
-    if main_app.db_pool:
+    if db_pool:
         try:
-            async with main_app.db_pool.acquire() as conn:
+            async with db_pool.acquire() as conn:
                 await conn.execute("""
                     CREATE TABLE IF NOT EXISTS model_feedback (
                         id UUID PRIMARY KEY,

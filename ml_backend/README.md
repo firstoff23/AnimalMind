@@ -9,7 +9,7 @@ app_port: 7860
 
 # AnimalMind ML Backend
 
-FastAPI backend for AnimalMind — pet audio classification, breed identification, quality assessment, and user feedback collection.
+FastAPI backend for AnimalMind — pet audio classification, breed identification, quality assessment, uncertainty calibration, and user feedback collection.
 
 **Version**: 1.4.0  
 **Base URL (production)**: `https://firstoff-animalmind-backend.hf.space`
@@ -24,31 +24,39 @@ The backend follows a modular, production-ready structure using FastAPI `APIRout
 ml_backend/
 ├── app.py                     # Core FastAPI gateway (loads .env, mounts routers, CORS)
 ├── routers/
-│   ├── classify_breed.py      # POST /v1/classify-breed (Quality check + Breed AI + Cache)
-│   ├── feedback.py            # POST /v1/feedback (PostgreSQL / SQLite storage)
+│   ├── classify_breed.py      # POST /v1/classify-breed (Quality check + Breed AI + Cache + Temp Scaling)
+│   ├── feedback.py            # POST /v1/feedback (PostgreSQL / SQLite storage + Image attachment)
 │   └── health.py              # GET /ready (Readiness & model warm-up check)
 ├── services/
 │   ├── quality.py             # Laplacian variance blur & lighting detection
-│   └── breed_knowledge.py     # Rich breed knowledge lookup (temperament, health risks, etc.)
+│   └── breed_knowledge.py     # Rich breed knowledge lookup (temperament, health risks, life expectancy)
 ├── schemas/
 │   ├── breed.py               # Pydantic request/response schemas for breed classification
 │   └── feedback.py            # Pydantic schemas for feedback collection
 ├── utils/
+│   ├── auth.py                # Supabase JWT & X-API-Key authentication dependency
 │   ├── cache.py               # Redis & In-Memory SHA-256 inference caching (24h TTL)
 │   └── logging.py             # Structured JSON logger with Correlation IDs
+├── training/
+│   ├── train_dog_breeds.py    # Stanford Dogs ViT training pipeline + Temperature Scaling
+│   ├── training_metrics.json  # Training metrics, ECE logs & history report
+│   └── requirements_training.txt # Training dependencies (datasets, timm, etc.)
+├── models/
+│   └── temperature.pt         # Calibrated temperature scaling parameter T
+├── feedback_images/           # Storage directory for feedback image attachments
 ├── data/
 │   └── breed_knowledge/
-│       ├── dogs.json          # Dog breed metadata & health risks
-│       └── cats.json          # Cat breed metadata & health risks
+│       ├── dogs.json          # Dog breed metadata, health risks, weight & life expectancy
+│       └── cats.json          # Cat breed metadata, health risks, weight & life expectancy
 ├── .env.example               # Environment variables configuration template
-└── requirements.txt           # Python dependencies
+└── requirements.txt           # Production Python dependencies
 ```
 
 ---
 
 ## ⚙️ Environment Variables Configuration
 
-Copy `.env.example` to `.env` or configure variables in your hosting provider (e.g., Hugging Face Spaces / Docker):
+Copy `.env.example` to `.env` or configure variables in your hosting provider:
 
 | Variable | Default / Format | Description |
 |----------|------------------|-------------|
@@ -57,47 +65,61 @@ Copy `.env.example` to `.env` or configure variables in your hosting provider (e
 | `CORS_ORIGINS` | `https://animalmind.vercel.app,http://localhost:5173` | Comma-separated allowed CORS origins |
 | `SUPABASE_JWT_SECRET` | `""` | Secret key for verifying Supabase JWT tokens |
 | `API_KEY` | `""` | Static API key for client authentication (`X-API-Key`) |
+| `HF_TOKEN` | `""` | Hugging Face Access Token for private model weights |
+| `DATABASE_URL` | `""` | PostgreSQL connection string (`postgresql://...`) |
+| `REDIS_URL` | `""` | Redis connection URL (`redis://...`) for 24h cache |
 | `LAPLACIAN_THRESHOLD` | `100.0` | Minimum image sharpness variance threshold |
 
 ---
 
 ## 🔒 Authentication (`/v1/*` Endpoints)
 
-All endpoints under `/v1/*` (`/v1/classify-breed` and `/v1/feedback`) are protected by authentication when `SUPABASE_JWT_SECRET` or `API_KEY` environment variables are defined.
+All endpoints under `/v1/*` (`/v1/classify-breed` and `/v1/feedback`) are protected by authentication when `SUPABASE_JWT_SECRET` or `API_KEY` environment variables are set.
 
-> **Note**: In development mode (when neither variable is set), authentication is bypassed automatically for convenience.
+> **Development Mode**: When neither variable is configured, authentication is automatically bypassed for convenient local development.
 
-### Supported Authentication Methods:
+### Supported Authentication Methods & cURL Examples:
 
 1. **Supabase JWT Token (Bearer Authentication)**:
-   Pass the JWT in the `Authorization` header:
-   ```http
-   Authorization: Bearer <your_supabase_jwt_token>
+   Pass the user JWT token in the `Authorization` header:
+   ```bash
+   curl -X POST https://firstoff-animalmind-backend.hf.space/v1/classify-breed?include_info=true \
+     -H "Authorization: Bearer <your_supabase_jwt_token>" \
+     -F "file=@dog_photo.jpg"
    ```
 
 2. **Static API Key (`X-API-Key` Header)**:
-   Pass the API Key in the `X-API-Key` header:
-   ```http
-   X-API-Key: <your_secret_api_key>
+   Pass the static API key in the `X-API-Key` header:
+   ```bash
+   curl -X POST https://firstoff-animalmind-backend.hf.space/v1/classify-breed?include_info=true \
+     -H "X-API-Key: <your_secret_api_key>" \
+     -F "file=@dog_photo.jpg"
    ```
 
-> **Legacy endpoints** (`/classify`, `/classify-image`, `/detect-posture`, etc.) remain unauthenticated for backward compatibility.
+> **Legacy Endpoints**: Unprotected endpoints (`/classify`, `/classify-image`, `/detect-posture`, `/health`, etc.) remain unauthenticated for backward compatibility.
 
 ---
 
 ## 🚀 Endpoints Specification
 
-### 🏷️ v1 Breed Classification & Feedback (NEW)
+### 🏷️ v1 Breed Classification & Feedback
 
 #### `POST /v1/classify-breed`
 
-Performs breed classification with **image blur/lighting quality assessment** and optional **breed knowledge enrichment**.
+Performs breed classification with **image quality assessment**, **temperature scaling confidence calibration**, and optional **breed knowledge enrichment**.
 
 **Query Parameters**:
-- `include_info` (optional, boolean, default `false`): If `true`, returns detailed breed description, temperament, exercise needs, and health risks.
+- `include_info` (optional, boolean, default `false`): Includes detailed breed description, temperament, exercise needs, health risks, average weight, and life expectancy.
 
 **Request** — `multipart/form-data`:
 - `file`: Image file (`JPEG`, `PNG`, `WebP`, max 10 MB).
+
+**cURL Example**:
+```bash
+curl -X POST "https://firstoff-animalmind-backend.hf.space/v1/classify-breed?include_info=true" \
+  -H "X-API-Key: your_api_key" \
+  -F "file=@labrador.jpg"
+```
 
 **Response** — `application/json`:
 ```json
@@ -116,133 +138,60 @@ Performs breed classification with **image blur/lighting quality assessment** an
     "temperament": ["Amigável", "Ativo", "Inteligente", "Leal"],
     "description": "O Labrador Retriever é uma das raças mais populares do mundo...",
     "exercise_needs": "Elevada (60-90 min/dia)",
-    "health_risks": ["Displasia da anca", "Displasia do cotovelo", "Atrofia progressiva da retina", "Obesidade"]
+    "health_risks": ["Displasia da anca", "Displasia do cotovelo", "Atrofia progressiva da retina", "Obesidade"],
+    "life_expectancy": "10-12 anos",
+    "average_weight": "25-36 kg"
   },
-  "processing_time_ms": 142.5
+  "quality_assessed": true,
+  "laplacian_variance": 420.5
 }
-```
-
-**Quality Check Rejection (HTTP 400)**:
-If the image is too blurry or dark (Laplacian variance < 100.0):
-```json
-{
-  "detail": "A imagem está desfocada ou com pouca luz. Tira outra foto."
-}
-```
-
-**cURL Example**:
-```bash
-curl -X POST "https://firstoff-animalmind-backend.hf.space/v1/classify-breed?include_info=true" \
-  -F "file=@pet.jpg"
 ```
 
 ---
 
-#### `POST /v1/feedback`
+#### `POST /v1/feedback` (With Image Attachment Support)
 
-Collects user feedback on AI predictions for continuous model evaluation. Supports dual storage (PostgreSQL when `DATABASE_URL` is configured, or local SQLite fallback `feedback.db`).
+Submits user feedback regarding model predictions for dataset retraining. Supports JSON or `multipart/form-data` with optional image attachment.
 
-**Request** — `application/json`:
-```json
-{
-  "model_name": "animalmind-breed-classifier",
-  "model_version": "v1.0.0",
-  "input_hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
-  "prediction": "Labrador Retriever",
-  "confidence": 0.92,
-  "is_correct": false,
-  "correct_label": "Golden Retriever",
-  "user_confidence": 4,
-  "feedback_text": "O cão é dourado, não preto!",
-  "metadata": {"device": "iPhone", "os": "iOS 17"}
-}
+**Request Form-Data Parameters**:
+- `json_data`: JSON string matching `FeedbackRequest` payload.
+- `image` (optional): Uploaded image binary (`UploadFile`).
+
+**cURL Example (Multipart with Image)**:
+```bash
+curl -X POST "https://firstoff-animalmind-backend.hf.space/v1/feedback" \
+  -H "X-API-Key: your_api_key" \
+  -F 'json_data={"model_name":"animalmind-breed-classifier","model_version":"v1.0.0","input_hash":"hash123","prediction":"Labrador Retriever","confidence":0.92,"is_correct":false,"correct_label":"Golden Retriever","feedback_text":"O cão é mais claro"}' \
+  -F "image=@feedback_photo.jpg"
 ```
 
 **Response** — `application/json`:
 ```json
 {
   "status": "success",
-  "id": "550e8400-e29b-41d4-a716-446655440000"
+  "id": "c7a81d45-312a-4b92-80ff-0a12e4bf8892",
+  "image_path": "feedback_images/d5a1e31b5144a63714db3838bb8334449e7175536fbb12ec0ae74199fba6266f.jpg"
 }
-```
-
-**cURL Example**:
-```bash
-curl -X POST https://firstoff-animalmind-backend.hf.space/v1/feedback \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model_name": "animalmind-breed-classifier",
-    "model_version": "v1.0.0",
-    "input_hash": "hash123",
-    "prediction": "Labrador Retriever",
-    "confidence": 0.92,
-    "is_correct": true
-  }'
-```
-
----
-
-#### `GET /ready`
-
-Readiness check to verify model warm-up status and connection health.
-
-**Response (HTTP 200)**:
-```json
-{
-  "status": "ready",
-  "vision_model_loaded": true,
-  "db_connected": true,
-  "redis_connected": true
-}
-```
-
----
-
-### 🔊 Legacy Audio & Vision Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/classify` | Classify pet audio (YAMNet) → state + emoji |
-| `POST` | `/identify-breed` | Identify dog/cat breed via species-specific ViT |
-| `POST` | `/detect-posture` | Detect posture (sitting, lying, standing) via YOLOv8n-pose |
-| `POST` | `/detect-species` | Detect species (dog, cat, unknown) |
-| `POST` | `/analyze-audio-advanced` | Spectral audio metrics (RMS, ZCR, centroid, pitch) |
-| `POST` | `/classify-image` | Legacy dual-head species & breed classification |
-| `GET`  | `/model-health` | Metadata for loaded vision model |
-| `GET`  | `/health` | Basic health check — `{"status": "healthy"}` |
-
----
-
-## 🛠️ Local Development & Running
-
-### Using Python / Uvicorn
-
-```bash
-# 1. Clone repository & enter ml_backend
-cd ml_backend
-
-# 2. Copy .env template
-cp .env.example .env
-
-# 3. Install requirements
-pip install -r requirements.txt
-
-# 4. Start Uvicorn development server
-uvicorn app:app --host 0.0.0.0 --port 7860 --reload
 ```
 
 ---
 
 ## 🏋️ Model Training & Temperature Calibration
 
-To train/fine-tune the ViT dog breed classifier to **>90% accuracy** on Stanford Dogs with RandAugment, MixUp/CutMix, and Temperature Scaling:
+The backend includes a state-of-the-art training pipeline (`ml_backend/training/train_dog_breeds.py`) to fine-tune ViT on Stanford Dogs (120 breeds) targeting **>90% accuracy**.
 
+### Training Features:
+- **Augmentations**: `RandAugment(num_ops=2, magnitude=9)`, `MixUp`, `CutMix`, `ColorJitter`, `RandomRotation`.
+- **Regularization**: `Label Smoothing (0.1)`, `EMA (Exponential Moving Average)`, `Stochastic Depth (0.2)`.
+- **Calibration**: Automatic **Temperature Scaling** via L-BFGS optimization on validation set logits.
+
+### Running Training:
 ```bash
 # 1. Install training dependencies
 pip install -r requirements_training.txt
 
-# 2. Run dry-run verification
-python -m training.train_dog_breeds --dry-run
+# 2. Run dry-run verification (synthetic data test)
+python -m training.train_dog_breeds --dry-run --epochs 1
 
 # 3. Launch full training pipeline (50 epochs, batch size 32)
 python -m training.train_dog_breeds --batch-size 32 --epochs 50 --model-name google/vit-base-patch16-224
@@ -252,32 +201,20 @@ export HF_TOKEN="your_hf_token"
 python -m training.train_dog_breeds --batch-size 32 --epochs 50 --push-to-hub firstoff/animalmind-breed-classifier
 ```
 
-> **Metrics Log**: Training progress, validation loss/accuracy, ECE (Expected Calibration Error), and calibrated temperature parameter $T$ are automatically logged to `ml_backend/training/training_metrics.json`. The calibrated temperature tensor is saved to `ml_backend/models/temperature.pt` and loaded automatically by `app.py` during inference.
+---
+
+## 📊 Monitoring & Calibration Metrics
+
+- **Training & Calibration Logs**: After training completes, detailed logs (epochs, train/val loss, train/val accuracy, ECE - Expected Calibration Error, and calibrated temperature $T$) are written to `ml_backend/training/training_metrics.json`.
+- **Temperature Scaling Parameter**: The calibrated scalar $T$ is saved to `ml_backend/models/temperature.pt`. `app.py` automatically loads this parameter during inference to scale raw logits (`logits / T`) before `softmax`.
+- **Feedback Images Store**: Uploaded feedback images are stored securely in `ml_backend/feedback_images/{sha256_hash}.jpg` and indexed in the `image_path` DB column.
 
 ---
 
 ## 🧪 Testing
 
-Run backend tests using pytest:
+Run all backend unit tests:
 
 ```bash
 python -m pytest tests/
-```
-open http://localhost:7860/docs
-```
-
-### Using Docker
-
-```bash
-# Build Docker image
-docker build -t animalmind-ml-backend .
-
-# Run Docker container
-docker run -p 7860:7860 --env-file .env animalmind-ml-backend
-```
-
-### Running Tests
-
-```bash
-python tests/test_v1_routes.py
 ```

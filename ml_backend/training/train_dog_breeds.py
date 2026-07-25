@@ -194,7 +194,16 @@ def train_pipeline(args):
             from datasets import load_dataset
 
             print("[Dataset] Loading Stanford Dogs dataset from Hugging Face Datasets...")
-            hf_ds = load_dataset("thoxub/stanford_dogs")
+            hf_ds = None
+            for ds_id in ["huggan/stanford-dogs", "wesleyac/stanford-dogs", "thoxub/stanford_dogs"]:
+                try:
+                    hf_ds = load_dataset(ds_id)
+                    print(f"[Dataset] Successfully loaded dataset: {ds_id}")
+                    break
+                except Exception:
+                    continue
+            if hf_ds is None:
+                raise RuntimeError("No Stanford Dogs dataset repository accessible.")
             # Split train into 70% train, 15% val, 15% test
             splits = hf_ds["train"].train_test_split(test_size=0.3, seed=42)
             val_test = splits["test"].train_test_split(test_size=0.5, seed=42)
