@@ -7,7 +7,12 @@
     "exercise_needs": "Baixa (15-20 min/dia)",
     "health_risks": ["Doença renal policística (PKD)", "Problemas respiratórios braquicefálicos", "Secreção ocular"],
     "life_expectancy": "12-17 anos",
-    "average_weight": "3-5.5 kg"
+    "average_weight": "3-5.5 kg",
+    "origin": "Irão (Pérsia)",
+    "grooming_needs": "Alta",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Maine Coon": {
     "species": "cat",
@@ -17,7 +22,12 @@
     "exercise_needs": "Moderada (30-45 min/dia)",
     "health_risks": ["Cardiomiopatia hipertrófica (HCM)", "Displasia da anca", "Atrofia muscular espinhal"],
     "life_expectancy": "12-15 anos",
-    "average_weight": "6-8.5 kg"
+    "average_weight": "6-8.5 kg",
+    "origin": "Estados Unidos",
+    "grooming_needs": "Moderada",
+    "trainability": "Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Siamese": {
     "species": "cat",
@@ -27,7 +37,12 @@
     "exercise_needs": "Elevada (45+ min/dia)",
     "health_risks": ["Amiloidose hepática", "Asma felina", "Doença dental", "Estrabismo"],
     "life_expectancy": "15-20 anos",
-    "average_weight": "3.5-5 kg"
+    "average_weight": "3.5-5 kg",
+    "origin": "Tailândia (Sião)",
+    "grooming_needs": "Baixa",
+    "trainability": "Muito Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Bengal": {
     "species": "cat",
@@ -37,7 +52,12 @@
     "exercise_needs": "Muito Elevada (60+ min/dia)",
     "health_risks": ["Deficiência de PK", "Atrofia progressiva de retina", "Cardiomiopatia hipertrófica"],
     "life_expectancy": "12-16 anos",
-    "average_weight": "4.5-7 kg"
+    "average_weight": "4.5-7 kg",
+    "origin": "Estados Unidos",
+    "grooming_needs": "Baixa",
+    "trainability": "Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Ragdoll": {
     "species": "cat",
@@ -47,7 +67,12 @@
     "exercise_needs": "Baixa a Moderada (20-30 min/dia)",
     "health_risks": ["Cardiomiopatia hipertrófica", "Cálculos urinários"],
     "life_expectancy": "12-15 anos",
-    "average_weight": "4.5-9 kg"
+    "average_weight": "4.5-9 kg",
+    "origin": "Estados Unidos",
+    "grooming_needs": "Moderada",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Sphynx": {
     "species": "cat",
@@ -57,7 +82,12 @@
     "exercise_needs": "Moderada a Elevada (35-50 min/dia)",
     "health_risks": ["Sensibilidade ao frio/sol", "Urticária pigmentosa", "Cardiomiopatia hipertrófica"],
     "life_expectancy": "12-14 anos",
-    "average_weight": "3.5-5 kg"
+    "average_weight": "3.5-5 kg",
+    "origin": "Canadá",
+    "grooming_needs": "Moderada (Limpeza de pele)",
+    "trainability": "Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "British Shorthair": {
     "species": "cat",
@@ -67,7 +97,12 @@
     "exercise_needs": "Moderada (20-30 min/dia)",
     "health_risks": ["Obesidade", "Cardiomiopatia hipertrófica", "Hemofilia B"],
     "life_expectancy": "12-17 anos",
-    "average_weight": "4-8 kg"
+    "average_weight": "4-8 kg",
+    "origin": "Reino Unido",
+    "grooming_needs": "Baixa",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Abyssinian": {
     "species": "cat",
@@ -77,6 +112,11 @@
     "exercise_needs": "Muito Elevada (60 min/dia)",
     "health_risks": ["Deficiência de piruvato quinase", "Atrofia progressiva da retina", "Gengivite"],
     "life_expectancy": "14-15 anos",
-    "average_weight": "3.5-5 kg"
+    "average_weight": "3.5-5 kg",
+    "origin": "Etiópia (Abissínia)",
+    "grooming_needs": "Baixa",
+    "trainability": "Muito Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   }
 }

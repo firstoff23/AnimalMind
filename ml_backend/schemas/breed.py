@@ -16,6 +16,11 @@ class BreedInfo(BaseModel):
     health_risks: Optional[List[str]] = None
     life_expectancy: Optional[str] = None
     average_weight: Optional[str] = None
+    origin: Optional[str] = None
+    grooming_needs: Optional[str] = None
+    trainability: Optional[str] = None
+    good_with_children: Optional[bool] = None
+    good_with_pets: Optional[bool] = None
 
 
 class BreedClassificationResponse(BaseModel):

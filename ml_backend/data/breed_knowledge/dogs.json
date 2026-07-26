@@ -7,7 +7,12 @@
     "exercise_needs": "Elevada (60-90 min/dia)",
     "health_risks": ["Displasia da anca", "Displasia do cotovelo", "Atrofia progressiva da retina", "Obesidade"],
     "life_expectancy": "10-12 anos",
-    "average_weight": "25-36 kg"
+    "average_weight": "25-36 kg",
+    "origin": "Canadá",
+    "grooming_needs": "Baixa",
+    "trainability": "Muito Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Golden Retriever": {
     "species": "dog",
@@ -17,7 +22,12 @@
     "exercise_needs": "Elevada (60-90 min/dia)",
     "health_risks": ["Displasia da anca", "Cancro (hemangiossarcoma)", "Cataratas", "Hipotireoidismo"],
     "life_expectancy": "10-12 anos",
-    "average_weight": "25-34 kg"
+    "average_weight": "25-34 kg",
+    "origin": "Escócia",
+    "grooming_needs": "Moderada",
+    "trainability": "Muito Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Beagle": {
     "species": "dog",
@@ -27,7 +37,12 @@
     "exercise_needs": "Moderada a Elevada (60 min/dia)",
     "health_risks": ["Infeções de ouvido", "Epilepsia", "Hipotireoidismo", "Displasia da anca"],
     "life_expectancy": "12-15 anos",
-    "average_weight": "9-11 kg"
+    "average_weight": "9-11 kg",
+    "origin": "Reino Unido",
+    "grooming_needs": "Baixa",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "German Shepherd": {
     "species": "dog",
@@ -37,7 +52,12 @@
     "exercise_needs": "Muito Elevada (90+ min/dia)",
     "health_risks": ["Displasia da anca e cotovelo", "Mielopatia degenerativa", "Torção gástrica"],
     "life_expectancy": "7-10 anos",
-    "average_weight": "22-40 kg"
+    "average_weight": "22-40 kg",
+    "origin": "Alemanha",
+    "grooming_needs": "Moderada",
+    "trainability": "Muito Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Pug": {
     "species": "dog",
@@ -47,7 +67,12 @@
     "exercise_needs": "Baixa a Moderada (20-30 min/dia)",
     "health_risks": ["Síndrome braquicefálica", "Úlceras de córnea", "Problemas de pele nas rugas", "Obesidade"],
     "life_expectancy": "12-15 anos",
-    "average_weight": "6-8 kg"
+    "average_weight": "6-8 kg",
+    "origin": "China",
+    "grooming_needs": "Baixa",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Chihuahua": {
     "species": "dog",
@@ -57,46 +82,71 @@
     "exercise_needs": "Baixa (20-30 min/dia)",
     "health_risks": ["Luxação de patela", "Colapso de traqueia", "Problemas dentários", "Hipoglicemia"],
     "life_expectancy": "14-16 anos",
-    "average_weight": "1.5-3 kg"
-  },
-  "Boxer": {
-    "species": "dog",
-    "group": "Working",
-    "temperament": ["Energético", "Brincalhão", "Leal", "Protetor"],
-    "description": "Cão atlético, muscular e brincalhão com mandíbula forte e expressão alerta.",
-    "exercise_needs": "Elevada (60 min/dia)",
-    "health_risks": ["Cardiomopatia de Boxer", "Displasia de anca", "Cancro", "Torção gástrica"],
-    "life_expectancy": "10-12 anos",
-    "average_weight": "25-32 kg"
+    "average_weight": "1.5-3 kg",
+    "origin": "México",
+    "grooming_needs": "Baixa",
+    "trainability": "Média",
+    "good_with_children": false,
+    "good_with_pets": true
   },
   "French Bulldog": {
     "species": "dog",
     "group": "Non-Sporting",
-    "temperament": ["Afetuoso", "Tranquilo", "Brincalhão", "Sociável"],
-    "description": "Cão compacto com orelhas de morcego, ideal para apartamentos e vidas urbanas.",
-    "exercise_needs": "Baixa (30 min/dia)",
-    "health_risks": ["Síndrome respiratória braquicefálica", "Alergias de pele", "Problemas de coluna"],
+    "temperament": ["Afetuoso", "Calmo", "Sociável", "Brincalhão"],
+    "description": "Pequeno cão musculoso com orelhas de morcego distinto e temperamento extremamente sociável.",
+    "exercise_needs": "Baixa (20-30 min/dia)",
+    "health_risks": ["Síndrome braquicefálica", "Alergias de pele", "Problemas de coluna"],
     "life_expectancy": "10-12 anos",
-    "average_weight": "8-14 kg"
+    "average_weight": "9-13 kg",
+    "origin": "França",
+    "grooming_needs": "Baixa",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
   },
   "Poodle": {
     "species": "dog",
     "group": "Non-Sporting",
     "temperament": ["Extremamente Inteligente", "Ativo", "Orgulhoso", "Treinável"],
-    "description": "Raça elegante conhecida pelo pelo encaracolado hipoalergénico e inteligência superior.",
-    "exercise_needs": "Moderada a Elevada (45-60 min/dia)",
-    "health_risks": ["Atrofia de retina", "Torção gástrica", "Doença de Addison", "Luxação patelar"],
+    "description": "Uma das raças mais inteligentes do mundo, famosa pela sua pelagem encaracolada hipoalergénica.",
+    "exercise_needs": "Elevada (45-60 min/dia)",
+    "health_risks": ["Atrofia progressiva de retina", "Displasia da anca", "Torção gástrica"],
     "life_expectancy": "12-15 anos",
-    "average_weight": "20-32 kg"
+    "average_weight": "20-32 kg",
+    "origin": "Alemanha / França",
+    "grooming_needs": "Alta",
+    "trainability": "Muito Alta",
+    "good_with_children": true,
+    "good_with_pets": true
   },
-  "Shih Tzu": {
+  "Siberian Husky": {
     "species": "dog",
-    "group": "Toy",
-    "temperament": ["Carinhoso", "Alegre", "Amigável", "Independente"],
-    "description": "Cão de companhia ancestral chinês com pelagem longa e sedosa.",
-    "exercise_needs": "Baixa (20-30 min/dia)",
-    "health_risks": ["Problemas oculares", "Doença renal", "Infeções de ouvido", "Problemas respiratórios"],
-    "life_expectancy": "10-16 anos",
-    "average_weight": "4-7.5 kg"
+    "group": "Working",
+    "temperament": ["Independente", "Energético", "Sociável", "Vocal"],
+    "description": "Cão de trenó de médio porte com pelagem dupla espessa e marcantes olhos azuis ou castanhos.",
+    "exercise_needs": "Muito Elevada (90+ min/dia)",
+    "health_risks": ["Cataratas", "Atrofia progressiva da retina", "Displasia da anca"],
+    "life_expectancy": "12-14 anos",
+    "average_weight": "16-27 kg",
+    "origin": "Rússia (Sibéria)",
+    "grooming_needs": "Moderada",
+    "trainability": "Média",
+    "good_with_children": true,
+    "good_with_pets": true
+  },
+  "Rottweiler": {
+    "species": "dog",
+    "group": "Working",
+    "temperament": ["Leal", "Protetor", "Confiante", "Corajoso"],
+    "description": "Cão de grande porte musculoso e protetor, com excelente aptidão para guarda e trabalho.",
+    "exercise_needs": "Elevada (60-90 min/dia)",
+    "health_risks": ["Displasia da anca e cotovelo", "Osteossarcoma", "Torção gástrica"],
+    "life_expectancy": "9-10 anos",
+    "average_weight": "35-60 kg",
+    "origin": "Alemanha",
+    "grooming_needs": "Baixa",
+    "trainability": "Alta",
+    "good_with_children": true,
+    "good_with_pets": false
   }
 }
