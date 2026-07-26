@@ -185,21 +185,24 @@ The backend includes a state-of-the-art training pipeline (`ml_backend/training/
 - **Regularization**: `Label Smoothing (0.1)`, `EMA (Exponential Moving Average)`, `Stochastic Depth (0.2)`.
 - **Calibration**: Automatic **Temperature Scaling** via L-BFGS optimization on validation set logits.
 
-### Running Training:
-```bash
-# 1. Install training dependencies
-pip install -r requirements_training.txt
+### Running Training & GPU Execution Options:
 
-# 2. Run dry-run verification (synthetic data test)
-python -m training.train_dog_breeds --dry-run --epochs 1
+- **Option A (Google Colab / Kaggle Notebook)**:
+  Open [`ml_backend/training/run_training.ipynb`](training/run_training.ipynb) in Google Colab with GPU T4/V100 enabled.
 
-# 3. Launch full training pipeline (50 epochs, batch size 32)
-python -m training.train_dog_breeds --batch-size 32 --epochs 50 --model-name google/vit-base-patch16-224
+- **Option B (Shell Script for Linux GPU Server)**:
+  ```bash
+  chmod +x training/run_training.sh
+  ./training/run_training.sh
+  ```
 
-# 4. (Optional) Publish fine-tuned model directly to Hugging Face Hub
-export HF_TOKEN="your_hf_token"
-python -m training.train_dog_breeds --batch-size 32 --epochs 50 --push-to-hub firstoff/animalmind-breed-classifier
-```
+- **Option C (Manual Command)**:
+  ```bash
+  pip install -r requirements_training.txt
+  python -m training.train_dog_breeds --batch-size 32 --epochs 50 --model-name google/vit-base-patch16-224 --push-to-hub firstoff/animalmind-breed-classifier
+  ```
+
+> 📌 **Hugging Face Published Model**: [`firstoff/animalmind-breed-classifier`](https://huggingface.co/firstoff/animalmind-breed-classifier)
 
 ---
 
