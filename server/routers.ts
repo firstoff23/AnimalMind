@@ -951,6 +951,113 @@ export const appRouter = router({
         return data as { species: string; confidence: number };
       }),
 
+    classifyBreedV1: protectedProcedure
+      .input(
+        z.object({
+          image: z.string(),
+          includeInfo: z.boolean().default(true),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        checkRateLimit(ctx, "classify.classifyBreedV1", 45);
+        const userId = await effectiveUserId(ctx.user);
+        await checkAndIncrementAnalysisLimit(userId);
+        const buffer = Buffer.from(input.image, "base64");
+
+        const form = new FormData();
+        const blob = new Blob([buffer], { type: "image/jpeg" });
+        form.append("file", blob, "photo.jpg");
+
+        const backends = [
+          process.env.ML_BACKEND_URL,
+          HF_BACKEND_URL,
+          PRIMARY_BACKEND_URL,
+        ].filter(Boolean) as string[];
+
+        const authHeaders: Record<string, string> = {};
+        if (process.env.API_KEY) {
+          authHeaders["X-API-Key"] = process.env.API_KEY;
+        }
+
+        for (const backendUrl of backends) {
+          try {
+            const endpoint = `/v1/classify-breed?include_info=${input.includeInfo}`;
+            const res = await fetch(`${backendUrl}${endpoint}`, {
+              method: "POST",
+              body: form,
+              headers: authHeaders,
+            });
+            if (res.ok) {
+              return await res.json();
+            }
+          } catch (err) {
+            console.warn(`[ML] Failed classifyBreedV1 on ${backendUrl}:`, err);
+          }
+        }
+
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "Classificação de raça v1 indisponível no momento.",
+        });
+      }),
+
+    submitFeedbackV1: protectedProcedure
+      .input(
+        z.object({
+          model_name: z.string(),
+          model_version: z.string().default("v1.0.0"),
+          input_hash: z.string(),
+          prediction: z.string(),
+          confidence: z.number(),
+          is_correct: z.boolean(),
+          correct_label: z.string().optional(),
+          user_confidence: z.number().optional(),
+          feedback_text: z.string().optional(),
+          metadata: z.record(z.string(), z.any()).optional(),
+          image: z.string().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        checkRateLimit(ctx, "classify.submitFeedbackV1", 60);
+        const form = new FormData();
+        const { image, ...jsonData } = input;
+        form.append("json_data", JSON.stringify(jsonData));
+
+        if (image) {
+          const buffer = Buffer.from(image, "base64");
+          const blob = new Blob([buffer], { type: "image/jpeg" });
+          form.append("image", blob, "feedback.jpg");
+        }
+
+        const backends = [
+          process.env.ML_BACKEND_URL,
+          HF_BACKEND_URL,
+          PRIMARY_BACKEND_URL,
+        ].filter(Boolean) as string[];
+
+        const authHeaders: Record<string, string> = {};
+        if (process.env.API_KEY) {
+          authHeaders["X-API-Key"] = process.env.API_KEY;
+        }
+
+        for (const backendUrl of backends) {
+          try {
+            const res = await fetch(`${backendUrl}/v1/feedback`, {
+              method: "POST",
+              body: form,
+              headers: authHeaders,
+            });
+            if (res.ok) {
+              return await res.json();
+            }
+          } catch (err) {
+            console.warn(`[ML] Failed submitFeedbackV1 on ${backendUrl}:`, err);
+          }
+        }
+
+        return { status: "fallback", id: "local-" + Date.now() };
+      }),
+
     saveVisionEvent: protectedProcedure
       .input(
         z.object({
