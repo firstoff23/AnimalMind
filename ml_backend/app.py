@@ -18,10 +18,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from scipy import signal
 from scipy.io import wavfile
-import asyncpg
+try:
+    import asyncpg
+except ImportError:
+    asyncpg = None
+
 import hashlib
 import json
-import redis as redis_client
+
+try:
+    import redis as redis_client
+except ImportError:
+    redis_client = None
 from datetime import datetime, timezone
 
 from utils.logging import setup_structured_logging

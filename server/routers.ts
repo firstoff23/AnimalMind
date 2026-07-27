@@ -969,12 +969,16 @@ export const appRouter = router({
         form.append("file", blob, "photo.jpg");
 
         const backends = [
+          process.env.FASTAPI_BACKEND_URL,
           process.env.ML_BACKEND_URL,
           HF_BACKEND_URL,
           PRIMARY_BACKEND_URL,
         ].filter(Boolean) as string[];
 
         const authHeaders: Record<string, string> = {};
+        if (ctx.req.headers.authorization) {
+          authHeaders["Authorization"] = ctx.req.headers.authorization;
+        }
         if (process.env.API_KEY) {
           authHeaders["X-API-Key"] = process.env.API_KEY;
         }
@@ -1030,12 +1034,16 @@ export const appRouter = router({
         }
 
         const backends = [
+          process.env.FASTAPI_BACKEND_URL,
           process.env.ML_BACKEND_URL,
           HF_BACKEND_URL,
           PRIMARY_BACKEND_URL,
         ].filter(Boolean) as string[];
 
         const authHeaders: Record<string, string> = {};
+        if (ctx.req.headers.authorization) {
+          authHeaders["Authorization"] = ctx.req.headers.authorization;
+        }
         if (process.env.API_KEY) {
           authHeaders["X-API-Key"] = process.env.API_KEY;
         }
