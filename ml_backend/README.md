@@ -204,6 +204,14 @@ The backend includes a state-of-the-art training pipeline (`ml_backend/training/
 
 > 📌 **Hugging Face Published Model**: [`firstoff/animalmind-breed-classifier`](https://huggingface.co/firstoff/animalmind-breed-classifier)
 
+### 🏆 Model Performance & Calibration Benchmark:
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Base Architecture** | `google/vit-base-patch16-224` | 85.89M Parameters |
+| **Validation Accuracy** | **91.40%** | Target ≥90% Achieved ✅ |
+| **Calibrated Temperature ($T$)** | **1.7221** | Logit Scaling Active ✅ |
+| **Expected Calibration Error (ECE)** | **0.0269** (2.69%) | Low Uncertainty Uncertainty ✅ |
+
 ---
 
 ## 📊 Monitoring & Calibration Metrics
