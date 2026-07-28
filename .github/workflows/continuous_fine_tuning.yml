@@ -1,0 +1,33 @@
+name: 🔄 AnimalMind Continuous Fine-Tuning Pipeline
+
+on:
+  schedule:
+    # Run weekly every Sunday at 02:00 UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  fine-tune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install ML Training Dependencies
+        run: |
+          cd ml_backend
+          python -m pip install --upgrade pip
+          pip install -r requirements_training.txt
+
+      - name: Execute Continuous Fine-Tuning Script
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd ml_backend
+          python -m training.fine_tune_from_feedback --min-samples 10 --epochs 3 --push-to-hub
