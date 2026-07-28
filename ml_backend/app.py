@@ -60,9 +60,11 @@ app.add_middleware(
 from routers.classify_breed import router as breed_router
 from routers.feedback import router as feedback_router
 from routers.health import router as health_router
+from routers.v1.audio import router as audio_router
 
 app.include_router(breed_router, prefix="/v1")
 app.include_router(feedback_router, prefix="/v1")
+app.include_router(audio_router, prefix="/v1")
 app.include_router(health_router)
 
 # --- Globals: DB pool e Redis client ---
