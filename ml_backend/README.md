@@ -208,11 +208,11 @@ The backend includes a state-of-the-art training pipeline (`ml_backend/training/
 > - Audio Vocalization Classifier: [`firstoff/animalmind-audio-classifier`](https://huggingface.co/firstoff/animalmind-audio-classifier)
 
 ### 🏆 Model Performance & Calibration Benchmark:
-| Model / Task | Architecture | Validation Accuracy | Temperature ($T$) | ECE | Status |
-|--------------|--------------|---------------------|-------------------|-----|--------|
-| **Dog Breed Classifier** | `google/vit-base-patch16-224` | **91.40%** | **1.7221** | **2.69%** | Active ✅ |
-| **Cat Breed Classifier** | `google/vit-base-patch16-224` | **94.17%** | **1.8345** | **4.96%** | Active ✅ |
-| **Audio Classifier** | `facebook/wav2vec2-base` | **92.10%** | **1.5028** | **3.85%** | Active ✅ |
+| Model / Task | Architecture | Validation Accuracy | Temperature ($T$) | ECE | HF Hub Status |
+|--------------|--------------|---------------------|-------------------|-----|---------------|
+| **Dog Breed Classifier** | `google/vit-base-patch16-224` | **91.40%** | **1.7221** | **2.69%** | Published ✅ [`firstoff/animalmind-breed-classifier`](https://huggingface.co/firstoff/animalmind-breed-classifier) |
+| **Cat Breed Classifier** | `google/vit-base-patch16-224` | **94.17%** | **1.8345** | **4.96%** | Published ✅ [`firstoff/animalmind-cat-classifier`](https://huggingface.co/firstoff/animalmind-cat-classifier) |
+| **Audio Classifier** | `facebook/wav2vec2-base` | **92.10%** | **1.5028** | **3.85%** | Ready on Colab ⌛ [`run_training_audio.ipynb`](training/run_training_audio.ipynb) |
 
 ---
 
