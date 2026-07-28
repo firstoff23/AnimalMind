@@ -202,15 +202,24 @@ The backend includes a state-of-the-art training pipeline (`ml_backend/training/
   python -m training.train_dog_breeds --batch-size 32 --epochs 50 --model-name google/vit-base-patch16-224 --push-to-hub firstoff/animalmind-breed-classifier
   ```
 
-> 📌 **Hugging Face Published Model**: [`firstoff/animalmind-breed-classifier`](https://huggingface.co/firstoff/animalmind-breed-classifier)
+> 📌 **Hugging Face Published Models**:
+> - Dog Classifier: [`firstoff/animalmind-breed-classifier`](https://huggingface.co/firstoff/animalmind-breed-classifier)
+> - Cat Classifier: [`firstoff/animalmind-cat-classifier`](https://huggingface.co/firstoff/animalmind-cat-classifier)
+> - Audio Vocalization Classifier: [`firstoff/animalmind-audio-classifier`](https://huggingface.co/firstoff/animalmind-audio-classifier)
 
 ### 🏆 Model Performance & Calibration Benchmark:
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Base Architecture** | `google/vit-base-patch16-224` | 85.89M Parameters |
-| **Validation Accuracy** | **91.40%** | Target ≥90% Achieved ✅ |
-| **Calibrated Temperature ($T$)** | **1.7221** | Logit Scaling Active ✅ |
-| **Expected Calibration Error (ECE)** | **0.0269** (2.69%) | Low Uncertainty Uncertainty ✅ |
+| Model / Task | Architecture | Validation Accuracy | Temperature ($T$) | ECE | Status |
+|--------------|--------------|---------------------|-------------------|-----|--------|
+| **Dog Breed Classifier** | `google/vit-base-patch16-224` | **91.40%** | **1.7221** | **2.69%** | Active ✅ |
+| **Cat Breed Classifier** | `google/vit-base-patch16-224` | **94.17%** | **1.8345** | **4.96%** | Active ✅ |
+| **Audio Classifier** | `facebook/wav2vec2-base` | **92.10%** | **1.5028** | **3.85%** | Active ✅ |
+
+---
+
+## 🩺 Symptom Model Feasibility Evaluation
+
+For a detailed analysis on why AnimalMind relies on a **Guided Interactive Questionnaire + YOLO Posture Detection** rather than an autonomous medical vision model, read the full feasibility report:  
+📄 [Symptom Model Feasibility Report](docs/symptom_model_feasibility.md)
 
 ---
 

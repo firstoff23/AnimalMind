@@ -104,9 +104,11 @@ async def classify_breed_v1(
         if hasattr(outputs, "logits") or "logits" in outputs:
             logits = outputs.logits if hasattr(outputs, "logits") else outputs["logits"]
 
-            # Apply Temperature Scaling if calibrated parameter exists
+            # Apply Temperature Scaling if calibrated parameter exists (dog or cat)
             import pathlib
-            temp_path = pathlib.Path(__file__).parent.parent / "models" / "temperature.pt"
+            dog_temp = pathlib.Path(__file__).parent.parent / "models" / "temperature.pt"
+            cat_temp = pathlib.Path(__file__).parent.parent / "models" / "cat_temperature.pt"
+            temp_path = cat_temp if cat_temp.exists() else dog_temp
             if temp_path.exists():
                 try:
                     temp_data = torch.load(str(temp_path), map_location="cpu")
