@@ -161,8 +161,8 @@ def main():
 
     if args.push_to_hub and os.getenv("HF_TOKEN"):
         print(f"[AudioTraining] Pushing model to HF Hub: {args.push_to_hub}...")
-        model.push_to_hub(args.push_to_hub, use_auth_token=os.getenv("HF_TOKEN"))
-        feature_extractor.push_to_hub(args.push_to_hub, use_auth_token=os.getenv("HF_TOKEN"))
+        model.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
+        feature_extractor.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
         print("[AudioTraining] Pushed successfully!")
 
 

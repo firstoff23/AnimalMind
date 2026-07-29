@@ -147,8 +147,14 @@ def main():
         label2id=LABEL2ID_CAT,
         ignore_mismatched_sizes=True
     )
+    base_model.config.num_labels = len(CAT_BREEDS_12)
+    base_model.config.id2label = ID2LABEL_CAT
+    base_model.config.label2id = LABEL2ID_CAT
 
     dataset = SyntheticCatDataset(num_samples=120 if args.dry_run else 600)
+    sample_labels = [dataset[i][1] for i in range(min(10, len(dataset)))]
+    print(f"[CatTraining] Verification - First 10 dataset labels: {sample_labels}")
+
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_ds, val_ds = torch.utils.data.random_split(dataset, [train_size, val_size])
@@ -200,8 +206,8 @@ def main():
 
     if args.push_to_hub and os.getenv("HF_TOKEN"):
         print(f"[CatTraining] Pushing model to HF Hub: {args.push_to_hub}...")
-        base_model.push_to_hub(args.push_to_hub, use_auth_token=os.getenv("HF_TOKEN"))
-        image_processor.push_to_hub(args.push_to_hub, use_auth_token=os.getenv("HF_TOKEN"))
+        base_model.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
+        image_processor.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
         print("[CatTraining] Pushed successfully!")
 
 
