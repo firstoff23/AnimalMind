@@ -97,45 +97,45 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.98 0.005 162);
-  --foreground: oklch(0.16 0.015 245);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.015 245);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.015 245);
-  --primary: oklch(0.7 0.17 162); /* emerald-500 ≈ #10b981 */
-  --primary-foreground: oklch(0.99 0.004 162);
-  --secondary: oklch(0.94 0.006 245);
-  --secondary-foreground: oklch(0.18 0.015 245);
-  --muted: oklch(0.94 0.006 245);
-  --muted-foreground: oklch(0.48 0.02 245);
-  --accent: oklch(0.92 0.025 162);
-  --accent-foreground: oklch(0.18 0.015 245);
-  --destructive: oklch(0.6 0.22 27); /* red-500 */
-  --border: oklch(0.88 0.01 245);
-  --input: oklch(0.88 0.01 245);
-  --ring: oklch(0.7 0.17 162);
+  --background: #090a0f;
+  --foreground: #f8fafc;
+  --card: #11131c;
+  --card-foreground: #f8fafc;
+  --popover: #11131c;
+  --popover-foreground: #f8fafc;
+  --primary: #10b981;
+  --primary-foreground: #090a0f;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #64748b;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --border: #334155;
+  --input: #334155;
+  --ring: #10b981;
 }
 
 .dark {
-  --background: #0a0a0b;
-  --foreground: oklch(0.97 0.003 264);
-  --card: #111113;
-  --card-foreground: oklch(0.97 0.003 264);
-  --popover: #111113;
-  --popover-foreground: oklch(0.97 0.003 264);
-  --primary: #22c55e;
-  --primary-foreground: #0a0a0b;
-  --secondary: #1c1c1f;
-  --secondary-foreground: oklch(0.97 0.003 264);
-  --muted: #1c1c1f;
-  --muted-foreground: oklch(0.60 0.012 264);
-  --accent: #1c1c1f;
-  --accent-foreground: oklch(0.97 0.003 264);
-  --destructive: oklch(0.6 0.22 27);
-  --border: #1f1f23;
-  --input: #1f1f23;
-  --ring: #22c55e;
+  --background: #090a0f;
+  --foreground: #f8fafc;
+  --card: #11131c;
+  --card-foreground: #f8fafc;
+  --popover: #11131c;
+  --popover-foreground: #f8fafc;
+  --primary: #10b981;
+  --primary-foreground: #090a0f;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #64748b;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #ef4444;
+  --border: #334155;
+  --input: #334155;
+  --ring: #10b981;
 }
 
 @layer base {

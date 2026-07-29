@@ -85,8 +85,36 @@ class ModelWithTemperature(nn.Module):
         return self.temperature.item()
 
 
+class CatDataset(Dataset):
+    """Wrapper to load from ImageFolder or HF dataset."""
+    
+    def __init__(self, data_path=None, hf_dataset=None, transform=None):
+        self.transform = transform
+        self.is_hf = hf_dataset is not None
+        if self.is_hf:
+            self.dataset = hf_dataset
+        else:
+            import torchvision
+            self.dataset = torchvision.datasets.ImageFolder(data_path)
+            
+    def __len__(self):
+        return len(self.dataset)
+        
+    def __getitem__(self, idx):
+        if self.is_hf:
+            item = self.dataset[idx]
+            image = item["image"].convert("RGB")
+            label = item["label"]
+        else:
+            image, label = self.dataset[idx]
+            
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+
+
 class SyntheticCatDataset(Dataset):
-    """Synthetic dataset for dry-run testing."""
+    """Synthetic dataset for dry-run testing fallback."""
 
     def __init__(self, num_samples: int = 120, transform=None):
         self.num_samples = num_samples
@@ -154,18 +182,71 @@ def main():
     train_transforms = transforms.Compose([
         transforms.RandomRotation(15),
         transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
-        transforms.RandomHorizontalFlip()
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    dataset = SyntheticCatDataset(num_samples=120 if args.dry_run else 600, transform=train_transforms)
-    sample_labels = [dataset[i][1] for i in range(min(10, len(dataset)))]
-    print(f"[CatTraining] Verification - First 10 dataset labels: {sample_labels}")
+    dataset_path = pathlib.Path("/content/AnimalMind/ml_backend/data/cats/")
+    if not dataset_path.exists():
+        dataset_path = pathlib.Path("data/cats")
+        
+    print(f"[CatTraining] Target dataset path: {dataset_path.absolute()}")
+    
+    if dataset_path.exists():
+        print("[CatTraining] Local dataset found. Listing first 10 files:")
+        image_files = list(dataset_path.rglob("*.jpg"))
+        for f in image_files[:10]:
+            print(f" - {f}")
+        dataset = CatDataset(data_path=dataset_path, transform=train_transforms)
+    else:
+        print("[CatTraining] Local dataset NOT found. Attempting to download from HF 'dima806/cat_breeds_image_detection'...")
+        try:
+            from datasets import load_dataset
+            hf_ds = load_dataset("dima806/cat_breeds_image_detection", split="train")
+            print(f"[CatTraining] Successfully loaded HF dataset. Size: {len(hf_ds)}")
+            dataset = CatDataset(hf_dataset=hf_ds, transform=train_transforms)
+        except Exception as e:
+            print(f"[CatTraining] Error loading HF dataset: {e}. Falling back to synthetic for debugging.")
+            dataset = SyntheticCatDataset(num_samples=120 if args.dry_run else 600, transform=train_transforms)
+
+    # Dataset verification
+    print(f"[CatTraining] Total dataset size: {len(dataset)}")
+    if len(dataset) > 0:
+        sample_labels = [dataset[i][1] for i in range(min(10, len(dataset)))]
+        print(f"[CatTraining] Verification - First 10 dataset labels: {sample_labels}")
 
     class_counts = {}
     for i in range(len(dataset)):
         lbl = dataset[i][1]
         class_counts[lbl] = class_counts.get(lbl, 0) + 1
     print(f"[CatTraining] Class sample distribution: {class_counts}")
+
+    # Sanity check with Logistic Regression
+    print("[CatTraining] Running Sanity Check (Logistic Regression)...")
+    try:
+        from sklearn.linear_model import LogisticRegression
+        sample_images, sample_labels = [], []
+        # Use a small subset (e.g., 50 samples) for the check
+        sanity_ds = torch.utils.data.Subset(dataset, range(min(50, len(dataset))))
+        sanity_loader = DataLoader(sanity_ds, batch_size=16)
+        
+        with torch.no_grad():
+            for imgs, lbls in sanity_loader:
+                sample_images.append(imgs.view(imgs.size(0), -1).numpy())
+                sample_labels.append(lbls.numpy())
+                
+        X_sanity = np.concatenate(sample_images, axis=0)
+        y_sanity = np.concatenate(sample_labels, axis=0)
+        
+        clf = LogisticRegression(max_iter=100)
+        clf.fit(X_sanity, y_sanity)
+        score = clf.score(X_sanity, y_sanity)
+        print(f"[CatTraining] Sanity Check Logistic Regression Accuracy on {len(X_sanity)} samples: {score*100:.2f}%")
+        if score < 0.2:
+            print("[CatTraining] WARNING: Sanity check accuracy is very low! Model might struggle to learn.")
+    except Exception as e:
+        print(f"[CatTraining] Sanity check failed (possibly missing sklearn): {e}")
 
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -219,8 +300,8 @@ def main():
     if args.push_to_hub and os.getenv("HF_TOKEN"):
         print(f"[CatTraining] Pushing model to HF Hub: {args.push_to_hub}...")
         try:
-            base_model.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"), ignore_metadata_errors=True)
-            image_processor.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"), ignore_metadata_errors=True)
+            base_model.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
+            image_processor.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
             print("[CatTraining] Pushed successfully!")
         except Exception as push_err:
             print(f"[CatTraining] Warning during push_to_hub: {push_err}")

@@ -93,7 +93,7 @@ export function BottomNav() {
                 className={cn(
                   "relative flex-1 flex flex-col items-center justify-center py-2 px-1 focus:outline-none transition-colors tap-highlight-none",
                   active
-                    ? "text-teal-400"
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
                 )}
                 aria-label={label}
@@ -103,7 +103,7 @@ export function BottomNav() {
                 {active && !isCenter && (
                   <motion.div
                     layoutId="activeTabBubble"
-                    className="absolute inset-0 bg-teal-500/10 rounded-2xl z-0"
+                    className="absolute inset-0 bg-primary/10 rounded-2xl z-0"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -113,8 +113,8 @@ export function BottomNav() {
                     className={cn(
                       "relative z-10 flex items-center justify-center w-10 h-10 rounded-full border transition-all duration-300",
                       active
-                        ? "bg-teal-500 border-teal-500 text-slate-950 shadow-lg shadow-teal-500/20 scale-105"
-                        : "bg-secondary border-border/80 text-foreground hover:border-teal-500/30",
+                        ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
+                        : "bg-secondary border-border/80 text-foreground hover:border-primary/30",
                     )}
                   >
                     <Icon size={18} strokeWidth={2.5} />
@@ -165,7 +165,7 @@ export function BottomNav() {
                   className={cn(
                     "flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all active:scale-95",
                     active
-                      ? "border-teal-500/30 bg-teal-500/10 text-teal-400"
+                      ? "border-primary/30 bg-primary/10 text-primary"
                       : "border-border/50 bg-secondary/50 text-foreground hover:bg-secondary"
                   )}
                 >

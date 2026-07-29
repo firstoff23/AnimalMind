@@ -211,8 +211,8 @@ The backend includes a state-of-the-art training pipeline (`ml_backend/training/
 | Model / Task | Architecture | Validation Accuracy | Temperature ($T$) | ECE | HF Hub Status |
 |--------------|--------------|---------------------|-------------------|-----|---------------|
 | **Dog Breed Classifier** | `google/vit-base-patch16-224` | **91.40%** | **1.7221** | **2.69%** | Published ✅ [`firstoff/animalmind-breed-classifier`](https://huggingface.co/firstoff/animalmind-breed-classifier) |
-| **Cat Breed Classifier** | `google/vit-base-patch16-224` | **94.17%** | **1.6914** | **2.83%** | Published ✅ [`firstoff/animalmind-cat-classifier`](https://huggingface.co/firstoff/animalmind-cat-classifier) |
-| **Audio Vocalization Classifier** | `facebook/wav2vec2-base` | **92.10%** | **1.5028** | **2.75%** | Ready on Colab ⌛ [`run_training_audio.ipynb`](training/run_training_audio.ipynb) |
+| **Cat Breed Classifier** | `google/vit-base-patch16-224` | **A aguardar** | **-** | **-** | Em treino ⌛ [`run_training_cat.ipynb`](training/run_training_cat.ipynb) |
+| **Audio Vocalization Classifier** | `facebook/wav2vec2-base` | **92.10%** | **1.5028** | **2.75%** | Published ✅ [`firstoff/animalmind-audio-classifier`](https://huggingface.co/firstoff/animalmind-audio-classifier) |
 
 ---
 
