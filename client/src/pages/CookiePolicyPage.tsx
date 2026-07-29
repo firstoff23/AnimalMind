@@ -1,6 +1,5 @@
 import { ArrowLeft, Cookie } from "lucide-react";
 import { useLocation } from "wouter";
-import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,8 +18,7 @@ export default function CookiePolicyPage() {
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden font-sans">
-      <BackgroundGrid className="opacity-40" />
-
+      
       {/* Header */}
       <header className="w-full max-w-4xl mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-900 z-10">
         <div

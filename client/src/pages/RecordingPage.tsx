@@ -33,7 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { GlowingButton } from "@/components/ui/GlowingButton";
+
 import { Progress } from "@/components/ui/progress";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -1535,7 +1535,7 @@ export default function RecordingPage() {
                       transform: `scale(${1 + Math.min(0.18, liveAudioLevel * 0.18)})`,
                     }}
                   />
-                  <GlowingButton
+                  <Button
                     data-testid="record-button"
                     onPointerDown={handlePointerDown}
                     onPointerUp={handlePointerUp}
@@ -1569,7 +1569,7 @@ export default function RecordingPage() {
                     aria-label="Iniciar gravação"
                   >
                     {renderButtonContent()}
-                  </GlowingButton>
+                  </Button>
                 </div>
 
                 <div className="w-full rounded-2xl border border-white/10 bg-black/20 p-3">

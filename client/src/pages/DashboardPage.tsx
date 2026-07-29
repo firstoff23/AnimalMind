@@ -34,7 +34,7 @@ import { VetReportButton } from "@/components/VetReportButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -509,19 +509,14 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants}>
           <div
             className={cn(
-              "relative overflow-hidden rounded-[1.75rem] border bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)] transition-all duration-500",
+              "relative overflow-hidden rounded-[1.75rem] border bg-card p-6 shadow-sm transition-all duration-500",
               mood === "calm"
                 ? "border-mood-primary/15"
                 : mood === "concerned"
                   ? "border-mood-primary/25"
                   : "border-mood-primary/15",
             )}
-            style={{
-              boxShadow: `0 8px 30px rgba(var(--mood-color-rgb), 0.05)`,
-            }}
           >
-            <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-mood-primary/10 blur-3xl transition-all duration-500" />
-            <div className="absolute -bottom-12 left-4 h-28 w-28 rounded-full bg-mood-primary/5 blur-3xl transition-all duration-500" />
 
             <div className="relative space-y-5">
               <div className="flex items-start justify-between gap-4">
@@ -625,16 +620,16 @@ export default function DashboardPage() {
 
               <div className="grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
                 <Link to="/gravar">
-                  <Button className="h-auto w-full justify-between rounded-2xl bg-[var(--color-primary)] px-4 py-4 text-left text-white shadow-[var(--shadow-glow)] hover:bg-emerald-500 active-scale tap-highlight-none">
+                  <Button className="h-auto w-full justify-between rounded-2xl px-4 py-4 text-left active-scale tap-highlight-none">
                     <span className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/20">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/10 dark:bg-black/20">
                         <Mic className="h-5 w-5" />
                       </span>
                       <span>
                         <span className="block text-sm font-bold">
                           {language === "pt" ? "Gravar agora" : "Record now"}
                         </span>
-                        <span className="block text-[11px] font-medium text-white/75">
+                        <span className="block text-[11px] font-medium opacity-75">
                           {language === "pt"
                             ? "Classificação em segundos"
                             : "Classification in seconds"}
@@ -645,7 +640,7 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
 
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="rounded-2xl border border-border bg-secondary/30 p-4">
                   <div className="flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
                     <Clock3 className="h-3.5 w-3.5 text-amber-300" />
                     {language === "pt" ? "Última gravação" : "Last recording"}
@@ -916,22 +911,22 @@ export default function DashboardPage() {
             variants={itemVariants}
             className="grid grid-cols-2 gap-3"
           >
-            <SpotlightCard className="flex flex-col items-center justify-center p-4 text-center">
+            <div className="flex flex-col items-center justify-center p-4 text-center rounded-2xl bg-card border border-border shadow-sm">
               <span className="text-2xl font-bold text-primary">
                 <AnimatedNumber value={events.length} />
               </span>
               <span className="text-xs text-muted-foreground mt-1 font-medium">
                 {t("dashboardPage.statsRecordings")}
               </span>
-            </SpotlightCard>
-            <SpotlightCard className="flex flex-col items-center justify-center p-4 text-center">
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 text-center rounded-2xl bg-card border border-border shadow-sm">
               <span className="text-2xl font-bold text-primary">
                 <AnimatedNumber value={animals.length} />
               </span>
               <span className="text-xs text-muted-foreground mt-1 font-medium">
                 {t("dashboardPage.statsAnimals")}
               </span>
-            </SpotlightCard>
+            </div>
           </motion.div>
         )}
 
@@ -1258,7 +1253,7 @@ export default function DashboardPage() {
 
             {/* POMDP Belief State - Humor Consolidado */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard className="space-y-4">
+              <Card className="space-y-4 p-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     {t("dashboardPage.consolidatedMood")}
@@ -1271,7 +1266,7 @@ export default function DashboardPage() {
                 {beliefState ? (
                   <div className="space-y-3">
                     {dominantBelief && (
-                      <div className="bg-secondary/20 p-3 rounded-xl border border-border/30 flex items-center gap-3">
+                      <div className="bg-secondary/20 p-3 rounded-xl border border-border flex items-center gap-3">
                         <div
                           className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
                           style={{
@@ -1366,12 +1361,12 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 </div>
-              </SpotlightCard>
+              </Card>
             </motion.div>
 
             {/* Bar chart: state distribution */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard className="space-y-3">
+              <Card className="space-y-3 p-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t("dashboardPage.statesDistributionTitle")}
                 </h2>
@@ -1422,12 +1417,12 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 )}
-              </SpotlightCard>
+              </Card>
             </motion.div>
 
             {/* Line chart: daily average confidence */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard className="space-y-3">
+              <Card className="space-y-3 p-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t("dashboardPage.avgConfidence")}
                 </h2>
@@ -1471,12 +1466,12 @@ export default function DashboardPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 )}
-              </SpotlightCard>
+              </Card>
             </motion.div>
 
             {/* State legend */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard>
+              <Card className="p-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   {t("dashboardPage.legend")}
                 </h2>
@@ -1496,7 +1491,7 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-              </SpotlightCard>
+              </Card>
             </motion.div>
           </div>
         )}

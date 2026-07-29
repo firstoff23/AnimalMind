@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 
 export function OnboardingFlow() {
@@ -297,7 +297,7 @@ export function OnboardingFlow() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.15, duration: 0.3 }}
                     >
-                      <SpotlightCard className="flex items-start gap-4 border-neutral-900 bg-neutral-950 p-4">
+                      <Card className="flex items-start gap-4 border-neutral-900 bg-neutral-950 p-4">
                         <div className={`p-3 rounded-xl border ${item.color}`}>
                           <Icon size={20} />
                         </div>
@@ -309,7 +309,7 @@ export function OnboardingFlow() {
                             {item.desc}
                           </p>
                         </div>
-                      </SpotlightCard>
+                      </Card>
                     </motion.div>
                   );
                 })}

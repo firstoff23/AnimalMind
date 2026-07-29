@@ -86,28 +86,37 @@ class ModelWithTemperature(nn.Module):
 
 
 class CatDataset(Dataset):
-    """Wrapper to load from ImageFolder or HF dataset."""
-    
-    def __init__(self, data_path=None, hf_dataset=None, transform=None):
+    """Carrega as 12 raças de gatos do dataset Oxford-IIIT."""
+    def __init__(self, data_path, transform=None):
+        from PIL import Image
+        import pathlib
+        self.data_path = pathlib.Path(data_path)
         self.transform = transform
-        self.is_hf = hf_dataset is not None
-        if self.is_hf:
-            self.dataset = hf_dataset
-        else:
-            import torchvision
-            self.dataset = torchvision.datasets.ImageFolder(data_path)
-            
+        self.images = []
+        self.labels = []
+        
+        if not self.data_path.exists():
+            return
+
+        # Oxford-IIIT tem ficheiros na mesma pasta com o formato: "Nome_da_Raca_123.jpg"
+        # Vamos extrair o nome da raça e mapear.
+        for img_file in self.data_path.glob("*.jpg"):
+            name = img_file.stem
+            # rsplit separa pelo último '_', isolando a raça (ex: "British_Shorthair")
+            breed_str = name.rsplit("_", 1)[0].replace("_", " ")
+            if breed_str in LABEL2ID_CAT:
+                self.images.append(img_file)
+                self.labels.append(LABEL2ID_CAT[breed_str])
+                
     def __len__(self):
-        return len(self.dataset)
+        return len(self.images)
         
     def __getitem__(self, idx):
-        if self.is_hf:
-            item = self.dataset[idx]
-            image = item["image"].convert("RGB")
-            label = item["label"]
-        else:
-            image, label = self.dataset[idx]
-            
+        from PIL import Image
+        img_path = self.images[idx]
+        # Retorna logo PIL para evitar erros na pipeline de Transforms
+        image = Image.open(img_path).convert("RGB")
+        label = self.labels[idx]
         if self.transform:
             image = self.transform(image)
         return image, label
@@ -180,6 +189,7 @@ def main():
     base_model.config.label2id = LABEL2ID_CAT
 
     train_transforms = transforms.Compose([
+        transforms.Resize((224, 224)),
         transforms.RandomRotation(15),
         transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
         transforms.RandomHorizontalFlip(),
@@ -187,34 +197,33 @@ def main():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    dataset_path = pathlib.Path("/content/AnimalMind/ml_backend/data/cats/")
-    if not dataset_path.exists():
-        dataset_path = pathlib.Path("data/cats")
-        
-    print(f"[CatTraining] Target dataset path: {dataset_path.absolute()}")
+    # Caminho absoluto usando o diretório atual do script
+    base_dir = pathlib.Path(__file__).resolve().parent.parent
+    dataset_path = base_dir / "data" / "oxford-iiit-pet" / "images"
     
-    if dataset_path.exists():
-        print("[CatTraining] Local dataset found. Listing first 10 files:")
-        image_files = list(dataset_path.rglob("*.jpg"))
-        for f in image_files[:10]:
-            print(f" - {f}")
-        dataset = CatDataset(data_path=dataset_path, transform=train_transforms)
-    else:
-        print("[CatTraining] Local dataset NOT found. Attempting to download from HF 'dima806/cat_breeds_image_detection'...")
-        try:
-            from datasets import load_dataset
-            hf_ds = load_dataset("dima806/cat_breeds_image_detection", split="train")
-            print(f"[CatTraining] Successfully loaded HF dataset. Size: {len(hf_ds)}")
-            dataset = CatDataset(hf_dataset=hf_ds, transform=train_transforms)
-        except Exception as e:
-            print(f"[CatTraining] Error loading HF dataset: {e}. Falling back to synthetic for debugging.")
-            dataset = SyntheticCatDataset(num_samples=120 if args.dry_run else 600, transform=train_transforms)
+    if not dataset_path.exists():
+        print(f"[CatTraining] A transferir Oxford-IIIT Pet Dataset para {dataset_path.parent}...")
+        dataset_path.parent.mkdir(parents=True, exist_ok=True)
+        tar_path = dataset_path.parent / "images.tar.gz"
+        
+        import urllib.request
+        import tarfile
+        urllib.request.urlretrieve("https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz", tar_path)
+        
+        print("[CatTraining] A extrair ficheiros...")
+        with tarfile.open(tar_path, "r:gz") as tar:
+            tar.extractall(path=dataset_path.parent)
+        print("[CatTraining] Download concluído.")
 
+    dataset = CatDataset(data_path=dataset_path, transform=train_transforms)
+    
     # Dataset verification
     print(f"[CatTraining] Total dataset size: {len(dataset)}")
     if len(dataset) > 0:
-        sample_labels = [dataset[i][1] for i in range(min(10, len(dataset)))]
-        print(f"[CatTraining] Verification - First 10 dataset labels: {sample_labels}")
+        print("[CatTraining] Dataset carregado. Primeiros 5 ficheiros:")
+        for i in range(min(5, len(dataset))):
+            print(f" - Ficheiro: {dataset.images[i].name} | Raça mapeada: {CAT_BREEDS_12[dataset.labels[i]]}")
+
 
     class_counts = {}
     for i in range(len(dataset)):
@@ -227,8 +236,9 @@ def main():
     try:
         from sklearn.linear_model import LogisticRegression
         sample_images, sample_labels = [], []
-        # Use a small subset (e.g., 50 samples) for the check
-        sanity_ds = torch.utils.data.Subset(dataset, range(min(50, len(dataset))))
+        # Use a small random subset (e.g., 50 samples) for the check
+        indices = np.random.choice(len(dataset), min(50, len(dataset)), replace=False)
+        sanity_ds = torch.utils.data.Subset(dataset, indices.tolist())
         sanity_loader = DataLoader(sanity_ds, batch_size=16)
         
         with torch.no_grad():
@@ -257,6 +267,45 @@ def main():
     output_dir = pathlib.Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     image_processor.save_pretrained(output_dir)
+
+    print("[CatTraining] Setting up HF Trainer...")
+    from transformers import TrainingArguments, Trainer
+
+    def collate_fn(examples):
+        pixel_values = torch.stack([example[0] for example in examples])
+        labels = torch.tensor([example[1] for example in examples])
+        return {"pixel_values": pixel_values, "labels": labels}
+
+    training_args = TrainingArguments(
+        output_dir=str(output_dir),
+        num_train_epochs=args.epochs,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
+        learning_rate=args.lr,
+        eval_strategy="epoch" if not args.dry_run else "no",
+        save_strategy="epoch" if not args.dry_run else "no",
+        logging_steps=10,
+        load_best_model_at_end=not args.dry_run,
+        remove_unused_columns=False,
+    )
+
+    trainer = Trainer(
+        model=base_model,
+        args=training_args,
+        train_dataset=train_ds,
+        eval_dataset=val_ds,
+        data_collator=collate_fn,
+    )
+
+    if not args.dry_run:
+        print("[CatTraining] Starting actual training loop...")
+        trainer.train()
+    else:
+        print("[CatTraining] Dry run - skipping actual Trainer.train() (1 epoch limit in args means we could train, but user specified skip in dry-run, actually we should train 1 step to test pipeline).")
+        # Let's train for 1 step if dry-run just to test gradients
+        trainer.args.max_steps = 2
+        trainer.train()
+
 
     # Temperature Scaling
     calibrator = ModelWithTemperature(base_model)

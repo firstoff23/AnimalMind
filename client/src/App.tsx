@@ -4,7 +4,6 @@ import { lazy, Suspense, useEffect } from "react";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { CommandPalette } from "@/components/CommandPalette";
-import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
@@ -164,8 +163,6 @@ function Router() {
         !isAuthenticated && "flex-col",
       )}
     >
-      {/* Background Grid */}
-      {isAuthenticated && <BackgroundGrid />}
 
       <RealtimeNotificationsBridge enabled={isAuthenticated} />
       <PushNotificationsBridge enabled={isAuthenticated} />
@@ -438,12 +435,10 @@ function Router() {
         <CookieBanner />
 
         {/* Global Command Palette */}
-        {isAuthenticated && (
-          <CommandPalette
-            open={commandPaletteOpen}
-            onOpenChange={setCommandPaletteOpen}
-          />
-        )}
+        <CommandPalette
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
+        />
       </div>
     </div>
   );

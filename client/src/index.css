@@ -96,46 +96,46 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: #090a0f;
-  --foreground: #f8fafc;
-  --card: #11131c;
-  --card-foreground: #f8fafc;
-  --popover: #11131c;
-  --popover-foreground: #f8fafc;
-  --primary: #10b981;
-  --primary-foreground: #090a0f;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #64748b;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
+  --radius: 1.5rem; /* rounded-2xl to 3xl feel */
+  --background: #F9FAFB;
+  --foreground: #18181B;
+  --card: #FFFFFF;
+  --card-foreground: #18181B;
+  --popover: #FFFFFF;
+  --popover-foreground: #18181B;
+  --primary: #D97757;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #18181B;
+  --muted: #F1F5F9;
+  --muted-foreground: #71717A;
+  --accent: #F1F5F9;
+  --accent-foreground: #18181B;
   --destructive: #ef4444;
-  --border: #334155;
-  --input: #334155;
-  --ring: #10b981;
+  --border: rgba(226, 232, 240, 0.5);
+  --input: #E2E8F0;
+  --ring: #D97757;
 }
 
 .dark {
   --background: #090a0f;
-  --foreground: #f8fafc;
+  --foreground: #F9FAFB;
   --card: #11131c;
-  --card-foreground: #f8fafc;
+  --card-foreground: #F9FAFB;
   --popover: #11131c;
-  --popover-foreground: #f8fafc;
-  --primary: #10b981;
-  --primary-foreground: #090a0f;
+  --popover-foreground: #F9FAFB;
+  --primary: #D97757;
+  --primary-foreground: #FFFFFF;
   --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
+  --secondary-foreground: #F9FAFB;
   --muted: #1e293b;
-  --muted-foreground: #64748b;
+  --muted-foreground: #a1a1aa;
   --accent: #1e293b;
-  --accent-foreground: #f8fafc;
+  --accent-foreground: #F9FAFB;
   --destructive: #ef4444;
-  --border: #334155;
+  --border: rgba(51, 65, 85, 0.5);
   --input: #334155;
-  --ring: #10b981;
+  --ring: #D97757;
 }
 
 @layer base {
@@ -144,7 +144,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-satoshi), "Inter", system-ui, sans-serif;
+    font-family: "Outfit", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 }
