@@ -47,6 +47,8 @@ import { useAppStore } from "@/store/appStore";
 import type { EmotionalState } from "../../../shared/types";
 import { STATE_COLORS, STATE_LABELS } from "../../../shared/types";
 
+const MotionButton = motion.create(Button);
+
 type RecordState =
   | "idle"
   | "requesting"
@@ -1535,7 +1537,7 @@ export default function RecordingPage() {
                       transform: `scale(${1 + Math.min(0.18, liveAudioLevel * 0.18)})`,
                     }}
                   />
-                  <Button
+                  <MotionButton
                     data-testid="record-button"
                     onPointerDown={handlePointerDown}
                     onPointerUp={handlePointerUp}
@@ -1552,14 +1554,6 @@ export default function RecordingPage() {
                         ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
                         : { duration: 0.2 }
                     }
-                    active={recordState === "recording" || isAutoMode}
-                    glowColor={
-                      recordState === "recording"
-                        ? "#ef4444"
-                        : isAutoMode
-                          ? "#06b6d4"
-                          : "#10b981"
-                    }
                     className={cn(
                       "w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2",
                       "font-semibold shadow-2xl transition-all duration-300",
@@ -1569,7 +1563,7 @@ export default function RecordingPage() {
                     aria-label="Iniciar gravação"
                   >
                     {renderButtonContent()}
-                  </Button>
+                  </MotionButton>
                 </div>
 
                 <div className="w-full rounded-2xl border border-white/10 bg-black/20 p-3">

@@ -194,6 +194,9 @@ importers:
       firebase-admin:
         specifier: ^14.2.0
         version: 14.2.0
+      framer-motion:
+        specifier: ^12.43.0
+        version: 12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       howler:
         specifier: ^2.2.4
         version: 2.2.4
