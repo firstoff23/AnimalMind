@@ -165,8 +165,8 @@ importers:
         specifier: ^6.0.196
         version: 6.0.196(zod@4.1.12)
       axios:
-        specifier: ^1.16.1
-        version: 1.16.1
+        specifier: ^1.18.1
+        version: 1.18.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -279,8 +279,8 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       streamdown:
-        specifier: ^1.4.0
-        version: 1.4.0(@types/react@19.2.1)(react@19.2.1)
+        specifier: ^1.6.11
+        version: 1.6.11(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.1)
       superjson:
         specifier: ^1.13.3
         version: 1.13.3
@@ -341,7 +341,7 @@ importers:
         version: 0.5.19(tailwindcss@4.3.0)
       '@tailwindcss/vite':
         specifier: ^4.3.0
-        version: 4.3.0(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
+        version: 4.3.0(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
       '@types/express':
         specifier: 4.17.21
         version: 4.17.21
@@ -371,22 +371,22 @@ importers:
         version: 5.8.4(rollup@4.59.0)
       '@vitejs/plugin-react':
         specifier: ^5.0.4
-        version: 5.0.4(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
+        version: 5.0.4(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
       add:
         specifier: ^2.0.6
         version: 2.0.6
       autoprefixer:
         specifier: ^10.4.20
-        version: 10.4.21(postcss@8.5.6)
+        version: 10.4.21(postcss@8.5.24)
       esbuild:
         specifier: ^0.25.0
         version: 0.25.10
       pnpm:
-        specifier: ^10.33.4
-        version: 10.33.4
+        specifier: ^10.34.5
+        version: 10.34.5
       postcss:
-        specifier: ^8.4.47
-        version: 8.5.6
+        specifier: ^8.5.24
+        version: 8.5.24
       tailwindcss:
         specifier: ^4.3.0
         version: 4.3.0
@@ -400,17 +400,17 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
       vite:
-        specifier: ^7.3.3
-        version: 7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
+        specifier: ^7.3.6
+        version: 7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
       vite-plugin-manus-runtime:
         specifier: ^0.0.57
         version: 0.0.57
       vite-plugin-pwa:
         specifier: ^1.3.0
-        version: 1.3.0(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1)
+        version: 1.3.0(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1)
       vitest:
         specifier: ^4.1.7
-        version: 4.1.7(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.7.0)(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
+        version: 4.1.7(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.7.0)(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
 
 packages:
 
@@ -3607,6 +3607,7 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@use-gesture/core@10.3.1':
     resolution: {integrity: sha512-WcINiDt8WjqBdUXye25anHiNxPc0VOrlT8F6LLkU6cycrOGUDyY/yyFmsg3k8i5OLvv25llc0QC45GhR/C8llw==}
@@ -3866,8 +3867,8 @@ packages:
     resolution: {integrity: sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g==}
     engines: {node: '>= 6.0.0'}
 
-  axios@1.16.1:
-    resolution: {integrity: sha512-caYkukvroVPO8KrzuJEb50Hm07KwfBZPEC3VeFHTsqWHvKTsy54hjJz9BS/cdaypROE2rH6xvm9mHX4fgWkr3A==}
+  axios@1.18.1:
+    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
 
   babel-plugin-polyfill-corejs2@0.4.17:
     resolution: {integrity: sha512-aTyf30K/rqAsNwN76zYrdtx8obu0E4KoUME29B1xj+B3WxgvWkp943vYQ+z8Mv3lw9xHXMHpvSPOBxzAkIa94w==}
@@ -4557,9 +4558,6 @@ packages:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
-  dompurify@3.3.0:
-    resolution: {integrity: sha512-r+f6MYR1gGN1eJv0TVQbhA7if/U7P87cdPl3HN5rikqaBSBxLiCb/b9O+2eG0cxz0ghyU+mU1QkbsOwERMYlWQ==}
-
   dompurify@3.4.5:
     resolution: {integrity: sha512-OrwIBKsdNSVEeubdJ1HBv/wNENRM9ytAVCv7YXt//A3vPdVMNuACRqK9mXCGCBW2ln7BT/A4X0jXHo2Gu89miA==}
 
@@ -4698,10 +4696,6 @@ packages:
 
   es-module-lexer@2.1.0:
     resolution: {integrity: sha512-n27zTYMjYu1aj4MjCWzSP7G9r75utsaoc8m61weK+W8JMBGGQybd43GstCXZ3WNmSFtGT9wi59qQTW6mhTR5LQ==}
-
-  es-object-atoms@1.1.1:
-    resolution: {integrity: sha512-FGgH2h8zKNim9ljj7dankFPcICIK9Cp5bm+c2gQSYePhpaG5+esrLODihIorn+Pe6FGJzWhXQotPv73jTaldXA==}
-    engines: {node: '>= 0.4'}
 
   es-object-atoms@1.1.2:
     resolution: {integrity: sha512-HWcBoN6NileqtSydK2FqHbS/LoDd2pqrnQHLyJzBj4kOp/ky2MWMN694xOfkK8/SnUsW2DH7EfyVlydKCsm1Zw==}
@@ -5048,6 +5042,10 @@ packages:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
 
+  get-east-asian-width@1.6.0:
+    resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
+    engines: {node: '>=18'}
+
   get-intrinsic@1.3.0:
     resolution: {integrity: sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==}
     engines: {node: '>= 0.4'}
@@ -5172,14 +5170,6 @@ packages:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
 
-  hasown@2.0.2:
-    resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
-    engines: {node: '>= 0.4'}
-
-  hasown@2.0.3:
-    resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
-    engines: {node: '>= 0.4'}
-
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
@@ -5205,6 +5195,9 @@ packages:
   hast-util-raw@9.1.0:
     resolution: {integrity: sha512-Y8/SBAHkZGoNkpzqqfCldijcuUKh7/su31kEBp67cFY09Wy0mTRgtsLYsiIxMJxlu0f6AA5SUTbDR8K0rxnbUw==}
 
+  hast-util-sanitize@5.0.2:
+    resolution: {integrity: sha512-3yTWghByc50aGS7JlGhk61SPenfE/p1oaFeNwkOOyrscaOkMGrcW9+Cy/QAIOBpZxP1yqDIzFMR0+Np0i0+usg==}
+
   hast-util-to-html@9.0.5:
     resolution: {integrity: sha512-OguPdidb+fbHQSU4Q4ZiLKnzWo8Wwsf5bZfbvu7//a9oTYoqD/fWpe96NuHkoS9h0ccGOTe0C4NGXdtS0iObOw==}
 
@@ -5219,6 +5212,10 @@ packages:
 
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
+
+  hast@1.0.0:
+    resolution: {integrity: sha512-vFUqlRV5C+xqP76Wwq2SrM0kipnmpxJm7OfvVXpB35Fp+Fn4MV+ozr+JZr5qFvyR1q/U+Foim2x+3P+x9S1PLA==}
+    deprecated: Renamed to rehype
 
   hastscript@9.0.1:
     resolution: {integrity: sha512-g7df9rMFX/SPi34tyGCyUBREQoKkapwdY/T04Qn9TDWfHhAYt4/I0gMVirzK5wEzeUqIjEB+LXC/ypb7Aqno5w==}
@@ -6012,6 +6009,35 @@ packages:
   micromark-core-commonmark@2.0.3:
     resolution: {integrity: sha512-RDBrHEMSxVFLg6xvnXmb1Ayr2WzLAWjeSATAoxwKYJV94TeNavgoIdA0a9ytzDSVzBy2YKFK+emCPOEibLeCrg==}
 
+  micromark-extension-cjk-friendly-gfm-strikethrough@1.2.3:
+    resolution: {integrity: sha512-gSPnxgHDDqXYOBvQRq6lerrq9mjDhdtKn+7XETuXjxWcL62yZEfUdA28Ml1I2vDIPfAOIKLa0h2XDSGkInGHFQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      micromark: ^4.0.0
+      micromark-util-types: ^2.0.0
+    peerDependenciesMeta:
+      micromark-util-types:
+        optional: true
+
+  micromark-extension-cjk-friendly-util@2.1.1:
+    resolution: {integrity: sha512-egs6+12JU2yutskHY55FyR48ZiEcFOJFyk9rsiyIhcJ6IvWB6ABBqVrBw8IobqJTDZ/wdSr9eoXDPb5S2nW1bg==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      micromark-util-types: '*'
+    peerDependenciesMeta:
+      micromark-util-types:
+        optional: true
+
+  micromark-extension-cjk-friendly@1.2.3:
+    resolution: {integrity: sha512-gRzVLUdjXBLX6zNPSnHGDoo+ZTp5zy+MZm0g3sv+3chPXY7l9gW+DnrcHcZh/jiPR6MjPKO4AEJNp4Aw6V9z5Q==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      micromark: ^4.0.0
+      micromark-util-types: ^2.0.0
+    peerDependenciesMeta:
+      micromark-util-types:
+        optional: true
+
   micromark-extension-gfm-autolink-literal@2.1.0:
     resolution: {integrity: sha512-oOg7knzhicgQ3t4QCjCWgTmfNhvQbDDnJeVu9v81r7NltNCVmhPy1fJRX27pISafdjL+SVc4d3l48Gb6pbRypw==}
 
@@ -6215,8 +6241,8 @@ packages:
     resolution: {integrity: sha512-eLoBxg6wE/rZkJPhU/xRX1WTpkFEwDJEN96oxFrTsqBdbT5ec295Q+CoHrL9IT0DipqKhmGcaZmwOt8OON5x1w==}
     engines: {node: '>=12.0.0'}
 
-  nanoid@3.3.11:
-    resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
+  nanoid@3.3.16:
+    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
@@ -6559,8 +6585,8 @@ packages:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
 
-  pnpm@10.33.4:
-    resolution: {integrity: sha512-HGezs1my1AgRm6HtKJ80uPw8aHNBK+xv0mT73IJInlEPy+y5zp0i2ufzt2Jp2EQQRgFL3KU7mXnNelYa1jG4AA==}
+  pnpm@10.34.5:
+    resolution: {integrity: sha512-pO4F8vc2WCVb1qiYWcBlpFwopX2u+uLIk6Fo7itzFow3uR6D5X6mdlStA/AwMXRkMOi84442LgQmBfuKvIAZLg==}
     engines: {node: '>=18.12'}
     hasBin: true
 
@@ -6581,8 +6607,8 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.5.6:
-    resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
+  postcss@8.5.24:
+    resolution: {integrity: sha512-8RyVklq0owXUTa4xlpzu4l9AaVKIdQvAcOHZWaMh98HgySsUtxRVf/chRe3dsSLqb6i40BzGRzEUddRaI+9TSw==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres-array@2.0.0:
@@ -6754,12 +6780,6 @@ packages:
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
 
-  react-markdown@10.1.0:
-    resolution: {integrity: sha512-qKxVopLT/TyA6BX3Ue5NwabOsAzm0Q7kAPwq6L+wWDwisYs7R8vZ0nRXqq6rkueboxpkjvLGU9fWifiX/ZZFxQ==}
-    peerDependencies:
-      '@types/react': '>=18'
-      react: '>=18'
-
   react-p5@1.4.1:
     resolution: {integrity: sha512-njeL8zskkbo8gK3ql1u4/MgmecT/g7Z7LvypTn65DWUnuBvV/9S5AowcKkwQuLVo8/DDAE5vgGVFq1DOkoWiJA==}
     deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
@@ -6903,14 +6923,37 @@ packages:
     resolution: {integrity: sha512-NgRBy2Nx/bE+9F27nVHnqcN5HjyLmecqsqx2PJHu3/IEtADD4WuxuXIVExD5PoSDFVrl78dOonfcOe5O+5nbzQ==}
     hasBin: true
 
-  rehype-harden@1.1.5:
-    resolution: {integrity: sha512-JrtBj5BVd/5vf3H3/blyJatXJbzQfRT9pJBmjafbTaPouQCAKxHwRyCc7dle9BXQKxv4z1OzZylz/tNamoiG3A==}
+  rehype-harden@1.1.8:
+    resolution: {integrity: sha512-Qn7vR1xrf6fZCrkm9TDWi/AB4ylrHy+jqsNm1EHOAmbARYA6gsnVJBq/sdBh6kmT4NEZxH5vgIjrscefJAOXcw==}
 
   rehype-katex@7.0.1:
     resolution: {integrity: sha512-OiM2wrZ/wuhKkigASodFoo8wimG3H12LWQaH8qSPVJn9apWKFSH3YOCtbKpBorTVw/eI7cuT21XBbvwEswbIOA==}
 
   rehype-raw@7.0.0:
     resolution: {integrity: sha512-/aE8hCfKlQeA8LmyeyQvQF3eBiLRGNlfBJEvWH7ivp9sBqs7TNqBL5X3v157rM4IFETqDnIOO+z5M/biZbo9Ww==}
+
+  rehype-sanitize@6.0.0:
+    resolution: {integrity: sha512-CsnhKNsyI8Tub6L4sm5ZFsme4puGfc6pYylvXo1AeqaGbjOYyzNv3qZPwvs0oMJ39eryyeOdmxwUIo94IpEhqg==}
+
+  remark-cjk-friendly-gfm-strikethrough@1.2.3:
+    resolution: {integrity: sha512-bXfMZtsaomK6ysNN/UGRIcasQAYkC10NtPmP0oOHOV8YOhA2TXmwRXCku4qOzjIFxAPfish5+XS0eIug2PzNZA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/mdast': ^4.0.0
+      unified: ^11.0.0
+    peerDependenciesMeta:
+      '@types/mdast':
+        optional: true
+
+  remark-cjk-friendly@1.2.3:
+    resolution: {integrity: sha512-UvAgxwlNk+l9Oqgl/9MWK2eWRS7zgBW/nXX9AthV7nd/3lNejF138E7Xbmk9Zs4WjTJGs721r7fAEc7tNFoH7g==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/mdast': ^4.0.0
+      unified: ^11.0.0
+    peerDependenciesMeta:
+      '@types/mdast':
+        optional: true
 
   remark-gfm@4.0.1:
     resolution: {integrity: sha512-1quofZ2RQ9EWdeN34S79+KExV1764+wCUGop5CPL1WGdD0ocPpu91lzPGbwWMECpEpd42kJGQwzRfyov9j4yNg==}
@@ -6926,6 +6969,9 @@ packages:
 
   remark-stringify@11.0.0:
     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
+
+  remend@1.0.1:
+    resolution: {integrity: sha512-152puVH0qMoRJQFnaMG+rVDdf01Jq/CaED+MBuXExurJgdbkLp0c3TIe4R12o28Klx8uyGsjvFNG05aFG69G9w==}
 
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
@@ -7249,8 +7295,8 @@ packages:
   stream-shift@1.0.3:
     resolution: {integrity: sha512-76ORR0DO1o1hlKwTbi/DM3EXWGf3ZJYO8cXX5RJwnul2DEg2oyoZyjLNoQM8WsvZiFKCRfC1O0J7iCvie3RZmQ==}
 
-  streamdown@1.4.0:
-    resolution: {integrity: sha512-ylhDSQ4HpK5/nAH9v7OgIIdGJxlJB2HoYrYkJNGrO8lMpnWuKUcrz/A8xAMwA6eILA27469vIavcOTjmxctrKg==}
+  streamdown@1.6.11:
+    resolution: {integrity: sha512-Y38fwRx5kCKTluwM+Gf27jbbi9q6Qy+WC9YrC1YbCpMkktT3PsRBJHMWiqYeF8y/JzLpB1IzDoeaB6qkQEDnAA==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -7750,8 +7796,8 @@ packages:
       '@vite-pwa/assets-generator':
         optional: true
 
-  vite@7.3.3:
-    resolution: {integrity: sha512-/4XH147Ui7OGTjg3HbdWe5arnZQSbfuRzdr9Ec7TQi5I7R+ir0Rlc9GIvD4v0XZurELqA035KVXJXpR61xhiTA==}
+  vite@7.3.6:
+    resolution: {integrity: sha512-4XP60spRGjSZFf1qYH+dJIkK2znL3zQfl9KkOV9MkkRR/3Dls0dxaBsQPTloEc5BLXWPL9vsOxopxyKoMmDueg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -11188,12 +11234,12 @@ snapshots:
       postcss-selector-parser: 6.0.10
       tailwindcss: 4.3.0
 
-  '@tailwindcss/vite@4.3.0(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))':
+  '@tailwindcss/vite@4.3.0(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))':
     dependencies:
       '@tailwindcss/node': 4.3.0
       '@tailwindcss/oxide': 4.3.0
       tailwindcss: 4.3.0
-      vite: 7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
+      vite: 7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
 
   '@tanstack/query-core@5.90.2': {}
 
@@ -11482,7 +11528,7 @@ snapshots:
 
   '@types/estree-jsx@1.0.5':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
 
   '@types/estree@1.0.8': {}
 
@@ -11723,7 +11769,7 @@ snapshots:
       json-schema-to-ts: 1.6.4
       ts-morph: 12.0.0
 
-  '@vitejs/plugin-react@5.0.4(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))':
+  '@vitejs/plugin-react@5.0.4(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))':
     dependencies:
       '@babel/core': 7.28.4
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.4)
@@ -11731,7 +11777,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.38
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
+      vite: 7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -11744,13 +11790,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.7(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))':
+  '@vitest/mocker@4.1.7(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))':
     dependencies:
       '@vitest/spy': 4.1.7
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
+      vite: 7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
 
   '@vitest/pretty-format@4.1.7':
     dependencies:
@@ -11940,14 +11986,14 @@ snapshots:
       '@babel/runtime': 7.29.2
       tslib: 2.8.1
 
-  autoprefixer@10.4.21(postcss@8.5.6):
+  autoprefixer@10.4.21(postcss@8.5.24):
     dependencies:
       browserslist: 4.26.3
       caniuse-lite: 1.0.30001748
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.1.1
-      postcss: 8.5.6
+      postcss: 8.5.24
       postcss-value-parser: 4.2.0
 
   available-typed-arrays@1.0.7:
@@ -11956,7 +12002,7 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios@1.16.1:
+  axios@1.18.1:
     dependencies:
       follow-redirects: 1.16.0
       form-data: 4.0.5
@@ -12664,14 +12710,9 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
-  dompurify@3.3.0:
-    optionalDependencies:
-      '@types/trusted-types': 2.0.7
-
   dompurify@3.4.5:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
-    optional: true
 
   domutils@3.2.2:
     dependencies:
@@ -12868,10 +12909,6 @@ snapshots:
 
   es-module-lexer@2.1.0: {}
 
-  es-object-atoms@1.1.1:
-    dependencies:
-      es-errors: 1.3.0
-
   es-object-atoms@1.1.2:
     dependencies:
       es-errors: 1.3.0
@@ -12881,7 +12918,7 @@ snapshots:
       es-errors: 1.3.0
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
-      hasown: 2.0.2
+      hasown: 2.0.4
 
   es-to-primitive@1.3.4:
     dependencies:
@@ -13269,7 +13306,7 @@ snapshots:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
-      hasown: 2.0.2
+      hasown: 2.0.4
       mime-types: 2.1.35
 
   formdata-polyfill@4.0.10:
@@ -13404,17 +13441,19 @@ snapshots:
 
   get-caller-file@2.0.5: {}
 
+  get-east-asian-width@1.6.0: {}
+
   get-intrinsic@1.3.0:
     dependencies:
       call-bind-apply-helpers: 1.0.2
       es-define-property: 1.0.1
       es-errors: 1.3.0
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
       function-bind: 1.1.2
       get-proto: 1.0.1
       gopd: 1.2.0
       has-symbols: 1.1.0
-      hasown: 2.0.3
+      hasown: 2.0.4
       math-intrinsics: 1.1.0
 
   get-nonce@1.0.1: {}
@@ -13424,7 +13463,7 @@ snapshots:
   get-proto@1.0.1:
     dependencies:
       dunder-proto: 1.0.1
-      es-object-atoms: 1.1.1
+      es-object-atoms: 1.1.2
 
   get-symbol-description@1.1.0:
     dependencies:
@@ -13578,14 +13617,6 @@ snapshots:
     dependencies:
       has-symbols: 1.1.0
 
-  hasown@2.0.2:
-    dependencies:
-      function-bind: 1.1.2
-
-  hasown@2.0.3:
-    dependencies:
-      function-bind: 1.1.2
-
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
@@ -13647,6 +13678,12 @@ snapshots:
       web-namespaces: 2.0.1
       zwitch: 2.0.4
 
+  hast-util-sanitize@5.0.2:
+    dependencies:
+      '@types/hast': 3.0.4
+      '@ungap/structured-clone': 1.3.0
+      unist-util-position: 5.0.0
+
   hast-util-to-html@9.0.5:
     dependencies:
       '@types/hast': 3.0.4
@@ -13663,7 +13700,7 @@ snapshots:
 
   hast-util-to-jsx-runtime@2.3.6:
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/hast': 3.0.4
       '@types/unist': 3.0.3
       comma-separated-tokens: 2.0.3
@@ -13701,6 +13738,8 @@ snapshots:
   hast-util-whitespace@3.0.0:
     dependencies:
       '@types/hast': 3.0.4
+
+  hast@1.0.0: {}
 
   hastscript@9.0.1:
     dependencies:
@@ -14562,7 +14601,7 @@ snapshots:
       d3-sankey: 0.12.3
       dagre-d3-es: 7.0.11
       dayjs: 1.11.18
-      dompurify: 3.3.0
+      dompurify: 3.4.5
       katex: 0.16.25
       khroma: 2.1.0
       lodash-es: 4.18.1
@@ -14599,6 +14638,38 @@ snapshots:
       micromark-util-resolve-all: 2.0.1
       micromark-util-subtokenize: 2.1.0
       micromark-util-symbol: 2.0.1
+      micromark-util-types: 2.0.2
+
+  micromark-extension-cjk-friendly-gfm-strikethrough@1.2.3(micromark-util-types@2.0.2)(micromark@4.0.2):
+    dependencies:
+      devlop: 1.1.0
+      get-east-asian-width: 1.6.0
+      micromark: 4.0.2
+      micromark-extension-cjk-friendly-util: 2.1.1(micromark-util-types@2.0.2)
+      micromark-util-character: 2.1.1
+      micromark-util-chunked: 2.0.1
+      micromark-util-resolve-all: 2.0.1
+      micromark-util-symbol: 2.0.1
+    optionalDependencies:
+      micromark-util-types: 2.0.2
+
+  micromark-extension-cjk-friendly-util@2.1.1(micromark-util-types@2.0.2):
+    dependencies:
+      get-east-asian-width: 1.6.0
+      micromark-util-character: 2.1.1
+      micromark-util-symbol: 2.0.1
+    optionalDependencies:
+      micromark-util-types: 2.0.2
+
+  micromark-extension-cjk-friendly@1.2.3(micromark-util-types@2.0.2)(micromark@4.0.2):
+    dependencies:
+      devlop: 1.1.0
+      micromark: 4.0.2
+      micromark-extension-cjk-friendly-util: 2.1.1(micromark-util-types@2.0.2)
+      micromark-util-chunked: 2.0.1
+      micromark-util-resolve-all: 2.0.1
+      micromark-util-symbol: 2.0.1
+    optionalDependencies:
       micromark-util-types: 2.0.2
 
   micromark-extension-gfm-autolink-literal@2.1.0:
@@ -14844,7 +14915,7 @@ snapshots:
 
   mlly@1.8.0:
     dependencies:
-      acorn: 8.15.0
+      acorn: 8.17.0
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.1
@@ -14887,7 +14958,7 @@ snapshots:
     dependencies:
       lru-cache: 7.18.3
 
-  nanoid@3.3.11: {}
+  nanoid@3.3.16: {}
 
   nanoid@5.1.6: {}
 
@@ -15196,7 +15267,7 @@ snapshots:
 
   pngjs@5.0.0: {}
 
-  pnpm@10.33.4: {}
+  pnpm@10.34.5: {}
 
   points-on-curve@0.2.0: {}
 
@@ -15214,9 +15285,9 @@ snapshots:
 
   postcss-value-parser@4.2.0: {}
 
-  postcss@8.5.6:
+  postcss@8.5.24:
     dependencies:
-      nanoid: 3.3.11
+      nanoid: 3.3.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -15407,24 +15478,6 @@ snapshots:
 
   react-is@18.3.1: {}
 
-  react-markdown@10.1.0(@types/react@19.2.1)(react@19.2.1):
-    dependencies:
-      '@types/hast': 3.0.4
-      '@types/mdast': 4.0.4
-      '@types/react': 19.2.1
-      devlop: 1.1.0
-      hast-util-to-jsx-runtime: 2.3.6
-      html-url-attributes: 3.0.1
-      mdast-util-to-hast: 13.2.0
-      react: 19.2.1
-      remark-parse: 11.0.0
-      remark-rehype: 11.1.2
-      unified: 11.0.5
-      unist-util-visit: 5.0.0
-      vfile: 6.0.3
-    transitivePeerDependencies:
-      - supports-color
-
   react-p5@1.4.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:
       '@types/p5': 1.7.0
@@ -15588,7 +15641,9 @@ snapshots:
     dependencies:
       jsesc: 3.1.0
 
-  rehype-harden@1.1.5: {}
+  rehype-harden@1.1.8:
+    dependencies:
+      unist-util-visit: 5.0.0
 
   rehype-katex@7.0.1:
     dependencies:
@@ -15605,6 +15660,31 @@ snapshots:
       '@types/hast': 3.0.4
       hast-util-raw: 9.1.0
       vfile: 6.0.3
+
+  rehype-sanitize@6.0.0:
+    dependencies:
+      '@types/hast': 3.0.4
+      hast-util-sanitize: 5.0.2
+
+  remark-cjk-friendly-gfm-strikethrough@1.2.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(unified@11.0.5):
+    dependencies:
+      micromark-extension-cjk-friendly-gfm-strikethrough: 1.2.3(micromark-util-types@2.0.2)(micromark@4.0.2)
+      unified: 11.0.5
+    optionalDependencies:
+      '@types/mdast': 4.0.4
+    transitivePeerDependencies:
+      - micromark
+      - micromark-util-types
+
+  remark-cjk-friendly@1.2.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(unified@11.0.5):
+    dependencies:
+      micromark-extension-cjk-friendly: 1.2.3(micromark-util-types@2.0.2)(micromark@4.0.2)
+      unified: 11.0.5
+    optionalDependencies:
+      '@types/mdast': 4.0.4
+    transitivePeerDependencies:
+      - micromark
+      - micromark-util-types
 
   remark-gfm@4.0.1:
     dependencies:
@@ -15648,6 +15728,8 @@ snapshots:
       '@types/mdast': 4.0.4
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
+
+  remend@1.0.1: {}
 
   require-directory@2.1.1: {}
 
@@ -16060,24 +16142,36 @@ snapshots:
   stream-shift@1.0.3:
     optional: true
 
-  streamdown@1.4.0(@types/react@19.2.1)(react@19.2.1):
+  streamdown@1.6.11(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.1):
     dependencies:
       clsx: 2.1.1
+      hast: 1.0.0
+      hast-util-to-jsx-runtime: 2.3.6
+      html-url-attributes: 3.0.1
       katex: 0.16.25
       lucide-react: 0.542.0(react@19.2.1)
       marked: 16.4.1
       mermaid: 11.12.0
       react: 19.2.1
-      react-markdown: 10.1.0(@types/react@19.2.1)(react@19.2.1)
-      rehype-harden: 1.1.5
+      rehype-harden: 1.1.8
       rehype-katex: 7.0.1
       rehype-raw: 7.0.0
+      rehype-sanitize: 6.0.0
+      remark-cjk-friendly: 1.2.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(unified@11.0.5)
+      remark-cjk-friendly-gfm-strikethrough: 1.2.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(unified@11.0.5)
       remark-gfm: 4.0.1
       remark-math: 6.0.0
+      remark-parse: 11.0.0
+      remark-rehype: 11.1.2
+      remend: 1.0.1
       shiki: 3.14.0
       tailwind-merge: 3.3.1
+      unified: 11.0.5
+      unist-util-visit: 5.0.0
     transitivePeerDependencies:
-      - '@types/react'
+      - '@types/mdast'
+      - micromark
+      - micromark-util-types
       - supports-color
 
   string-width@4.2.3:
@@ -16650,23 +16744,23 @@ snapshots:
       react-dom: 19.2.1(react@19.2.1)
       tailwind-merge: 3.3.1
 
-  vite-plugin-pwa@1.3.0(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1):
+  vite-plugin-pwa@1.3.0(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1):
     dependencies:
       debug: 4.4.3
       pretty-bytes: 6.1.1
       tinyglobby: 0.2.15
-      vite: 7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
+      vite: 7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
       workbox-build: 7.4.1(@types/babel__core@7.20.5)
       workbox-window: 7.4.1
     transitivePeerDependencies:
       - supports-color
 
-  vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6):
+  vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6):
     dependencies:
-      esbuild: 0.27.0
+      esbuild: 0.28.0
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.6
+      postcss: 8.5.24
       rollup: 4.59.0
       tinyglobby: 0.2.15
     optionalDependencies:
@@ -16677,10 +16771,10 @@ snapshots:
       terser: 5.49.0
       tsx: 4.20.6
 
-  vitest@4.1.7(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.7.0)(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)):
+  vitest@4.1.7(@edge-runtime/vm@3.2.0)(@opentelemetry/api@1.9.1)(@types/node@24.7.0)(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)):
     dependencies:
       '@vitest/expect': 4.1.7
-      '@vitest/mocker': 4.1.7(vite@7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
+      '@vitest/mocker': 4.1.7(vite@7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6))
       '@vitest/pretty-format': 4.1.7
       '@vitest/runner': 4.1.7
       '@vitest/snapshot': 4.1.7
@@ -16697,7 +16791,7 @@ snapshots:
       tinyexec: 1.2.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
-      vite: 7.3.3(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
+      vite: 7.3.6(@types/node@24.7.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.20.6)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@edge-runtime/vm': 3.2.0
