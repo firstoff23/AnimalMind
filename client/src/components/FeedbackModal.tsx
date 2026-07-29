@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 export interface FeedbackModalProps {
   isOpen: boolean;
@@ -25,10 +29,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  if (!isOpen) return null;
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -39,7 +41,13 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "image/*": [] },
+    multiple: false,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,51 +68,54 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 text-slate-100">
-        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-          <h3 className="text-lg font-bold text-white">Feedback de Classificação</h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white text-xl font-bold"
-          >
-            &times;
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-md rounded-2xl shadow-2xl backdrop-blur-md">
+        <DialogHeader className="border-b border-slate-800 pb-3">
+          <DialogTitle className="text-lg font-bold text-white flex items-center justify-between">
+            <span>Feedback de Classificação</span>
+          </DialogTitle>
+          <DialogDescription className="text-xs text-slate-400">
+            Ajude-nos a calibrar os modelos de visão e fónica do AnimalMind.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div>
             <p className="text-xs text-slate-400">Previsão Atual do Modelo:</p>
-            <p className="text-sm font-semibold text-indigo-400">{predictedBreed}</p>
+            <Badge variant="outline" className="text-sm font-semibold text-emerald-400 border-emerald-500/30 bg-emerald-500/10 mt-1">
+              {predictedBreed}
+            </Badge>
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-medium text-slate-300 block">
               A previsão de raça estava correta?
             </label>
-            <div className="flex gap-4">
-              <button
+            <div className="flex gap-3">
+              <Button
                 type="button"
+                variant={isCorrect ? "default" : "outline"}
                 onClick={() => setIsCorrect(true)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                className={`flex-1 min-h-[44px] text-xs font-semibold ${
                   isCorrect
-                    ? "bg-emerald-600 border-emerald-500 text-white"
-                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                    ? "bg-emerald-600 hover:bg-emerald-500 text-white border-none"
+                    : "bg-slate-800 border-slate-700 text-slate-300"
                 }`}
               >
                 ✅ Sim, correta
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant={!isCorrect ? "destructive" : "outline"}
                 onClick={() => setIsCorrect(false)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                className={`flex-1 min-h-[44px] text-xs font-semibold ${
                   !isCorrect
-                    ? "bg-rose-600 border-rose-500 text-white"
-                    : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-750"
+                    ? "bg-rose-600 hover:bg-rose-500 text-white border-none"
+                    : "bg-slate-800 border-slate-700 text-slate-300"
                 }`}
               >
                 ❌ Não, incorreta
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -117,8 +128,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 type="text"
                 value={correctLabel}
                 onChange={(e) => setCorrectLabel(e.target.value)}
-                placeholder="Ex: Golden Retriever"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                placeholder="Ex: Golden Retriever / Bengal"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 min-h-[44px]"
               />
             </div>
           )}
@@ -130,9 +141,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
             <textarea
               value={feedbackText}
               onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder="Ex: O cão tem pelagem mais escura e de tamanho médio..."
+              placeholder="Ex: Pelagem de cor diferente ou tamanho médio..."
               rows={2}
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
 
@@ -140,37 +151,46 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
             <label className="text-xs font-medium text-slate-300 block mb-1">
               Anexar foto para retreino do modelo (opcional):
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
-            />
-            {previewUrl && (
-              <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden border border-slate-700">
-                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-            )}
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
+                isDragActive ? "border-emerald-500 bg-emerald-500/10" : "border-slate-700 bg-slate-800/60 hover:bg-slate-800"
+              }`}
+            >
+              <input {...getInputProps()} />
+              {previewUrl ? (
+                <div className="flex items-center justify-center gap-3">
+                  <img src={previewUrl} alt="Preview" className="w-12 h-12 rounded-lg object-cover border border-slate-700" />
+                  <span className="text-xs text-emerald-400 font-medium">Imagem selecionada (clique ou arraste para substituir)</span>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">
+                  {isDragActive ? "Solte a imagem aqui..." : "📁 Arraste uma imagem ou clique para selecionar"}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="pt-2 flex gap-3">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="flex-1 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl text-xs font-semibold"
+              className="flex-1 bg-slate-800 text-slate-300 hover:bg-slate-700 min-h-[44px]"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white min-h-[44px]"
             >
               {isSubmitting ? "A guardar..." : "Submeter Feedback"}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
+

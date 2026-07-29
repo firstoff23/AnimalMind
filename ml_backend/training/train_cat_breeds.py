@@ -124,9 +124,9 @@ def compute_ece(probs: np.ndarray, labels: np.ndarray, n_bins: int = 10) -> floa
 def main():
     parser = argparse.ArgumentParser(description="AnimalMind Cat Breed ViT Classifier Training")
     parser.add_argument("--model-name", type=str, default="google/vit-base-patch16-224")
-    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--lr", type=float, default=3e-4)
+    parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--output-dir", type=str, default="models/animalmind-cat-classifier")
     parser.add_argument("--dry-run", action="store_true", help="Run 1-epoch dry-run test")
     parser.add_argument("--push-to-hub", type=str, default=None, help="HF Hub repo ID")
@@ -151,9 +151,21 @@ def main():
     base_model.config.id2label = ID2LABEL_CAT
     base_model.config.label2id = LABEL2ID_CAT
 
-    dataset = SyntheticCatDataset(num_samples=120 if args.dry_run else 600)
+    train_transforms = transforms.Compose([
+        transforms.RandomRotation(15),
+        transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+        transforms.RandomHorizontalFlip()
+    ])
+
+    dataset = SyntheticCatDataset(num_samples=120 if args.dry_run else 600, transform=train_transforms)
     sample_labels = [dataset[i][1] for i in range(min(10, len(dataset)))]
     print(f"[CatTraining] Verification - First 10 dataset labels: {sample_labels}")
+
+    class_counts = {}
+    for i in range(len(dataset)):
+        lbl = dataset[i][1]
+        class_counts[lbl] = class_counts.get(lbl, 0) + 1
+    print(f"[CatTraining] Class sample distribution: {class_counts}")
 
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -206,9 +218,12 @@ def main():
 
     if args.push_to_hub and os.getenv("HF_TOKEN"):
         print(f"[CatTraining] Pushing model to HF Hub: {args.push_to_hub}...")
-        base_model.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
-        image_processor.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"))
-        print("[CatTraining] Pushed successfully!")
+        try:
+            base_model.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"), ignore_metadata_errors=True)
+            image_processor.push_to_hub(args.push_to_hub, token=os.getenv("HF_TOKEN"), ignore_metadata_errors=True)
+            print("[CatTraining] Pushed successfully!")
+        except Exception as push_err:
+            print(f"[CatTraining] Warning during push_to_hub: {push_err}")
 
 
 if __name__ == "__main__":

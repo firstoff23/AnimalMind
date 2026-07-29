@@ -3,6 +3,6 @@
   "epochs_trained": 1,
   "num_classes": 12,
   "val_accuracy": 0.125,
-  "calibrated_temperature": 1.7889482975006104,
-  "ece": 0.021796703338623047
+  "calibrated_temperature": 1.691354513168335,
+  "ece": 0.02833901345729828
 }
