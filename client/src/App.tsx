@@ -463,7 +463,7 @@ function App() {
         <AuthProvider>
           <SelfHealingProvider>
             <LanguageProvider>
-              <ThemeProvider defaultTheme="dark" switchable>
+              <ThemeProvider defaultTheme="dark">
                 <TooltipProvider>
                   <Toaster
                     theme="dark"

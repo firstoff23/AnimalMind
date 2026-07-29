@@ -87,9 +87,11 @@ export function BottomNav() {
             const active = activePaths ? activePaths.includes(location) : location === path;
             
             return (
-              <button
+              <motion.button
                 key={path || id}
                 onClick={() => isAction ? setSheetOpen(true) : navigate(path!)}
+                whileTap={{ scale: 0.82 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 className={cn(
                   "relative flex-1 flex flex-col items-center justify-center py-2 px-1 focus:outline-none transition-colors tap-highlight-none",
                   active
@@ -144,7 +146,7 @@ export function BottomNav() {
                     </div>
                   </div>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>

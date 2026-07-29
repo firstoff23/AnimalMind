@@ -1443,8 +1443,18 @@ export default function HistoryPage() {
               <EmptyState filtered={isFiltered} />
             </div>
           ) : (
-            Object.entries(groupEventsByDay(events, language)).map(([dateLabel, dayEvents]) => (
-              <div key={dateLabel} className="space-y-2">
+            Object.entries(groupEventsByDay(events, language)).map(([dateLabel, dayEvents], groupIndex) => (
+              <motion.div
+                key={dateLabel}
+                className="space-y-2"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.22,
+                  delay: groupIndex * 0.06,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+              >
                 <h3 className="text-sm font-bold text-muted-foreground px-2">{dateLabel}</h3>
                 <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
                   {dayEvents.map((event) => (
@@ -1459,7 +1469,7 @@ export default function HistoryPage() {
                     />
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>
