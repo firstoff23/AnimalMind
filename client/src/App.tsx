@@ -54,6 +54,20 @@ const VetDashboardPage = lazy(() => import("./pages/VetDashboardPage"));
 const VetPage = lazy(() => import("./pages/VetPage"));
 const VetPetDetailPage = lazy(() => import("./pages/VetPetDetailPage"));
 
+// ─── Route Prefetch Helper ───────────────────────────────────────────────────
+// Call this on onMouseEnter / onFocus to pre-load a lazy page chunk before
+// the user actually navigates. Uses the same dynamic import() as React.lazy,
+// so the browser caches the module — no double-fetch.
+// Usage: <Link onMouseEnter={prefetch(() => import('./pages/DashboardPage'))} />
+// ─────────────────────────────────────────────────────────────────────────────
+export function prefetch(factory: () => Promise<unknown>) {
+  return () => {
+    factory().catch(() => {
+      /* ignore prefetch errors silently */
+    });
+  };
+}
+
 // Helper component to dry up Lazy + Suspense routes
 function LazyRoute({
   component: LazyComponent,

@@ -119,6 +119,7 @@
     "tone": "^15.1.22",
     "vaul": "^1.1.2",
     "web-push": "^3.6.7",
+    "web-vitals": "^6.0.1",
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
     "workbox-routing": "^7.4.1",

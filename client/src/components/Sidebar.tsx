@@ -21,6 +21,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { prefetch } from "@/App";
+
+// Prefetch map: path → dynamic import factory
+const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
+  "/dashboard": () => import("../pages/DashboardPage"),
+  "/perfil": () => import("../pages/ProfilePage"),
+  "/capturar": () => import("../pages/CapturePortalPage"),
+  "/historico": () => import("../pages/HistoryPage"),
+  "/mindi": () => import("../pages/MindiPage"),
+  "/alimentos": () => import("../pages/FoodSearchPage"),
+  "/definicoes": () => import("../pages/SettingsPage"),
+};
 
 export function Sidebar() {
   const [location, navigate] = useLocation();
@@ -126,6 +138,7 @@ export function Sidebar() {
             <button
               key={path}
               onClick={() => navigate(path)}
+              onMouseEnter={PREFETCH_MAP[path] ? prefetch(PREFETCH_MAP[path]) : undefined}
               aria-label={label}
               aria-current={active ? "page" : undefined}
               title={collapsed ? label : undefined}

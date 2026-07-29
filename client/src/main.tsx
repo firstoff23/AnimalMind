@@ -122,3 +122,30 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>,
 );
+
+// ─── Core Web Vitals Reporting ───────────────────────────────────────────────
+// Measures LCP, FCP, CLS, TTFB, and INP. Logs to console in dev mode.
+// Extend `reportVital` to send metrics to your analytics endpoint in prod.
+// ─────────────────────────────────────────────────────────────────────────────
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
+
+type VitalMetric = Parameters<Parameters<typeof onCLS>[0]>[0];
+
+function reportVital(metric: VitalMetric) {
+  if (import.meta.env.DEV) {
+    const emoji =
+      metric.rating === "good" ? "✅" : metric.rating === "poor" ? "❌" : "⚠️";
+    console.log(
+      `%c[WebVital] ${emoji} ${metric.name}: ${Math.round(metric.value)} (${metric.rating ?? "–"})`,
+      "color: #6ee7b7; font-weight: bold;",
+    );
+  }
+  // Production hook — uncomment to send to your analytics:
+  // fetch('/api/vitals', { method: 'POST', body: JSON.stringify(metric) });
+}
+
+onCLS(reportVital);
+onFCP(reportVital);
+onINP(reportVital);
+onLCP(reportVital);
+onTTFB(reportVital);

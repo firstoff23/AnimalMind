@@ -151,7 +151,19 @@ export default function LandingPage() {
           </div>
           
           <div className="hidden lg:block relative w-full h-[500px] rounded-3xl overflow-hidden bg-secondary">
-             <img src="https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&q=80&w=1200" alt="Gato olhando curiosamente" className="object-cover w-full h-full opacity-90" />
+            <img
+              src="https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&q=80&w=1200"
+              srcSet="
+                https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&q=80&w=600 600w,
+                https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&q=80&w=900 900w,
+                https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&q=80&w=1200 1200w
+              "
+              sizes="(max-width: 1024px) 0px, 50vw"
+              alt="Gato olhando curiosamente"
+              className="object-cover w-full h-full opacity-90"
+              fetchPriority="high"
+              decoding="async"
+            />
           </div>
         </section>
 
