@@ -103,6 +103,7 @@
     "react-dom": "^19.2.1",
     "react-dropzone": "^15.0.0",
     "react-email": "^6.5.0",
+    "react-error-boundary": "^6.1.2",
     "react-hook-form": "^7.64.0",
     "react-i18next": "^17.0.8",
     "react-p5": "^1.4.1",

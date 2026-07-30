@@ -274,6 +274,9 @@ importers:
       react-email:
         specifier: ^6.5.0
         version: 6.5.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      react-error-boundary:
+        specifier: ^6.1.2
+        version: 6.1.2(react@19.2.1)
       react-hook-form:
         specifier: ^7.64.0
         version: 7.64.0(react@19.2.1)
@@ -6628,6 +6631,11 @@ packages:
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
       react-dom: ^18.0 || ^19.0 || ^19.0.0-rc
+
+  react-error-boundary@6.1.2:
+    resolution: {integrity: sha512-3DpCr5HVdZ0caUjYE/kIHBEJN0mNP3ZCgf16c48uJ5TbWjorKVp+YG8W3XqlJ7vJAVNw6wNIImyPXmFydwmyng==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
 
   react-hook-form@7.64.0:
     resolution: {integrity: sha512-fnN+vvTiMLnRqKNTVhDysdrUay0kUUAymQnFIznmgDvapjveUWOOPqMNzPg+A+0yf9DuE2h6xzBjN1s+Qx8wcg==}
@@ -15160,6 +15168,10 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  react-error-boundary@6.1.2(react@19.2.1):
+    dependencies:
+      react: 19.2.1
 
   react-hook-form@7.64.0(react@19.2.1):
     dependencies:
