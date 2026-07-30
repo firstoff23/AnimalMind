@@ -8,6 +8,7 @@ import {
   History,
   LogOut,
   MessageCircle,
+  Activity,
   PawPrint,
   Settings,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
   "/mindi": () => import("../pages/MindiPage"),
   "/alimentos": () => import("../pages/FoodSearchPage"),
   "/definicoes": () => import("../pages/SettingsPage"),
+  "/monitor": () => import("../pages/MonitorPage"),
 };
 
 export function Sidebar() {
@@ -67,6 +69,11 @@ export function Sidebar() {
       path: "/alimentos",
       icon: Apple,
       label: language === "pt" ? "Alimentos" : "Foods",
+    },
+    {
+      path: "/monitor",
+      icon: Activity,
+      label: language === "pt" ? "Monitor" : "Monitor",
     },
     {
       path: "/definicoes",

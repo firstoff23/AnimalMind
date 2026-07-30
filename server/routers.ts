@@ -989,6 +989,20 @@ export const appRouter = router({
               err,
             );
           }
+
+          // ── Push Notification ───────────────────────────────────────────────
+          if (result.state === "distress" || result.state === "alert") {
+            const animalName = targetAnimal?.name || "O seu animal";
+            const stateLabel = result.state === "distress" ? "angústia" : "alerta";
+            
+            sendPushNotification(userId, {
+              title: `Pawra - Alerta de ${stateLabel}!`,
+              body: `${animalName} está a mostrar sinais de ${stateLabel} (${Math.round(result.confidence * 100)}% de confiança).`,
+              data: { eventId: String(eventId), animalId: String(targetAnimalId) }
+            }).catch(err => console.error("[Push] Erro ao enviar notificação após classify:", err));
+          }
+          // ────────────────────────────────────────────────────────────────────
+
           if (input.posture) {
             await savePostureForEvent(eventId, input.posture);
           }

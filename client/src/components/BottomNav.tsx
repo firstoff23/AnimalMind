@@ -6,6 +6,7 @@ import {
   History,
   MessageCircle,
   MoreHorizontal,
+  Activity,
   PawPrint,
   Settings,
 } from "lucide-react";
@@ -47,7 +48,7 @@ export function BottomNav() {
       icon: MoreHorizontal,
       label: language === "pt" ? "Mais" : "More",
       isAction: true,
-      activePaths: ["/mindi", "/alimentos", "/definicoes"],
+      activePaths: ["/mindi", "/alimentos", "/definicoes", "/monitor", "/vigilancia"],
     },
   ];
 
@@ -66,6 +67,16 @@ export function BottomNav() {
       path: "/definicoes",
       icon: Settings,
       label: language === "pt" ? "Definições" : "Settings",
+    },
+    {
+      path: "/monitor",
+      icon: Activity,
+      label: language === "pt" ? "Monitor" : "Monitor",
+    },
+    {
+      path: "/vigilancia",
+      icon: Activity,
+      label: language === "pt" ? "Vigilância" : "Surveillance",
     },
   ];
 

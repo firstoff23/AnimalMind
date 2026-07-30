@@ -23,6 +23,12 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.1097.0
         version: 3.1097.0
+      '@capacitor-community/fcm':
+        specifier: ^8.1.0
+        version: 8.1.0(@capacitor/core@8.4.2)
+      '@capacitor-community/keep-awake':
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.4.2)
       '@capacitor-community/sqlite':
         specifier: ^8.1.0
         version: 8.1.0(@capacitor/core@8.4.2)
@@ -35,6 +41,9 @@ importers:
       '@capacitor/push-notifications':
         specifier: ^8.1.2
         version: 8.1.2(@capacitor/core@8.4.2)
+      '@capawesome-team/capacitor-android-foreground-service':
+        specifier: ^8.1.0
+        version: 8.1.0(@capacitor/core@8.4.2)
       '@hookform/resolvers':
         specifier: ^5.5.7
         version: 5.5.7(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.64.0(react@19.2.8))(zod@4.4.3)
@@ -167,6 +176,9 @@ importers:
       axios:
         specifier: ^1.18.1
         version: 1.18.1
+      capacitor-voice-recorder:
+        specifier: ^7.0.6
+        version: 7.0.6(@capacitor/core@8.4.2)(@capacitor/filesystem@8.1.2(@capacitor/core@8.4.2))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1060,6 +1072,9 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0-0 || ^8.0.0-0 <8.0.0
 
+  '@babel/runtime@7.11.2':
+    resolution: {integrity: sha512-TeWkU52so0mPtDcaCTxNBI/IHiz0pZgr8VEFqXFtZWpYD08ZB6FaSwVAS8MKRQAP3bYKiVjwysOJgMFY28o6Tw==}
+
   '@babel/runtime@7.29.7':
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
     engines: {node: '>=6.9.0'}
@@ -1143,6 +1158,16 @@ packages:
   '@bytecodealliance/preview2-shim@0.17.6':
     resolution: {integrity: sha512-n3cM88gTen5980UOBAD6xDcNNL3ocTK8keab21bpx1ONdA+ARj7uD1qoFxOWCyKlkpSi195FH+GeAut7Oc6zZw==}
 
+  '@capacitor-community/fcm@8.1.0':
+    resolution: {integrity: sha512-pg/XoUBW+k0crC1Za9qEp8uyOs7Pu2haU72POBpvCP00n2WjLFrio5atVcNtKCdck9R/gzIjXGpCuKWgisIAsg==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor-community/keep-awake@8.0.1':
+    resolution: {integrity: sha512-wTI5A6FWl5gWoMduzJ5euuJ1P73SO+rea0jV6vNdmz5TLbwIDhufelFe/GowNvU9gog6kDYbFhJ2pOp9ua1f3w==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor-community/sqlite@8.1.0':
     resolution: {integrity: sha512-yhKZDAVPDPcM3QE6UGB3LXyV25a6Rve1SjZ1aUpTE0E2isnYTVM0PG9+JOI241f+NdsHzPTE7ESJiYSqKsKnuA==}
     engines: {node: '>=16.0.0'}
@@ -1162,8 +1187,21 @@ packages:
   '@capacitor/core@8.4.2':
     resolution: {integrity: sha512-fQPRb3JXRaU2pnufDUvqOjhsrYxDQeFRZyaj/sHydIUxD2NxOGHKMpmKUdI+U4OOmKuGZyvRpi7TSJU+7Bjbmg==}
 
+  '@capacitor/filesystem@8.1.2':
+    resolution: {integrity: sha512-doaaMfGoFR2hWU6aV6u83I+5ZsGyJVq+Gz4r9lMpJzUKMm1eMu0hLnFdV1aXZlU9FlK/RndFrVD8oRZfNOqWgQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/push-notifications@8.1.2':
     resolution: {integrity: sha512-TQl4XxqJfNF+KbSYBFMXYYT5WXUaleVKXlByhh/8+KySMVNjp+l5OqAUoGe/sY1IAnGXEuUeCjA/WLZEVvGwrA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/synapse@1.0.4':
+    resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
+
+  '@capawesome-team/capacitor-android-foreground-service@8.1.0':
+    resolution: {integrity: sha512-q1LaZQ5K2cu2IXjbabwssF+RpUBikLxkOHYS69ahXz6a1kIsr2jC4RU1bwAEBTopRz0ccgfai0dSSTdqbtEwhw==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -3926,6 +3964,17 @@ packages:
     resolution: {integrity: sha512-5ON+q7jCTgMp9cjpu4Jo6XbvfYwSB2Ow3kzHKfIyJfaCAOHLbdKPQqGKgfED/R5B+3TFFfe8pegYA+b423SRyA==}
     engines: {node: '>=10.0.0'}
 
+  capacitor-blob-writer@1.1.20:
+    resolution: {integrity: sha512-SxYR64Zzb4MB2Ntb0IXJFWlhX6YPTlHiOjXWLqv/pVpa6fU+xFwmGp8+KdDsWRzLAAF71QmTkpMoV0PcT3LgTw==}
+    peerDependencies:
+      '@capacitor/core': '>=3.0.0'
+      '@capacitor/filesystem': '>=1.0.0'
+
+  capacitor-voice-recorder@7.0.6:
+    resolution: {integrity: sha512-WdFFzv5B++FhTifb+/NzYnup7NvTHLZxP8D20qtolr2lLgxnwI5aNSKc3r8HpVlZn04b+GWrmnLIJ6q5JU3h8w==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
 
@@ -4899,6 +4948,9 @@ packages:
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
+
+  get-blob-duration@1.2.0:
+    resolution: {integrity: sha512-2xNJa+oKznR21eC2ThMzw4a1931a3ogA8aHoY92xruZufc/02G7pl/P793GJZytkyI8xMJ2DepEQ7MWvg/tn/Q==}
 
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
@@ -8864,6 +8916,10 @@ snapshots:
       '@babel/types': 7.29.7
       esutils: 2.0.3
 
+  '@babel/runtime@7.11.2':
+    dependencies:
+      regenerator-runtime: 0.13.11
+
   '@babel/runtime@7.29.7': {}
 
   '@babel/template@7.29.7':
@@ -8940,6 +8996,14 @@ snapshots:
 
   '@bytecodealliance/preview2-shim@0.17.6': {}
 
+  '@capacitor-community/fcm@8.1.0(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
+
+  '@capacitor-community/keep-awake@8.0.1(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
+
   '@capacitor-community/sqlite@8.1.0(@capacitor/core@8.4.2)':
     dependencies:
       '@capacitor/core': 8.4.2
@@ -8975,7 +9039,18 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@capacitor/filesystem@8.1.2(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
+      '@capacitor/synapse': 1.0.4
+
   '@capacitor/push-notifications@8.1.2(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
+
+  '@capacitor/synapse@1.0.4': {}
+
+  '@capawesome-team/capacitor-android-foreground-service@8.1.0(@capacitor/core@8.4.2)':
     dependencies:
       '@capacitor/core': 8.4.2
 
@@ -11722,6 +11797,19 @@ snapshots:
       svg-pathdata: 6.0.3
     optional: true
 
+  capacitor-blob-writer@1.1.20(@capacitor/core@8.4.2)(@capacitor/filesystem@8.1.2(@capacitor/core@8.4.2)):
+    dependencies:
+      '@capacitor/core': 8.4.2
+      '@capacitor/filesystem': 8.1.2(@capacitor/core@8.4.2)
+
+  capacitor-voice-recorder@7.0.6(@capacitor/core@8.4.2)(@capacitor/filesystem@8.1.2(@capacitor/core@8.4.2)):
+    dependencies:
+      '@capacitor/core': 8.4.2
+      capacitor-blob-writer: 1.1.20(@capacitor/core@8.4.2)(@capacitor/filesystem@8.1.2(@capacitor/core@8.4.2))
+      get-blob-duration: 1.2.0
+    transitivePeerDependencies:
+      - '@capacitor/filesystem'
+
   ccount@2.0.1: {}
 
   chai@6.2.2: {}
@@ -12932,6 +13020,10 @@ snapshots:
   generator-function@2.0.1: {}
 
   gensync@1.0.0-beta.2: {}
+
+  get-blob-duration@1.2.0:
+    dependencies:
+      '@babel/runtime': 7.11.2
 
   get-caller-file@2.0.5: {}
 

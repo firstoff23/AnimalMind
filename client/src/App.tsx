@@ -27,6 +27,8 @@ import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
 import { useMLBackendSSE } from "./hooks/useMLBackendSSE";
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 import { GlobalFallback } from "./components/GlobalFallback";
+import { usePushNotifications } from "./hooks/usePushNotifications";
+import { Capacitor } from "@capacitor/core";
 const AnimalDetailPage = lazy(() => import("./pages/AnimalDetailPage"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const CameraPage = lazy(() => import("./pages/CameraPage"));
@@ -56,6 +58,8 @@ const VerifyOtpPage = lazy(() => import("./pages/VerifyOtpPage"));
 const VetDashboardPage = lazy(() => import("./pages/VetDashboardPage"));
 const VetPage = lazy(() => import("./pages/VetPage"));
 const VetPetDetailPage = lazy(() => import("./pages/VetPetDetailPage"));
+const MonitorPage = lazy(() => import("./pages/MonitorPage"));
+const SurveillancePage = lazy(() => import("./pages/SurveillancePage").then(m => ({ default: m.SurveillancePage })));
 
 // ─── Route Prefetch Helper ───────────────────────────────────────────────────
 // Call this on onMouseEnter / onFocus to pre-load a lazy page chunk before
@@ -114,13 +118,15 @@ function RealtimeNotificationsBridge({ enabled }: { enabled: boolean }) {
 
 function PushNotificationsBridge({ enabled }: { enabled: boolean }) {
   const subscribeMutation = trpc.push.subscribe.useMutation();
+  usePushNotifications(); // Native mobile push notifications
 
   useEffect(() => {
-    if (enabled) {
+    if (enabled && !Capacitor.isNativePlatform()) {
+      // Web push notifications fallback
       import("@/lib/pushSetup").then(({ subscribeUserToPush }) => {
         subscribeUserToPush(subscribeMutation.mutateAsync).catch((err) => {
           console.error(
-            "[Push Setup] Failed to register push subscription:",
+            "[Push Setup] Failed to register web push subscription:",
             err,
           );
         });
@@ -245,7 +251,13 @@ function Router() {
                 <Route path="/auth/callback">
                   <LazyRoute component={AuthCallbackPage} variant="content" />
                 </Route>
-                <Route path="/">
+                <Route path="/monitor">
+                  <LazyRoute component={MonitorPage} isProtected />
+                </Route>
+                <Route path="/vigilancia">
+                  <LazyRoute component={SurveillancePage} isProtected />
+                </Route>
+      <Route path="/">
                   <LazyRoute component={LandingPage} variant="content" />
                 </Route>
                 <Route path="/privacidade">

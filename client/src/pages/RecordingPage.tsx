@@ -135,6 +135,7 @@ function ResultCard({
   activeAnimal: ActiveAnimal | null | undefined;
 }) {
   const { t, language } = useLanguage();
+  const [, setLocation] = useLocation();
   const [feedbackSent, setFeedbackSent] = useState<
     "correct" | "incorrect" | null
   >(null);
