@@ -943,18 +943,27 @@ export default function RecordingPage() {
     };
   }, [recordState, liveAudioStream]);
 
+  const uploadAndProcessRef = useRef(uploadAndProcess);
+  useEffect(() => {
+    uploadAndProcessRef.current = uploadAndProcess;
+  }, [uploadAndProcess]);
+
   // Countdown timer during recording
   useEffect(() => {
     if (recordState !== "recording") return;
+    console.log("[E2E DEBUG] Recording started, setting timer to 3");
     setCountdown(3);
     const interval = setInterval(() => {
       setCountdown((c) => {
+        console.log("[E2E DEBUG] Timer tick, current c:", c);
         if (c <= 1) {
+          console.log("[E2E DEBUG] Timer finished, calling stopAndGetBlobLiveAudio");
           clearInterval(interval);
 
           void (async () => {
             try {
               const res = await stopAndGetBlobLiveAudio();
+              console.log("[E2E DEBUG] stopAndGetBlobLiveAudio result:", res);
               if (res) {
                 lastRecordedBlobRef.current = res.blob;
                 const audioUrl = URL.createObjectURL(res.blob);
@@ -962,7 +971,7 @@ export default function RecordingPage() {
 
                 // If in Continuous/Auto mode, skip review screen and send immediately
                 if (isAutoModeRef.current) {
-                  uploadAndProcess(res.blob, res.mimeType);
+                  uploadAndProcessRef.current(res.blob, res.mimeType);
                 } else {
                   setRecordState("review");
                 }
@@ -986,7 +995,7 @@ export default function RecordingPage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [recordState, stopAndGetBlobLiveAudio, language, uploadAndProcess]);
+  }, [recordState, stopAndGetBlobLiveAudio, language]);
 
   async function uploadAndProcess(blob: Blob, mimeType: string) {
     const ALLOWED_AUDIO = [
@@ -1143,6 +1152,7 @@ export default function RecordingPage() {
   }, [stopLiveAudio, recordedAudioUrl, clearAutoRecordingTimer]);
 
   const handleButtonClick = () => {
+    console.log("[E2E DEBUG] handleButtonClick called, recordState:", recordState);
     if (isAutoModeRef.current) {
       disableAutoMode();
       return;
@@ -1161,10 +1171,12 @@ export default function RecordingPage() {
 
     setResult(null);
     setRecordedAudioUrl(null);
+    console.log("[E2E DEBUG] Calling startRecordingCycle()");
     startRecordingCycle();
   };
 
   const handlePointerDown = (_e: React.PointerEvent) => {
+    console.log("[E2E DEBUG] pointerDown");
     if (isAutoModeRef.current) return;
     if (recordState !== "idle") return;
 
@@ -1176,6 +1188,7 @@ export default function RecordingPage() {
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    console.log("[E2E DEBUG] pointerUp, isLongPressActive:", isLongPressActiveRef.current);
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
     }

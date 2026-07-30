@@ -57,7 +57,7 @@ app.use((_req, res, next) => {
   const isDev = process.env.NODE_ENV === "development";
   const scriptSrc = isDev
     ? `'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io https://*.termly.co`
-    : `'self' 'unsafe-inline' https://app.termly.io https://*.termly.co`;
+    : `'self' 'unsafe-eval' 'unsafe-inline' https://app.termly.io https://*.termly.co`;
 
   res.setHeader(
     "Content-Security-Policy",

@@ -206,7 +206,14 @@ function procedureData(procedure: string, input: any) {
     case "auth.me":
       return appUser;
     case "auth.logout":
+    case "auth.deleteAccount":
+    case "auth.mfa.verify":
+    case "auth.mfa.disable":
       return { success: true };
+    case "auth.mfa.status":
+      return { enabled: false };
+    case "auth.mfa.setup":
+      return { secret: "JBSWY3DPEHPK3PXP", otpAuthUri: "otpauth://totp/AnimalMind?secret=JBSWY3DPEHPK3PXP&issuer=AnimalMind" };
     case "animals.list":
       return [mockAnimal];
     case "animals.get":
@@ -278,14 +285,17 @@ function procedureData(procedure: string, input: any) {
         alertSensitivity: "medium",
       };
     case "classify.run":
+    case "classify.saveVisionEvent":
       return {
         state: "relaxed",
         confidence: 0.92,
         emoji: "⚪",
-        model_used: "yamnet-e2e",
+        model_used: procedure === "classify.saveVisionEvent" ? "vision-v1" : "yamnet-e2e",
         cached: false,
         eventId: mockEvent.id,
         posture: input?.posture ?? "standing",
+        species: procedure === "classify.saveVisionEvent" ? "dog" : undefined,
+        breed: procedure === "classify.saveVisionEvent" ? "Serra da Estrela" : undefined,
       };
     case "classify.detectPosture":
       return {
@@ -385,16 +395,17 @@ async function installBrowserMocks(page: Page) {
     localStorage.setItem("animalmind-onboarding-seen", "true");
     localStorage.setItem("pawra-onboarding-seen", "true");
     localStorage.setItem("theme", "dark");
+    localStorage.setItem("cookie_consent", "all");
     indexedDB.deleteDatabase("animalmind-offline-queue");
     indexedDB.deleteDatabase("animalmind-offline-queue-meta");
 
     // Disable WebGL in E2E to prevent headless crashes of Three.js / Canvas
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+    (HTMLCanvasElement.prototype as any).getContext = function (type: string, ...args: any[]) {
       if (type === "webgl" || type === "experimental-webgl") {
         return null;
       }
-      return originalGetContext.apply(this, [type, ...args]);
+      return (originalGetContext as any).apply(this, [type, ...args]);
     };
 
     class MockWebSocket extends EventTarget {
@@ -516,8 +527,9 @@ export const test = base.extend({
       console.error("[PAGE ERROR]", err.message, err.stack);
     });
     page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        console.error("[BROWSER ERROR LOG]", msg.text());
+      const type = msg.type();
+      if (type === "error" || type === "warning" || type === "log") {
+        console.log(`[BROWSER ${type.toUpperCase()} LOG] ${msg.text()}`);
       }
     });
     await installBrowserMocks(page);
