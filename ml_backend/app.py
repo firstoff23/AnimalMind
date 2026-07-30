@@ -4,6 +4,13 @@ import subprocess
 import tempfile
 from typing import Dict, List, Optional, Tuple
 
+# Load environment variables from .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 import numpy as np
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import HTMLResponse
@@ -14,10 +21,18 @@ from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 from scipy import signal
 from scipy.io import wavfile
-import asyncpg
+try:
+    import asyncpg
+except ImportError:
+    asyncpg = None
+
 import hashlib
 import json
-import redis as redis_client
+
+try:
+    import redis as redis_client
+except ImportError:
+    redis_client = None
 from datetime import datetime, timezone
 from fastapi.responses import StreamingResponse
 
@@ -38,10 +53,13 @@ def _sse_broadcast(event_type: str, data: dict):
     for q in dead:
         _sse_subscribers.remove(q)
 
+from utils.logging import setup_structured_logging
+setup_structured_logging()
+
 app = FastAPI(
-    title="AnimalMind Acoustic Classifier Backend",
-    description="FastAPI backend for pet audio classification and breed identification.",
-    version="1.3.0",
+    title="AnimalMind Acoustic & Vision Classifier Backend",
+    description="FastAPI backend for pet audio classification, breed identification, and posture detection.",
+    version="1.4.0",
 )
 
 limiter = Limiter(key_func=get_remote_address)
@@ -50,7 +68,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -94,6 +112,7 @@ app.add_middleware(AuditLogMiddleware)
 # --- Globals: DB pool e Redis client ---
 db_pool = None
 redis_conn = None
+
 
 
 @app.on_event("startup")

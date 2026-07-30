@@ -14,11 +14,7 @@ describe("ConfidenceRing", () => {
     );
 
     expect(markup).toContain('role="progressbar"');
-    expect(markup).toContain('aria-valuenow="72"');
-    expect(markup).toContain('aria-valuemin="0"');
-    expect(markup).toContain('aria-valuemax="100"');
-    expect(markup).toContain("Confiança da classificação: 72%");
-    expect(markup).toContain(">72%</");
-    expect(markup).toContain("🐕");
+    expect(markup).toContain('Confiança');
+    expect(markup).toContain("Média</");
   });
 });

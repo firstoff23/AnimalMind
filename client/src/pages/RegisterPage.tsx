@@ -30,7 +30,8 @@ export default function RegisterPage() {
   const [nameBlurred, setNameBlurred] = useState(false);
   const [emailBlurred, setEmailBlurred] = useState(false);
   const [passwordBlurred, setPasswordBlurred] = useState(false);
-  const [apiError, setApiError] = useState("");
+  const [apiEmailError, setApiEmailError] = useState("");
+  const [apiPasswordError, setApiPasswordError] = useState("");
   const [termsDialogOpen, setTermsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -69,23 +70,25 @@ export default function RegisterPage() {
       ? "Indique o seu nome para personalizar a conta."
       : "";
   const emailError =
-    apiError ||
+    apiEmailError ||
     (emailBlurred && isDisposable
       ? "Este tipo de email não é aceite. Usa o teu email pessoal ou profissional."
       : emailBlurred && !isEmailValid
         ? "Introduza um email válido, por exemplo nome@exemplo.com."
         : "");
   const passwordError =
-    passwordBlurred && !isPasswordValid
+    apiPasswordError ||
+    (passwordBlurred && !isPasswordValid
       ? "Escolha uma palavra-passe que cumpra os requisitos."
-      : "";
+      : "");
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNameBlurred(true);
     setEmailBlurred(true);
     setPasswordBlurred(true);
-    setApiError("");
+    setApiEmailError("");
+    setApiPasswordError("");
 
     if (!isFormValid) return;
 
@@ -97,11 +100,16 @@ export default function RegisterPage() {
       );
       setLocation(`/verify-otp?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (error) {
-      setApiError(
+      const msg =
         error instanceof Error && error.message
           ? error.message
-          : "Não foi possível criar a conta com este email.",
-      );
+          : "Não foi possível criar a conta com este email.";
+      // Erros relacionados com password vão para o campo correto
+      if (/password|senha|palavra.?passe/i.test(msg)) {
+        setApiPasswordError(msg);
+      } else {
+        setApiEmailError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -130,7 +138,8 @@ export default function RegisterPage() {
           value={name}
           onChange={(event) => {
             setName(event.target.value);
-            setApiError("");
+            setApiEmailError("");
+            setApiPasswordError("");
           }}
           onBlur={() => setNameBlurred(true)}
           autoComplete="name"
@@ -148,14 +157,14 @@ export default function RegisterPage() {
           value={email}
           onChange={(event) => {
             setEmail(event.target.value);
-            setApiError("");
+            setApiEmailError("");
           }}
           onBlur={() => setEmailBlurred(true)}
           autoComplete="username"
           inputMode="email"
           disabled={loading}
           error={emailError}
-          success={isEmailValid && !apiError ? "Válido" : undefined}
+          success={isEmailValid && !apiEmailError ? "Válido" : undefined}
         />
 
         <AuthTextField
@@ -167,7 +176,7 @@ export default function RegisterPage() {
           value={password}
           onChange={(event) => {
             setPassword(event.target.value);
-            setApiError("");
+            setApiPasswordError("");
           }}
           onBlur={() => setPasswordBlurred(true)}
           autoComplete="new-password"
@@ -185,7 +194,6 @@ export default function RegisterPage() {
             checked={ageConfirmed}
             onChange={(e) => {
               setAgeConfirmed(e.target.checked);
-              setApiError("");
             }}
             disabled={loading}
             className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-900 text-primary focus:ring-primary focus:ring-offset-slate-950 accent-primary cursor-pointer disabled:opacity-50"

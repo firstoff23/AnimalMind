@@ -110,7 +110,7 @@ export function Header() {
   };
 
   return (
-    <header className="bg-card border-b border-border sticky top-0 z-50 px-4 py-3 h-14 flex items-center justify-between select-none">
+    <header className="bg-card/90 backdrop-blur-md border-b border-border/50 sticky top-0 z-50 px-4 py-3 h-14 flex items-center justify-between select-none">
       {/* Left side actions (Back Button) */}
       <div className="flex items-center w-1/4">
         {!isRootPage && (

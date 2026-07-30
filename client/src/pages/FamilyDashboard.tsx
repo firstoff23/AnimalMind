@@ -16,7 +16,7 @@ import { useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import FamilyInvite from "@/components/FamilyInvite";
 import { Button } from "@/components/ui/button";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { trpc } from "@/lib/trpc";
 
@@ -267,7 +267,7 @@ export default function FamilyDashboard({
         {!hasFamilyData && (
           <div className="space-y-3">
             {/* Create Family */}
-            <SpotlightCard className="p-4 space-y-3">
+            <Card className="p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Plus
                   size={14}
@@ -308,10 +308,10 @@ export default function FamilyDashboard({
                   {createFamilyMutation.isPending ? "A criar…" : "Criar"}
                 </Button>
               </form>
-            </SpotlightCard>
+            </Card>
 
             {/* Join Family — collapsible */}
-            <SpotlightCard className="p-4 space-y-0">
+            <Card className="p-4 space-y-0">
               <button
                 type="button"
                 className="w-full flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground py-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40 rounded"
@@ -361,7 +361,7 @@ export default function FamilyDashboard({
                   </Button>
                 </form>
               )}
-            </SpotlightCard>
+            </Card>
           </div>
         )}
 
@@ -371,7 +371,7 @@ export default function FamilyDashboard({
             <FamilyInvite />
 
             {/* Members */}
-            <SpotlightCard className="p-4 space-y-3">
+            <Card className="p-4 space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Membros da Família
               </h3>
@@ -436,10 +436,10 @@ export default function FamilyDashboard({
                   </p>
                 )}
               </div>
-            </SpotlightCard>
+            </Card>
 
             {/* Shared Animals */}
-            <SpotlightCard className="p-4 space-y-3">
+            <Card className="p-4 space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Animais partilhados
               </h3>
@@ -471,10 +471,10 @@ export default function FamilyDashboard({
                   </p>
                 )}
               </div>
-            </SpotlightCard>
+            </Card>
 
             {/* Activity */}
-            <SpotlightCard className="p-4 space-y-3">
+            <Card className="p-4 space-y-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Atividade recente
               </h3>
@@ -499,7 +499,7 @@ export default function FamilyDashboard({
                   </p>
                 )}
               </div>
-            </SpotlightCard>
+            </Card>
 
             {/* Leave Family */}
             <div className="pt-2 pb-4">

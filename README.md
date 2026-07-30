@@ -1,69 +1,59 @@
-# Pawra 🐾
+# Pawra
 
-O **Pawra** é uma aplicação web premium e interativa desenvolvida para monitorizar e traduzir o estado emocional de animais de estimação (cães e gatos) a partir de sinais sonoros e acústicos. A aplicação utiliza modelos avançados de IA para classificar vocalizações animais e oferece um painel estatístico em tempo real para os tutores.
+Pawra is a web app that helps pet owners understand their pets a little better.
+Understand what your pet is trying to tell you. Pawra combines AI-assisted behavior interpretation with your observations to create explanations that improve over time.
+All explanations act as a helpful second opinion, not a medical or veterinary diagnosis.
 
----
+> **Project Status:** MVP / early beta.
 
-## 🌟 Funcionalidades Principais
+## Key Features
 
-### 1. Gravação & Streaming de Áudio em Tempo Real
-* **Waveform e Medidor Live:** Captura de áudio nativa através do microfone (Web Audio API) com feedback visual contínuo do nível sonoro e ondas sonoras em tempo real ([LiveAudioMeter.tsx](file:///client/src/components/LiveAudioMeter.tsx)).
-* **Feedback de Contagem:** Gravação de precisão de 3 segundos com contagem decrescente visual interactiva.
+- **AI-Assisted Interpretation:** Interprets behavior and vocalizations to provide a clearer sense of what an animal may be trying to communicate.
+- **Human Feedback Loop:** Allows users to rate and correct predictions, helping refine explanations over time.
+- **Transparent Audit Panel:** A dedicated area for admins and vets to review and moderate user-submitted corrections.
+- **Behavior History:** Tracks emotional evolution and observations over time.
+- **Support, Not Diagnosis:** Every feature is designed as a second opinion, not a replacement for veterinary care.
 
-### 2. Auto Classify (Modo Automático — Estilo Shazam)
-* **Ativação por Gesto:** Mantenha premido o botão central de gravação (Long Press > 700ms) para ativar o modo automático.
-* **Interface Vibrante:** O botão central entra num estado luminoso dinâmico (`auto-pulse` ciano/azul) e o painel indica que o piloto automático está ativo.
-* **Escuta Contínua:** Grava em loops consecutivos de 3 segundos, analisa em background, atualiza as estatísticas e recomeça imediatamente de forma autónoma.
-* **Banner de Alternância:** Um banner premium de controlo rápido sob o botão permite alternar o "Modo Contínuo" com um único toque.
+## Tech Stack
 
-### 3. Dashboard Dinâmico
-* **Estatísticas Semanais:** Distribuição visual dos estados emocionais identificados (ex: excitação, sofrimento, fome, alerta, relaxado) nos últimos 7 dias.
-* **Estado Dominante:** Exibe o estado emocional mais representativo do dia atual com cores e emojis dinâmicos.
-* **Evolução da Confiança:** Gráfico de linha interativo exibindo a média de confiança diária das classificações acústicas.
+| Layer | Technology |
+|---|---|
+| Frontend | React, TypeScript |
+| API | tRPC |
+| Validation | Zod |
+| Database | Supabase (Postgres) |
+| Authentication | Supabase Auth |
+| Hosting | Vercel |
 
-### 4. Histórico Interativo
-* **Swipe to Classify (Framer Motion):** Deslize cada linha do histórico para a esquerda (Incorreto) ou para a direita (Correto) para calibrar a inteligência do sistema. Gestos de arrastamento fluidos, acelerados por hardware e com retorno automático em mola ([HistoryPage.tsx](file:///client/src/pages/HistoryPage.tsx)).
-* **Long Press para Dados Brutos:** Mantenha pressionada uma linha do histórico por 550ms para abrir um diálogo técnico exibindo o JSON dos metadados gerados pelo modelo de classificação e IA.
+tRPC and Zod keep the client and server aligned through end-to-end type safety and input validation.
 
-### 5. Voice-to-Text para Notas de Observação
-* **Ditado por voz nativo:** Microfone ao lado do campo de texto com efeito pulsante azul-ciano para ditar notas de observação em Português de Portugal (`pt-PT`) usando a Web Speech API.
-* **Persistência e Integração:** Notas guardadas localmente em `server/notes.json` e acopladas às consultas de eventos via tRPC. Exibidas no histórico com um indicador 📝 e no detalhe do diálogo de dados brutos.
+## Security & Access Control
 
-### 6. Gravação de Áudio Real e Supabase Storage
-* **Gravação Física:** Captura o som real do animal de estimação em formato comprimido (ex: `audio/webm`, `audio/mp4`) durante os 3 segundos de monitorização física do microfone via `MediaRecorder`.
-* **Upload automático:** O ficheiro é enviado diretamente para o Supabase Storage público no bucket `audio-recordings` e o URL público é persistido em `classification_events.audio_url`.
-* **Reprodutor Integrado:** Se um evento do Histórico possui áudio real, é exibido um botão circular de Play/Pause para ouvir o som diretamente na linha de registo ou um reprodutor nativo completo no diálogo de Dados Brutos.
+- **Database-Level Protection (RLS):** Supabase Row-Level Security (RLS) controls which rows can be accessed directly in the database.
+- **Protected Routes:** Authenticated flows are enforced on the server through tRPC procedures, not just hidden in the UI.
+- **Role-Based Access:** Admin and vet-only areas are gated by backend role checks before data is returned.
 
-### 7. Backend de Classificação Acústica Real (FastAPI)
-* **API Dedicada:** Servidor Python FastAPI autónomo localizado na pasta `ml_backend/` que disponibiliza a rota `/classify`.
-* **Modelo YAMNet Real:** Realiza conversão de áudio multi-formato (usando FFmpeg global) para WAV 16kHz mono, carrega o modelo oficial `https://tfhub.dev/google/yamnet/1` via TensorFlow Hub e usa as classes AudioSet inferidas para orientar a classificação.
-* **Mapeamento Emocional:** Mapeia as classes acústicas do YAMNet e sinais físicos auxiliares para os 6 estados emocionais da aplicação.
-* **Fallback Interno:** Se TensorFlow/YAMNet não estiver disponível no servidor Python, o backend cai para análise `numpy`/`scipy` com RMS, Zero Crossing Rate e frequência dominante.
-* **Resiliência & Fallback:** Se a variável de ambiente `FASTAPI_BACKEND_URL` não estiver definida ou o servidor FastAPI estiver offline, a API tRPC do Node.js cai de forma transparente e resiliente para o simulador heurístico sem afetar a usabilidade da aplicação.
-* **Deploy ML:** O backend Python foi preparado para Hugging Face Spaces via `ml_backend/Dockerfile`. Depois do Space estar live, atualizar `FASTAPI_BACKEND_URL` na Vercel para `https://<owner>-Pawra-ml-backend.hf.space`.
+## Roadmap
 
-### 8. Página de Detalhe por Animal
-* **Painel Dedicado (`/animal/:id`):** Acessível a partir da página de Perfil, reúne todas as informações históricas e estatísticas de um único animal de estimação.
-* **Evolução Temporal:** Gráfico interativo com a média diária de confiança de classificação nos últimos 7 ou 30 dias para análise de progresso.
-* **Radar Emocional Individual:** Visualização tridimensional da distribuição de estados emocionais específica do animal.
+- **Phase 1 — Core Analysis:** Improve interpretation quality and make analysis outputs easier to understand.
+- **Phase 2 — Feedback Review:** Strengthen the audit workflow and add clearer ways to track feedback quality over time.
+- **Phase 3 — Broader Inputs:** Support additional input types and refine how the system handles more pet behaviors and contexts.
 
-### 9. Exportação de Relatórios Clínicos (PDF)
-* **Geração em Client-Side:** Botão "Descarregar PDF" integrado via `jspdf` para compilar e guardar um PDF clínico e comportamental detalhado do animal.
-* **Estrutura Profissional:** Contém identificação do animal, parâmetros de baseline calibrados, sumário estatístico de atividade e tabela com o histórico das últimas 10 vocalizações com notas e metadados. Pronto para partilhar com médicos veterinários.
+## Screenshots
 
-### 10. Baseline Comportamental & Alertas de Ruído
-* **Calibração Dinâmica:** Interface intuitiva para definir o limiar diário de vocalizações normais, sensibilidade de alertas do microfone e marcar quais os estados emocionais são típicos do animal. A configuração mantém fallback local em `server/baselines.json`.
-* **Perfil Médio por Animal:** Calcula a distribuição dos estados emocionais das últimas 4 semanas e persiste em `animals.baseline_data` (`JSONB`) para formar um perfil comportamental individual.
-* **Fuga de Baseline:** Alertas visuais rápidos e banners caso o animal vocalize estados não-típicos, estados raros face ao seu perfil histórico, ou ultrapasse o limite diário de vocalizações estabelecido na baseline.
+| Landing Page | Analysis Screen |
+|---|---|
+| _Add screenshot_ | _Add screenshot_ |
 
-### 11. Multi-utilizador / Modo Família (Co-tutoria)
-* **Partilha de Animais:** Convidar outros tutores através do e-mail com permissões de Leitura (apenas visualizar estatísticas e histórico) ou Escrita (efetuar gravações e alterar a baseline).
-* **Gestão de Acessos:** O proprietário tem total controlo sobre quem tem acesso ao animal, podendo revogar partilhas a qualquer momento na tab "Co-tutores" da página de detalhe.
-* **Convites no Dashboard:** Convites pendentes são notificados com um banner de convite premium com ações de Aceitar/Recusar. Animais partilhados são marcados com o badge `Co-tutor` no dashboard.
+| Feedback Flow | Audit Panel |
+|---|---|
+| _Add screenshot_ | _Add screenshot_ |
 
----
+## Contact & Links
 
-## 🧩 Como foi construído
+- **Repository:** _Add repo link_
+- **Live Application:** _Add deployment link_
+- **Contact:** _Add public contact email or website_
 
 O Pawra é uma aplicação **React/PWA** com um gateway **Node.js + Express + tRPC** e um backend de ML separado em **FastAPI**. O frontend fala com o gateway por `/api/trpc`, o gateway valida sessão e permissões, persiste dados no **Supabase**, envia áudio para classificação acústica e devolve resultados tipados ao cliente.
 
@@ -312,3 +302,4 @@ O **Pawra** baseia-se num classificador acústico genérico (YAMNet) e em estima
 * **Commit fbdcddda:** Implementa a contextualização temporal POMDP (Belief State), deteção visual de postura (com overlay dinâmico simulado sobre WebRTC) e Modo Veterinário para diagnóstico clínico.
 * **Commit 76298a03:** Integração e merge final das funcionalidades de Live Audio Streaming, Swipe de Feedback e Long Press no histórico.
 
+Private / Proprietary. All rights reserved.

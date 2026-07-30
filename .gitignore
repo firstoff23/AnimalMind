@@ -58,6 +58,8 @@ server/belief_states.json
 server/postures.json
 server/vet_shares.json
 server/vet_clinical_notes.json
+ml_backend/feedback_images/
+ml_backend/feedback.db
 server/families.json
 server/notes.json
 server/audio.json
@@ -87,3 +89,8 @@ ml_backend/models/species_classifier/*.safetensors
 *.safetensors
 models/
 
+# aider runtime artifacts (keep .aider.conf.yml tracked — it has no secrets)
+.aider.chat.history.md
+.aider.input.history
+.aider.llm.history
+.aider*

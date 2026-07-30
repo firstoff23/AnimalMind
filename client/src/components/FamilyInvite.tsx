@@ -2,7 +2,7 @@ import { Copy, Link2, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 
 export default function FamilyInvite() {
@@ -26,7 +26,7 @@ export default function FamilyInvite() {
   };
 
   return (
-    <SpotlightCard className="p-4 space-y-3">
+    <Card className="p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-0.5 min-w-0">
           <p className="text-sm font-semibold text-slate-100">
@@ -76,6 +76,6 @@ export default function FamilyInvite() {
           </Button>
         </div>
       )}
-    </SpotlightCard>
+    </Card>
   );
 }

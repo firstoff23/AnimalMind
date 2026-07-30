@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Apple,
   BarChart2,
@@ -21,6 +21,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/hooks/useLanguage";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { prefetch } from "@/App";
+
+// Prefetch map: path → dynamic import factory
+const PREFETCH_MAP: Record<string, () => Promise<unknown>> = {
+  "/dashboard": () => import("../pages/DashboardPage"),
+  "/perfil": () => import("../pages/ProfilePage"),
+  "/capturar": () => import("../pages/CapturePortalPage"),
+  "/historico": () => import("../pages/HistoryPage"),
+  "/mindi": () => import("../pages/MindiPage"),
+  "/alimentos": () => import("../pages/FoodSearchPage"),
+  "/definicoes": () => import("../pages/SettingsPage"),
+};
 
 export function Sidebar() {
   const [location, navigate] = useLocation();
@@ -77,7 +89,7 @@ export function Sidebar() {
     <motion.aside
       animate={{ width: collapsed ? 72 : 256 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className="hidden md:flex flex-col h-screen bg-card border-r border-border/40 select-none flex-shrink-0 relative"
+      className="hidden md:flex flex-col h-screen bg-card/95 backdrop-blur-md border-r border-border/40 select-none flex-shrink-0 relative"
     >
       {/* Sidebar Header */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-border/40">
@@ -126,6 +138,7 @@ export function Sidebar() {
             <button
               key={path}
               onClick={() => navigate(path)}
+              onMouseEnter={PREFETCH_MAP[path] ? prefetch(PREFETCH_MAP[path]) : undefined}
               aria-label={label}
               aria-current={active ? "page" : undefined}
               title={collapsed ? label : undefined}

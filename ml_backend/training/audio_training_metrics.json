@@ -1,0 +1,14 @@
+{
+  "model_name": "facebook/wav2vec2-base",
+  "epochs_trained": 1,
+  "classes": [
+    "bark",
+    "meow",
+    "whine",
+    "growl",
+    "hiss",
+    "silence"
+  ],
+  "calibrated_temperature": 1.5027893781661987,
+  "ece": 0.17210933566093445
+}

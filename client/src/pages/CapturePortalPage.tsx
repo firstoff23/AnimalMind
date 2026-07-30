@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Camera, Mic } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";

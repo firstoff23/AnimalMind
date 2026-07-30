@@ -1,11 +1,14 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
   Bell,
+  Camera,
   Check,
   Heart,
+  History,
   Mic,
   PawPrint,
+  Plus,
   Shield,
   Sparkles,
   Volume2,
@@ -14,7 +17,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 
 export function OnboardingFlow() {
@@ -94,7 +97,7 @@ export function OnboardingFlow() {
   };
 
   const nextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 3));
+    setCurrentStep((prev) => Math.min(prev + 1, 4));
   };
 
   const prevStep = () => {
@@ -140,9 +143,9 @@ export function OnboardingFlow() {
             Pawra
           </span>
         </div>
-        {currentStep < 3 && (
+        {currentStep < 4 && (
           <button
-            onClick={() => handleStepChange(3)}
+            onClick={() => handleStepChange(4)}
             className="text-sm font-medium text-neutral-400 hover:text-neutral-100 transition-colors"
           >
             Saltar
@@ -297,7 +300,7 @@ export function OnboardingFlow() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.15, duration: 0.3 }}
                     >
-                      <SpotlightCard className="flex items-start gap-4 border-neutral-900 bg-neutral-950 p-4">
+                      <Card className="flex items-start gap-4 border-neutral-900 bg-neutral-950 p-4">
                         <div className={`p-3 rounded-xl border ${item.color}`}>
                           <Icon size={20} />
                         </div>
@@ -309,7 +312,7 @@ export function OnboardingFlow() {
                             {item.desc}
                           </p>
                         </div>
-                      </SpotlightCard>
+                      </Card>
                     </motion.div>
                   );
                 })}
@@ -447,9 +450,97 @@ export function OnboardingFlow() {
                 >
                   {completeOnboardingMutation.isPending
                     ? "A entrar..."
-                    : "Permitir e Entrar"}
+                    : "Permitir e Continuar"}
                 </Button>
               </div>
+            </motion.div>
+          )}
+
+          {currentStep === 4 && (
+            <motion.div
+              key="step4"
+              custom={direction}
+              variants={slideVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="flex flex-col w-full"
+            >
+              <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto mb-6">
+                <Sparkles size={32} />
+              </div>
+
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center mb-2">
+                Primeiros Passos
+              </h2>
+              <p className="text-neutral-400 text-sm text-center mb-8 max-w-sm mx-auto">
+                Estás pronto! Aqui está o que podes fazer agora.
+              </p>
+
+              <div className="space-y-3 mb-8">
+                {[
+                  {
+                    icon: Plus,
+                    color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                    title: "Adicionar o teu pet",
+                    desc: "Cria o perfil do teu cão ou gato com foto e raça.",
+                    path: "/perfil",
+                    cta: "Ir para Animais",
+                  },
+                  {
+                    icon: Mic,
+                    color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                    title: "Gravar um som",
+                    desc: "Analisa as vocalizações do teu pet em tempo real.",
+                    path: "/capturar",
+                    cta: "Ir para Capturar",
+                  },
+                  {
+                    icon: History,
+                    color: "bg-primary/10 text-primary border-primary/20",
+                    title: "Ver o histórico",
+                    desc: "Acompanha a evolução emocional ao longo do tempo.",
+                    path: "/historico",
+                    cta: "Ver Histórico",
+                  },
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.button
+                      key={idx}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1, duration: 0.3 }}
+                      onClick={async () => {
+                        try {
+                          await completeOnboardingMutation.mutateAsync();
+                        } catch {
+                          /* ignore */
+                        }
+                        setLocation(item.path);
+                      }}
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl border border-neutral-800 bg-neutral-950 hover:border-neutral-700 hover:bg-neutral-900 transition-colors text-left group"
+                    >
+                      <div className={`p-3 rounded-xl border ${item.color} shrink-0`}>
+                        <Icon size={18} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-neutral-200">{item.title}</p>
+                        <p className="text-xs text-neutral-400 leading-relaxed">{item.desc}</p>
+                      </div>
+                      <ArrowRight size={14} className="text-neutral-600 group-hover:text-neutral-400 shrink-0 transition-colors" />
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <Button
+                onClick={handleFinish}
+                disabled={completeOnboardingMutation.isPending}
+                className="w-full h-12 text-base font-bold bg-primary hover:bg-primary/95 text-primary-foreground rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform duration-200"
+              >
+                {completeOnboardingMutation.isPending ? "A entrar..." : "Ir para o Dashboard"}
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -459,7 +550,7 @@ export function OnboardingFlow() {
       <div className="w-full max-w-xs mx-auto flex items-center justify-between z-10 pb-4">
         {/* Step dots */}
         <div className="flex gap-2 mx-auto">
-          {[0, 1, 2, 3].map((idx) => (
+          {[0, 1, 2, 3, 4].map((idx) => (
             <button
               key={idx}
               onClick={() => handleStepChange(idx)}

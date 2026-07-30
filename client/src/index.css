@@ -96,46 +96,46 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.98 0.005 162);
-  --foreground: oklch(0.16 0.015 245);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.015 245);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.015 245);
-  --primary: oklch(0.7 0.17 162); /* emerald-500 ≈ #10b981 */
-  --primary-foreground: oklch(0.99 0.004 162);
-  --secondary: oklch(0.94 0.006 245);
-  --secondary-foreground: oklch(0.18 0.015 245);
-  --muted: oklch(0.94 0.006 245);
-  --muted-foreground: oklch(0.48 0.02 245);
-  --accent: oklch(0.92 0.025 162);
-  --accent-foreground: oklch(0.18 0.015 245);
-  --destructive: oklch(0.6 0.22 27); /* red-500 */
-  --border: oklch(0.88 0.01 245);
-  --input: oklch(0.88 0.01 245);
-  --ring: oklch(0.7 0.17 162);
+  --radius: 1.5rem; /* rounded-2xl to 3xl feel */
+  --background: #F9FAFB;
+  --foreground: #18181B;
+  --card: #FFFFFF;
+  --card-foreground: #18181B;
+  --popover: #FFFFFF;
+  --popover-foreground: #18181B;
+  --primary: #D97757;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #18181B;
+  --muted: #F1F5F9;
+  --muted-foreground: #71717A;
+  --accent: #F1F5F9;
+  --accent-foreground: #18181B;
+  --destructive: #ef4444;
+  --border: rgba(226, 232, 240, 0.5);
+  --input: #E2E8F0;
+  --ring: #D97757;
 }
 
 .dark {
-  --background: #0a0a0b;
-  --foreground: oklch(0.97 0.003 264);
-  --card: #111113;
-  --card-foreground: oklch(0.97 0.003 264);
-  --popover: #111113;
-  --popover-foreground: oklch(0.97 0.003 264);
-  --primary: #22c55e;
-  --primary-foreground: #0a0a0b;
-  --secondary: #1c1c1f;
-  --secondary-foreground: oklch(0.97 0.003 264);
-  --muted: #1c1c1f;
-  --muted-foreground: oklch(0.55 0.012 264);
-  --accent: #1c1c1f;
-  --accent-foreground: oklch(0.97 0.003 264);
-  --destructive: oklch(0.6 0.22 27);
-  --border: #1f1f23;
-  --input: #1f1f23;
-  --ring: #22c55e;
+  --background: #090a0f;
+  --foreground: #F9FAFB;
+  --card: #11131c;
+  --card-foreground: #F9FAFB;
+  --popover: #11131c;
+  --popover-foreground: #F9FAFB;
+  --primary: #D97757;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1e293b;
+  --secondary-foreground: #F9FAFB;
+  --muted: #1e293b;
+  --muted-foreground: #a1a1aa;
+  --accent: #1e293b;
+  --accent-foreground: #F9FAFB;
+  --destructive: #ef4444;
+  --border: rgba(51, 65, 85, 0.5);
+  --input: #334155;
+  --ring: #D97757;
 }
 
 @layer base {
@@ -144,7 +144,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-satoshi), "Inter", system-ui, sans-serif;
+    font-family: "Outfit", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 }

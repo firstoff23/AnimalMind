@@ -1,10 +1,11 @@
+import os
 from transformers import ViTForImageClassification, ViTImageProcessor
 from huggingface_hub import HfApi
 from pathlib import Path
 
 LOCAL_OUTPUT_DIR = Path("./models/animalmind-breed-classifier")
 HF_REPO_ID = "firstoff/animalmind-breed-classifier"
-HF_TOKEN = "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"
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 def main():
     print("Loading locally saved model and processor...")

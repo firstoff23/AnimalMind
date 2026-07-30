@@ -1,4 +1,4 @@
-import { animate, motion, useMotionValue } from "framer-motion";
+import { animate, motion, useMotionValue } from "motion/react";
 import {
   AlertCircle,
   Apple,
@@ -30,10 +30,18 @@ import { Link } from "wouter";
 import { AlertBanner } from "@/components/AlertBanner";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { TrendCard } from "@/components/TrendCard";
+import { VetReportButton } from "@/components/VetReportButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMood } from "@/contexts/MoodContext";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -42,7 +50,7 @@ import { CACHE_KEYS, getCachedData, setCachedData } from "@/lib/offlineCache";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import type { EmotionalState } from "../../../shared/types";
-import { STATE_COLORS } from "../../../shared/types";
+import { STATE_COLORS, STATE_EMOJIS } from "../../../shared/types";
 
 const STATES: EmotionalState[] = [
   "distress",
@@ -178,6 +186,9 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const { mood } = useMood();
   const { isAuthenticated } = useAuth();
+  
+  const [dashboardDays, setDashboardDays] = useState<7 | 30 | 90>(7);
+  const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const {
     data: animals = [],
     isLoading: animalsLoading,
@@ -212,6 +223,12 @@ export default function DashboardPage() {
     animals && animals.length > 0 ? animals : cachedAnimals;
   const activeAnimal =
     displayAnimals.find((a) => a.isActive) ?? displayAnimals[0];
+
+  const dashboardAnimalId = selectedAnimalId || activeAnimal?.id;
+  const { data: dashboardStats } = trpc.events.statsForAnimal.useQuery(
+    { animalId: dashboardAnimalId as number, days: dashboardDays },
+    { enabled: !!dashboardAnimalId }
+  );
 
   const utils = trpc.useUtils();
   const { data: invitations = [], refetch: refetchInvitations } =
@@ -287,6 +304,58 @@ export default function DashboardPage() {
 
   const { pullDistance, isRefreshing, touchHandlers } =
     usePullToRefresh(handleRefresh);
+
+  const dashboardChartData = useMemo(() => {
+    if (!dashboardStats?.dailyActivity) return [];
+    
+    return dashboardStats.dailyActivity.map((day) => {
+      // Find dominant state
+      let dominantState = "relaxed" as EmotionalState;
+      let maxCount = -1;
+      
+      STATES.forEach((state) => {
+        const count = Number((day as any)[state] || 0);
+        if (count > maxCount) {
+          maxCount = count;
+          dominantState = state;
+        }
+      });
+      
+      // format date
+      const d = new Date(day.date);
+      const dateLabel = d.toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
+        day: "2-digit",
+        month: "2-digit"
+      });
+      
+      return {
+        label: dateLabel,
+        confidence: day.avgConfidence,
+        state: dominantState,
+        emoji: STATE_EMOJIS[dominantState],
+      };
+    });
+  }, [dashboardStats, language]);
+
+  const dashboardNarrative = useMemo(() => {
+    if (!dashboardStats?.stateDistribution || dashboardStats.totalCount === 0) return null;
+    
+    const entries = Object.entries(dashboardStats.stateDistribution);
+    if (entries.length === 0) return null;
+    
+    const [dominantState] = entries.sort((a, b) => b[1] - a[1])[0];
+    const animalName = displayAnimals.find(a => a.id === dashboardAnimalId)?.name || (language === "pt" ? "O teu animal" : "Your animal");
+    
+    const stateText = t(`states.${dominantState as EmotionalState}`).toLowerCase();
+    
+    if (language === "pt") {
+      const period = dashboardDays === 7 ? "Esta semana" : dashboardDays === 30 ? "Neste mês" : "Nestes 3 meses";
+      return `${period}, ${animalName} esteve maioritariamente ${stateText}.`;
+    } else {
+      const period = dashboardDays === 7 ? "This week" : dashboardDays === 30 ? "This month" : "These 3 months";
+      return `${period}, ${animalName} was mostly ${stateText}.`;
+    }
+  }, [dashboardStats, dashboardAnimalId, displayAnimals, dashboardDays, t, language]);
 
   const dominantBelief = useMemo(() => {
     if (!displayBeliefState) return null;
@@ -440,19 +509,14 @@ export default function DashboardPage() {
         <motion.div variants={itemVariants}>
           <div
             className={cn(
-              "relative overflow-hidden rounded-[1.75rem] border bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lg)] transition-all duration-500",
+              "relative overflow-hidden rounded-[1.75rem] border bg-card p-6 shadow-sm transition-all duration-500",
               mood === "calm"
                 ? "border-mood-primary/15"
                 : mood === "concerned"
                   ? "border-mood-primary/25"
                   : "border-mood-primary/15",
             )}
-            style={{
-              boxShadow: `0 8px 30px rgba(var(--mood-color-rgb), 0.05)`,
-            }}
           >
-            <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-mood-primary/10 blur-3xl transition-all duration-500" />
-            <div className="absolute -bottom-12 left-4 h-28 w-28 rounded-full bg-mood-primary/5 blur-3xl transition-all duration-500" />
 
             <div className="relative space-y-5">
               <div className="flex items-start justify-between gap-4">
@@ -556,16 +620,16 @@ export default function DashboardPage() {
 
               <div className="grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
                 <Link to="/gravar">
-                  <Button className="h-auto w-full justify-between rounded-2xl bg-[var(--color-primary)] px-4 py-4 text-left text-white shadow-[var(--shadow-glow)] hover:bg-emerald-500 active-scale tap-highlight-none">
+                  <Button className="h-auto w-full justify-between rounded-2xl px-4 py-4 text-left active-scale tap-highlight-none">
                     <span className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/20">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/10 dark:bg-black/20">
                         <Mic className="h-5 w-5" />
                       </span>
                       <span>
                         <span className="block text-sm font-bold">
                           {language === "pt" ? "Gravar agora" : "Record now"}
                         </span>
-                        <span className="block text-[11px] font-medium text-white/75">
+                        <span className="block text-[11px] font-medium opacity-75">
                           {language === "pt"
                             ? "Classificação em segundos"
                             : "Classification in seconds"}
@@ -576,7 +640,7 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
 
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <div className="rounded-2xl border border-border bg-secondary/30 p-4">
                   <div className="flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
                     <Clock3 className="h-3.5 w-3.5 text-amber-300" />
                     {language === "pt" ? "Última gravação" : "Last recording"}
@@ -847,22 +911,140 @@ export default function DashboardPage() {
             variants={itemVariants}
             className="grid grid-cols-2 gap-3"
           >
-            <SpotlightCard className="flex flex-col items-center justify-center p-4 text-center">
+            <div className="flex flex-col items-center justify-center p-4 text-center rounded-2xl bg-card border border-border shadow-sm">
               <span className="text-2xl font-bold text-primary">
                 <AnimatedNumber value={events.length} />
               </span>
               <span className="text-xs text-muted-foreground mt-1 font-medium">
                 {t("dashboardPage.statsRecordings")}
               </span>
-            </SpotlightCard>
-            <SpotlightCard className="flex flex-col items-center justify-center p-4 text-center">
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 text-center rounded-2xl bg-card border border-border shadow-sm">
               <span className="text-2xl font-bold text-primary">
                 <AnimatedNumber value={animals.length} />
               </span>
               <span className="text-xs text-muted-foreground mt-1 font-medium">
                 {t("dashboardPage.statsAnimals")}
               </span>
-            </SpotlightCard>
+            </div>
+          </motion.div>
+        )}
+
+        {/* NOVA SECÇÃO: Dashboard de Bem-estar */}
+        {activeAnimal && displayAnimals.length > 0 && (
+          <motion.div variants={itemVariants} className="space-y-4 pt-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold text-foreground">
+                  {language === "pt" ? "Evolução Emocional" : "Emotional Trends"}
+                </h2>
+                
+                {/* Seletor de período */}
+                <div className="flex bg-slate-900/50 p-1 rounded-full border border-slate-800">
+                  {[7, 30, 90].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDashboardDays(d as 7 | 30 | 90)}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-semibold transition-all tap-highlight-none",
+                        dashboardDays === d
+                          ? "bg-[var(--color-primary)] text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Seletor de animal (apenas se > 1 animal) */}
+              {displayAnimals.length > 1 && (
+                <Select 
+                  value={String(dashboardAnimalId)} 
+                  onValueChange={(val) => setSelectedAnimalId(Number(val))}
+                >
+                  <SelectTrigger className="h-9 rounded-xl border-slate-800 bg-slate-900/30 text-xs font-semibold focus:ring-0 focus:ring-offset-0">
+                    <SelectValue placeholder={language === "pt" ? "Selecionar animal" : "Select animal"} />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-slate-800 bg-slate-900">
+                    {displayAnimals.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)} className="text-xs font-semibold">
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            <div className="bg-[var(--color-surface)] border border-border/70 rounded-[1.75rem] p-5 shadow-[var(--shadow-sm)]">
+              {dashboardChartData.length >= 2 ? (
+                <div className="space-y-4">
+                  <div className="h-44 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={dashboardChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis 
+                          dataKey="label" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                          dy={10}
+                        />
+                        <YAxis 
+                          domain={[0, 1]}
+                          hide={true}
+                        />
+                        <Tooltip 
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-card border border-border rounded-xl px-3 py-2 text-xs shadow-xl flex items-center gap-2">
+                                <span>{data.emoji}</span>
+                                <div>
+                                  <p className="font-semibold text-foreground">{t(`states.${data.state as EmotionalState}`)}</p>
+                                  <p className="text-[10px] text-muted-foreground">{data.label}</p>
+                                </div>
+                              </div>
+                            );
+                          }}
+                          cursor={{ stroke: "var(--border)", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="confidence"
+                          stroke="var(--color-primary)"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, fill: "var(--color-primary)", stroke: "var(--background)", strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  {dashboardNarrative && (
+                    <div className="pt-3 border-t border-border/50 text-center">
+                      <p className="text-xs text-muted-foreground font-medium">
+                        {dashboardNarrative}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 flex flex-col items-center justify-center text-center gap-2">
+                  <HeartPulse className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
+                    {language === "pt" 
+                      ? "Ainda não há dados suficientes para mostrar a evolução. Faz mais gravações!" 
+                      : "Not enough data yet. Keep recording!"}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-2 px-1">
+              <VetReportButton stats={dashboardStats} animalName={displayAnimals.find(a => a.id === dashboardAnimalId)?.name || ""} />
+            </div>
           </motion.div>
         )}
 
@@ -1071,7 +1253,7 @@ export default function DashboardPage() {
 
             {/* POMDP Belief State - Humor Consolidado */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard className="space-y-4">
+              <Card className="space-y-4 p-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     {t("dashboardPage.consolidatedMood")}
@@ -1084,7 +1266,7 @@ export default function DashboardPage() {
                 {beliefState ? (
                   <div className="space-y-3">
                     {dominantBelief && (
-                      <div className="bg-secondary/20 p-3 rounded-xl border border-border/30 flex items-center gap-3">
+                      <div className="bg-secondary/20 p-3 rounded-xl border border-border flex items-center gap-3">
                         <div
                           className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center"
                           style={{
@@ -1179,12 +1361,12 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 </div>
-              </SpotlightCard>
+              </Card>
             </motion.div>
 
             {/* Bar chart: state distribution */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard className="space-y-3">
+              <Card className="space-y-3 p-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t("dashboardPage.statesDistributionTitle")}
                 </h2>
@@ -1235,12 +1417,12 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 )}
-              </SpotlightCard>
+              </Card>
             </motion.div>
 
             {/* Line chart: daily average confidence */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard className="space-y-3">
+              <Card className="space-y-3 p-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t("dashboardPage.avgConfidence")}
                 </h2>
@@ -1284,12 +1466,12 @@ export default function DashboardPage() {
                     </LineChart>
                   </ResponsiveContainer>
                 )}
-              </SpotlightCard>
+              </Card>
             </motion.div>
 
             {/* State legend */}
             <motion.div variants={itemVariants}>
-              <SpotlightCard>
+              <Card className="p-5">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   {t("dashboardPage.legend")}
                 </h2>
@@ -1309,7 +1491,7 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-              </SpotlightCard>
+              </Card>
             </motion.div>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { saveBreedFeedback, updateEventFeedback } from "./db";
+import { saveBreedFeedback, updateEventFeedback, saveFeedbackAnnotation, reviewFeedbackAnnotation } from "./db";
 
 // Mock the getSupabase or direct supabase client calls
 vi.mock("@supabase/supabase-js", async (importOriginal) => {
@@ -53,7 +53,7 @@ describe("Feedback loop annotations (Supabase)", () => {
     const { createClient } = await import("@supabase/supabase-js");
     const supabase = createClient("https://example.com", "key");
 
-    const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
     const updateMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
     vi.spyOn(supabase, "from").mockImplementation((table: string) => {
@@ -63,8 +63,8 @@ describe("Feedback loop annotations (Supabase)", () => {
           updateMock(data);
           return builder;
         }),
-        insert: vi.fn().mockImplementation((data) => {
-          insertMock(data);
+        upsert: vi.fn().mockImplementation((data) => {
+          upsertMock(data);
           return builder;
         }),
         eq: vi.fn().mockImplementation(() => builder),
@@ -100,47 +100,100 @@ describe("Feedback loop annotations (Supabase)", () => {
     // Verify update was called for classification_events
     expect(updateMock).toHaveBeenCalledWith({ feedback: "incorrect" });
 
-    // Verify insert was called for feedback_annotations
-    expect(insertMock).toHaveBeenCalledWith([
-      {
-        animal_type: "dog",
-        predicted_state: "distress",
-        confirmed_state: null,
-        confidence: 0.95,
-      },
-    ]);
+    // Verify upsert was called for feedback_annotations
+    expect(upsertMock).toHaveBeenCalledWith({
+      classification_event_id: 123,
+      user_id: 2,
+      confirmed_state: null,
+    });
   });
 
-  it("can save breed feedback successfully", async () => {
+  it("can run save breed feedback without throwing (deprecated)", async () => {
+    await expect(
+      saveBreedFeedback({
+        animalType: "dog",
+        predictedBreed: "Labrador Retriever",
+        confirmedBreed: "Labrador Retriever",
+        confidence: 0.92,
+      })
+    ).resolves.not.toThrow();
+  });
+
+  it("can save detailed feedback annotation using saveFeedbackAnnotation helper", async () => {
     const { createClient } = await import("@supabase/supabase-js");
     const supabase = createClient("https://example.com", "key");
 
-    const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
-
-    vi.spyOn(supabase, "from").mockImplementation((_table: string) => {
-      const builder: any = {
-        insert: vi.fn().mockImplementation((data) => {
-          insertMock(data);
-          return builder;
+    const upsertMock = vi.fn().mockImplementation(() => ({
+      select: vi.fn().mockImplementation(() => ({
+        single: vi.fn().mockResolvedValue({
+          data: { id: 777, classification_event_id: 123, user_id: 2, confirmed_state: "relaxed", comment: "Muito calmo" },
+          error: null,
         }),
+      })),
+    }));
+
+    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+      const builder: any = {
+        upsert: upsertMock,
       };
       return builder;
     });
 
-    await saveBreedFeedback({
-      animalType: "dog",
-      predictedBreed: "Labrador Retriever",
-      confirmedBreed: "Labrador Retriever",
-      confidence: 0.92,
+    const result = await saveFeedbackAnnotation("mock-token", 2, {
+      classificationEventId: 123,
+      confirmedState: "relaxed",
+      comment: "Muito calmo",
     });
 
-    expect(insertMock).toHaveBeenCalledWith([
+    expect(upsertMock).toHaveBeenCalledWith(
       {
-        animal_type: "dog",
-        predicted_breed: "Labrador Retriever",
-        confirmed_breed: "Labrador Retriever",
-        confidence: 0.92,
+        classification_event_id: 123,
+        user_id: 2,
+        confirmed_state: "relaxed",
+        comment: "Muito calmo",
       },
-    ]);
+      {
+        onConflict: "classification_event_id, user_id",
+      }
+    );
+    expect(result).toEqual({
+      id: 777,
+      classification_event_id: 123,
+      user_id: 2,
+      confirmed_state: "relaxed",
+      comment: "Muito calmo",
+    });
+  });
+
+  it("can review detailed feedback annotation using reviewFeedbackAnnotation helper", async () => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient("https://example.com", "key");
+
+    const updateMock = vi.fn().mockImplementation(() => ({
+      eq: vi.fn().mockImplementation(() => ({
+        select: vi.fn().mockImplementation(() => ({
+          single: vi.fn().mockResolvedValue({
+            data: { id: 777, reviewed_by: 99 },
+            error: null,
+          }),
+        })),
+      })),
+    }));
+
+    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+      const builder: any = {
+        update: updateMock,
+      };
+      return builder;
+    });
+
+    const result = await reviewFeedbackAnnotation("mock-token", 99, 777);
+
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reviewed_by: 99,
+      })
+    );
+    expect(result).toEqual({ id: 777, reviewed_by: 99 });
   });
 });

@@ -1,15 +1,7 @@
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "motion/react";
 import { jsPDF } from "jspdf";
 import {
+  AlertCircle,
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
@@ -19,6 +11,7 @@ import {
   Loader2,
   Mic,
   PawPrint,
+  RefreshCw,
   Search,
   ThumbsDown,
   ThumbsUp,
@@ -35,8 +28,6 @@ import {
   useRef,
   useState,
 } from "react";
-
-const HistoryChart = lazy(() => import("@/components/HistoryChart"));
 
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
@@ -103,6 +94,17 @@ const _STATE_FILTER_LABELS: Record<string, string> = {
   ...STATE_LABELS,
 };
 
+const CONTEXT_TAGS_MAP: Record<string, { pt: string; en: string }> = {
+  storm: { pt: "🌩️ Trovoada", en: "🌩️ Storm" },
+  home_alone: { pt: "🚶 Sozinho em casa", en: "🚶 Home alone" },
+  other_animal: { pt: "🐕 Outro animal", en: "🐕 Other animal" },
+  mealtime: { pt: "🍽️ Refeição", en: "🍽️ Mealtime" },
+  travel: { pt: "🚗 Viagem", en: "🚗 Travel" },
+  loud_noise: { pt: "🎆 Barulho forte", en: "🎆 Loud noise" },
+  sleeping: { pt: "😴 A dormir", en: "😴 Sleeping" },
+  exercise: { pt: "🏃 Exercício", en: "🏃 Exercise" },
+};
+
 interface HistoryEvent {
   id: number;
   state: string;
@@ -115,6 +117,7 @@ interface HistoryEvent {
   audioUrl?: string | null;
   animalId?: number | null;
   animalName?: string | null;
+  contextTags?: string[];
 }
 
 // ─── Event Row ────────────────────────────────────────────────────────────────
@@ -301,6 +304,22 @@ const EventRow = memo(function EventRow({
               <span className="truncate">&ldquo;{event.notes}&rdquo;</span>
             </p>
           )}
+          {event.contextTags && event.contextTags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {event.contextTags.map((tagId) => {
+                const tagInfo = CONTEXT_TAGS_MAP[tagId];
+                const label = tagInfo ? (language === "pt" ? tagInfo.pt : tagInfo.en) : tagId;
+                return (
+                  <span
+                    key={tagId}
+                    className="text-[10px] bg-secondary/80 text-muted-foreground border border-border/40 px-1.5 py-0.5 rounded-md font-medium"
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {event.audioUrl && (
@@ -435,6 +454,42 @@ function RawEventDialog({
   );
 }
 
+
+function groupEventsByDay(events: HistoryEvent[], language: string) {
+  const groups: Record<string, HistoryEvent[]> = {};
+  
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+  
+  for (const event of events) {
+    const date = new Date(event.createdAt);
+    let label = "";
+    
+    if (isSameDay(date, today)) {
+      label = language === "pt" ? "Hoje" : "Today";
+    } else if (isSameDay(date, yesterday)) {
+      label = language === "pt" ? "Ontem" : "Yesterday";
+    } else {
+      label = date.toLocaleDateString(
+        language === "pt" ? "pt-PT" : "en-US",
+        { day: "numeric", month: "long" }
+      );
+    }
+    
+    if (!groups[label]) {
+      groups[label] = [];
+    }
+    groups[label].push(event);
+  }
+  return groups;
+}
+
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyState({ filtered }: { filtered: boolean }) {
@@ -450,39 +505,13 @@ function EmptyState({ filtered }: { filtered: boolean }) {
       </div>
       <p className="font-semibold text-foreground">
         {filtered
-          ? t("historyPage.clear")
-              .replace("Limpar", "Sem resultados")
-              .replace("Clear", "No results")
-          : t("historyPage.noEvents")
-              .replace(
-                "Nenhum evento registado para os filtros selecionados.",
-                "Sem histórico ainda",
-              )
-              .replace(
-                "No events recorded for the selected filters.",
-                "No history yet",
-              )}
+          ? (language === "pt" ? "Sem resultados" : "No results")
+          : (language === "pt" ? "Sem histórico ainda" : "No history yet")}
       </p>
       <p className="text-sm text-muted-foreground max-w-xs">
         {filtered
-          ? t("historyPage.noEvents")
-              .replace(
-                "Nenhum evento registado para os filtros selecionados.",
-                "Tente ajustar os filtros para encontrar registos.",
-              )
-              .replace(
-                "No events recorded for the selected filters.",
-                "Try adjusting the filters to find records.",
-              )
-          : t("recordingPage.tapForSingle")
-              .replace(
-                "Toque para uma gravação única de 3 segundos",
-                "Grave o som do seu animal para ver o histórico de classificações aqui.",
-              )
-              .replace(
-                "Tap for a single 3-second recording",
-                "Record your pet's sound to see classification history here.",
-              )}
+          ? (language === "pt" ? "Tente ajustar os filtros para encontrar registos." : "Try adjusting the filters to find records.")
+          : (language === "pt" ? "Grave o som do seu animal para ver o histórico de classificações aqui." : "Record your pet's sound to see classification history here.")}
       </p>
       {!filtered && (
         <Link href="/capturar">
@@ -504,7 +533,6 @@ function EmptyState({ filtered }: { filtered: boolean }) {
 
 export default function HistoryPage() {
   const { t, language } = useLanguage();
-  const [viewTab, setViewTab] = useState<"list" | "evolution">("list");
   const [_page, setPage] = useState(1);
 
   // nuqs URL query state hooks
@@ -523,6 +551,9 @@ export default function HistoryPage() {
     defaultValue: "",
   });
   const [period, setPeriod] = useQueryState("period", { defaultValue: "" });
+  const [contextTagParam, setContextTagParam] = useQueryState("contextTag", {
+    defaultValue: "",
+  });
 
   const animalIdFilter =
     animalParam !== null
@@ -534,6 +565,11 @@ export default function HistoryPage() {
   const stateFilter = emotionParam || "all";
   const setStateFilter = (val: string) => {
     setEmotionParam(val === "all" ? null : val);
+  };
+
+  const contextTagFilter = contextTagParam || "all";
+  const setContextTagFilter = (val: string) => {
+    setContextTagParam(val === "all" ? null : val);
   };
 
   const dateFrom = dateFromParam || "";
@@ -605,7 +641,7 @@ export default function HistoryPage() {
     };
   }, []);
 
-  const isFiltered = stateFilter !== "all" || dateFrom !== "" || dateTo !== "";
+  const isFiltered = stateFilter !== "all" || contextTagFilter !== "all" || dateFrom !== "" || dateTo !== "";
   const hasAnimalFilter = typeof animalIdFilter === "number";
   const useAnimalEndpoint = hasAnimalFilter && !isFiltered;
 
@@ -617,6 +653,7 @@ export default function HistoryPage() {
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
       animalId: animalIdFilter,
+      contextTag: contextTagFilter !== "all" ? contextTagFilter : undefined,
     },
     { enabled: !useAnimalEndpoint },
   );
@@ -656,6 +693,24 @@ export default function HistoryPage() {
   const events = (data?.events ?? []) as HistoryEvent[];
   const total = data?.total ?? 0;
   const _totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const availableTags = useMemo(() => {
+    const presentTagsSet = new Set<string>();
+    events.forEach((evt) => {
+      if (evt.contextTags && Array.isArray(evt.contextTags)) {
+        evt.contextTags.forEach((tag) => presentTagsSet.add(tag));
+      }
+    });
+
+    const orderedKnownTags = Object.keys(CONTEXT_TAGS_MAP).filter((tag) =>
+      presentTagsSet.has(tag)
+    );
+
+    return orderedKnownTags.length > 0
+      ? orderedKnownTags
+      : Object.keys(CONTEXT_TAGS_MAP);
+  }, [events]);
+
   const utils = trpc.useUtils();
   const feedbackMutation = trpc.events.feedback.useMutation({
     onMutate: async (newFeedback) => {
@@ -740,248 +795,10 @@ export default function HistoryPage() {
   });
   const exportMutation = trpc.events.exportData.useMutation();
 
-  const columns = useMemo<ColumnDef<HistoryEvent>[]>(
-    () => [
-      {
-        accessorKey: "createdAt",
-        header: ({ column }) => (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
-          >
-            Data <ArrowUpDown size={12} />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const date = new Date(row.original.createdAt);
-          return (
-            <span className="text-xs text-muted-foreground">
-              {date.toLocaleDateString(language === "pt" ? "pt-PT" : "en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}{" "}
-              {date.toLocaleTimeString(language === "pt" ? "pt-PT" : "en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "animalId",
-        header: ({ column }) => (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
-          >
-            Animal <ArrowUpDown size={12} />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const id = row.original.animalId;
-          const animal = animals.find((a) => a.id === id);
-          return (
-            <span className="text-xs font-semibold text-foreground">
-              {animal ? animal.name : `#${id ?? ""}`}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "state",
-        header: ({ column }) => (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
-          >
-            Emoção <ArrowUpDown size={12} />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const state = row.original.state as EmotionalState;
-          const color = STATE_COLORS[state];
-          return (
-            <span
-              className="text-xs font-bold flex items-center gap-1"
-              style={{ color }}
-            >
-              <span>{row.original.emoji}</span>
-              <span>{t(`states.${state}` as any) || STATE_LABELS[state]}</span>
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "confidence",
-        header: ({ column }) => (
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="flex items-center gap-1 hover:text-foreground font-semibold text-left"
-          >
-            Confiança <ArrowUpDown size={12} />
-          </button>
-        ),
-        cell: ({ row }) => {
-          const pct = Math.round(row.original.confidence * 100);
-          return (
-            <span className="text-xs font-medium tabular-nums">{pct}%</span>
-          );
-        },
-      },
-      {
-        id: "duration",
-        header: "Duração",
-        cell: () => <span className="text-xs text-muted-foreground">3.0s</span>,
-      },
-      {
-        id: "actions",
-        header: "Ações",
-        cell: ({ row }) => {
-          const event = row.original;
-          return (
-            <div className="flex items-center gap-2">
-              {event.audioUrl && (
-                <HowlerAudioPlayer audioUrl={event.audioUrl} />
-              )}
-              <button
-                onClick={() => setRawEvent(event)}
-                className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors text-[10px] px-1.5 font-semibold"
-                title="Ver Dados Brutos"
-              >
-                JSON
-              </button>
-              <div className="flex items-center gap-1">
-                <button
-                  disabled={feedbackMutation.isPending}
-                  onClick={() =>
-                    feedbackMutation.mutate({
-                      eventId: event.id,
-                      feedback: "correct",
-                    })
-                  }
-                  className={cn(
-                    "p-1 rounded-lg hover:bg-emerald-950/30 text-muted-foreground hover:text-emerald-400 transition-colors",
-                    event.feedback === "correct" &&
-                      "text-emerald-400 bg-emerald-950/20",
-                  )}
-                  title="Correto"
-                >
-                  <ThumbsUp size={12} />
-                </button>
-                <button
-                  disabled={feedbackMutation.isPending}
-                  onClick={() =>
-                    feedbackMutation.mutate({
-                      eventId: event.id,
-                      feedback: "incorrect",
-                    })
-                  }
-                  className={cn(
-                    "p-1 rounded-lg hover:bg-red-950/30 text-muted-foreground hover:text-red-400 transition-colors",
-                    event.feedback === "incorrect" &&
-                      "text-red-400 bg-red-950/20",
-                  )}
-                  title="Incorreto"
-                >
-                  <ThumbsDown size={12} />
-                </button>
-              </div>
-            </div>
-          );
-        },
-      },
-    ],
-    [animals, language, feedbackMutation.isPending, t, feedbackMutation.mutate],
-  );
-
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [sorting, setSorting] = useState<any[]>([]);
-
-  const table = useReactTable({
-    data: events,
-    columns,
-    state: {
-      globalFilter,
-      sorting,
-    },
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-  });
-
-  const chartEventsQuery = trpc.events.list.useQuery(
-    {
-      page: 1,
-      pageSize: 100, // Fetch up to 100 events for the evolution chart
-      state: stateFilter !== "all" ? stateFilter : undefined,
-      dateFrom: dateFrom || undefined,
-      dateTo: dateTo || undefined,
-      animalId: animalIdFilter,
-    },
-    { enabled: viewTab === "evolution" },
-  );
-
-  const chartData = useMemo(() => {
-    const rawEvents = chartEventsQuery.data?.events ?? [];
-    const sorted = [...rawEvents].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
-
-    const stateValues: Record<EmotionalState, number> = {
-      relaxed: 5,
-      excitement: 4,
-      attention: 3,
-      hunger: 2,
-      alert: 1,
-      distress: 0,
-    };
-
-    return sorted.map((e) => {
-      const state = e.state as EmotionalState;
-      return {
-        date: new Date(e.createdAt).toLocaleDateString(
-          language === "pt" ? "pt-PT" : "en-US",
-          {
-            day: "2-digit",
-            month: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          },
-        ),
-        stateValue: stateValues[state] ?? 0,
-        stateName:
-          t(`states.${state}` as any) || STATE_LABELS[state] || e.state,
-        emoji: STATE_EMOJIS[state] ?? "",
-        confidence: Math.round(e.confidence * 100),
-      };
-    });
-  }, [chartEventsQuery.data?.events, language, t]);
-
-  const formatYAxis = (val: number) => {
-    const statesByValue = [
-      t("states.distress"),
-      t("states.alert"),
-      t("states.hunger"),
-      t("states.attention"),
-      t("states.excitement"),
-      t("states.relaxed"),
-    ];
-    return statesByValue[val] || "";
-  };
 
   const clearFilters = () => {
     setEmotionParam(null);
+    setContextTagParam(null);
     setDateFromParam(null);
     setDateToParam(null);
     setPeriod(null);
@@ -1426,32 +1243,7 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* View Tabs */}
-        <div className="flex bg-secondary/50 rounded-xl p-1 border border-border/40">
-          <button
-            onClick={() => setViewTab("list")}
-            className={cn(
-              "flex-1 text-center py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
-              viewTab === "list"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t("historyPage.recordList")}
-          </button>
-          <button
-            onClick={() => setViewTab("evolution")}
-            className={cn(
-              "flex-1 text-center py-1.5 text-xs font-semibold rounded-lg transition-all duration-200",
-              viewTab === "evolution"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t("historyPage.emotionalEvolution")}
-          </button>
-        </div>
-
+        
         {/* Filters panel */}
         {showFilters && (
           <div className="bg-card border border-border rounded-2xl p-4 space-y-4 page-enter">
@@ -1516,6 +1308,50 @@ export default function HistoryPage() {
                         STATE_LABELS[s as EmotionalState]}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Context tag filter */}
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
+                {language === "pt" ? "Gatilho / Contexto" : "Trigger / Context"}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => {
+                    setContextTagFilter("all");
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
+                    contextTagFilter === "all"
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border text-muted-foreground hover:border-primary/50",
+                  )}
+                >
+                  {language === "pt" ? "Todos os contextos" : "All contexts"}
+                </button>
+                {availableTags.map((tagId) => {
+                  const tagInfo = CONTEXT_TAGS_MAP[tagId];
+                  const label = tagInfo ? (language === "pt" ? tagInfo.pt : tagInfo.en) : tagId;
+                  return (
+                    <button
+                      key={tagId}
+                      onClick={() => {
+                        setContextTagFilter(tagId);
+                        setPage(1);
+                      }}
+                      className={cn(
+                        "px-3 py-1 rounded-full text-xs font-medium border transition-all duration-150",
+                        contextTagFilter === tagId
+                          ? "border-primary bg-primary/10 text-primary font-semibold"
+                          : "border-border text-muted-foreground hover:border-primary/50",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1624,183 +1460,83 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {viewTab === "list" ? (
-          <>
-            {/* Search Filter */}
-            <div className="flex items-center gap-2 mb-4 bg-slate-900/40 p-2 rounded-xl border border-border">
-              <Search size={14} className="text-muted-foreground ml-1" />
-              <input
-                value={globalFilter ?? ""}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder={
-                  language === "pt"
-                    ? "Pesquisar por texto..."
-                    : "Search text..."
-                }
-                className="bg-transparent text-xs text-foreground focus:outline-none w-full"
-              />
-            </div>
-
-            {/* TanStack Table */}
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              {isLoading ? (
-                <div className="p-4 space-y-2">
-                  {[1, 2, 3, 4].map((n) => (
-                    <div
-                      key={n}
-                      className="flex items-center gap-3 py-3 border-b border-border/30 last:border-0"
-                    >
-                      <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
-                      <div className="flex-1 space-y-1">
-                        <Skeleton className="h-3 w-24 rounded" />
-                        <Skeleton className="h-2 w-36 rounded" />
-                      </div>
-                      <Skeleton className="h-3 w-10 rounded" />
+        <div className="space-y-6">
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="space-y-2">
+                  <div className="bg-card border border-border rounded-2xl p-4 flex gap-3">
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-secondary animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 rounded bg-secondary animate-pulse" />
+                      <div className="h-3 w-48 rounded bg-secondary animate-pulse" />
                     </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : queryError ? (
+            <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5 space-y-4 shadow-lg text-left">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+                  <AlertCircle size={22} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-rose-400">
+                    {language === "pt" ? "Erro ao carregar histórico" : "Error loading history"}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                    {language === "pt" ? "Falha ao comunicar com o servidor." : "Failed to communicate with the server."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => refetchData()}
+                  className="text-xs h-9 border-white/10 text-foreground hover:bg-white/5"
+                >
+                  <RefreshCw size={12} className="mr-1.5" />
+                  {language === "pt" ? "Tentar novamente" : "Try again"}
+                </Button>
+              </div>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="bg-card border border-border rounded-2xl">
+              <EmptyState filtered={isFiltered} />
+            </div>
+          ) : (
+            Object.entries(groupEventsByDay(events, language)).map(([dateLabel, dayEvents], groupIndex) => (
+              <motion.div
+                key={dateLabel}
+                className="space-y-2"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.22,
+                  delay: groupIndex * 0.06,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+              >
+                <h3 className="text-sm font-bold text-muted-foreground px-2">{dateLabel}</h3>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  {dayEvents.map((event) => (
+                    <EventRow
+                      key={event.id}
+                      event={event}
+                      disabled={false}
+                      isPlaying={playingEventId === event.id}
+                      onPlayToggle={_handlePlayToggle}
+                      onOpenRawData={() => setRawEvent(event)}
+                      onFeedback={(eventId, feedback) => feedbackMutation.mutate({ eventId, feedback })}
+                    />
                   ))}
                 </div>
-              ) : queryError ? (
-                <div className="py-10 px-6 text-center space-y-3">
-                  <p className="text-sm text-foreground font-semibold">
-                    Erro ao carregar histórico.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Falha ao comunicar com o servidor.
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => refetchData()}
-                    className="bg-primary text-primary-foreground rounded-xl"
-                  >
-                    Tentar novamente
-                  </Button>
-                </div>
-              ) : events.length === 0 ? (
-                <EmptyState filtered={isFiltered} />
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <tr
-                          key={headerGroup.id}
-                          className="border-b border-border bg-muted/20"
-                        >
-                          {headerGroup.headers.map((header) => (
-                            <th
-                              key={header.id}
-                              className="px-4 py-3 text-xs font-semibold text-muted-foreground"
-                            >
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(
-                                    header.column.columnDef.header,
-                                    header.getContext(),
-                                  )}
-                            </th>
-                          ))}
-                        </tr>
-                      ))}
-                    </thead>
-                    <tbody>
-                      {table.getRowModel().rows.map((row) => (
-                        <tr
-                          key={row.id}
-                          className="border-b border-border/40 hover:bg-muted/5 last:border-0"
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <td
-                              key={cell.id}
-                              className="px-4 py-3 text-xs align-middle"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Pagination */}
-            {!isLoading && events.length > 0 && (
-              <div className="flex items-center justify-between mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="gap-1"
-                >
-                  <ChevronLeft size={16} />
-                  {t("historyPage.previous")}
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  Página {table.getState().pagination.pageIndex + 1} de{" "}
-                  {table.getPageCount() || 1}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="gap-1"
-                >
-                  {t("historyPage.next")}
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
-            )}
-
-            {/* Total count */}
-            {total > 0 && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                {total}{" "}
-                {total === 1
-                  ? t("historyPage.record")
-                  : t("historyPage.records")}{" "}
-                {t("historyPage.inTotal")}
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              {t("historyPage.emotionalEvolutionTitle")}
-            </h2>
-
-            {chartEventsQuery.isLoading ? (
-              <div className="space-y-4 py-6">
-                <Skeleton className="h-4 w-40 rounded-lg" />
-                <Skeleton className="h-64 w-full rounded-lg" />
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-3 w-16 rounded-lg" />
-                  <Skeleton className="h-3 w-24 rounded-lg" />
-                  <Skeleton className="h-3 w-16 rounded-lg" />
-                </div>
-              </div>
-            ) : chartData.length === 0 ? (
-              <div className="py-24 text-center text-muted-foreground text-sm">
-                {t("historyPage.noClassificationsPeriod")}
-              </div>
-            ) : (
-              <Suspense
-                fallback={<Skeleton className="h-[320px] w-full rounded-lg" />}
-              >
-                <HistoryChart
-                  chartData={chartData}
-                  formatYAxis={formatYAxis}
-                  t={t}
-                />
-              </Suspense>
-            )}
-          </div>
-        )}
+              </motion.div>
+            ))
+          )}
+        </div>
 
         <RawEventDialog
           event={rawEvent}

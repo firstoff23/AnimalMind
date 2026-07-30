@@ -1,10 +1,9 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import Lenis from "lenis";
 import { lazy, Suspense, useEffect } from "react";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { CommandPalette } from "@/components/CommandPalette";
-import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
@@ -57,6 +56,20 @@ const VerifyOtpPage = lazy(() => import("./pages/VerifyOtpPage"));
 const VetDashboardPage = lazy(() => import("./pages/VetDashboardPage"));
 const VetPage = lazy(() => import("./pages/VetPage"));
 const VetPetDetailPage = lazy(() => import("./pages/VetPetDetailPage"));
+
+// ─── Route Prefetch Helper ───────────────────────────────────────────────────
+// Call this on onMouseEnter / onFocus to pre-load a lazy page chunk before
+// the user actually navigates. Uses the same dynamic import() as React.lazy,
+// so the browser caches the module — no double-fetch.
+// Usage: <Link onMouseEnter={prefetch(() => import('./pages/DashboardPage'))} />
+// ─────────────────────────────────────────────────────────────────────────────
+export function prefetch(factory: () => Promise<unknown>) {
+  return () => {
+    factory().catch(() => {
+      /* ignore prefetch errors silently */
+    });
+  };
+}
 
 // Helper component to dry up Lazy + Suspense routes
 function LazyRoute({
@@ -172,8 +185,6 @@ function Router() {
         !isAuthenticated && "flex-col",
       )}
     >
-      {/* Background Grid */}
-      {isAuthenticated && <BackgroundGrid />}
 
       <RealtimeNotificationsBridge enabled={isAuthenticated} />
       <PushNotificationsBridge enabled={isAuthenticated} />
@@ -450,12 +461,10 @@ function Router() {
         <CookieBanner />
 
         {/* Global Command Palette */}
-        {isAuthenticated && (
-          <CommandPalette
-            open={commandPaletteOpen}
-            onOpenChange={setCommandPaletteOpen}
-          />
-        )}
+        <CommandPalette
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
+        />
       </div>
     </div>
   );
@@ -480,7 +489,7 @@ function App() {
         <AuthProvider>
           <SelfHealingProvider>
             <LanguageProvider>
-              <ThemeProvider defaultTheme="dark" switchable>
+              <ThemeProvider defaultTheme="dark">
                 <TooltipProvider>
                   <Toaster
                     theme="dark"

@@ -22,32 +22,16 @@ export function ThemeProvider({
   defaultTheme = "light",
   switchable = false,
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
+  // Tema fixo: dark-only enquanto não houver paleta clara definida.
+  // Quando uma paleta clara for implementada, reverter para o código original com switchable.
+  const theme: Theme = "dark";
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    document.documentElement.classList.add("dark");
+  }, []);
 
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, switchable]);
-
-  const toggleTheme = switchable
-    ? () => {
-        setTheme((prev) => (prev === "light" ? "dark" : "light"));
-      }
-    : undefined;
+  // Toggle desativado: sem paleta clara implementada
+  const toggleTheme = undefined;
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>

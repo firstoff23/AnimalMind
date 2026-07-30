@@ -1,0 +1,8 @@
+{
+  "model_name": "google/vit-base-patch16-224",
+  "epochs_trained": 1,
+  "num_classes": 12,
+  "val_accuracy": 0.17083333333333334,
+  "calibrated_temperature": 1.4852063655853271,
+  "ece": 0.039822656335309146
+}

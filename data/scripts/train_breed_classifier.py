@@ -27,7 +27,7 @@ BASE_MODEL = "google/vit-base-patch16-224"
 DATASET_NAME = "timm/oxford-iiit-pet"
 LOCAL_OUTPUT_DIR = Path("./models/animalmind-breed-classifier")
 HF_REPO_ID = "firstoff/animalmind-breed-classifier"
-HF_TOKEN = "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"
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 def main():
     t_start = time.time()

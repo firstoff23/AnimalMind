@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
   Check,
@@ -17,13 +17,23 @@ import {
   Trash2,
   Volume2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { ConfidenceRing } from "@/components/ConfidenceRing";
+import { ContextTagsSheet } from "@/components/ContextTagsSheet";
 import { P5AudioVisualizer } from "@/components/P5AudioVisualizer";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { GlowingButton } from "@/components/ui/GlowingButton";
+
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -37,6 +47,8 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import type { EmotionalState } from "../../../shared/types";
 import { STATE_COLORS, STATE_LABELS } from "../../../shared/types";
+
+const MotionButton = motion.create(Button);
 
 type RecordState =
   | "idle"
@@ -76,6 +88,42 @@ interface RecentEvent {
 }
 
 // ─── Result Card ─────────────────────────────────────────────────────────────
+function buildSummaryPhrase(
+  state: EmotionalState,
+  confidence: number,
+  language: string,
+  t: (key: any) => string,
+  animalName?: string | null
+): string {
+  const stateStr = (t(`states.${state}` as any) || STATE_LABELS[state]).toLowerCase();
+  
+  if (language === "pt") {
+    if (confidence >= 0.75) {
+      return animalName 
+        ? `${animalName} parece claramente ${stateStr}.` 
+        : `Parece claramente que está ${stateStr}.`;
+    }
+    if (confidence >= 0.50) {
+      return animalName 
+        ? `Há alguns sinais de que ${animalName} está ${stateStr}.` 
+        : `Parece que há alguns sinais de que está ${stateStr}.`;
+    }
+    return `É difícil ter a certeza, mas pode haver sinais de ${stateStr}.`;
+  }
+
+  if (confidence >= 0.75) {
+    return animalName
+      ? `${animalName} clearly seems ${stateStr}.`
+      : `Clearly seems to be ${stateStr}.`;
+  }
+  if (confidence >= 0.50) {
+    return animalName
+      ? `There are some signs that ${animalName} is ${stateStr}.`
+      : `There seems to be some signs of being ${stateStr}.`;
+  }
+  return `It's hard to be sure, but there might be signs of ${stateStr}.`;
+}
+
 function ResultCard({
   result,
   onFeedback,
@@ -89,21 +137,14 @@ function ResultCard({
   const [feedbackSent, setFeedbackSent] = useState<
     "correct" | "incorrect" | null
   >(null);
+  const [showContextTags, setShowContextTags] = useState(false);
   const [notes, setNotes] = useState("");
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  const [confirmedBreed, setConfirmedBreed] = useState("");
+  const [comment, setComment] = useState("");
   const [confirmedState, setConfirmedState] = useState<EmotionalState>(result.state);
   const [showCorrectionForm, setShowCorrectionForm] = useState(false);
-
-  useEffect(() => {
-    if (activeAnimal?.breed) {
-      setConfirmedBreed(activeAnimal.breed);
-    } else {
-      setConfirmedBreed("");
-    }
-  }, [activeAnimal]);
 
   const utils = trpc.useUtils();
   const updateNotesMutation = trpc.events.updateNotes.useMutation({
@@ -112,23 +153,44 @@ function ResultCard({
       utils.events.recent.invalidate();
     },
     onError: () => {
-      toast.error(t("recordingPage.noteSaveError"));
+      toast.error(t("common.error"));
     },
   });
 
-  const saveFeedback = trpc.feedback.save.useMutation({
+  const updateTagsMutation = trpc.events.updateTags.useMutation({
     onSuccess: () => {
-      toast.success("Feedback guardado!");
-      setShowCorrectionForm(false);
+      utils.events.recent.invalidate();
     },
-    onError: (err) => {
-      toast.error("Erro ao guardar feedback: " + err.message);
+  });
+
+  const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
+
+  const saveFeedback = trpc.feedback.submit.useMutation({
+    onSuccess: (data, variables) => {
+      toast.success(t("recordingPage.feedbackSuccess"));
+      setShowCorrectionForm(false);
+      logAnalyticsMutation.mutate({
+        eventName: "feedback_detailed",
+        properties: {
+          classificationEventId: variables.classificationEventId,
+          confirmedState: variables.confirmedState,
+          comment: variables.comment,
+        },
+      });
+    },
+    onError: (err: any) => {
+      toast.error((language === "pt" ? "Erro ao guardar feedback: " : "Error saving feedback: ") + err.message);
     },
   });
 
   const handleFeedback = (f: "correct" | "incorrect") => {
     setFeedbackSent(f);
     onFeedback(f);
+    logAnalyticsMutation.mutate({
+      eventName: "feedback_quick",
+      properties: { type: f, eventId: result.eventId },
+    });
+    setShowContextTags(true);
   };
 
   const toggleListening = () => {
@@ -186,14 +248,13 @@ function ResultCard({
 
   const handleSaveFeedback = (e: React.FormEvent) => {
     e.preventDefault();
-    saveFeedback.mutate({
-      animal_type: activeAnimal?.species || "dog",
-      predicted_breed: activeAnimal?.breed || null,
-      confirmed_breed: confirmedBreed.trim() || null,
-      predicted_state: result.state,
-      confirmed_state: confirmedState,
-      confidence: result.confidence,
-    });
+    if (result.eventId) {
+      saveFeedback.mutate({
+        classificationEventId: result.eventId,
+        confirmedState: confirmedState,
+        comment: comment.trim() || null,
+      });
+    }
   };
 
   useEffect(() => {
@@ -205,17 +266,22 @@ function ResultCard({
   }, []);
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 space-y-4 page-enter text-left">
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-5 page-enter text-left">
       <ConfidenceRing
         confidence={result.confidence}
         emoji={result.emoji}
         state={result.state}
       />
 
-      <div className="flex justify-center">
-        <Badge variant="secondary" className="text-xs uppercase tracking-wide">
-          {result.model_used}
-        </Badge>
+      <div className="text-center mt-2 px-4">
+        <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+          {buildSummaryPhrase(result.state, result.confidence, language, t, activeAnimal?.name)}
+        </p>
+        <p className="text-xs text-muted-foreground/60 text-center mt-1">
+          {language === "pt" 
+            ? "Isto é uma segunda opinião. Não substitui um veterinário." 
+            : "This is a second opinion. It does not replace a vet."}
+        </p>
       </div>
 
       <div className="flex gap-3">
@@ -264,28 +330,29 @@ function ResultCard({
           onClick={() => setShowCorrectionForm(!showCorrectionForm)}
         >
           <Sparkles size={14} />
-          {showCorrectionForm ? "Ocultar Correção" : "Confirmar / Corrigir Detalhes"}
+          {showCorrectionForm 
+            ? (language === "pt" ? "Ocultar Correção" : "Hide Correction") 
+            : (language === "pt" ? "Confirmar / Corrigir Detalhes" : "Confirm / Correct Details")}
         </Button>
 
         {showCorrectionForm && (
           <form onSubmit={handleSaveFeedback} className="space-y-3 p-3 rounded-xl bg-secondary/20 border border-border">
             <div className="space-y-1">
-              <label htmlFor="confirmed-breed-input" className="text-xs font-semibold text-muted-foreground block">
-                Confirmar/Corrigir Raça
+              <label htmlFor="feedback-comment-input" className="text-xs font-semibold text-muted-foreground block">
+                {language === "pt" ? "Observações Contextuais (Opcional)" : "Contextual Notes (Optional)"}
               </label>
-              <input
-                id="confirmed-breed-input"
-                type="text"
-                value={confirmedBreed}
-                onChange={(e) => setConfirmedBreed(e.target.value)}
-                placeholder="Ex: Labrador, Persa..."
-                className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
+              <textarea
+                id="feedback-comment-input"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={language === "pt" ? "Ex: Estava a chover, próximo da hora da refeição..." : "Ex: It was raining, close to mealtime..."}
+                className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-[60px] resize-none"
               />
             </div>
 
             <div className="space-y-1">
               <label htmlFor="confirmed-state-select" className="text-xs font-semibold text-muted-foreground block">
-                Confirmar/Corrigir Estado Emocional
+                {language === "pt" ? "Como descreveria o estado real?" : "How would you describe it?"}
               </label>
               <select
                 id="confirmed-state-select"
@@ -293,12 +360,11 @@ function ResultCard({
                 onChange={(e) => setConfirmedState(e.target.value as EmotionalState)}
                 className="w-full bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
               >
-                <option value="relaxed">Relaxado</option>
-                <option value="distress">Angústia</option>
-                <option value="attention">Atenção</option>
-                <option value="excitement">Excitação</option>
-                <option value="hunger">Fome</option>
-                <option value="alert">Alerta</option>
+                {Object.entries(STATE_LABELS).map(([val, label]) => (
+                  <option key={val} value={val}>
+                    {t(`states.${val}` as any) || label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -308,59 +374,86 @@ function ResultCard({
               className="w-full text-xs font-semibold h-8 rounded-xl"
               disabled={saveFeedback.isPending}
             >
-              {saveFeedback.isPending ? "A guardar..." : "Submeter Feedback"}
+              {saveFeedback.isPending 
+                ? (language === "pt" ? "A guardar..." : "Saving...") 
+                : (language === "pt" ? "Submeter Feedback" : "Submit Feedback")}
             </Button>
           </form>
         )}
       </div>
 
-      <div className="space-y-2 pt-3 border-t border-border">
-        <label
-          htmlFor="recording-observation-note"
-          className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block"
-        >
-          {t("recordingPage.observationNote")}
+      <div className="space-y-3 pt-3 border-t border-border">
+        <label className="text-xs font-semibold text-muted-foreground block text-center">
+          {language === "pt" ? "Adicionar contexto rápido" : "Add quick context"}
         </label>
-        <div className="flex gap-2">
-          <textarea
-            id="recording-observation-note"
-            name="recording-observation-note"
-            autoComplete="off"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={t("recordingPage.observationPlaceholder")}
-            className="flex-1 min-h-[56px] max-h-24 bg-secondary/40 border border-border rounded-xl px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 resize-none transition-colors"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={toggleListening}
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300",
-              isListening
-                ? "bg-cyan-500 hover:bg-cyan-600 border-0 text-white animate-pulse shadow-md shadow-cyan-500/20"
-                : "hover:text-cyan-400 hover:border-cyan-500/20",
-            )}
-            title={t("recordingPage.dictateNote")}
-            aria-label={t("recordingPage.dictateNote")}
-          >
-            <Mic size={16} className={cn(isListening && "scale-110")} />
-          </Button>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {[
+            { id: "Playing", en: "Playing", pt: "A brincar" },
+            { id: "Alone", en: "Alone", pt: "Sozinho" },
+            { id: "Near the door", en: "Near the door", pt: "À porta" },
+            { id: "Mealtime", en: "Mealtime", pt: "Hora da refeição" }
+          ].map((tag) => {
+            const isSelected = notes.includes(tag.id);
+            const label = language === "pt" ? tag.pt : tag.en;
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => {
+                  if (isSelected) {
+                    setNotes(notes.replace(tag.id, "").replace("  ", " ").trim());
+                  } else {
+                    setNotes(notes ? `${notes} ${tag.id}` : tag.id);
+                  }
+                }}
+                className={cn(
+                  "text-[11px] px-3 py-1.5 rounded-full font-medium transition-all",
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border"
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-        {notes.trim().length > 0 && (
+        
+        {notes.length > 0 && (
           <Button
             size="sm"
             onClick={handleSaveNotes}
             disabled={updateNotesMutation.isPending}
-            className="w-full text-xs font-semibold h-8 rounded-xl transition-all"
+            className="w-full text-xs font-semibold h-9 rounded-xl transition-all mt-2"
           >
             {updateNotesMutation.isPending
               ? t("recordingPage.saving")
               : t("recordingPage.saveNote")}
           </Button>
         )}
+
+        <div className="pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/history")}
+            className="w-full text-xs text-muted-foreground hover:text-foreground mt-2 font-medium"
+          >
+            {language === "pt" ? "Ver no diário" : "View in timeline"}
+          </Button>
+        </div>
       </div>
+
+      <ContextTagsSheet
+        open={showContextTags}
+        onOpenChange={setShowContextTags}
+        onSave={(tags) => {
+          if (tags.length > 0 && result.eventId) {
+            updateTagsMutation.mutate({ eventId: result.eventId, tags });
+          }
+          setShowContextTags(false);
+        }}
+      />
     </div>
   );
 }
@@ -479,6 +572,7 @@ export default function RecordingPage() {
   } = useLiveAudioStream();
 
   const [isAutoMode, setIsAutoMode] = useState(false);
+  const [showMicPrompt, setShowMicPrompt] = useState(false);
   const [autoClassificationCount, setAutoClassificationCount] = useState(0);
   const [lastAutoResult, setLastAutoResult] = useState<ClassifyResult | null>(
     null,
@@ -497,6 +591,8 @@ export default function RecordingPage() {
   const [dominantFreq, setDominantFreq] = useState<number>(0);
   const [spectralEnergy, setSpectralEnergy] = useState<number>(0);
   const [tonalBrightness, setTonalBrightness] = useState<number>(0);
+  
+
 
   const utils = trpc.useUtils();
   const { data: activeAnimalData } = trpc.animals.getActive.useQuery();
@@ -518,7 +614,7 @@ export default function RecordingPage() {
     setRecording(recordState === "recording");
   }, [recordState, setRecording]);
 
-  const startRecordingCycle = async () => {
+  const executeRecording = async () => {
     setRecordState("requesting");
     setErrorMessage(null);
     await requestNotificationPermission();
@@ -547,6 +643,21 @@ export default function RecordingPage() {
     }
     triggerStartRecording();
     setRecordState("recording");
+  };
+
+  const startRecordingCycle = async () => {
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        const perm = await navigator.permissions.query({ name: "microphone" as PermissionName });
+        if (perm.state === "prompt") {
+          setShowMicPrompt(true);
+          return;
+        }
+      }
+    } catch (e) {
+      // Ignora erro de suporte
+    }
+    await executeRecording();
   };
 
   const clearAutoRecordingTimer = () => {
@@ -595,12 +706,26 @@ export default function RecordingPage() {
     );
   };
 
+  const logAnalyticsMutation = trpc.analytics.logEvent.useMutation();
+
   const handleClassificationResult = (
     res: ClassifyResult,
     offlineMode: boolean,
   ) => {
     setIsOfflineMode(offlineMode);
     setResult(res);
+
+    logAnalyticsMutation.mutate({
+      eventName: "recording_success",
+      properties: {
+        eventId: res.eventId,
+        modelUsed: res.model_used || (offlineMode ? "local-tfjs" : "yamnet"),
+        confidence: res.confidence,
+        cached: res.cached,
+        offlineMode,
+        contextTags: [],
+      },
+    });
 
     if (!offlineMode) {
       // Invalidate all event-related caches so history page and dashboard
@@ -687,6 +812,15 @@ export default function RecordingPage() {
         }
       }
 
+      logAnalyticsMutation.mutate({
+        eventName: "recording_failure",
+        properties: {
+          error: err.message,
+          fallbackFailed: true,
+          contextTags: [],
+        },
+      });
+
       setRecordState("error");
       const isNetError =
         !navigator.onLine ||
@@ -702,12 +836,16 @@ export default function RecordingPage() {
   });
 
   const feedbackMutation = trpc.events.feedback.useMutation({
-    onSuccess: () =>
-      toast.success(
-        language === "pt"
-          ? "Obrigado pelo feedback!"
-          : "Thank you for your feedback!",
-      ),
+    onSuccess: (data, variables) => {
+      toast.success(t("recordingPage.feedbackSuccess"));
+      logAnalyticsMutation.mutate({
+        eventName: "feedback_quick",
+        properties: {
+          eventId: variables.eventId,
+          feedback: variables.feedback,
+        },
+      });
+    },
   });
 
   // Tone.js FFT audio analysis hook
@@ -936,6 +1074,7 @@ export default function RecordingPage() {
             pitch: dominantFreq,
             spectralEnergy,
             tonalBrightness,
+            contextTags: [],
           });
         };
         reader.readAsDataURL(blob);
@@ -959,6 +1098,7 @@ export default function RecordingPage() {
     setResult(null);
     setUploadProgress(0);
     setErrorMessage(null);
+
     setRecordState("idle");
     startRecordingCycle();
   };
@@ -1356,10 +1496,10 @@ export default function RecordingPage() {
                         ? "Gravação acústica"
                         : "Acoustic recording"}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {language === "pt"
-                        ? "Toque para 3 segundos ou mantenha para auto"
-                        : "Tap for 3 seconds or hold for auto"}
+                        ? "Toque para gravar. O Pawra precisa de acesso ao microfone."
+                        : "Tap to record. Pawra needs microphone access."}
                     </p>
                   </div>
                   <Badge
@@ -1522,6 +1662,8 @@ export default function RecordingPage() {
                 )}
               </div>
             </div>
+
+            {/* Context Tags Selection (Removed for simpler flow) */}
 
             {/* Classification Result card */}
             {result && recordState === "success" && (

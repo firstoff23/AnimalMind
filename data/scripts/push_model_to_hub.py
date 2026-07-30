@@ -1,11 +1,12 @@
 """Push the already-trained local breed classifier to Hugging Face Hub."""
+import os
 import json
 from pathlib import Path
 from huggingface_hub import HfApi
 
 LOCAL_MODEL_DIR = Path("./models/animalmind-breed-classifier")
 HF_REPO_ID = "firstoff/animalmind-breed-classifier"
-HF_TOKEN = "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"
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 # Read trainer state for accurate metrics
 trainer_state_path = LOCAL_MODEL_DIR / "checkpoint-75" / "trainer_state.json"
