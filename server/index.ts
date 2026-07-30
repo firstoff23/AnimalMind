@@ -7,10 +7,8 @@ import { serveStatic } from "./_core/serveStatic";
 import { registerStorageProxy } from "./_core/storageProxy";
 import { chatStreamHandler } from "./chatStream";
 import { appRouter } from "./routers";
-import { initFCM } from "./fcm";
 
 const app = express();
-initFCM();
 
 app.use((req, res, next) => {
   const allowedOrigins = [
