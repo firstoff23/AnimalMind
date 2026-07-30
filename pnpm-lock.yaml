@@ -37,7 +37,7 @@ importers:
         version: 8.1.2(@capacitor/core@8.4.2)
       '@hookform/resolvers':
         specifier: ^5.5.7
-        version: 5.5.7(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.83.0(react@19.2.8))(zod@4.4.3)
+        version: 5.5.7(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.64.0(react@19.2.8))(zod@4.4.3)
       '@mediapipe/camera_utils':
         specifier: ^0.3.1675466862
         version: 0.3.1675466862
@@ -262,15 +262,15 @@ importers:
         version: 15.0.0(react@19.2.8)
       react-email:
         specifier: ^6.5.0
-        version: 6.5.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        version: 6.9.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react-error-boundary:
         specifier: ^6.1.2
-        version: 6.1.2(react@19.2.1)
+        version: 6.1.2(react@19.2.8)
       react-hook-form:
-        specifier: ^7.83.0
-        version: 7.83.0(react@19.2.8)
+        specifier: ^7.64.0
+        version: 7.64.0(react@19.2.8)
       react-i18next:
-        specifier: ^17.0.11
+        specifier: ^17.0.8
         version: 17.0.11(i18next@26.3.6(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
       react-p5:
         specifier: ^1.4.1
@@ -8877,7 +8877,7 @@ snapshots:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
       '@babel/helper-globals': 7.29.7
-      '@babel/parser': 7.29.2
+      '@babel/parser': 7.29.7
       '@babel/template': 7.29.7
       '@babel/types': 7.29.7
       debug: 4.4.3
@@ -9361,10 +9361,10 @@ snapshots:
     dependencies:
       hono: 4.12.32
 
-  '@hookform/resolvers@5.5.7(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.83.0(react@19.2.8))(zod@4.4.3)':
+  '@hookform/resolvers@5.5.7(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.64.0(react@19.2.8))(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
-      react-hook-form: 7.83.0(react@19.2.8)
+      react-hook-form: 7.64.0(react@19.2.8)
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
       ajv: 8.20.0
@@ -14907,11 +14907,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  react-error-boundary@6.1.2(react@19.2.1):
+  react-error-boundary@6.1.2(react@19.2.8):
     dependencies:
-      react: 19.2.1
+      react: 19.2.8
 
-  react-hook-form@7.64.0(react@19.2.1):
+  react-hook-form@7.64.0(react@19.2.8):
     dependencies:
       react: 19.2.8
 
