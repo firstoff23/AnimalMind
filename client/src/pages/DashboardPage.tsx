@@ -146,7 +146,7 @@ function AnimatedNumber({ value }: { value: number }) {
     const controls = animate(count, value, {
       duration: 1.5,
       ease: "easeOut",
-      onUpdate: (latest) => {
+      onUpdate: (latest: number) => {
         if (spanRef.current) {
           spanRef.current.textContent = String(Math.round(latest));
         }

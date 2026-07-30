@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/appStore";
 import type { EmotionalState } from "../../../shared/types";
 import { STATE_COLORS, STATE_LABELS } from "../../../shared/types";
+import { GlowingButton } from "@/components/ui/GlowingButton";
 
 const MotionButton = motion.create(Button);
 
@@ -543,6 +544,7 @@ function LiveWaveformBars({
 
 // ─── Recording Page ───────────────────────────────────────────────────────────
 export default function RecordingPage() {
+  const [, setLocation] = useLocation();
   const { t, language } = useLanguage();
   const { setRecording } = useAppStore();
   const [recordState, setRecordState] = useState<RecordState>("idle");
