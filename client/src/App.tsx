@@ -1,6 +1,8 @@
-import { AnimatePresence, motion } from "motion/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import Lenis from "lenis";
+import { AnimatePresence, motion } from "motion/react";
 import { lazy, Suspense, useEffect } from "react";
+import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -11,22 +13,22 @@ import { cn } from "@/lib/utils";
 import NotFound from "@/pages/NotFound";
 import { useAppStore } from "@/store/appStore";
 import { BottomNav } from "./components/BottomNav";
+import { CookieBanner } from "./components/CookieBanner";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { GlobalFallback } from "./components/GlobalFallback";
 import { Header } from "./components/Header";
 import { MobileOnlyGate } from "./components/MobileOnlyGate";
 import { OfflineActionsSyncer } from "./components/OfflineActionsSyncer";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Sidebar } from "./components/Sidebar";
-import { CookieBanner } from "./components/CookieBanner";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { MoodProvider } from "./contexts/MoodContext";
 import { SelfHealingProvider } from "./contexts/SelfHealingContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
 import { useMLBackendSSE } from "./hooks/useMLBackendSSE";
-import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
-import { GlobalFallback } from "./components/GlobalFallback";
+import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
+
 const AnimalDetailPage = lazy(() => import("./pages/AnimalDetailPage"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const CameraPage = lazy(() => import("./pages/CameraPage"));
@@ -126,7 +128,7 @@ function PushNotificationsBridge({ enabled }: { enabled: boolean }) {
         });
       });
     }
-  }, [enabled]);
+  }, [enabled, subscribeMutation.mutateAsync]);
 
   return null;
 }
@@ -185,7 +187,6 @@ function Router() {
         !isAuthenticated && "flex-col",
       )}
     >
-
       <RealtimeNotificationsBridge enabled={isAuthenticated} />
       <PushNotificationsBridge enabled={isAuthenticated} />
       <MLBackendSSEBridge enabled={isAuthenticated} />
@@ -505,6 +506,7 @@ function App() {
                   <MoodProvider>
                     <ReactErrorBoundary FallbackComponent={GlobalFallback}>
                       <Router />
+                      <SpeedInsights />
                     </ReactErrorBoundary>
                   </MoodProvider>
                 </TooltipProvider>
