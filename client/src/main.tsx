@@ -43,8 +43,9 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000,
       // Don't refetch on window focus (mobile PWA behaviour)
       refetchOnWindowFocus: false,
-      // Retry failed queries once before surfacing the error
-      retry: 1,
+      // Retry failed queries up to 3 times with exponential backoff (Circuit Breaker approach)
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       // Mutations don't retry by default to avoid double-submits

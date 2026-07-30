@@ -89,7 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === "TOKEN_REFRESHED") {
+        console.debug("[AuthContext] Token refreshed automatically by Supabase");
+      }
       setSession(newSession);
       setUser(newSession?.user ?? null);
       syncOfflineQueueAuth(newSession);

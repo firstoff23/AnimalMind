@@ -658,21 +658,85 @@ export default function HistoryPage() {
   const _totalPages = Math.ceil(total / PAGE_SIZE);
   const utils = trpc.useUtils();
   const feedbackMutation = trpc.events.feedback.useMutation({
-    onSuccess: () => {
+    onMutate: async (newFeedback) => {
+      await utils.events.list.cancel();
+      await utils.events.listForAnimal.cancel();
+
+      const queryArgs = {
+        page: 1,
+        pageSize: 1000,
+        state: stateFilter !== "all" ? stateFilter : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        animalId: animalIdFilter,
+      };
+
+      const animalQueryArgs = {
+        animalId: animalIdFilter ?? -1,
+        page: 1,
+        pageSize: 1000,
+      };
+
+      const previousEvents = utils.events.list.getData(queryArgs);
+      let previousAnimalEvents;
+      if (typeof animalIdFilter === "number" && !Number.isNaN(animalIdFilter)) {
+        previousAnimalEvents = utils.events.listForAnimal.getData(animalQueryArgs);
+      }
+
+      if (previousEvents) {
+        utils.events.list.setData(queryArgs, (data) => {
+          if (!data) return data;
+          return {
+            ...data,
+            events: data.events.map((event) =>
+              event.id === newFeedback.eventId
+                ? { ...event, feedback: newFeedback.feedback }
+                : event
+            ),
+          };
+        });
+      }
+
+      if (previousAnimalEvents && typeof animalIdFilter === "number") {
+        utils.events.listForAnimal.setData(animalQueryArgs, (data) => {
+          if (!data) return data;
+          return {
+            ...data,
+            events: data.events.map((event) =>
+              event.id === newFeedback.eventId
+                ? { ...event, feedback: newFeedback.feedback }
+                : event
+            ),
+          };
+        });
+      }
+
+      return { previousEvents, previousAnimalEvents, queryArgs, animalQueryArgs };
+    },
+    onError: (err, newFeedback, context) => {
+      if (context?.previousEvents && context.queryArgs) {
+        utils.events.list.setData(context.queryArgs, context.previousEvents);
+      }
+      if (context?.previousAnimalEvents && context.animalQueryArgs && typeof animalIdFilter === "number") {
+        utils.events.listForAnimal.setData(context.animalQueryArgs, context.previousAnimalEvents);
+      }
+      toast.error(
+        language === "pt"
+          ? "Não foi possível guardar o feedback."
+          : "Could not save feedback.",
+      );
+    },
+    onSettled: () => {
       utils.events.list.invalidate();
       utils.events.listForAnimal.invalidate();
+    },
+    onSuccess: () => {
       toast.success(
         language === "pt"
           ? "Classificação atualizada"
           : "Classification updated",
       );
     },
-    onError: () =>
-      toast.error(
-        language === "pt"
-          ? "Não foi possível guardar o feedback."
-          : "Could not save feedback.",
-      ),
   });
   const exportMutation = trpc.events.exportData.useMutation();
 

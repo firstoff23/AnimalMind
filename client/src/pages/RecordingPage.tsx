@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GlowingButton } from "@/components/ui/GlowingButton";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useLiveAudioStream } from "@/hooks/useLiveAudioStream";
@@ -84,7 +85,7 @@ function ResultCard({
   onFeedback: (feedback: "correct" | "incorrect") => void;
   activeAnimal: ActiveAnimal | null | undefined;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [feedbackSent, setFeedbackSent] = useState<
     "correct" | "incorrect" | null
   >(null);
@@ -218,26 +219,40 @@ function ResultCard({
       </div>
 
       <div className="flex gap-3">
-        <Button
-          variant={feedbackSent === "correct" ? "default" : "outline"}
-          size="sm"
-          className="flex-1 gap-2"
-          onClick={() => handleFeedback("correct")}
-          disabled={feedbackSent !== null}
-        >
-          <ThumbsUp size={16} />
-          {t("recordingPage.correct")}
-        </Button>
-        <Button
-          variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
-          size="sm"
-          className="flex-1 gap-2"
-          onClick={() => handleFeedback("incorrect")}
-          disabled={feedbackSent !== null}
-        >
-          <ThumbsDown size={16} />
-          {t("recordingPage.incorrect")}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={feedbackSent === "correct" ? "default" : "outline"}
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={() => handleFeedback("correct")}
+              disabled={feedbackSent !== null}
+            >
+              <ThumbsUp size={16} />
+              {t("recordingPage.correct")}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{language === "pt" ? "Confirmar predição do modelo" : "Confirm model prediction"}</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={feedbackSent === "incorrect" ? "destructive" : "outline"}
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={() => handleFeedback("incorrect")}
+              disabled={feedbackSent !== null}
+            >
+              <ThumbsDown size={16} />
+              {t("recordingPage.incorrect")}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{language === "pt" ? "Corrigir predição incorreta" : "Correct wrong prediction"}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="pt-3 border-t border-border space-y-3">
@@ -1166,32 +1181,55 @@ export default function RecordingPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleDelete}
-                className="flex-1 text-xs font-semibold h-11 border-white/10 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
-              >
-                <Trash2 size={14} className="mr-1.5" />
-                {language === "pt" ? "Eliminar" : "Delete"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleRetry}
-                className="flex-1 text-xs font-semibold h-11 border-white/10 text-foreground hover:bg-white/5"
-              >
-                <RefreshCw size={14} className="mr-1.5" />
-                {language === "pt" ? "Repetir" : "Retry"}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleConfirm}
-                className="flex-1 text-xs font-semibold h-11 bg-primary text-primary-foreground hover:bg-emerald-600 shadow-md shadow-primary/20"
-              >
-                <Check size={14} className="mr-1.5" />
-                {language === "pt" ? "Confirmar" : "Confirm"}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDelete}
+                    className="flex-1 text-xs font-semibold h-11 border-white/10 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                  >
+                    <Trash2 size={14} className="mr-1.5" />
+                    {language === "pt" ? "Eliminar" : "Delete"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{language === "pt" ? "Apagar e recomeçar" : "Delete and restart"}</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRetry}
+                    className="flex-1 text-xs font-semibold h-11 border-white/10 text-foreground hover:bg-white/5"
+                  >
+                    <RefreshCw size={14} className="mr-1.5" />
+                    {language === "pt" ? "Repetir" : "Retry"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{language === "pt" ? "Ouvir gravação de novo" : "Listen to recording again"}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    onClick={handleConfirm}
+                    className="flex-1 text-xs font-semibold h-11 bg-primary text-primary-foreground hover:bg-emerald-600 shadow-md shadow-primary/20"
+                  >
+                    <Check size={14} className="mr-1.5" />
+                    {language === "pt" ? "Confirmar" : "Confirm"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{language === "pt" ? "Enviar para análise" : "Send for analysis"}</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </motion.div>
         )}
@@ -1391,41 +1429,48 @@ export default function RecordingPage() {
                       transform: `scale(${1 + Math.min(0.18, liveAudioLevel * 0.18)})`,
                     }}
                   />
-                  <GlowingButton
-                    data-testid="record-button"
-                    onPointerDown={handlePointerDown}
-                    onPointerUp={handlePointerUp}
-                    onPointerCancel={handlePointerCancel}
-                    onPointerLeave={handlePointerCancel}
-                    disabled={recordState === "requesting"}
-                    animate={
-                      recordState === "recording" || isAutoMode
-                        ? { scale: [1, 1.05, 1] }
-                        : { scale: 1 }
-                    }
-                    transition={
-                      recordState === "recording" || isAutoMode
-                        ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
-                        : { duration: 0.2 }
-                    }
-                    active={recordState === "recording" || isAutoMode}
-                    glowColor={
-                      recordState === "recording"
-                        ? "#ef4444"
-                        : isAutoMode
-                          ? "#06b6d4"
-                          : "#10b981"
-                    }
-                    className={cn(
-                      "w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2",
-                      "font-semibold shadow-2xl transition-all duration-300",
-                      "active:scale-95 disabled:cursor-not-allowed active-scale tap-highlight-none",
-                      buttonColor,
-                    )}
-                    aria-label="Iniciar gravação"
-                  >
-                    {renderButtonContent()}
-                  </GlowingButton>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <GlowingButton
+                        data-testid="record-button"
+                        onPointerDown={handlePointerDown}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerCancel}
+                        onPointerLeave={handlePointerCancel}
+                        disabled={recordState === "requesting"}
+                        animate={
+                          recordState === "recording" || isAutoMode
+                            ? { scale: [1, 1.05, 1] }
+                            : { scale: 1 }
+                        }
+                        transition={
+                          recordState === "recording" || isAutoMode
+                            ? { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
+                            : { duration: 0.2 }
+                        }
+                        active={recordState === "recording" || isAutoMode}
+                        glowColor={
+                          recordState === "recording"
+                            ? "#ef4444"
+                            : isAutoMode
+                              ? "#06b6d4"
+                              : "#10b981"
+                        }
+                        className={cn(
+                          "w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2",
+                          "font-semibold shadow-2xl transition-all duration-300",
+                          "active:scale-95 disabled:cursor-not-allowed active-scale tap-highlight-none",
+                          buttonColor,
+                        )}
+                        aria-label="Iniciar gravação"
+                      >
+                        {renderButtonContent()}
+                      </GlowingButton>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{language === "pt" ? "Manter premido para gravação contínua" : "Hold for continuous recording"}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <div className="w-full rounded-2xl border border-white/10 bg-black/20 p-3">

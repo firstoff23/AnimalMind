@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import { BackgroundGrid } from "@/components/ui/BackgroundGrid";
 import { Button } from "@/components/ui/button";
 import { GlowingButton } from "@/components/ui/GlowingButton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/ui/Logo";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,14 +51,21 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLanguage(language === "pt" ? "en" : "pt")}
-              aria-label="Mudar idioma"
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-slate-800/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              <Languages size={13} aria-hidden="true" />
-              {language === "pt" ? "EN" : "PT"}
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setLanguage(language === "pt" ? "en" : "pt")}
+                  aria-label="Mudar idioma"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-slate-800/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <Languages size={13} aria-hidden="true" />
+                  {language === "pt" ? "EN" : "PT"}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{language === "pt" ? "Alterar idioma" : "Change language"}</p>
+              </TooltipContent>
+            </Tooltip>
             {isAuthenticated ? (
               <GlowingButton
                 onClick={() => setLocation("/dashboard")}
@@ -425,6 +433,13 @@ export default function LandingPage() {
                 className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
               >
                 Política de Cookies
+              </button>
+              <span aria-hidden="true" className="text-slate-700">·</span>
+              <button
+                onClick={() => setLocation("/reembolsos")}
+                className="hover:text-slate-300 transition-colors font-medium focus-visible:outline-none focus-visible:underline"
+              >
+                Política de Reembolso
               </button>
               <span aria-hidden="true" className="text-slate-700">·</span>
               <button

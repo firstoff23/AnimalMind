@@ -25,7 +25,9 @@ import { MoodProvider } from "./contexts/MoodContext";
 import { SelfHealingProvider } from "./contexts/SelfHealingContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useRealtimeNotifications } from "./hooks/useRealtimeNotifications";
-
+import { useMLBackendSSE } from "./hooks/useMLBackendSSE";
+import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
+import { GlobalFallback } from "./components/GlobalFallback";
 const AnimalDetailPage = lazy(() => import("./pages/AnimalDetailPage"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallbackPage"));
 const CameraPage = lazy(() => import("./pages/CameraPage"));
@@ -46,6 +48,7 @@ const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
 const TermsOfUsePage = lazy(() => import("./pages/TermsOfUsePage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const RecordingPage = lazy(() => import("./pages/RecordingPage"));
+const RefundPage = lazy(() => import("./pages/RefundPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
@@ -115,6 +118,11 @@ function PushNotificationsBridge({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+function MLBackendSSEBridge({ enabled }: { enabled: boolean }) {
+  useMLBackendSSE({ enabled });
+  return null;
+}
+
 function Router() {
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
@@ -169,6 +177,7 @@ function Router() {
 
       <RealtimeNotificationsBridge enabled={isAuthenticated} />
       <PushNotificationsBridge enabled={isAuthenticated} />
+      <MLBackendSSEBridge enabled={isAuthenticated} />
 
       {/* Sidebar Desktop — only shown when authenticated */}
       {isAuthenticated && <Sidebar />}
@@ -236,6 +245,9 @@ function Router() {
                 </Route>
                 <Route path="/cookies">
                   <LazyRoute component={CookiePolicyPage} variant="content" />
+                </Route>
+                <Route path="/reembolsos">
+                  <LazyRoute component={RefundPage} variant="content" />
                 </Route>
 
                 {/* Protected routes */}
@@ -482,7 +494,9 @@ function App() {
                     }}
                   />
                   <MoodProvider>
-                    <Router />
+                    <ReactErrorBoundary FallbackComponent={GlobalFallback}>
+                      <Router />
+                    </ReactErrorBoundary>
                   </MoodProvider>
                 </TooltipProvider>
               </ThemeProvider>

@@ -66,7 +66,7 @@ app.use((_req, res, next) => {
       `script-src ${scriptSrc}`,
       `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com`,
       `font-src 'self' https://fonts.gstatic.com https://*.fontshare.com data:`,
-      `img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://app.termly.io https://*.termly.co`,
+      `img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://app.termly.io https://*.termly.co https://api.qrserver.com`,
       `connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://firstoff-animalmind-backend.hf.space https://firstoff-animalmind-demo.hf.space https://animalmind-backend.fly.dev https://app.termly.io https://*.termly.co`,
       `media-src 'self' blob:`,
       `worker-src 'self' blob:`,

@@ -5,9 +5,12 @@ import tempfile
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 from scipy import signal
 from scipy.io import wavfile
@@ -16,12 +19,34 @@ import hashlib
 import json
 import redis as redis_client
 from datetime import datetime, timezone
+from fastapi.responses import StreamingResponse
+
+# ─── SSE (Server-Sent Events) broadcast queue ────────────────────────────────
+# Each connected SSE client gets a reference to its own asyncio.Queue.
+# When /classify completes, it broadcasts the result to all connected queues.
+_sse_subscribers: list[asyncio.Queue] = []
+
+def _sse_broadcast(event_type: str, data: dict):
+    """Push an event to all currently connected SSE clients."""
+    payload = json.dumps({"type": event_type, "data": data, "ts": datetime.now(timezone.utc).isoformat()})
+    dead = []
+    for q in _sse_subscribers:
+        try:
+            q.put_nowait(payload)
+        except asyncio.QueueFull:
+            dead.append(q)
+    for q in dead:
+        _sse_subscribers.remove(q)
 
 app = FastAPI(
     title="AnimalMind Acoustic Classifier Backend",
     description="FastAPI backend for pet audio classification and breed identification.",
     version="1.3.0",
 )
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +55,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+import asyncio
+
+class AuditLogMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        path = request.url.path
+        if path in ["/login", "/logout", "/delete-account"]:
+            ip = request.client.host if request.client else "unknown"
+            user_agent = request.headers.get("user-agent", "unknown")
+            action = path.strip("/")
+            
+            if db_pool:
+                try:
+                    asyncio.create_task(self.log_audit(action, ip, user_agent))
+                except Exception as e:
+                    print(f"[Audit] Failed to schedule audit log: {e}")
+        
+        return response
+        
+    async def log_audit(self, action: str, ip: str, user_agent: str):
+        try:
+            async with db_pool.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO audit_logs (action, ip_address, user_agent) VALUES ($1, $2, $3)",
+                    action, ip, user_agent
+                )
+        except Exception as e:
+            print(f"[Audit] Error inserting audit log: {e}")
+
+app.add_middleware(AuditLogMiddleware)
 
 # --- Globals: DB pool e Redis client ---
 db_pool = None
@@ -56,6 +116,17 @@ async def startup():
                         created_at TIMESTAMPTZ DEFAULT NOW()
                     )
                 """)
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS audit_logs (
+                        id SERIAL PRIMARY KEY,
+                        action TEXT NOT NULL,
+                        ip_address TEXT,
+                        user_agent TEXT,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                await conn.execute("CREATE INDEX IF NOT EXISTS idx_classifications_created_at ON classifications(created_at)")
+                await conn.execute("CREATE INDEX IF NOT EXISTS idx_classifications_state ON classifications(state)")
             print("[DB] PostgreSQL conectado e tabela criada.")
         except Exception as e:
             print(f"[DB] Erro ao conectar ao PostgreSQL: {e}")
@@ -271,8 +342,43 @@ def classify_with_yamnet(wav_path: str) -> Dict[str, object]:
     return {"state": state, "confidence": round(confidence, 2), "model": "yamnet-tfhub"}
 
 
+@app.get("/sse")
+async def sse_stream(request: Request):
+    """Server-Sent Events stream for real-time classification notifications."""
+    queue: asyncio.Queue = asyncio.Queue(maxsize=50)
+    _sse_subscribers.append(queue)
+
+    async def event_generator():
+        try:
+            # Send initial heartbeat
+            yield "event: connected\ndata: {\"status\": \"ok\"}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    payload = await asyncio.wait_for(queue.get(), timeout=25.0)
+                    yield f"data: {payload}\n\n"
+                except asyncio.TimeoutError:
+                    # Send keep-alive comment to prevent proxy timeouts
+                    yield ": keepalive\n\n"
+        finally:
+            if queue in _sse_subscribers:
+                _sse_subscribers.remove(queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
 @app.post("/classify", response_model=ClassificationResponse)
-async def classify_audio(file: UploadFile = File(...)):
+@limiter.limit("3/15minutes")
+async def classify_audio(request: Request, file: UploadFile = File(...)):
     filename = file.filename or "recording.webm"
     ext = os.path.splitext(filename)[1].lower() or ".webm"
     audio_bytes = await file.read()
@@ -310,6 +416,14 @@ async def classify_audio(file: UploadFile = File(...)):
         result = ClassificationResponse(
             state=state, confidence=confidence, emoji=emoji, model_used=model_used,
         )
+
+        # Broadcast SSE event to all connected clients
+        _sse_broadcast("classification", {
+            "state": state,
+            "confidence": confidence,
+            "emoji": emoji,
+            "model_used": model_used,
+        })
 
         if db_pool:
             try:
@@ -400,7 +514,9 @@ class BreedResult(BaseModel):
 
 
 @app.post("/identify-breed", response_model=BreedResult)
+@limiter.limit("3/15minutes")
 async def identify_breed(
+    request: Request,
     file: UploadFile = File(...),
     animal_type: str = Form(default="dog"),
 ):

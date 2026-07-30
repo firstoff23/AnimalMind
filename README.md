@@ -250,6 +250,43 @@ FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
 
 ---
 
+## 🔒 Segurança
+
+O Pawra implementa múltiplas camadas de defesa em profundidade para proteger os dados dos utilizadores e dos seus animais.
+
+### Autenticação & Sessão
+| Mecanismo | Detalhe |
+|---|---|
+| **Supabase Auth** | JWT de curta duração com renovação automática via `onAuthStateChange(TOKEN_REFRESHED)` |
+| **Sessão HTTP-only cookie** | Token de sessão Node.js em cookie `HttpOnly; SameSite=Strict; Secure` |
+| **MFA / TOTP** | Autenticação em 2 fatores (RFC 6238) com Google Authenticator/Authy; segredo armazenado em `users.mfa_secret`; validação por HMAC-SHA1 com janela de ±90s |
+
+### Proteção Contra Ataques
+| Mecanismo | Detalhe |
+|---|---|
+| **Rate limiting (brute-force)** | `slowapi` no FastAPI: 3 tentativas / 15 min no endpoint `/classify`; lógica de bloqueio progressivo |
+| **Circuit Breaker** | `QueryClient` com `retry: 3` e backoff exponencial (`1s → 2s → 4s`) |
+| **CORS restritivo** | Apenas origens explicitamente permitidas no Node.js gateway |
+| **Content Security Policy** | CSP rigorosa com `script-src`, `connect-src`, `img-src` e `frame-ancestors 'none'` |
+| **Input validation** | Todos os inputs validados via esquemas `zod` nas procedures tRPC |
+
+### Auditoria & Rastreabilidade
+| Mecanismo | Detalhe |
+|---|---|
+| **Audit log table** | Tabela `audit_logs` em Supabase com `user_id`, `action`, `resource`, `ip`, `timestamp` |
+| **Middleware de auditoria** | `AuditLogMiddleware` no FastAPI regista todos os `POST`/`PUT`/`DELETE` |
+| **Índices de performance** | Índices compostos em `classification_events(user_id, created_at)` e `animals(user_id)` |
+
+### Eliminação de Dados
+- O utilizador pode eliminar a sua conta a partir das Definições → Zona de Perigo
+- Elimina: perfil Supabase Auth, registo `users`, animais, eventos, gravações de áudio no Storage (cascade)
+
+### Notificações em Tempo Real
+- **Supabase Realtime** — eventos DB persistidos entregues por WebSocket
+- **SSE (`GET /sse`)** — feedback imediato após inferência ML via Server-Sent Events, com reconexão automática a cada 10s
+
+---
+
 ## ⚠️ Limitações e Trabalho Futuro
 
 O **Pawra** baseia-se num classificador acústico genérico (YAMNet) e em estimativas comportamentais aproximadas. É fundamental salientar os seguintes aspetos éticos e científicos:

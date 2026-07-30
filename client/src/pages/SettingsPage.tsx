@@ -9,12 +9,14 @@ import {
   Gauge,
   Globe,
   Info,
+  KeyRound,
   Loader2,
   LogOut,
   Moon,
   RefreshCw,
   Shield,
   ShieldAlert,
+  ShieldCheck,
   Stethoscope,
   Sun,
   Trash2,
@@ -100,6 +102,43 @@ export default function SettingsPage() {
   const [localHistoryOnly, setLocalHistoryOnly] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // MFA state
+  const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
+  const [mfaStep, setMfaStep] = useState<"qr" | "verify" | "done">("qr");
+  const [mfaSetupData, setMfaSetupData] = useState<{ secret: string; otpAuthUri: string } | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaCodeError, setMfaCodeError] = useState("");
+
+  const { data: mfaStatus, refetch: refetchMfaStatus } = trpc.auth["mfa.status"].useQuery();
+
+  const mfaSetupMutation = trpc.auth["mfa.setup"].useMutation({
+    onSuccess: (data) => {
+      setMfaSetupData(data);
+      setMfaStep("qr");
+      setMfaDialogOpen(true);
+    },
+    onError: (err) => toast.error(err.message || (language === "pt" ? "Erro ao iniciar MFA." : "Error starting MFA.")),
+  });
+
+  const mfaVerifyMutation = trpc.auth["mfa.verify"].useMutation({
+    onSuccess: () => {
+      setMfaStep("done");
+      refetchMfaStatus();
+      toast.success(language === "pt" ? "MFA ativado com sucesso!" : "MFA enabled successfully!");
+    },
+    onError: (err) => {
+      setMfaCodeError(err.message || (language === "pt" ? "Código inválido." : "Invalid code."));
+    },
+  });
+
+  const mfaDisableMutation = trpc.auth["mfa.disable"].useMutation({
+    onSuccess: () => {
+      refetchMfaStatus();
+      toast.success(language === "pt" ? "MFA desativado." : "MFA disabled.");
+    },
+    onError: (err) => toast.error(err.message || (language === "pt" ? "Erro ao desativar MFA." : "Error disabling MFA.")),
+  });
 
   const deleteAccountMutation = trpc.auth.deleteAccount.useMutation({
     onSuccess: async () => {
@@ -1204,6 +1243,185 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* MFA / 2FA */}
+      <motion.div variants={cardVariants}>
+        <Card className="bg-card border-border overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border bg-primary/5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
+              <KeyRound className="w-4 h-4 text-primary" />
+              {language === "pt" ? "Autenticação em 2 Fatores" : "Two-Factor Authentication"}
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              {language === "pt"
+                ? "Protege a tua conta com um código TOTP (Google Authenticator, Authy)"
+                : "Protect your account with a TOTP code (Google Authenticator, Authy)"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-foreground">
+                  {language === "pt" ? "Estado" : "Status"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {mfaStatus?.enabled
+                    ? (language === "pt" ? "MFA ativo e a proteger a tua conta" : "MFA active and protecting your account")
+                    : (language === "pt" ? "MFA não configurado" : "MFA not configured")}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {mfaStatus?.enabled ? (
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 rounded-full px-2.5 py-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    {language === "pt" ? "Ativo" : "Active"}
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-muted-foreground bg-secondary rounded-full px-2.5 py-1">
+                    {language === "pt" ? "Inativo" : "Inactive"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {mfaStatus?.enabled ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-xs border-rose-500/30 text-rose-400 hover:bg-rose-500/10"
+                onClick={() => mfaDisableMutation.mutate()}
+                disabled={mfaDisableMutation.isPending}
+              >
+                {mfaDisableMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                {language === "pt" ? "Desativar MFA" : "Disable MFA"}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-xs border-primary/30 hover:bg-primary/10"
+                onClick={() => mfaSetupMutation.mutate()}
+                disabled={mfaSetupMutation.isPending}
+              >
+                {mfaSetupMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+                {language === "pt" ? "Configurar MFA" : "Set Up MFA"}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* MFA Setup Dialog */}
+      <Dialog
+        open={mfaDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) { setMfaDialogOpen(false); setMfaStep("qr"); setMfaCode(""); setMfaCodeError(""); }
+        }}
+      >
+        <DialogContent className="max-w-sm border-border bg-card text-card-foreground">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-base flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" />
+              {language === "pt" ? "Configurar MFA" : "Set Up MFA"}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              {mfaStep === "qr" && (language === "pt" ? "Passo 1 de 2 — Escaneia o QR code" : "Step 1 of 2 — Scan the QR code")}
+              {mfaStep === "verify" && (language === "pt" ? "Passo 2 de 2 — Confirma o código" : "Step 2 of 2 — Confirm the code")}
+              {mfaStep === "done" && (language === "pt" ? "MFA configurado com sucesso!" : "MFA set up successfully!")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {mfaStep === "qr" && mfaSetupData && (
+            <div className="flex flex-col items-center gap-4 py-2">
+              <div className="rounded-xl overflow-hidden border border-border p-2 bg-white">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(mfaSetupData.otpAuthUri)}`}
+                  alt="QR Code TOTP"
+                  width={180}
+                  height={180}
+                />
+              </div>
+              <div className="w-full space-y-1.5">
+                <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                  {language === "pt"
+                    ? "Abre o Google Authenticator ou Authy e escaneia o código. Em alternativa, insere o segredo manualmente:"
+                    : "Open Google Authenticator or Authy and scan the code. Alternatively, enter the secret manually:"}
+                </p>
+                <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-2">
+                  <code className="flex-1 text-[11px] font-mono text-foreground break-all">{mfaSetupData.secret}</code>
+                </div>
+              </div>
+              <DialogFooter className="w-full">
+                <Button className="w-full text-xs" onClick={() => setMfaStep("verify")}>
+                  {language === "pt" ? "Já escaniei — Continuar" : "I scanned it — Continue"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {mfaStep === "verify" && (
+            <div className="flex flex-col gap-4 py-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="mfa-code" className="text-xs font-medium">
+                  {language === "pt" ? "Código de 6 dígitos" : "6-digit code"}
+                </Label>
+                <Input
+                  id="mfa-code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={mfaCode}
+                  onChange={(e) => { setMfaCode(e.target.value.replace(/\D/g, "")); setMfaCodeError(""); }}
+                  className="text-center tracking-[0.4em] font-mono text-lg h-12"
+                  autoFocus
+                />
+                {mfaCodeError && (
+                  <p className="text-xs text-red-400 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {mfaCodeError}
+                  </p>
+                )}
+              </div>
+              <DialogFooter className="flex-col gap-2">
+                <Button
+                  className="w-full text-xs"
+                  disabled={mfaCode.length !== 6 || mfaVerifyMutation.isPending}
+                  onClick={() => mfaVerifyMutation.mutate({ code: mfaCode })}
+                >
+                  {mfaVerifyMutation.isPending && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
+                  {language === "pt" ? "Verificar e Ativar" : "Verify and Enable"}
+                </Button>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setMfaStep("qr")}>
+                  {language === "pt" ? "← Voltar" : "← Back"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {mfaStep === "done" && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-emerald-400" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-semibold text-foreground">
+                  {language === "pt" ? "MFA ativado!" : "MFA enabled!"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {language === "pt"
+                    ? "A tua conta está agora protegida com autenticação em 2 fatores."
+                    : "Your account is now protected with two-factor authentication."}
+                </p>
+              </div>
+              <Button className="w-full text-xs" onClick={() => { setMfaDialogOpen(false); setMfaStep("qr"); }}>
+                {language === "pt" ? "Fechar" : "Close"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Zona de Perigo */}
       <motion.div variants={cardVariants}>

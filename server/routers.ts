@@ -82,6 +82,51 @@ import { pushRouter } from "./routers/push";
 import { trendsRouter } from "./routers/trends";
 import { vetRouter } from "./routers/vet";
 
+// ─── TOTP / MFA helper (RFC 6238, no external deps) ─────────────────────────
+
+import { createHmac } from "node:crypto";
+
+function base32Decode(base32: string): Uint8Array {
+  const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const input = base32.toUpperCase().replace(/=+$/, "");
+  const bits: number[] = [];
+  for (const ch of input) {
+    const val = CHARS.indexOf(ch);
+    if (val < 0) continue;
+    for (let i = 4; i >= 0; i--) bits.push((val >> i) & 1);
+  }
+  const bytes = new Uint8Array(Math.floor(bits.length / 8));
+  for (let i = 0; i < bytes.length; i++) {
+    let b = 0;
+    for (let j = 0; j < 8; j++) b = (b << 1) | (bits[i * 8 + j] ?? 0);
+    bytes[i] = b;
+  }
+  return bytes;
+}
+
+function hotp(secretBytes: Uint8Array, counter: bigint): string {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64BE(counter);
+  const hmac = createHmac("sha1", Buffer.from(secretBytes)).update(buf).digest();
+  const offset = hmac[19]! & 0x0f;
+  const code =
+    (((hmac[offset]! & 0x7f) << 24) |
+      ((hmac[offset + 1]! & 0xff) << 16) |
+      ((hmac[offset + 2]! & 0xff) << 8) |
+      (hmac[offset + 3]! & 0xff)) %
+    1_000_000;
+  return String(code).padStart(6, "0");
+}
+
+function validateTotp(secret: string, token: string, windowSteps = 1): boolean {
+  const secretBytes = base32Decode(secret);
+  const counter = BigInt(Math.floor(Date.now() / 1000 / 30));
+  for (let delta = -windowSteps; delta <= windowSteps; delta++) {
+    if (hotp(secretBytes, counter + BigInt(delta)) === token) return true;
+  }
+  return false;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const STATES: EmotionalState[] = [
@@ -595,6 +640,131 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
 
       return { success: true };
+    }),
+
+    // ── MFA / TOTP ─────────────────────────────────────────────────────────────
+    "mfa.setup": protectedProcedure.mutation(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const supabase = getSupabase();
+
+      // Generate a new TOTP secret using Web Crypto (no native deps)
+      const secretBytes = crypto.getRandomValues(new Uint8Array(20));
+      const BASE32_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+      let secret = "";
+      for (let i = 0; i < secretBytes.length; ) {
+        const b0 = secretBytes[i++] ?? 0;
+        const b1 = secretBytes[i++] ?? 0;
+        const b2 = secretBytes[i++] ?? 0;
+        const b3 = secretBytes[i++] ?? 0;
+        const b4 = secretBytes[i++] ?? 0;
+        secret += BASE32_CHARS[(b0 >> 3) & 31];
+        secret += BASE32_CHARS[((b0 << 2) | (b1 >> 6)) & 31];
+        secret += BASE32_CHARS[(b1 >> 1) & 31];
+        secret += BASE32_CHARS[((b1 << 4) | (b2 >> 4)) & 31];
+        secret += BASE32_CHARS[((b2 << 1) | (b3 >> 7)) & 31];
+        secret += BASE32_CHARS[(b3 >> 2) & 31];
+        secret += BASE32_CHARS[((b3 << 3) | (b4 >> 5)) & 31];
+        secret += BASE32_CHARS[b4 & 31];
+      }
+
+      // Persist the secret (not yet enabled – user must verify first)
+      const { error } = await supabase
+        .from("users")
+        .update({ mfa_secret: secret, mfa_enabled: false })
+        .eq("id", userId);
+
+      if (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao guardar segredo MFA: ${error.message}`,
+        });
+      }
+
+      const email = ctx.user.email ?? `user-${userId}@pawra`;
+      const issuer = "Pawra";
+      const otpAuthUri = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
+
+      return { secret, otpAuthUri };
+    }),
+
+    "mfa.verify": protectedProcedure
+      .input(z.object({ code: z.string().length(6).regex(/^\d{6}$/) }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = await effectiveUserId(ctx.user);
+        const supabase = getSupabase();
+
+        const { data: userData, error: fetchError } = await supabase
+          .from("users")
+          .select("mfa_secret")
+          .eq("id", userId)
+          .single();
+
+        if (fetchError || !userData?.mfa_secret) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MFA não configurado. Inicia o setup primeiro.",
+          });
+        }
+
+        // Validate TOTP code using RFC 6238 (SHA1, 6 digits, 30s window)
+        const isValid = validateTotp(userData.mfa_secret, input.code);
+        if (!isValid) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Código inválido ou expirado.",
+          });
+        }
+
+        // Activate MFA on the account
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({ mfa_enabled: true })
+          .eq("id", userId);
+
+        if (updateError) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Erro ao ativar MFA: ${updateError.message}`,
+          });
+        }
+
+        return { success: true };
+      }),
+
+    "mfa.disable": protectedProcedure.mutation(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const supabase = getSupabase();
+
+      const { error } = await supabase
+        .from("users")
+        .update({ mfa_secret: null, mfa_enabled: false })
+        .eq("id", userId);
+
+      if (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Erro ao desativar MFA: ${error.message}`,
+        });
+      }
+
+      return { success: true };
+    }),
+
+    "mfa.status": protectedProcedure.query(async ({ ctx }) => {
+      const userId = await effectiveUserId(ctx.user);
+      const supabase = getSupabase();
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("mfa_enabled")
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        return { enabled: false };
+      }
+
+      return { enabled: Boolean(data?.mfa_enabled) };
     }),
   }),
 
