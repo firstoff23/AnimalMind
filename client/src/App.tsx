@@ -1,5 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import Lenis from "lenis";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { lazy, Suspense, useEffect } from "react";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { AppShellSkeleton } from "@/components/AppShellSkeleton";
@@ -525,6 +527,8 @@ function App() {
           </SelfHealingProvider>
         </AuthProvider>
       </MobileOnlyGate>
+      <Analytics />
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }

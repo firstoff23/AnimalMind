@@ -74,6 +74,8 @@
     "@trpc/react-query": "^11.18.0",
     "@trpc/server": "^11.18.0",
     "@types/howler": "^2.2.13",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "ai": "^6.0.237",
     "axios": "^1.18.1",
     "capacitor-voice-recorder": "^7.0.6",
