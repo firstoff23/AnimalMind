@@ -171,6 +171,7 @@ export default function LandingPage() {
               className="object-cover w-full h-full opacity-90"
               fetchPriority="high"
               decoding="async"
+              loading="eager"
             />
           </div>
         </section>
