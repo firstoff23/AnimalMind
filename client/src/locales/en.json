@@ -207,7 +207,7 @@
   },
   "auditPage": {
     "emptyTitle": "Every interpretation leaves a trail.",
-    "emptyDesc": "Start an analysis to review how Pawra reached each explanation."
+    "emptyDesc": "Start an analysis to review how PeloNaRoupa reached each explanation."
   },
   "historyPage": {
     "title": "History",
@@ -338,7 +338,7 @@
   },
   "landing": {
     "title": "Understand what your pet is trying to tell you.",
-    "subtitle": "Pawra combines AI-assisted behavior interpretation with your observations to create explanations that improve over time.",
+    "subtitle": "PeloNaRoupa combines AI-assisted behavior interpretation with your observations to create explanations that improve over time.",
     "valueProp": "Clear explanations. Better understanding. Built together with pet owners.",
     "getStarted": "Get Started",
     "howItWorks": "How It Works",
@@ -364,6 +364,6 @@
     "register": "Register",
     "dashboard": "Dashboard",
     "disclaimerTitle": "Scientific Honesty & Limitations",
-    "disclaimerDesc": "Pawra uses the YAMNet model (a generic audio event classifier) to estimate emotional states as behavioral approximations. Results should be interpreted as signals or cues — never as a diagnosis. This application does not replace professional veterinary evaluation."
+    "disclaimerDesc": "PeloNaRoupa uses the YAMNet model (a generic audio event classifier) to estimate emotional states as behavioral approximations. Results should be interpreted as signals or cues — never as a diagnosis. This application does not replace professional veterinary evaluation."
   }
 }

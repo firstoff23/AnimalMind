@@ -139,7 +139,7 @@ export default function FeedbackAuditPage() {
           <div>
             <h1 className="text-xl font-bold text-foreground">Auditoria de Feedback</h1>
             <p className="text-xs text-muted-foreground">
-              Monitoriza e audita os desvios e correções dos modelos de IA do Pawra
+              Monitoriza e audita os desvios e correções dos modelos de IA do PeloNaRoupa
             </p>
           </div>
         </div>

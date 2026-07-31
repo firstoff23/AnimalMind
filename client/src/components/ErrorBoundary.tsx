@@ -1,5 +1,5 @@
 /**
- * ErrorBoundary — Self-healing React error boundary for Pawra
+ * ErrorBoundary — Self-healing React error boundary for PeloNaRoupa
  *
  * Features:
  * - Auto-retry the failed subtree up to MAX_AUTO_RETRIES times

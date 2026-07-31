@@ -207,7 +207,7 @@
   },
   "auditPage": {
     "emptyTitle": "Cada interpretação deixa um rasto.",
-    "emptyDesc": "Inicie uma análise para rever como o Pawra chegou a cada explicação."
+    "emptyDesc": "Inicie uma análise para rever como o PeloNaRoupa chegou a cada explicação."
   },
   "historyPage": {
     "title": "Histórico",
@@ -337,7 +337,7 @@
   },
   "landing": {
     "title": "Entenda o que o seu animal está a tentar dizer-lhe.",
-    "subtitle": "O Pawra combina a interpretação de comportamento assistida por IA com as suas observações para criar explicações que melhoram com o tempo.",
+    "subtitle": "O PeloNaRoupa combina a interpretação de comportamento assistida por IA com as suas observações para criar explicações que melhoram com o tempo.",
     "valueProp": "Explicações claras. Melhor compreensão. Construído em conjunto com tutores de animais.",
     "getStarted": "Começar Agora",
     "howItWorks": "Como Funciona",
@@ -363,6 +363,6 @@
     "register": "Registar",
     "dashboard": "Painel de Controlo",
     "disclaimerTitle": "Honestidade Científica & Limitações",
-    "disclaimerDesc": "O Pawra utiliza o modelo YAMNet (classificador genérico de eventos de áudio) para estimar estados emocionais como aproximações comportamentais. Os resultados devem ser interpretados como sinais ou indícios — nunca como diagnóstico. Esta aplicação não substitui avaliação veterinária profissional."
+    "disclaimerDesc": "O PeloNaRoupa utiliza o modelo YAMNet (classificador genérico de eventos de áudio) para estimar estados emocionais como aproximações comportamentais. Os resultados devem ser interpretados como sinais ou indícios — nunca como diagnóstico. Esta aplicação não substitui avaliação veterinária profissional."
   }
 }

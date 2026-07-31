@@ -1,4 +1,4 @@
-# Pawra — Backlog de Features
+# PeloNaRoupa — Backlog de Features
 
 ## Quando tiver utilizadores reais (beta)
 - [ ] Langfuse — observabilidade das classificações

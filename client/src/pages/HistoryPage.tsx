@@ -904,8 +904,8 @@ export default function HistoryPage() {
         doc.setFontSize(16);
         doc.text(
           language === "pt"
-            ? "Pawra - Histórico de classificações"
-            : "Pawra - Classification History",
+            ? "PeloNaRoupa - Histórico de classificações"
+            : "PeloNaRoupa - Classification History",
           14,
           16,
         );

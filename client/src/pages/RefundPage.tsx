@@ -23,7 +23,7 @@ export default function RefundPage() {
         
         <div className="prose prose-invert prose-slate max-w-none text-slate-300">
           <p className="mb-6">
-            A Pawra esforça-se por proporcionar o melhor serviço possível para compreender e monitorizar o seu animal de estimação. A nossa política de reembolso foi concebida para ser justa e transparente.
+            A PeloNaRoupa esforça-se por proporcionar o melhor serviço possível para compreender e monitorizar o seu animal de estimação. A nossa política de reembolso foi concebida para ser justa e transparente.
           </p>
 
           <h2 className="text-2xl font-bold mt-10 mb-4 text-white">1. Direito de Retratação</h2>

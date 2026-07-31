@@ -57,7 +57,7 @@ from utils.logging import setup_structured_logging
 setup_structured_logging()
 
 app = FastAPI(
-    title="AnimalMind Acoustic & Vision Classifier Backend",
+    title="PeloNaRoupa Acoustic & Vision Classifier Backend",
     description="FastAPI backend for pet audio classification, breed identification, and posture detection.",
     version="1.4.0",
 )

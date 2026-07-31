@@ -237,8 +237,8 @@ export default function AnimalDetailPage({
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(
         language === "pt"
-          ? "Pawra - Relatório Clínico"
-          : "Pawra - Clinical Report",
+          ? "PeloNaRoupa - Relatório Clínico"
+          : "PeloNaRoupa - Clinical Report",
         15,
         20,
       );
@@ -424,8 +424,8 @@ export default function AnimalDetailPage({
       doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2]);
       doc.text(
         language === "pt"
-          ? "Pawra — Monitorização de Bem-Estar Animal em Tempo Real"
-          : "Pawra — Real-Time Animal Well-Being Monitoring",
+          ? "PeloNaRoupa — Monitorização de Bem-Estar Animal em Tempo Real"
+          : "PeloNaRoupa — Real-Time Animal Well-Being Monitoring",
         15,
         275,
       );

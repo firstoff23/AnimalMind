@@ -41,7 +41,7 @@ export function SurveillancePage() {
       if (Capacitor.getPlatform() === 'android') {
         await ForegroundService.startForegroundService({
           id: 1,
-          title: 'Pawra',
+          title: 'PeloNaRoupa',
           body: 'Modo Vigilância ativo (escutando ambiente...)',
           smallIcon: 'ic_stat_name',
         });
@@ -118,7 +118,7 @@ export function SurveillancePage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-slate-900">Modo Vigilância</h1>
         <p className="text-slate-500 max-w-sm">
-          Deixe este dispositivo em casa. A Pawra irá escutar continuamente e alertar o seu telemóvel principal se detetar latidos ou miados anormais.
+          Deixe este dispositivo em casa. A PeloNaRoupa irá escutar continuamente e alertar o seu telemóvel principal se detetar latidos ou miados anormais.
         </p>
       </div>
 

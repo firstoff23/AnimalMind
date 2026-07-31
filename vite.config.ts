@@ -166,9 +166,9 @@ const plugins = [
       maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
     },
     manifest: {
-      name: "Pawra",
-      short_name: "Pawra",
-      description: "Pawra: Monitorização inteligente do bem-estar animal",
+      name: "PeloNaRoupa",
+      short_name: "PeloNaRoupa",
+      description: "PeloNaRoupa: Monitorização inteligente do bem-estar animal",
       theme_color: "#22c55e",
       background_color: "#0a0a0b",
       display: "standalone",

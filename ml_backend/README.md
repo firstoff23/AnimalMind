@@ -1,5 +1,5 @@
 ---
-title: AnimalMind Backend
+title: PeloNaRoupa Backend
 emoji: 🐾
 colorFrom: pink
 colorTo: indigo
@@ -7,9 +7,9 @@ sdk: docker
 app_port: 7860
 ---
 
-# AnimalMind ML Backend
+# PeloNaRoupa ML Backend
 
-FastAPI backend for AnimalMind — pet audio classification, breed identification, quality assessment, uncertainty calibration, and user feedback collection.
+FastAPI backend for PeloNaRoupa — pet audio classification, breed identification, quality assessment, uncertainty calibration, and user feedback collection.
 
 **Version**: 1.4.0  
 **Base URL (production)**: `https://firstoff-animalmind-backend.hf.space`
@@ -218,7 +218,7 @@ The backend includes a state-of-the-art training pipeline (`ml_backend/training/
 
 ## 🩺 Symptom Model Feasibility Evaluation
 
-For a detailed analysis on why AnimalMind relies on a **Guided Interactive Questionnaire + YOLO Posture Detection** rather than an autonomous medical vision model, read the full feasibility report:  
+For a detailed analysis on why PeloNaRoupa relies on a **Guided Interactive Questionnaire + YOLO Posture Detection** rather than an autonomous medical vision model, read the full feasibility report:  
 📄 [Symptom Model Feasibility Report](docs/symptom_model_feasibility.md)
 
 ---

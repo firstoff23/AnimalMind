@@ -1,4 +1,4 @@
-# 🎨 Pawra / AnimalMind — Design System Guidelines (DESIGN.md)
+# 🎨 PeloNaRoupa / PeloNaRoupa — Design System Guidelines (DESIGN.md)
 
 > **Goal**: Anti-generic, premium, hardware-accelerated UI/UX system that eliminates "AI slop" and delivers a state-of-the-art visual experience for pet health & breed identification.
 

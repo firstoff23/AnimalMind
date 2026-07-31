@@ -39,7 +39,7 @@ export default function VerifyEmailPage() {
   return (
     <AuthShell
       title="Verifique o email"
-      subtitle="Confirme a sua conta para concluir o acesso ao Pawra."
+      subtitle="Confirme a sua conta para concluir o acesso ao PeloNaRoupa."
       eyebrow="Confirmação de conta"
       compact
     >

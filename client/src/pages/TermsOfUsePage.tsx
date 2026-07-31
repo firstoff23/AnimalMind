@@ -29,7 +29,7 @@ export default function TermsOfUsePage() {
             <Logo className="w-5 h-5 text-primary" />
           </div>
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-200 bg-clip-text text-transparent">
-            Pawra
+            PeloNaRoupa
           </span>
         </div>
         <Button
@@ -54,7 +54,7 @@ export default function TermsOfUsePage() {
             Termos de Uso
           </h1>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Ao aceder e utilizar o <strong>Pawra</strong>, aceita cumprir e ficar vinculado aos seguintes Termos de Uso.
+            Ao aceder e utilizar o <strong>PeloNaRoupa</strong>, aceita cumprir e ficar vinculado aos seguintes Termos de Uso.
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export default function TermsOfUsePage() {
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-white">2. Uso do Serviço</h2>
             <p>
-              O Pawra disponibiliza um sistema de tradução acústica e análise de bem-estar para animais de estimação. O serviço destina-se a fins puramente recreativos e de acompanhamento informal. Não substitui, em caso algum, consultas ou diagnósticos médicos veterinários.
+              O PeloNaRoupa disponibiliza um sistema de tradução acústica e análise de bem-estar para animais de estimação. O serviço destina-se a fins puramente recreativos e de acompanhamento informal. Não substitui, em caso algum, consultas ou diagnósticos médicos veterinários.
             </p>
           </section>
 
@@ -83,7 +83,7 @@ export default function TermsOfUsePage() {
           <section className="space-y-2">
             <h2 className="text-lg font-bold text-white">4. Limitação de Responsabilidade</h2>
             <p>
-              O Pawra não garante a exatidão absoluta dos diagnósticos ou traduções gerados pelas suas redes neuronais e não se responsabiliza por quaisquer decisões de saúde ou bem-estar tomadas com base nas informações facultadas pela plataforma.
+              O PeloNaRoupa não garante a exatidão absoluta dos diagnósticos ou traduções gerados pelas suas redes neuronais e não se responsabiliza por quaisquer decisões de saúde ou bem-estar tomadas com base nas informações facultadas pela plataforma.
             </p>
           </section>
         </div>
@@ -92,7 +92,7 @@ export default function TermsOfUsePage() {
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md mt-12">
         <div className="max-w-4xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Pawra. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} PeloNaRoupa. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

@@ -29,7 +29,7 @@ export default function CookiePolicyPage() {
             <Logo className="w-5 h-5 text-primary" />
           </div>
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-200 bg-clip-text text-transparent">
-            Pawra
+            PeloNaRoupa
           </span>
         </div>
         <Button
@@ -54,7 +54,7 @@ export default function CookiePolicyPage() {
             Política de Cookies
           </h1>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Esta política explica como a <strong>Pawra</strong> utiliza cookies e tecnologias semelhantes para o reconhecer quando visita o nosso website.
+            Esta política explica como a <strong>PeloNaRoupa</strong> utiliza cookies e tecnologias semelhantes para o reconhecer quando visita o nosso website.
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default function CookiePolicyPage() {
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md mt-12">
         <div className="max-w-4xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Pawra. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} PeloNaRoupa. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

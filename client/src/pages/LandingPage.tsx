@@ -38,7 +38,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Logo size={20} className="text-primary" />
             <span className="text-base font-bold tracking-tight text-foreground">
-              Pawra
+              PeloNaRoupa
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -264,7 +264,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-lg text-muted-foreground max-w-md mx-auto">
               Esclareça as suas dúvidas sobre o funcionamento e privacidade do
-              Pawra.
+              PeloNaRoupa.
             </p>
           </div>
 
@@ -329,7 +329,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-5 py-10 flex flex-col lg:flex-row items-center justify-between gap-6 text-sm text-muted-foreground">
           <div className="flex flex-col lg:flex-row items-center gap-6">
             <p className="font-medium">
-              © {new Date().getFullYear()} Pawra. Todos os direitos reservados.
+              © {new Date().getFullYear()} PeloNaRoupa. Todos os direitos reservados.
             </p>
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2">
               <button

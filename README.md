@@ -1,7 +1,7 @@
-# Pawra
+# PeloNaRoupa
 
-Pawra is a web app that helps pet owners understand their pets a little better.
-Understand what your pet is trying to tell you. Pawra combines AI-assisted behavior interpretation with your observations to create explanations that improve over time.
+PeloNaRoupa is a web app that helps pet owners understand their pets a little better.
+Understand what your pet is trying to tell you. PeloNaRoupa combines AI-assisted behavior interpretation with your observations to create explanations that improve over time.
 All explanations act as a helpful second opinion, not a medical or veterinary diagnosis.
 
 > **Project Status:** MVP / early beta.
@@ -55,7 +55,7 @@ tRPC and Zod keep the client and server aligned through end-to-end type safety a
 - **Live Application:** _Add deployment link_
 - **Contact:** _Add public contact email or website_
 
-O Pawra é uma aplicação **React/PWA** com um gateway **Node.js + Express + tRPC** e um backend de ML separado em **FastAPI**. O frontend fala com o gateway por `/api/trpc`, o gateway valida sessão e permissões, persiste dados no **Supabase**, envia áudio para classificação acústica e devolve resultados tipados ao cliente.
+O PeloNaRoupa é uma aplicação **React/PWA** com um gateway **Node.js + Express + tRPC** e um backend de ML separado em **FastAPI**. O frontend fala com o gateway por `/api/trpc`, o gateway valida sessão e permissões, persiste dados no **Supabase**, envia áudio para classificação acústica e devolve resultados tipados ao cliente.
 
 O desenho é deliberadamente resiliente: `FASTAPI_BACKEND_URL` pode apontar para o Hugging Face Space principal, mas o gateway mantém fallbacks conhecidos para Fly.dev e Hugging Face antes de devolver erro ao frontend. No browser, a app ainda consegue degradar para classificação local com TF.js quando o servidor ML está indisponível.
 
@@ -135,7 +135,7 @@ FASTAPI_BACKEND_URL="http://localhost:8000"
 Para usar o Hugging Face Space já publicado em vez do backend local:
 
 ```env
-FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
+FASTAPI_BACKEND_URL="https://firstoff-PeloNaRoupa-backend.hf.space"
 ```
 
 Arrancar o backend ML local:
@@ -196,14 +196,14 @@ Depois aplica as migrações conforme a configuração local do Supabase CLI. No
    SUPABASE_URL="https://seu-projeto.supabase.co"
    SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
    JWT_SECRET="segredo-producao-longo"
-   OAUTH_SERVER_URL="https://Pawra.vercel.app"
-   FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
+   OAUTH_SERVER_URL="https://PeloNaRoupa.vercel.app"
+   FASTAPI_BACKEND_URL="https://firstoff-PeloNaRoupa-backend.hf.space"
    ```
 
 2. Confirmar em Supabase Auth que o redirect de email permite:
 
    ```text
-   https://Pawra.vercel.app/auth/callback
+   https://PeloNaRoupa.vercel.app/auth/callback
    ```
 
 3. Fazer deploy pela integração GitHub/Vercel ou pela CLI:
@@ -229,20 +229,20 @@ O diretório `ml_backend/` está preparado para Space Docker:
 No Hugging Face, cria/usa um Space Docker com o conteúdo de `ml_backend/`. Depois valida:
 
 ```text
-https://firstoff-Pawra-backend.hf.space/health
+https://firstoff-PeloNaRoupa-backend.hf.space/health
 ```
 
 Quando `/health` responder `200`, usa a raiz do Space como `FASTAPI_BACKEND_URL`, sem `/classify` no fim:
 
 ```env
-FASTAPI_BACKEND_URL="https://firstoff-Pawra-backend.hf.space"
+FASTAPI_BACKEND_URL="https://firstoff-PeloNaRoupa-backend.hf.space"
 ```
 
 ---
 
 ## 🔒 Segurança
 
-O Pawra implementa múltiplas camadas de defesa em profundidade para proteger os dados dos utilizadores e dos seus animais.
+O PeloNaRoupa implementa múltiplas camadas de defesa em profundidade para proteger os dados dos utilizadores e dos seus animais.
 
 ### Autenticação & Sessão
 | Mecanismo | Detalhe |
@@ -279,7 +279,7 @@ O Pawra implementa múltiplas camadas de defesa em profundidade para proteger os
 
 ## ⚠️ Limitações e Trabalho Futuro
 
-O **Pawra** baseia-se num classificador acústico genérico (YAMNet) e em estimativas comportamentais aproximadas. É fundamental salientar os seguintes aspetos éticos e científicos:
+O **PeloNaRoupa** baseia-se num classificador acústico genérico (YAMNet) e em estimativas comportamentais aproximadas. É fundamental salientar os seguintes aspetos éticos e científicos:
 1. **Classificação Genérica:** O YAMNet é um classificador genérico de eventos de áudio treinado na base de dados AudioSet. Por isso, a deteção e tradução de emoções caninas ou felinas são estimativas estatísticas baseadas em indícios de vocalização geral e não mapeamentos neurobiológicos absolutos.
 2. **Estimativas de Bem-Estar:** As classes de emoções apresentadas pela aplicação (angústia, excitação, etc.) são aproximações comportamentais baseadas em padrões sonoros históricos e na postura corporal indicada. Devem ser consideradas como sinais ou indícios, e nunca como diagnósticos definitivos.
 3. **Não Substituição Médica:** Esta aplicação é uma ferramenta de apoio e entretenimento informativo para tutores. Não substitui, sob qualquer circunstância, o aconselhamento, diagnóstico clínico e acompanhamento por um médico veterinário qualificado.

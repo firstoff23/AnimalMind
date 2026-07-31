@@ -1,5 +1,5 @@
 /**
- * SelfHealingProvider — Global error capture bridge for Pawra
+ * SelfHealingProvider — Global error capture bridge for PeloNaRoupa
  *
  * Intercepts:
  * - window.onerror  (uncaught JS errors)

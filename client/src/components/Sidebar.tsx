@@ -110,7 +110,7 @@ export function Sidebar() {
                 exit={{ opacity: 0, x: -10 }}
                 className="font-satoshi font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent truncate"
               >
-                Pawra
+                PeloNaRoupa
               </motion.span>
             )}
           </AnimatePresence>

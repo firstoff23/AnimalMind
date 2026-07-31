@@ -1,5 +1,5 @@
 /**
- * useAppHealing — Core self-healing hook for Pawra
+ * useAppHealing — Core self-healing hook for PeloNaRoupa
  *
  * Responsibilities:
  * - Capture and classify errors (network, auth, camera, UI, Supabase/RLS)

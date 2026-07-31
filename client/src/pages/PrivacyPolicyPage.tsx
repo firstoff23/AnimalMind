@@ -50,7 +50,7 @@ export default function PrivacyPolicyPage() {
             <Logo className="w-5 h-5 text-primary" />
           </div>
           <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-emerald-200 bg-clip-text text-transparent">
-            Pawra
+            PeloNaRoupa
           </span>
         </div>
         <Button
@@ -75,7 +75,7 @@ export default function PrivacyPolicyPage() {
             Política de Privacidade
           </h1>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            Na <strong>Pawra</strong>, a proteção da sua privacidade e dos dados
+            Na <strong>PeloNaRoupa</strong>, a proteção da sua privacidade e dos dados
             do seu animal de estimação é a nossa prioridade número um. Esta
             Política de Privacidade explica de forma clara e transparente como
             recolhemos, tratamos e protegemos os seus dados pessoais, em total
@@ -103,10 +103,10 @@ export default function PrivacyPolicyPage() {
               </p>
               <div className="p-3 bg-slate-900/50 rounded-xl border border-border/50 text-slate-350">
                 <p>
-                  <strong>Entidade:</strong> Pawra App
+                  <strong>Entidade:</strong> PeloNaRoupa App
                 </p>
                 <p>
-                  <strong>Responsável pelo Tratamento:</strong> Pawra
+                  <strong>Responsável pelo Tratamento:</strong> PeloNaRoupa
                 </p>
                 <p>
                   <strong>Contacto do Encarregado:</strong> alexinacio2006@gmail.com
@@ -390,7 +390,7 @@ export default function PrivacyPolicyPage() {
       <footer className="w-full border-t border-slate-900 z-10 bg-slate-950/80 backdrop-blur-md mt-12">
         <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>
-            © {new Date().getFullYear()} Pawra. Todos os direitos reservados.
+            © {new Date().getFullYear()} PeloNaRoupa. Todos os direitos reservados.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button

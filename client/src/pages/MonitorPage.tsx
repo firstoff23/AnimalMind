@@ -47,7 +47,7 @@ export default function MonitorPage() {
           
           if (result.state === "distress" || result.state === "alert") {
             addLog(`ALERTA: Detectado ${result.state} com ${Math.round(result.confidence * 100)}% de confiança.`);
-            toast.warning(`Pawra detetou ${result.state}!`);
+            toast.warning(`PeloNaRoupa detetou ${result.state}!`);
           } else {
             addLog(`Estado normal (${result.state}, ${Math.round(result.confidence * 100)}%)`);
           }
@@ -71,7 +71,7 @@ export default function MonitorPage() {
         if (Capacitor.getPlatform() === "android") {
           await ForegroundService.startForegroundService({
             id: 1,
-            title: "Pawra - Monitorização Ativa",
+            title: "PeloNaRoupa - Monitorização Ativa",
             body: "A escutar continuamente o ambiente...",
             smallIcon: "ic_stat_icon",
           });

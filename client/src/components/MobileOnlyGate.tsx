@@ -52,7 +52,7 @@ function DesktopMobileNotice() {
           </span>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
-              Pawra
+              PeloNaRoupa
             </p>
             <p className="text-sm text-white/52">Experiência mobile-first</p>
           </div>
@@ -64,7 +64,7 @@ function DesktopMobileNotice() {
             Abrir no telemóvel
           </div>
           <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-white">
-            O Pawra foi feito para mobile
+            O PeloNaRoupa foi feito para mobile
           </h1>
           <p className="text-sm leading-6 text-white/58">
             Lê o QR code com o telemóvel para abrir a versão optimizada para

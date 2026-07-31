@@ -19,7 +19,7 @@ export default function DeleteAccountPage() {
 
         <div className="space-y-4">
           <Button className="w-full h-11" asChild>
-            <a href="mailto:suporte@pawra.app?subject=Pedido de Eliminação de Conta&body=Olá,%0A%0AOs meus dados são:%0AEmail associado à conta: [SEU EMAIL AQUI]%0A%0AConfirmo que desejo apagar permanentemente a minha conta Pawra e todos os dados associados.%0A%0AObrigado.">
+            <a href="mailto:suporte@pawra.app?subject=Pedido de Eliminação de Conta&body=Olá,%0A%0AOs meus dados são:%0AEmail associado à conta: [SEU EMAIL AQUI]%0A%0AConfirmo que desejo apagar permanentemente a minha conta PeloNaRoupa e todos os dados associados.%0A%0AObrigado.">
               <Mail className="mr-2 h-5 w-5" />
               Solicitar Eliminação por Email
             </a>

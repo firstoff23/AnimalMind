@@ -118,7 +118,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       mode="register"
-      title="Criar conta Pawra"
+      title="Criar conta PeloNaRoupa"
       subtitle="Comece a acompanhar o bem-estar emocional dos seus animais com uma conta segura."
       showOAuth
       footer={

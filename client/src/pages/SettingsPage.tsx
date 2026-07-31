@@ -359,8 +359,8 @@ export default function SettingsPage() {
         </h1>
         <p className="text-xs text-muted-foreground">
           {language === "pt"
-            ? "Gerencie as suas preferências e informações pessoais do Pawra"
-            : "Manage your preferences and personal information for Pawra"}
+            ? "Gerencie as suas preferências e informações pessoais do PeloNaRoupa"
+            : "Manage your preferences and personal information for PeloNaRoupa"}
         </p>
       </div>
 
@@ -1144,7 +1144,7 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center text-center p-4 rounded-2xl bg-muted/30 border border-border/30">
               <Logo className="w-12 h-12 text-primary" />
               <p className="text-lg font-bold text-foreground mt-2 tracking-tight">
-                Pawra
+                PeloNaRoupa
               </p>
               <p className="text-xs text-muted-foreground mt-1 max-w-xs leading-relaxed">
                 {language === "pt"

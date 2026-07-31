@@ -582,7 +582,7 @@ export default function DashboardPage() {
                   )}
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase text-mood-primary/80 transition-all duration-500">
-                      Pawra
+                      PeloNaRoupa
                     </p>
                     <h1 className="mt-0.5 text-2xl font-bold text-foreground">
                       {t("dashboardPage.title")}
@@ -838,7 +838,7 @@ export default function DashboardPage() {
 
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-slate-100">
-                Bem-vindo ao Pawra!
+                Bem-vindo ao PeloNaRoupa!
               </h2>
               <p className="text-slate-400 text-xs sm:text-sm max-w-sm leading-relaxed">
                 Vamos configurar a sua conta. Siga os passos rápidos abaixo para

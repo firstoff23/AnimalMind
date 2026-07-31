@@ -121,7 +121,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell
       title="Definir nova palavra-passe"
-      subtitle="Escolha uma palavra-passe forte para proteger o acesso ao Pawra."
+      subtitle="Escolha uma palavra-passe forte para proteger o acesso ao PeloNaRoupa."
       eyebrow="Recuperação de conta"
       compact
     >

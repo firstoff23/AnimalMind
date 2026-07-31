@@ -140,7 +140,7 @@ export function OnboardingFlow() {
         <div className="flex items-center gap-2">
           <Logo size={28} className="text-primary animate-pulse" />
           <span className="font-bold text-lg tracking-wide bg-gradient-to-r from-neutral-100 to-neutral-400 bg-clip-text text-transparent">
-            Pawra
+            PeloNaRoupa
           </span>
         </div>
         {currentStep < 4 && (
@@ -182,7 +182,7 @@ export function OnboardingFlow() {
               <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4">
                 Bem-vindo ao{" "}
                 <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
-                  Pawra
+                  PeloNaRoupa
                 </span>
               </h1>
               <p className="text-neutral-400 text-lg leading-relaxed mb-10 max-w-sm">
@@ -230,7 +230,7 @@ export function OnboardingFlow() {
                 Conhece o teu animal
               </h2>
               <p className="text-neutral-400 text-base leading-relaxed mb-8 max-w-md">
-                Cada cão e gato tem vocalizações únicas. O Pawra analisa o tom e
+                Cada cão e gato tem vocalizações únicas. O PeloNaRoupa analisa o tom e
                 a acústica para criar um perfil emocional detalhado do teu pet,
                 ajudando-te a responder às suas necessidades reais.
               </p>
@@ -355,7 +355,7 @@ export function OnboardingFlow() {
               </h2>
               <p className="text-neutral-400 text-sm text-center mb-8 max-w-sm mx-auto">
                 Ativa o microfone e as notificações para tirar o máximo partido
-                do Pawra.
+                do PeloNaRoupa.
               </p>
 
               {/* Permission Buttons / Indicators */}

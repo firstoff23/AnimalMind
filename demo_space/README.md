@@ -1,5 +1,5 @@
 ---
-title: AnimalMind Demo
+title: PeloNaRoupa Demo
 emoji: 🐾
 colorFrom: green
 colorTo: gray
@@ -10,9 +10,9 @@ pinned: false
 license: mit
 ---
 
-# AnimalMind 🐾 - Demo Pública
+# PeloNaRoupa 🐾 - Demo Pública
 
-Esta é a demonstração pública do **AnimalMind** (rebranded para **Pawra**), uma aplicação inteligente para monitorização e análise do bem-estar dos teus animais de estimação.
+Esta é a demonstração pública do **PeloNaRoupa** (rebranded para **PeloNaRoupa**), uma aplicação inteligente para monitorização e análise do bem-estar dos teus animais de estimação.
 
 Este Space utiliza a biblioteca **Gradio** para fornecer uma interface simples e moderna onde podes carregar uma imagem do teu cão ou gato para identificar a sua espécie e raça com base num classificador ViT dual-head ajustado.
 
@@ -23,5 +23,5 @@ Este Space utiliza a biblioteca **Gradio** para fornecer uma interface simples e
 4. Experimenta com as imagens de exemplo fornecidas no fundo se não tiveres nenhuma foto à mão.
 
 ## Ligação ao Backend
-Esta demonstração está conectada à API oficial do Pawra em produção no Hugging Face Spaces:
+Esta demonstração está conectada à API oficial do PeloNaRoupa em produção no Hugging Face Spaces:
 `POST https://firstoff-animalmind-backend.hf.space/classify-image`

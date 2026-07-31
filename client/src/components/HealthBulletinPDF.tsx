@@ -157,7 +157,7 @@ export function HealthBulletinPDF({
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>Pawra</Text>
+          <Text style={styles.logo}>PeloNaRoupa</Text>
           <Text style={styles.subtitle}>Boletim Sanitário Digital</Text>
         </View>
 
@@ -437,7 +437,7 @@ export function HealthBulletinPDF({
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Gerado por Pawra • pawra.vercel.app
+            Gerado por PeloNaRoupa • pawra.vercel.app
           </Text>
           <Text style={styles.footerText}>
             Documento digital não substitui o boletim oficial da DGAV.

@@ -1262,7 +1262,7 @@ export default function RecordingPage() {
   return (
     <div className="page-enter min-h-full px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto select-none touch-callout-none">
       <div className="text-center space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">Pawra</h1>
+        <h1 className="text-2xl font-bold text-foreground">PeloNaRoupa</h1>
         {activeAnimal ? (
           <p className="text-sm text-muted-foreground">{activeAnimal.name}</p>
         ) : (
@@ -1514,8 +1514,8 @@ export default function RecordingPage() {
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {language === "pt"
-                        ? "Toque para gravar. O Pawra precisa de acesso ao microfone."
-                        : "Tap to record. Pawra needs microphone access."}
+                        ? "Toque para gravar. O PeloNaRoupa precisa de acesso ao microfone."
+                        : "Tap to record. PeloNaRoupa needs microphone access."}
                     </p>
                   </div>
                   <Badge
@@ -1796,15 +1796,15 @@ export default function RecordingPage() {
       <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5 shadow-sm text-left">
         <span className="text-base select-none mt-0.5">⚠️</span>
         <p className="leading-relaxed">
-          <strong>Aviso:</strong> Pawra não substitui avaliação veterinária. Os
+          <strong>Aviso:</strong> PeloNaRoupa não substitui avaliação veterinária. Os
           resultados são estimativas comportamentais baseadas em áudio.
         </p>
       </div>
 
       <p className="text-[10px] text-muted-foreground/60 text-center leading-relaxed max-w-[360px] mx-auto pt-4 pb-2">
         {language === "pt"
-          ? "Pawra não substitui avaliação veterinária. Os resultados são estimativas comportamentais baseadas em áudio e contexto."
-          : "Pawra does not replace veterinary evaluation. Results are behavioral estimates based on audio and context."}
+          ? "PeloNaRoupa não substitui avaliação veterinária. Os resultados são estimativas comportamentais baseadas em áudio e contexto."
+          : "PeloNaRoupa does not replace veterinary evaluation. Results are behavioral estimates based on audio and context."}
       </p>
     </div>
   );

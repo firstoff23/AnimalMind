@@ -51,8 +51,8 @@ export function useNotifications() {
 
       const label = STATE_LABELS[state];
       const title = animalName
-        ? `Pawra — ${animalName}`
-        : "Pawra — classificação concluída";
+        ? `PeloNaRoupa — ${animalName}`
+        : "PeloNaRoupa — classificação concluída";
       const body = `${label}: ${Math.round(confidence * 100)}% de confiança`;
 
       try {
@@ -116,7 +116,7 @@ export function useNotifications() {
         permissionRef.current === "granted"
       ) {
         try {
-          new Notification(`Pawra — ${animalName}`, {
+          new Notification(`PeloNaRoupa — ${animalName}`, {
             body: message,
             icon: "/favicon.ico",
             tag: key,
