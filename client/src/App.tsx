@@ -58,6 +58,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const VerifyOtpPage = lazy(() => import("./pages/VerifyOtpPage"));
 const VetDashboardPage = lazy(() => import("./pages/VetDashboardPage"));
+const DeleteAccountPage = lazy(() => import("./pages/DeleteAccountPage"));
 const VetPage = lazy(() => import("./pages/VetPage"));
 const VetPetDetailPage = lazy(() => import("./pages/VetPetDetailPage"));
 const MonitorPage = lazy(() => import("./pages/MonitorPage"));
@@ -241,15 +242,18 @@ function Router() {
                     variant="settings"
                   />
                 </Route>
-                <Route path="/reset-password">
-                  <LazyRoute component={ResetPasswordPage} variant="settings" />
-                </Route>
-                <Route path="/verify-email">
-                  <LazyRoute component={VerifyEmailPage} variant="settings" />
-                </Route>
-                <Route path="/verify-otp">
-                  <LazyRoute component={VerifyOtpPage} variant="settings" />
-                </Route>
+                <Route path="/forgot-password" component={ForgotPasswordPage} />
+                <Route path="/reset-password" component={ResetPasswordPage} />
+                <Route path="/auth/callback" component={AuthCallbackPage} />
+                <Route path="/verify-otp" component={VerifyOtpPage} />
+                <Route path="/verify-email" component={VerifyEmailPage} />
+                
+                {/* Public Policy Pages */}
+                <Route path="/privacy-policy" component={PrivacyPolicyPage} />
+                <Route path="/cookie-policy" component={CookiePolicyPage} />
+                <Route path="/terms" component={TermsOfUsePage} />
+                <Route path="/reembolsos" component={RefundPage} />
+                <Route path="/eliminar-conta" component={DeleteAccountPage} />
                 <Route path="/auth/callback">
                   <LazyRoute component={AuthCallbackPage} variant="content" />
                 </Route>

@@ -6,6 +6,7 @@ import { KeepAwake } from "@capacitor-community/keep-awake";
 import { trpc } from "@/lib/trpc";
 import { Shield, ShieldAlert, Activity, StopCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function SurveillancePage() {
   const [isActive, setIsActive] = useState(false);
@@ -127,6 +128,16 @@ export function SurveillancePage() {
           Estado: {status}
         </span>
       </div>
+
+      {Capacitor.getPlatform() === 'android' && (
+        <Alert variant="default" className="w-full max-w-sm mb-4 border-yellow-500/50 bg-yellow-500/10">
+          <ShieldAlert className="h-4 w-4 text-yellow-500" />
+          <AlertTitle className="text-yellow-500">Otimização de Bateria</AlertTitle>
+          <AlertDescription className="text-muted-foreground text-xs mt-1">
+            Para que a vigilância funcione a noite toda, vá a Definições {'>'} Bateria e defina o uso desta App como "Sem restrições (Unrestricted)".
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Button 
         size="lg" 
